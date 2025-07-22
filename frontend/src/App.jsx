@@ -1,35 +1,43 @@
 import './App.css'
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { spotifyService } from './api/spotifyService';
 
 
 
 
 function NavigationMenu() {
-  const handleNavClick = (section) => {
-    console.log('Navigation clicked:', section);
-    alert(`${section} page coming soon!`);
+  const navigate = useNavigate();
+  const location = window.location;
+
+  const handleNavClick = (path, section) => {
+    navigate(path);
+  };
+
+  const isActive = (path) => {
+    return location.pathname === path;
   };
 
   return (
     <nav className="navigation-menu">
       <ul>
-        <li className="nav-item active">
-          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('Browse Songs'); }}>
+        <li className={`nav-item ${isActive('/') ? 'active' : ''}`}>
+          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/', 'Browse Songs'); }}>
             Browse Songs
           </a>
         </li>
-        <li className="nav-item">
-          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('Artists'); }}>
+        <li className={`nav-item ${isActive('/artists') ? 'active' : ''}`}>
+          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/artists', 'Artists'); }}>
             Artists
           </a>
         </li>
-        <li className="nav-item">
-          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('Playlists'); }}>
+        <li className={`nav-item ${isActive('/playlists') ? 'active' : ''}`}>
+          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/playlists', 'Playlists'); }}>
             Playlists
           </a>
         </li>
-        <li className="nav-item">
-          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('About'); }}>
+        <li className={`nav-item ${isActive('/about') ? 'active' : ''}`}>
+          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/about', 'About'); }}>
             About
           </a>
         </li>
@@ -51,6 +59,25 @@ function DescriptionSection() {
 }
 
 function StatsSection() {
+  const [stats, setStats] = useState({ songs: 0, artists: 0, albums: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const fetchedStats = await spotifyService.getStats();
+        setStats(fetchedStats);
+      } catch (err) {
+        console.error('Error loading stats:', err);
+        // Keep default stats if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   const handleStatClick = (statType) => {
     console.log('Stat clicked:', statType);
     alert(`Show all ${statType.toLowerCase()} (functionality coming soon!)`);
@@ -60,11 +87,11 @@ function StatsSection() {
     <section className="stats-section">
       <div className="stats-container">
         <div className="stat-item" onClick={() => handleStatClick('Songs')}>
-          <div className="stat-number">650+</div>
+          <div className="stat-number">{loading ? '...' : `${stats.songs}+`}</div>
           <div className="stat-label">Songs</div>
         </div>
         <div className="stat-item" onClick={() => handleStatClick('Artists')}>
-          <div className="stat-number">200+</div>
+          <div className="stat-number">{loading ? '...' : `${stats.artists}+`}</div>
           <div className="stat-label">Artists</div>
         </div>
         <div className="stat-item" onClick={() => handleStatClick('Hours')}>
@@ -253,44 +280,74 @@ function SongCard({ song, songId }) {
 }
 
 function FeaturedSongs() {
-  const sampleSongs = [
-    {
-      id: 1,
-      title: "Meat Is Murder",
-      artist: "The Smiths",
-      year: "1985",
-      duration: "6:06",
-      tags: ["Animal Rights", "Alternative Rock"],
-      artwork: null
-    },
-    {
-      id: 2,
-      title: "Food for Thought",
-      artist: "UB40",
-      year: "1980", 
-      duration: "4:05",
-      tags: ["Reggae", "Social Justice"],
-      artwork: null
-    },
-    {
-      id: 3,
-      title: "Eating Animals",
-      artist: "Andy Hurley",
-      year: "2012",
-      duration: "3:42",
-      tags: ["Punk", "Direct"],
-      artwork: null
-    },
-    {
-      id: 4,
-      title: "Go Vegan",
-      artist: "Prince Ea",
-      year: "2017",
-      duration: "4:18",
-      tags: ["Hip Hop", "Educational"],
-      artwork: null
-    }
-  ];
+  const [songs, setSongs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchFeaturedSongs = async () => {
+      try {
+        setLoading(true);
+        const fetchedSongs = await spotifyService.getFeaturedSongs(8);
+        
+        // Transform the data to match your component structure
+        const transformedSongs = fetchedSongs.map(song => ({
+          id: song.id,
+          title: song.title,
+          artist: song.artists.join(', '),
+          year: song.release_date ? new Date(song.release_date).getFullYear() : 'Unknown',
+          duration: formatDuration(song.duration_ms),
+          tags: [], // We'll add these later when we implement categorizations
+          artwork: song.album_images?.[0]?.url || null,
+          spotifyUrl: song.spotify_url
+        }));
+        
+        setSongs(transformedSongs);
+      } catch (err) {
+        setError('Failed to load featured songs');
+        console.error('Error loading featured songs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedSongs();
+  }, []);
+
+  // Helper function to format duration
+  const formatDuration = (durationMs) => {
+    const minutes = Math.floor(durationMs / 60000);
+    const seconds = Math.floor((durationMs % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  if (loading) {
+    return (
+      <section className="featured-songs">
+        <div className="section-header">
+          <h2>Featured Songs</h2>
+          <p>Loading your vegan-themed music...</p>
+        </div>
+        <div className="loading-placeholder">
+          <p>🎵 Loading songs...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="featured-songs">
+        <div className="section-header">
+          <h2>Featured Songs</h2>
+          <p>Discover powerful vegan-themed music</p>
+        </div>
+        <div className="error-message">
+          <p>❌ {error}</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="featured-songs">
@@ -299,7 +356,7 @@ function FeaturedSongs() {
         <p>Discover powerful vegan-themed music</p>
       </div>
       <div className="songs-grid">
-        {sampleSongs.map((song) => (
+        {songs.map((song) => (
           <SongCard key={song.id} song={song} songId={song.id} />
         ))}
       </div>
@@ -368,6 +425,281 @@ function HomePage() {
 }
 
 
+function ArtistsPage() {
+  const navigate = useNavigate();
+  
+  // Sample artist data - will come from backend later
+  const sampleArtists = [
+    {
+      id: 1,
+      name: "The Smiths",
+      songCount: 3,
+      description: "British rock band known for their influential music and outspoken animal rights advocacy.",
+      genres: ["Alternative Rock", "Indie Pop"],
+      image: null
+    },
+    {
+      id: 2,
+      name: "UB40",
+      songCount: 2,
+      description: "British reggae and pop band with strong social justice themes.",
+      genres: ["Reggae", "Pop"],
+      image: null
+    },
+    {
+      id: 3,
+      name: "Prince Ea",
+      songCount: 4,
+      description: "American spoken word artist and activist promoting veganism and environmental awareness.",
+      genres: ["Hip Hop", "Spoken Word"],
+      image: null
+    },
+    {
+      id: 4,
+      name: "Moby",
+      songCount: 8,
+      description: "Electronic music pioneer and long-time vegan advocate.",
+      genres: ["Electronic", "Ambient"],
+      image: null
+    },
+    {
+      id: 5,
+      name: "Rise Against",
+      songCount: 6,
+      description: "Punk rock band with strong animal rights and environmental messages.",
+      genres: ["Punk Rock", "Hardcore"],
+      image: null
+    },
+    {
+      id: 6,
+      name: "Earth Crisis",
+      songCount: 5,
+      description: "Hardcore band known for their straight edge and animal liberation lyrics.",
+      genres: ["Hardcore", "Metalcore"],
+      image: null
+    }
+  ];
+
+  const handleArtistClick = (artistId) => {
+    alert(`Artist page for ID ${artistId} coming soon!`);
+  };
+
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <h1>Artists</h1>
+        <p>Explore musicians advocating for animal rights and veganism</p>
+      </div>
+      
+      <div className="artists-grid">
+        {sampleArtists.map((artist) => (
+          <div 
+            key={artist.id} 
+            className="artist-card"
+            onClick={() => handleArtistClick(artist.id)}
+          >
+            <div className="artist-image">
+              <img 
+                src={artist.image || "https://via.placeholder.com/200x200/1DB954/000000?text=" + artist.name.charAt(0)} 
+                alt={`${artist.name}`}
+              />
+            </div>
+            <div className="artist-info">
+              <h3>{artist.name}</h3>
+              <p className="artist-song-count">{artist.songCount} songs in playlist</p>
+              <p className="artist-description">{artist.description}</p>
+              <div className="artist-genres">
+                {artist.genres.map((genre, index) => (
+                  <span key={index} className="genre-tag">{genre}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+function PlaylistsPage() {
+  const navigate = useNavigate();
+  
+  // Sample playlist data
+  const samplePlaylists = [
+    {
+      id: 1,
+      name: "Animal Liberation Anthems",
+      description: "Powerful songs directly advocating for animal rights and liberation",
+      songCount: 45,
+      creator: "Admin",
+      tags: ["Direct", "Animal Rights"],
+      image: null
+    },
+    {
+      id: 2,
+      name: "Vegan Hip Hop",
+      description: "Hip hop tracks promoting plant-based living and consciousness",
+      songCount: 23,
+      creator: "User Contributed",
+      tags: ["Hip Hop", "Educational"],
+      image: null
+    },
+    {
+      id: 3,
+      name: "Environmental Wake-Up Call",
+      description: "Songs addressing climate change and environmental destruction",
+      songCount: 34,
+      creator: "Admin",
+      tags: ["Environment", "Climate"],
+      image: null
+    },
+    {
+      id: 4,
+      name: "Gentle Advocacy",
+      description: "Subtle, story-based songs that promote compassion for animals",
+      songCount: 28,
+      creator: "User Contributed",
+      tags: ["Subtle", "Storytelling"],
+      image: null
+    }
+  ];
+
+  const handlePlaylistClick = (playlistId) => {
+    alert(`Playlist page for ID ${playlistId} coming soon!`);
+  };
+
+  const handleCreatePlaylist = () => {
+    alert("Create new playlist functionality coming soon!");
+  };
+
+  return (
+    <div className="page-container">
+      <div className="page-header">
+        <h1>Playlists</h1>
+        <p>Curated collections of vegan-themed music</p>
+        <button className="create-button" onClick={handleCreatePlaylist}>
+          Create New Playlist
+        </button>
+      </div>
+      
+      <div className="playlists-grid">
+        {samplePlaylists.map((playlist) => (
+          <div 
+            key={playlist.id} 
+            className="playlist-card"
+            onClick={() => handlePlaylistClick(playlist.id)}
+          >
+            <div className="playlist-image">
+              <img 
+                src={playlist.image || "https://via.placeholder.com/200x200/1DB954/000000?text=♪"} 
+                alt={playlist.name}
+              />
+              <div className="playlist-overlay">
+                <div className="play-button">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="playlist-info">
+              <h3>{playlist.name}</h3>
+              <p className="playlist-song-count">{playlist.songCount} songs</p>
+              <p className="playlist-description">{playlist.description}</p>
+              <p className="playlist-creator">Created by {playlist.creator}</p>
+              <div className="playlist-tags">
+                {playlist.tags.map((tag, index) => (
+                  <span key={index} className="playlist-tag">{tag}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+function AboutPage() {
+  return (
+    <div className="page-container">
+      <div className="about-content">
+        <div className="about-header">
+          <h1>About The Vegan Playlist</h1>
+          <p className="about-subtitle">
+            7 years of curating music that advocates for animals, the environment, and compassionate living
+          </p>
+        </div>
+        
+        <div className="about-sections">
+          <section className="about-section">
+            <h2>Our Mission</h2>
+            <p>
+              The Vegan Playlist is a comprehensive database of songs with vegan, animal rights, 
+              and animal liberation themes. We believe music has the power to inspire change and 
+              raise awareness about the treatment of animals and environmental issues.
+            </p>
+          </section>
+          
+          <section className="about-section">
+            <h2>What We Include</h2>
+            <p>
+              Our collection spans multiple genres and decades, featuring songs that:
+            </p>
+            <ul>
+              <li>Directly advocate for animal rights and liberation</li>
+              <li>Promote plant-based living and veganism</li>
+              <li>Address environmental issues related to animal agriculture</li>
+              <li>Share stories of compassion and empathy for animals</li>
+              <li>Critique factory farming and animal exploitation</li>
+            </ul>
+          </section>
+          
+          <section className="about-section">
+            <h2>Our Approach</h2>
+            <p>
+              Each song in our database is carefully analyzed and categorized by:
+            </p>
+            <ul>
+              <li><strong>Advocacy Style:</strong> Direct, educational, subtle, or storytelling</li>
+              <li><strong>Animal Focus:</strong> All animals, farm animals, or specific species</li>
+              <li><strong>Themes:</strong> Animal rights, environment, health, ethics</li>
+              <li><strong>Musical Genre:</strong> Rock, hip hop, punk, electronic, and more</li>
+            </ul>
+          </section>
+          
+          <section className="about-section">
+            <h2>Get Involved</h2>
+            <p>
+              We welcome song suggestions from the community! If you know of a song with 
+              vegan or animal rights themes that we haven't included, please let us know. 
+              Together, we can build the most comprehensive collection of advocacy music.
+            </p>
+          </section>
+          
+          <div className="about-stats">
+            <div className="stat-highlight">
+              <span className="stat-number">650+</span>
+              <span className="stat-label">Songs Curated</span>
+            </div>
+            <div className="stat-highlight">
+              <span className="stat-number">7</span>
+              <span className="stat-label">Years of Research</span>
+            </div>
+            <div className="stat-highlight">
+              <span className="stat-number">200+</span>
+              <span className="stat-label">Artists Featured</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function App() {
   return (
     <Router>
@@ -382,6 +714,9 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/song/:songId" element={<SongDetailPage />} />
+          <Route path="/artists" element={<ArtistsPage />} />
+          <Route path="/playlists" element={<PlaylistsPage />} />
+          <Route path="/about" element={<AboutPage />} />
         </Routes>
         
         <footer className="app-footer">

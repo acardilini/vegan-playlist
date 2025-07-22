@@ -137,3 +137,12 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Don't commit environment variables files
+# These files are used to store sensitive information and should not be committed to version control.
+backend/.env
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
