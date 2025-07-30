@@ -2,8 +2,7 @@ import './App.css'
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { spotifyService } from './api/spotifyService';
-
-
+import MoodBadge from './components/MoodBadge';
 
 
 function NavigationMenu() {
@@ -249,6 +248,51 @@ function SongCard({ song, songId }) {
     alert(`Playing "${song.title}" (functionality coming soon!)`);
   };
 
+  // Format duration from milliseconds
+  const formatDuration = (durationMs) => {
+    const minutes = Math.floor(durationMs / 60000);
+    const seconds = Math.floor((durationMs % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Format playlist add date
+  const formatPlaylistAddDate = (dateString) => {
+    if (!dateString) return null;
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 30) {
+      return `Added ${diffDays} days ago`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `Added ${months} month${months > 1 ? 's' : ''} ago`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return `Added ${years} year${years > 1 ? 's' : ''} ago`;
+    }
+  };
+
+  // Get album artwork
+  const getArtwork = () => {
+    if (song.album_images && song.album_images.length > 0) {
+      const mediumImage = song.album_images.find(img => img.width === 300);
+      return mediumImage ? mediumImage.url : song.album_images[0].url;
+    }
+    return "https://via.placeholder.com/150x150/1DB954/000000?text=♪";
+  };
+
+  // Get primary genre for display
+  const getPrimaryGenre = () => {
+    if (song.artist_genres && song.artist_genres.length > 0) {
+      const flatGenres = song.artist_genres.flat();
+      return flatGenres[0] || null;
+    }
+    return null;
+  };
+
   return (
     <div className="song-card" onClick={handleSongClick}>
       <div className="song-artwork">
@@ -258,21 +302,59 @@ function SongCard({ song, songId }) {
           </svg>
         </div>
         <img 
-          src={song.artwork || "https://via.placeholder.com/150x150/1DB954/000000?text=♪"} 
+          src={getArtwork()}
           alt={`${song.title} artwork`}
         />
+        
+        {/* Mood badge overlay */}
+        <div className="mood-badge-overlay">
+          <MoodBadge song={song} size="small" />
+        </div>
       </div>
+      
       <div className="song-info">
         <h3 className="song-title">{song.title}</h3>
-        <p className="song-artist">{song.artist}</p>
-        <div className="song-tags">
-          {song.tags.map((tag, index) => (
-            <span key={index} className="song-tag">{tag}</span>
-          ))}
+        <p className="song-artist">
+          {Array.isArray(song.artists) ? song.artists.join(', ') : song.artists}
+        </p>
+        
+        {/* Show primary genre if available */}
+        {getPrimaryGenre() && (
+          <p className="song-genre">{getPrimaryGenre()}</p>
+        )}
+        
+        {/* Enhanced metadata with audio features */}
+        <div className="song-features">
+          {song.energy && (
+            <span className="feature-badge energy">
+              ⚡ {Math.round(song.energy * 100)}%
+            </span>
+          )}
+          {song.danceability && (
+            <span className="feature-badge danceability">
+              💃 {Math.round(song.danceability * 100)}%
+            </span>
+          )}
+          {song.valence && (
+            <span className="feature-badge valence">
+              😊 {Math.round(song.valence * 100)}%
+            </span>
+          )}
+          {song.popularity > 20 && (
+            <span className="feature-badge popularity">
+              🔥 {song.popularity}% popular
+            </span>
+          )}
         </div>
+        
         <div className="song-meta">
-          <span className="song-year">{song.year}</span>
-          <span className="song-duration">{song.duration}</span>
+          <span className="song-year">
+            {song.release_date ? new Date(song.release_date).getFullYear() : 'Unknown'}
+          </span>
+          <span className="song-duration">{formatDuration(song.duration_ms)}</span>
+          {song.playlist_added_at && (
+            <span className="song-added">{formatPlaylistAddDate(song.playlist_added_at)}</span>
+          )}
         </div>
       </div>
     </div>
@@ -290,19 +372,11 @@ function FeaturedSongs() {
         setLoading(true);
         const fetchedSongs = await spotifyService.getFeaturedSongs(8);
         
-        // Transform the data to match your component structure
-        const transformedSongs = fetchedSongs.map(song => ({
-          id: song.id,
-          title: song.title,
-          artist: song.artists.join(', '),
-          year: song.release_date ? new Date(song.release_date).getFullYear() : 'Unknown',
-          duration: formatDuration(song.duration_ms),
-          tags: [], // We'll add these later when we implement categorizations
-          artwork: song.album_images?.[0]?.url || null,
-          spotifyUrl: song.spotify_url
-        }));
+        // DEBUG: Log the raw data from API
+        console.log('Raw API response:', fetchedSongs);
+        console.log('First song structure:', fetchedSongs[0]);
         
-        setSongs(transformedSongs);
+        setSongs(fetchedSongs);
       } catch (err) {
         setError('Failed to load featured songs');
         console.error('Error loading featured songs:', err);
@@ -314,13 +388,7 @@ function FeaturedSongs() {
     fetchFeaturedSongs();
   }, []);
 
-  // Helper function to format duration
-  const formatDuration = (durationMs) => {
-    const minutes = Math.floor(durationMs / 60000);
-    const seconds = Math.floor((durationMs % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
+  // Rest of component stays the same...
   if (loading) {
     return (
       <section className="featured-songs">

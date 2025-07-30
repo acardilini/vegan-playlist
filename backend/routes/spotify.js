@@ -213,7 +213,7 @@ router.get('/songs', async (req, res) => {
   }
 });
 
-// Get featured/random songs for homepage
+// Get featured/random songs for homepage - WITH CUSTOM MOODS
 router.get('/songs/featured', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 8;
@@ -226,24 +226,42 @@ router.get('/songs/featured', async (req, res) => {
         s.duration_ms,
         s.popularity,
         s.spotify_url,
+        s.playlist_added_at,
+        s.energy,
+        s.danceability,
+        s.valence,
+        s.tempo,
+        s.custom_mood,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
-        ARRAY_AGG(DISTINCT a.name) as artists,
-        ARRAY_AGG(DISTINCT a.spotify_id) as artist_ids
+        COALESCE(
+          ARRAY_AGG(a.name) FILTER (WHERE a.name IS NOT NULL), 
+          ARRAY[]::text[]
+        ) as artists,
+        COALESCE(
+          ARRAY_AGG(a.genres) FILTER (WHERE a.genres IS NOT NULL), 
+          ARRAY[]::text[]
+        ) as artist_genres
       FROM songs s
       JOIN albums al ON s.album_id = al.id
-      JOIN song_artists sa ON s.id = sa.song_id
-      JOIN artists a ON sa.artist_id = a.id
-      GROUP BY s.id, al.id
+      LEFT JOIN song_artists sa ON s.id = sa.song_id
+      LEFT JOIN artists a ON sa.artist_id = a.id
+      GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url, 
+               s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
+               al.name, al.release_date, al.images
+      HAVING COUNT(a.id) > 0
       ORDER BY RANDOM()
       LIMIT $1
     `, [limit]);
     
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching featured songs:', error);
-    res.status(500).json({ error: 'Failed to fetch featured songs' });
+    console.error('Error fetching enhanced featured songs:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch enhanced featured songs',
+      details: error.message 
+    });
   }
 });
 
@@ -262,6 +280,21 @@ router.get('/songs/:id', async (req, res) => {
         s.spotify_url,
         s.preview_url,
         s.explicit,
+        s.track_number,
+        s.disc_number,
+        s.playlist_added_at,
+        s.energy,
+        s.danceability,
+        s.valence,
+        s.acousticness,
+        s.instrumentalness,
+        s.liveness,
+        s.speechiness,
+        s.tempo,
+        s.loudness,
+        s.key,
+        s.mode,
+        s.time_signature,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
@@ -270,7 +303,10 @@ router.get('/songs/:id', async (req, res) => {
           'id', a.id,
           'name', a.name,
           'spotify_id', a.spotify_id,
-          'spotify_url', a.spotify_url
+          'spotify_url', a.spotify_url,
+          'genres', a.genres,
+          'popularity', a.popularity,
+          'followers', a.followers
         )) as artists
       FROM songs s
       JOIN albums al ON s.album_id = al.id
@@ -354,6 +390,92 @@ router.get('/search', async (req, res) => {
   } catch (error) {
     console.error('Error searching songs:', error);
     res.status(500).json({ error: 'Failed to search songs' });
+  }
+});
+
+// Check database contents
+router.get('/database-check', async (req, res) => {
+  try {
+    // Count totals
+    const songCount = await pool.query('SELECT COUNT(*) FROM songs');
+    const artistCount = await pool.query('SELECT COUNT(*) FROM artists');
+    const albumCount = await pool.query('SELECT COUNT(*) FROM albums');
+    
+    // Sample data
+    const sampleData = await pool.query(`
+      SELECT 
+        s.title, 
+        s.spotify_id,
+        s.date_added,
+        s.vegan_focus,
+        s.animal_category,
+        array_agg(a.name) as artists
+      FROM songs s
+      JOIN song_artists sa ON s.id = sa.song_id
+      JOIN artists a ON sa.artist_id = a.id
+      GROUP BY s.id, s.title, s.spotify_id, s.date_added, s.vegan_focus, s.animal_category
+      LIMIT 5
+    `);
+    
+    const schemaCheck = await pool.query(`
+      SELECT column_name, data_type, is_nullable 
+      FROM information_schema.columns 
+      WHERE table_name = 'songs' 
+      ORDER BY ordinal_position
+    `);
+    
+    res.json({
+      totals: {
+        songs: parseInt(songCount.rows[0].count),
+        artists: parseInt(artistCount.rows[0].count),
+        albums: parseInt(albumCount.rows[0].count)
+      },
+      sampleData: sampleData.rows,
+      songsSchema: schemaCheck.rows
+    });
+  } catch (error) {
+    console.error('Database check error:', error);
+    res.status(500).json({ error: 'Database check failed' });
+  }
+});
+
+// Debug endpoint to check audio features
+router.get('/debug/audio-features', async (req, res) => {
+  try {
+    // Check if any songs have audio features
+    const withFeatures = await pool.query(`
+      SELECT COUNT(*) as count
+      FROM songs 
+      WHERE energy IS NOT NULL OR danceability IS NOT NULL
+    `);
+    
+    // Get a sample of songs with and without features
+    const sampleWithFeatures = await pool.query(`
+      SELECT title, energy, danceability, valence, tempo
+      FROM songs 
+      WHERE energy IS NOT NULL 
+      LIMIT 5
+    `);
+    
+    const sampleWithoutFeatures = await pool.query(`
+      SELECT title, spotify_id, energy, danceability, valence, tempo
+      FROM songs 
+      WHERE energy IS NULL 
+      LIMIT 5
+    `);
+    
+    res.json({
+      summary: {
+        songs_with_features: parseInt(withFeatures.rows[0].count),
+        total_songs: await pool.query('SELECT COUNT(*) FROM songs').then(r => parseInt(r.rows[0].count))
+      },
+      samples: {
+        with_features: sampleWithFeatures.rows,
+        without_features: sampleWithoutFeatures.rows
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

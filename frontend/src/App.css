@@ -478,6 +478,46 @@ main {
   opacity: 1;
 }
 
+/* Enhanced Song Card Styles */
+.mood-badge-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
+.song-genre {
+  font-size: var(--font-size-xs);
+  color: var(--color-accent-primary);
+  margin: var(--spacing-xs) 0;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.feature-badge.energy {
+  background-color: rgba(255, 107, 107, 0.1);
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.feature-badge.danceability {
+  background-color: rgba(243, 156, 18, 0.1);
+  color: #f39c12;
+  border-color: rgba(243, 156, 18, 0.2);
+}
+
+.feature-badge.valence {
+  background-color: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+  border-color: rgba(46, 204, 113, 0.2);
+}
+
+.feature-badge.popularity {
+  background-color: rgba(155, 89, 182, 0.1);
+  color: #9b59b6;
+  border-color: rgba(155, 89, 182, 0.2);
+}
+
 /* Song Info */
 .song-info {
   color: var(--color-text-primary);
@@ -538,7 +578,6 @@ main {
     grid-template-columns: 1fr;
   }
 }
-
 
 /* Search Section */
 .search-section {
