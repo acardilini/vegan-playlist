@@ -235,27 +235,38 @@ router.get('/songs/featured', async (req, res) => {
         al.name as album_name,
         al.release_date,
         al.images as album_images,
-        COALESCE(
-          ARRAY_AGG(a.name) FILTER (WHERE a.name IS NOT NULL), 
-          ARRAY[]::text[]
-        ) as artists,
-        COALESCE(
-          ARRAY_AGG(a.genres) FILTER (WHERE a.genres IS NOT NULL), 
-          ARRAY[]::text[]
-        ) as artist_genres
+        ARRAY_AGG(DISTINCT a.name) as artists
       FROM songs s
       JOIN albums al ON s.album_id = al.id
-      LEFT JOIN song_artists sa ON s.id = sa.song_id
-      LEFT JOIN artists a ON sa.artist_id = a.id
+      JOIN song_artists sa ON s.id = sa.song_id
+      JOIN artists a ON sa.artist_id = a.id
       GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url, 
                s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
                al.name, al.release_date, al.images
-      HAVING COUNT(a.id) > 0
       ORDER BY RANDOM()
       LIMIT $1
     `, [limit]);
     
-    res.json(result.rows);
+    // Post-process to add artist genres
+    const songsWithGenres = await Promise.all(result.rows.map(async (song) => {
+      try {
+        const genreResult = await pool.query(`
+          SELECT DISTINCT UNNEST(a.genres) as genre
+          FROM artists a
+          JOIN song_artists sa ON a.id = sa.artist_id
+          WHERE sa.song_id = $1 AND a.genres IS NOT NULL
+        `, [song.id]);
+        
+        song.artist_genres = genreResult.rows.map(row => row.genre);
+        return song;
+      } catch (error) {
+        console.warn('Error getting genres for song', song.id, error.message);
+        song.artist_genres = [];
+        return song;
+      }
+    }));
+    
+    res.json(songsWithGenres);
   } catch (error) {
     console.error('Error fetching enhanced featured songs:', error);
     res.status(500).json({ 
