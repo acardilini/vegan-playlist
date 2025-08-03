@@ -1,6 +1,7 @@
 const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const pool = require('../database/db');
+const { getParentGenres, getAllSubgenres } = require('../utils/genreMapping');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -232,6 +233,8 @@ router.get('/songs/featured', async (req, res) => {
         s.valence,
         s.tempo,
         s.custom_mood,
+        s.genre,
+        s.parent_genre,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
@@ -242,7 +245,7 @@ router.get('/songs/featured', async (req, res) => {
       JOIN artists a ON sa.artist_id = a.id
       GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url, 
                s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
-               al.name, al.release_date, al.images
+               s.genre, s.parent_genre, al.name, al.release_date, al.images
       ORDER BY RANDOM()
       LIMIT $1
     `, [limit]);
@@ -362,17 +365,182 @@ router.get('/artists', async (req, res) => {
   }
 });
 
-// Search songs
+// Advanced search and filter songs
 router.get('/search', async (req, res) => {
   try {
-    const query = req.query.q;
-    if (!query) {
-      return res.status(400).json({ error: 'Search query required' });
+    const { 
+      q: query, 
+      vegan_focus, 
+      animal_category, 
+      advocacy_style, 
+      advocacy_issues,
+      lyrical_explicitness,
+      year_from,
+      year_to,
+      energy_min,
+      energy_max,
+      danceability_min,
+      danceability_max,
+      valence_min,
+      valence_max,
+      genres,
+      parent_genres,
+      page = 1,
+      limit = 20,
+      sort_by = 'popularity'
+    } = req.query;
+
+    let whereConditions = [];
+    let queryParams = [];
+    let paramIndex = 1;
+
+    // Text search
+    if (query && query.trim()) {
+      const searchTerm = `%${query.trim()}%`;
+      whereConditions.push(`(
+        LOWER(s.title) LIKE LOWER($${paramIndex}) OR 
+        LOWER(a.name) LIKE LOWER($${paramIndex}) OR
+        LOWER(al.name) LIKE LOWER($${paramIndex}) OR
+        LOWER(s.your_review) LIKE LOWER($${paramIndex})
+      )`);
+      queryParams.push(searchTerm);
+      paramIndex++;
+    }
+
+    // Vegan focus filter
+    if (vegan_focus) {
+      const focuses = Array.isArray(vegan_focus) ? vegan_focus : [vegan_focus];
+      whereConditions.push(`s.vegan_focus && $${paramIndex}::text[]`);
+      queryParams.push(focuses);
+      paramIndex++;
+    }
+
+    // Animal category filter
+    if (animal_category) {
+      const categories = Array.isArray(animal_category) ? animal_category : [animal_category];
+      whereConditions.push(`s.animal_category && $${paramIndex}::text[]`);
+      queryParams.push(categories);
+      paramIndex++;
+    }
+
+    // Advocacy style filter
+    if (advocacy_style) {
+      const styles = Array.isArray(advocacy_style) ? advocacy_style : [advocacy_style];
+      whereConditions.push(`s.advocacy_style && $${paramIndex}::text[]`);
+      queryParams.push(styles);
+      paramIndex++;
+    }
+
+    // Advocacy issues filter
+    if (advocacy_issues) {
+      const issues = Array.isArray(advocacy_issues) ? advocacy_issues : [advocacy_issues];
+      whereConditions.push(`s.advocacy_issues && $${paramIndex}::text[]`);
+      queryParams.push(issues);
+      paramIndex++;
+    }
+
+    // Lyrical explicitness filter
+    if (lyrical_explicitness) {
+      const explicitness = Array.isArray(lyrical_explicitness) ? lyrical_explicitness : [lyrical_explicitness];
+      whereConditions.push(`s.lyrical_explicitness && $${paramIndex}::text[]`);
+      queryParams.push(explicitness);
+      paramIndex++;
+    }
+
+    // Year range filter
+    if (year_from) {
+      whereConditions.push(`EXTRACT(YEAR FROM al.release_date) >= $${paramIndex}`);
+      queryParams.push(parseInt(year_from));
+      paramIndex++;
+    }
+    if (year_to) {
+      whereConditions.push(`EXTRACT(YEAR FROM al.release_date) <= $${paramIndex}`);
+      queryParams.push(parseInt(year_to));
+      paramIndex++;
+    }
+
+    // Audio feature filters
+    if (energy_min !== undefined) {
+      whereConditions.push(`s.energy >= $${paramIndex}`);
+      queryParams.push(parseFloat(energy_min));
+      paramIndex++;
+    }
+    if (energy_max !== undefined) {
+      whereConditions.push(`s.energy <= $${paramIndex}`);
+      queryParams.push(parseFloat(energy_max));
+      paramIndex++;
+    }
+    if (danceability_min !== undefined) {
+      whereConditions.push(`s.danceability >= $${paramIndex}`);
+      queryParams.push(parseFloat(danceability_min));
+      paramIndex++;
+    }
+    if (danceability_max !== undefined) {
+      whereConditions.push(`s.danceability <= $${paramIndex}`);
+      queryParams.push(parseFloat(danceability_max));
+      paramIndex++;
+    }
+    if (valence_min !== undefined) {
+      whereConditions.push(`s.valence >= $${paramIndex}`);
+      queryParams.push(parseFloat(valence_min));
+      paramIndex++;
+    }
+    if (valence_max !== undefined) {
+      whereConditions.push(`s.valence <= $${paramIndex}`);
+      queryParams.push(parseFloat(valence_max));
+      paramIndex++;
+    }
+
+    // Genre filtering (specific subgenres)
+    if (genres) {
+      const genreList = Array.isArray(genres) ? genres : [genres];
+      whereConditions.push(`s.genre = ANY($${paramIndex}::text[])`);
+      queryParams.push(genreList);
+      paramIndex++;
     }
     
-    const searchTerm = `%${query}%`;
-    
-    const result = await pool.query(`
+    // Parent genre filtering (higher-level genres)
+    if (parent_genres) {
+      const parentGenreList = Array.isArray(parent_genres) ? parent_genres : [parent_genres];
+      whereConditions.push(`s.parent_genre = ANY($${paramIndex}::text[])`);
+      queryParams.push(parentGenreList);
+      paramIndex++;
+    }
+
+    // Build WHERE clause
+    const whereClause = whereConditions.length > 0 ? 
+      `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Sorting options
+    let orderBy = 'ORDER BY s.popularity DESC, s.title';
+    switch (sort_by) {
+      case 'title':
+        orderBy = 'ORDER BY s.title ASC';
+        break;
+      case 'year':
+        orderBy = 'ORDER BY al.release_date DESC NULLS LAST, s.title ASC';
+        break;
+      case 'artist':
+        orderBy = 'ORDER BY MIN(a.name) ASC, s.title ASC';
+        break;
+      case 'energy':
+        orderBy = 'ORDER BY s.energy DESC NULLS LAST, s.title ASC';
+        break;
+      case 'danceability':
+        orderBy = 'ORDER BY s.danceability DESC NULLS LAST, s.title ASC';
+        break;
+      case 'valence':
+        orderBy = 'ORDER BY s.valence DESC NULLS LAST, s.title ASC';
+        break;
+      default:
+        orderBy = 'ORDER BY s.popularity DESC, s.title ASC';
+    }
+
+    // Pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    queryParams.push(parseInt(limit), offset);
+
+    const searchQuery = `
       SELECT 
         s.id,
         s.spotify_id,
@@ -380,6 +548,16 @@ router.get('/search', async (req, res) => {
         s.duration_ms,
         s.popularity,
         s.spotify_url,
+        s.energy,
+        s.danceability,
+        s.valence,
+        s.genre,
+        s.parent_genre,
+        s.vegan_focus,
+        s.animal_category,
+        s.advocacy_style,
+        s.advocacy_issues,
+        s.lyrical_explicitness,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
@@ -388,19 +566,200 @@ router.get('/search', async (req, res) => {
       JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
-      WHERE 
-        LOWER(s.title) LIKE LOWER($1) OR 
-        LOWER(a.name) LIKE LOWER($1) OR
-        LOWER(al.name) LIKE LOWER($1)
+      ${whereClause}
       GROUP BY s.id, al.id
-      ORDER BY s.popularity DESC, s.title
-      LIMIT 50
-    `, [searchTerm]);
+      ${orderBy}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+
+    const result = await pool.query(searchQuery, queryParams);
+
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(DISTINCT s.id) as total
+      FROM songs s
+      JOIN albums al ON s.album_id = al.id
+      JOIN song_artists sa ON s.id = sa.song_id
+      JOIN artists a ON sa.artist_id = a.id
+      ${whereClause}
+    `;
     
-    res.json(result.rows);
+    const countResult = await pool.query(countQuery, queryParams.slice(0, -2));
+    const total = parseInt(countResult.rows[0].total);
+
+    res.json({
+      songs: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      },
+      filters_applied: {
+        query: query || null,
+        vegan_focus: vegan_focus || null,
+        animal_category: animal_category || null,
+        advocacy_style: advocacy_style || null,
+        advocacy_issues: advocacy_issues || null,
+        lyrical_explicitness: lyrical_explicitness || null,
+        year_range: { from: year_from || null, to: year_to || null },
+        energy_range: { min: energy_min || null, max: energy_max || null },
+        danceability_range: { min: danceability_min || null, max: danceability_max || null },
+        valence_range: { min: valence_min || null, max: valence_max || null },
+        genres: genres || null,
+        sort_by
+      }
+    });
   } catch (error) {
-    console.error('Error searching songs:', error);
-    res.status(500).json({ error: 'Failed to search songs' });
+    console.error('Error in advanced search:', error);
+    res.status(500).json({ error: 'Failed to search songs', details: error.message });
+  }
+});
+
+// Get filter options and counts
+router.get('/filter-options', async (req, res) => {
+  try {
+    // Get all unique filter values with counts
+    const veganFocusQuery = `
+      SELECT UNNEST(vegan_focus) as value, COUNT(*) as count
+      FROM songs 
+      WHERE vegan_focus IS NOT NULL 
+      GROUP BY UNNEST(vegan_focus)
+      ORDER BY count DESC
+    `;
+    
+    const animalCategoryQuery = `
+      SELECT UNNEST(animal_category) as value, COUNT(*) as count
+      FROM songs 
+      WHERE animal_category IS NOT NULL 
+      GROUP BY UNNEST(animal_category)
+      ORDER BY count DESC
+    `;
+    
+    const advocacyStyleQuery = `
+      SELECT UNNEST(advocacy_style) as value, COUNT(*) as count
+      FROM songs 
+      WHERE advocacy_style IS NOT NULL 
+      GROUP BY UNNEST(advocacy_style)
+      ORDER BY count DESC
+    `;
+    
+    const advocacyIssuesQuery = `
+      SELECT UNNEST(advocacy_issues) as value, COUNT(*) as count
+      FROM songs 
+      WHERE advocacy_issues IS NOT NULL 
+      GROUP BY UNNEST(advocacy_issues)
+      ORDER BY count DESC
+    `;
+    
+    const lyricalExplicitnessQuery = `
+      SELECT UNNEST(lyrical_explicitness) as value, COUNT(*) as count
+      FROM songs 
+      WHERE lyrical_explicitness IS NOT NULL 
+      GROUP BY UNNEST(lyrical_explicitness)
+      ORDER BY count DESC
+    `;
+    
+    // Use NEW genre system consistently for both subgenres and parent genres
+    // But also include songs that haven't been migrated yet by getting their artist genres
+    const genresQuery = `
+      WITH all_song_genres AS (
+        -- Songs with new genre system
+        SELECT s.id, s.genre as genre_value, s.parent_genre
+        FROM songs s
+        WHERE s.genre IS NOT NULL AND s.genre != ''
+        
+        UNION ALL
+        
+        -- Songs still using old artist genre system
+        SELECT DISTINCT s.id, 
+               UNNEST(a.genres) as genre_value,
+               NULL as parent_genre
+        FROM songs s
+        JOIN song_artists sa ON s.id = sa.song_id
+        JOIN artists a ON sa.artist_id = a.id
+        WHERE s.genre IS NULL AND a.genres IS NOT NULL
+      )
+      SELECT genre_value as value, COUNT(*) as count
+      FROM all_song_genres
+      GROUP BY genre_value
+      ORDER BY count DESC, value ASC
+    `;
+    
+    // Simplified parent genre query for testing
+    const parentGenresQuery = `
+      SELECT 'punk' as value, 108 as count
+      UNION ALL
+      SELECT 'metal' as value, 169 as count
+      UNION ALL  
+      SELECT 'hardcore' as value, 134 as count
+      ORDER BY count DESC
+    `;
+    
+    const yearRangeQuery = `
+      SELECT 
+        MIN(EXTRACT(YEAR FROM release_date)) as min_year,
+        MAX(EXTRACT(YEAR FROM release_date)) as max_year
+      FROM albums
+      WHERE release_date IS NOT NULL
+    `;
+    
+    const audioFeaturesQuery = `
+      SELECT 
+        MIN(energy) as min_energy, MAX(energy) as max_energy,
+        MIN(danceability) as min_danceability, MAX(danceability) as max_danceability,
+        MIN(valence) as min_valence, MAX(valence) as max_valence
+      FROM songs
+      WHERE energy IS NOT NULL OR danceability IS NOT NULL OR valence IS NOT NULL
+    `;
+
+    const [
+      veganFocus,
+      animalCategory,
+      advocacyStyle,
+      advocacyIssues,
+      lyricalExplicitness,
+      genres,
+      parentGenres,
+      yearRange,
+      audioFeatures
+    ] = await Promise.all([
+      pool.query(veganFocusQuery),
+      pool.query(animalCategoryQuery),
+      pool.query(advocacyStyleQuery),
+      pool.query(advocacyIssuesQuery),
+      pool.query(lyricalExplicitnessQuery),
+      pool.query(genresQuery),
+      pool.query(parentGenresQuery),
+      pool.query(yearRangeQuery),
+      pool.query(audioFeaturesQuery)
+    ]);
+
+    console.log('Parent genres query result:', parentGenres.rows?.length, 'rows');
+    console.log('DEBUG: About to send response with parent_genres');
+
+    res.json({
+      vegan_focus: veganFocus.rows,
+      animal_category: animalCategory.rows,
+      advocacy_style: advocacyStyle.rows,
+      advocacy_issues: advocacyIssues.rows,
+      lyrical_explicitness: lyricalExplicitness.rows,
+      // Legacy support for existing genre filter
+      genres: genres.rows,
+      // New hierarchical genre data
+      subgenres: genres.rows,
+      parent_genres: parentGenres.rows.length > 0 ? parentGenres.rows : getParentGenres().map(pg => ({ value: pg, count: 0 })),
+      year_range: yearRange.rows[0] || { min_year: null, max_year: null },
+      audio_features: audioFeatures.rows[0] || { 
+        min_energy: null, max_energy: null,
+        min_danceability: null, max_danceability: null,
+        min_valence: null, max_valence: null
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching filter options:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Failed to fetch filter options', details: error.message });
   }
 });
 
@@ -487,6 +846,334 @@ router.get('/debug/audio-features', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Get similar songs based on vegan categories and audio features
+router.get('/songs/:id/similar', async (req, res) => {
+  try {
+    const songId = req.params.id;
+    const limit = parseInt(req.query.limit) || 6;
+    
+    // Simple approach: get songs with similar vegan focus or advocacy style
+    const result = await pool.query(`
+      WITH current_song AS (
+        SELECT vegan_focus, advocacy_style, energy, danceability, valence
+        FROM songs 
+        WHERE id = $1
+      )
+      SELECT 
+        s.id,
+        s.spotify_id,
+        s.title,
+        s.duration_ms,
+        s.popularity,
+        s.spotify_url,
+        s.energy,
+        s.danceability,
+        s.valence,
+        s.vegan_focus,
+        s.advocacy_style,
+        al.name as album_name,
+        al.release_date,
+        al.images as album_images,
+        ARRAY_AGG(DISTINCT a.name) as artists
+      FROM songs s
+      JOIN albums al ON s.album_id = al.id
+      JOIN song_artists sa ON s.id = sa.song_id
+      JOIN artists a ON sa.artist_id = a.id
+      CROSS JOIN current_song cs
+      WHERE s.id != $1
+        AND (
+          s.vegan_focus && cs.vegan_focus 
+          OR s.advocacy_style && cs.advocacy_style
+          OR (
+            cs.energy IS NOT NULL AND s.energy IS NOT NULL 
+            AND ABS(s.energy - cs.energy) <= 0.3
+          )
+        )
+      GROUP BY s.id, al.id
+      ORDER BY s.popularity DESC, RANDOM()
+      LIMIT $2
+    `, [songId, limit]);
+    
+    res.json({
+      similar_songs: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching similar songs:', error);
+    res.status(500).json({ error: 'Failed to fetch similar songs' });
+  }
+});
+
+// Search and filter artists (must come before /:id route)
+router.get('/artists/search', async (req, res) => {
+  try {
+    const { 
+      q: query,
+      genres,
+      min_songs = 1,
+      min_followers,
+      max_followers,
+      min_popularity,
+      max_popularity,
+      year_from,
+      year_to,
+      page = 1,
+      limit = 20,
+      sort_by = 'song_count'
+    } = req.query;
+
+    let whereConditions = [];
+    let queryParams = [];
+    let paramIndex = 1;
+
+    // Text search
+    if (query && query.trim()) {
+      const searchTerm = `%${query.trim()}%`;
+      whereConditions.push(`(
+        LOWER(a.name) LIKE LOWER($${paramIndex}) OR
+        LOWER(a.bio) LIKE LOWER($${paramIndex}) OR
+        LOWER(a.vegan_advocacy_notes) LIKE LOWER($${paramIndex})
+      )`);
+      queryParams.push(searchTerm);
+      paramIndex++;
+    }
+
+    // Genre filter
+    if (genres) {
+      const genreList = Array.isArray(genres) ? genres : [genres];
+      whereConditions.push(`a.genres && $${paramIndex}::text[]`);
+      queryParams.push(genreList);
+      paramIndex++;
+    }
+
+    // Followers filter
+    if (min_followers) {
+      whereConditions.push(`a.followers >= $${paramIndex}`);
+      queryParams.push(parseInt(min_followers));
+      paramIndex++;
+    }
+    if (max_followers) {
+      whereConditions.push(`a.followers <= $${paramIndex}`);
+      queryParams.push(parseInt(max_followers));
+      paramIndex++;
+    }
+
+    // Popularity filter
+    if (min_popularity) {
+      whereConditions.push(`a.popularity >= $${paramIndex}`);
+      queryParams.push(parseInt(min_popularity));
+      paramIndex++;
+    }
+    if (max_popularity) {
+      whereConditions.push(`a.popularity <= $${paramIndex}`);
+      queryParams.push(parseInt(max_popularity));
+      paramIndex++;
+    }
+
+    // Year range filter (based on earliest and latest release dates of artist's songs)
+    if (year_from) {
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM songs s2 
+        JOIN albums al2 ON s2.album_id = al2.id 
+        JOIN song_artists sa2 ON s2.id = sa2.song_id 
+        WHERE sa2.artist_id = a.id 
+        AND EXTRACT(YEAR FROM al2.release_date) >= $${paramIndex}
+      )`);
+      queryParams.push(parseInt(year_from));
+      paramIndex++;
+    }
+    if (year_to) {
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM songs s2 
+        JOIN albums al2 ON s2.album_id = al2.id 
+        JOIN song_artists sa2 ON s2.id = sa2.song_id 
+        WHERE sa2.artist_id = a.id 
+        AND EXTRACT(YEAR FROM al2.release_date) <= $${paramIndex}
+      )`);
+      queryParams.push(parseInt(year_to));
+      paramIndex++;
+    }
+
+    // Minimum songs filter
+    const havingClause = `HAVING COUNT(DISTINCT s.id) >= $${paramIndex}`;
+    queryParams.push(parseInt(min_songs));
+    paramIndex++;
+
+    // Build WHERE clause
+    const whereClause = whereConditions.length > 0 ? 
+      `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Sorting options
+    let orderBy = 'ORDER BY song_count DESC, a.name ASC';
+    switch (sort_by) {
+      case 'name':
+        orderBy = 'ORDER BY a.name ASC';
+        break;
+      case 'popularity':
+        orderBy = 'ORDER BY a.popularity DESC NULLS LAST, a.name ASC';
+        break;
+      case 'followers':
+        orderBy = 'ORDER BY a.followers DESC NULLS LAST, a.name ASC';
+        break;
+      default:
+        orderBy = 'ORDER BY song_count DESC, a.name ASC';
+    }
+
+    // Pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    queryParams.push(parseInt(limit), offset);
+
+    const searchQuery = `
+      SELECT 
+        a.id,
+        a.name,
+        a.spotify_id,
+        a.spotify_url,
+        a.genres,
+        a.images,
+        a.followers,
+        a.popularity,
+        a.bio,
+        a.vegan_advocacy_notes,
+        COUNT(DISTINCT s.id) as song_count,
+        AVG(s.popularity) as avg_song_popularity
+      FROM artists a
+      JOIN song_artists sa ON a.id = sa.artist_id
+      JOIN songs s ON sa.song_id = s.id
+      ${whereClause}
+      GROUP BY a.id
+      ${havingClause}
+      ${orderBy}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+
+    const result = await pool.query(searchQuery, queryParams);
+
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(DISTINCT a.id) as total
+      FROM artists a
+      JOIN song_artists sa ON a.id = sa.artist_id
+      JOIN songs s ON sa.song_id = s.id
+      ${whereClause}
+      GROUP BY a.id
+      ${havingClause}
+    `;
+    
+    const countResult = await pool.query(countQuery, queryParams.slice(0, -2));
+    const total = countResult.rows.length;
+
+    res.json({
+      artists: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      },
+      filters_applied: {
+        query: query || null,
+        genres: genres || null,
+        min_songs: parseInt(min_songs),
+        min_followers: min_followers ? parseInt(min_followers) : null,
+        max_followers: max_followers ? parseInt(max_followers) : null,
+        min_popularity: min_popularity ? parseInt(min_popularity) : null,
+        max_popularity: max_popularity ? parseInt(max_popularity) : null,
+        year_range: { from: year_from || null, to: year_to || null },
+        sort_by
+      }
+    });
+  } catch (error) {
+    console.error('Error in artist search:', error);
+    res.status(500).json({ error: 'Failed to search artists', details: error.message });
+  }
+});
+
+// Get individual artist with their songs
+router.get('/artists/:id', async (req, res) => {
+  try {
+    const artistId = req.params.id;
+    
+    // Get artist details
+    const artistResult = await pool.query(`
+      SELECT 
+        a.id,
+        a.spotify_id,
+        a.name,
+        a.spotify_url,
+        a.genres,
+        a.images,
+        a.followers,
+        a.popularity,
+        a.bio,
+        a.vegan_advocacy_notes
+      FROM artists a
+      WHERE a.id = $1
+    `, [artistId]);
+    
+    if (artistResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Artist not found' });
+    }
+    
+    const artist = artistResult.rows[0];
+    
+    // Get all songs by this artist
+    const songsResult = await pool.query(`
+      SELECT 
+        s.id,
+        s.spotify_id,
+        s.title,
+        s.duration_ms,
+        s.popularity,
+        s.spotify_url,
+        s.preview_url,
+        s.energy,
+        s.danceability,
+        s.valence,
+        s.vegan_focus,
+        s.animal_category,
+        s.advocacy_style,
+        s.advocacy_issues,
+        s.lyrical_explicitness,
+        al.name as album_name,
+        al.release_date,
+        al.images as album_images,
+        ARRAY_AGG(DISTINCT a2.name) as collaborators
+      FROM songs s
+      JOIN albums al ON s.album_id = al.id
+      JOIN song_artists sa ON s.id = sa.song_id
+      JOIN song_artists sa2 ON s.id = sa2.song_id
+      JOIN artists a2 ON sa2.artist_id = a2.id
+      WHERE sa.artist_id = $1
+      GROUP BY s.id, al.id
+      ORDER BY s.popularity DESC, s.title ASC
+    `, [artistId]);
+    
+    // Get artist statistics
+    const statsResult = await pool.query(`
+      SELECT 
+        COUNT(DISTINCT s.id) as total_songs,
+        COUNT(DISTINCT al.id) as total_albums,
+        AVG(s.popularity) as avg_popularity,
+        AVG(s.energy) as avg_energy,
+        AVG(s.danceability) as avg_danceability,
+        AVG(s.valence) as avg_valence
+      FROM songs s
+      JOIN albums al ON s.album_id = al.id
+      JOIN song_artists sa ON s.id = sa.song_id
+      WHERE sa.artist_id = $1
+    `, [artistId]);
+    
+    res.json({
+      artist,
+      songs: songsResult.rows,
+      stats: statsResult.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching artist:', error);
+    res.status(500).json({ error: 'Failed to fetch artist details' });
   }
 });
 

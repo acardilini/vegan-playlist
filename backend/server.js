@@ -14,8 +14,11 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend server is running!' });
 });
 
-// Spotify routes (we'll add these next)
+// Spotify routes
 app.use('/api/spotify', require('./routes/spotify'));
+
+// Admin routes
+app.use('/api/admin', require('./routes/admin'));
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

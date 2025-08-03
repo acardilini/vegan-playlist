@@ -37,14 +37,39 @@ export const spotifyService = {
     }
   },
 
-  // Search songs
-  searchSongs: async (query) => {
+  // Advanced search songs with filters
+  searchSongs: async (searchParams) => {
     try {
-      const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+      const params = new URLSearchParams();
+      
+      // Add all search parameters
+      Object.entries(searchParams).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          if (Array.isArray(value)) {
+            value.forEach(v => params.append(key, v));
+          } else {
+            params.append(key, value);
+          }
+        }
+      });
+      
+      const response = await fetch(`${API_BASE}/search?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to search songs');
       return await response.json();
     } catch (error) {
       console.error('Error searching songs:', error);
+      throw error;
+    }
+  },
+
+  // Get filter options and counts
+  getFilterOptions: async () => {
+    try {
+      const response = await fetch(`${API_BASE}/filter-options`);
+      if (!response.ok) throw new Error('Failed to fetch filter options');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching filter options:', error);
       throw error;
     }
   },
@@ -57,6 +82,55 @@ export const spotifyService = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching stats:', error);
+      throw error;
+    }
+  },
+
+  // Get similar songs
+  getSimilarSongs: async (songId, limit = 6) => {
+    try {
+      const response = await fetch(`${API_BASE}/songs/${songId}/similar?limit=${limit}`);
+      if (!response.ok) throw new Error('Failed to fetch similar songs');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching similar songs:', error);
+      throw error;
+    }
+  },
+
+  // Get single artist by ID with their songs
+  getArtist: async (id) => {
+    try {
+      const response = await fetch(`${API_BASE}/artists/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch artist');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching artist:', error);
+      throw error;
+    }
+  },
+
+  // Search and filter artists
+  searchArtists: async (searchParams) => {
+    try {
+      const params = new URLSearchParams();
+      
+      // Add all search parameters
+      Object.entries(searchParams).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          if (Array.isArray(value)) {
+            value.forEach(v => params.append(key, v));
+          } else {
+            params.append(key, value);
+          }
+        }
+      });
+      
+      const response = await fetch(`${API_BASE}/artists/search?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to search artists');
+      return await response.json();
+    } catch (error) {
+      console.error('Error searching artists:', error);
       throw error;
     }
   }

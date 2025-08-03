@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(npm start)",
+      "Bash(npm run dev:*)",
+      "Bash(psql:*)",
+      "Bash(node:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(timeout:*)"
+    ],
+    "deny": []
+  }
+}

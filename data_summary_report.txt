@@ -1,0 +1,123 @@
+# VEGAN PLAYLIST - DATA SUMMARY REPORT
+Generated: 04/08/2025, 1:18:14 am
+
+## OVERVIEW
+Total Songs in Database: 691
+Songs with Genre Data: 528
+Songs with Parent Genre: 528
+
+## GENRE BREAKDOWN
+
+### Parent Genres:
+metal: 169 songs
+hardcore: 134 songs
+punk: 95 songs
+blues: 27 songs
+folk: 23 songs
+reggae: 23 songs
+electronic: 15 songs
+hip-hop: 11 songs
+other: 10 songs
+rock: 10 songs
+pop: 7 songs
+jazz: 2 songs
+soul: 2 songs
+
+### Top 20 Specific Genres:
+hardcore: 116 songs
+death metal: 101 songs
+hardcore punk: 71 songs
+groove metal: 34 songs
+blues: 27 songs
+deathcore: 22 songs
+melodic hardcore: 18 songs
+dub: 14 songs
+folk punk: 13 songs
+punk: 11 songs
+anti-folk: 8 songs
+reggae: 8 songs
+industrial: 7 songs
+metalcore: 6 songs
+queercore: 5 songs
+christian: 5 songs
+hip hop: 5 songs
+synthpop: 4 songs
+pop punk: 4 songs
+footwork: 3 songs
+
+## VEGAN FOCUS CATEGORIES:
+No vegan focus data currently categorized.
+
+## ANIMAL CATEGORIES:
+No animal category data currently categorized.
+
+## ADVOCACY STYLES:
+No advocacy style data currently categorized.
+
+## AUDIO FEATURES ANALYSIS:
+Songs with Energy data: 691
+Songs with Danceability data: 691
+Songs with Valence data: 691
+Songs with Tempo data: 0
+
+Average Audio Features:
+- Energy: 0.762 (0.0 = low energy, 1.0 = high energy)
+- Danceability: 0.385 (0.0 = less danceable, 1.0 = more danceable)
+- Valence: 0.333 (0.0 = negative/sad, 1.0 = positive/happy)
+- Tempo: null BPM
+
+## DATA COMPLETENESS:
+Genre Migration: 76.4% complete
+Audio Features: 100.0% complete
+
+## FILES GENERATED:
+1. vegan_playlist_complete_data.csv - Complete spreadsheet with all songs and categories
+2. data_summary_report.txt - This summary report
+
+## COLUMN DESCRIPTIONS:
+
+### Basic Song Info:
+- ID: Unique song identifier
+- Title: Song title
+- Artists: All artists (separated by semicolons)
+- Album: Album name
+- Release Date: Album release date
+- Duration (ms): Song length in milliseconds
+- Popularity: Spotify popularity score (0-100)
+
+### Genre Classification:
+- Genre: Specific genre (e.g., "hardcore punk", "metalcore")
+- Parent Genre: Broader category (e.g., "punk", "metal")
+- Artist Genres: Original Spotify artist genres
+
+### Vegan/Advocacy Categories:
+- Vegan Focus: Type of vegan messaging
+- Animal Category: Specific animals mentioned
+- Advocacy Style: Approach to advocacy
+- Advocacy Issues: Specific issues addressed
+- Lyrical Explicitness: How explicit the vegan message is
+
+### Audio Features (Spotify API):
+- Energy: Perceptual measure of intensity (0.0-1.0)
+- Danceability: How suitable for dancing (0.0-1.0)
+- Valence: Musical positivity/happiness (0.0-1.0)
+- Tempo: BPM (beats per minute)
+- Acousticness: Whether track is acoustic (0.0-1.0)
+- Instrumentalness: Likelihood of no vocals (0.0-1.0)
+- Liveness: Presence of audience/live recording (0.0-1.0)
+- Speechiness: Presence of spoken words (0.0-1.0)
+- Loudness: Overall loudness in dB
+- Key: Musical key (0-11, C=0, C#=1, etc.)
+- Mode: Major (1) or minor (0)
+- Time Signature: Beats per measure
+
+### Metadata:
+- Explicit: Contains explicit content
+- Data Source: "spotify" or "manual"
+- Date Added: When added to database
+- Spotify ID: Unique Spotify identifier
+- Spotify URL: Link to song on Spotify
+- Preview URL: 30-second preview link
+- Album Type: single, album, compilation
+- Total Tracks: Number of tracks in album
+- Artist Spotify IDs: Unique Spotify identifiers for artists
