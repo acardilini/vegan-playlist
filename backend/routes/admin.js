@@ -1,7 +1,18 @@
 const express = require('express');
 const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/genreMapping');
+const multer = require('multer');
+const csv = require('csv-parser');
+const fs = require('fs');
 const router = express.Router();
+
+// Configure multer for file uploads
+const upload = multer({ dest: 'uploads/' });
+
+// Test route
+router.get('/test', (req, res) => {
+  res.json({ message: 'Admin routes are working!' });
+});
 
 // Get all songs (both Spotify and manual) for management
 router.get('/all-songs', async (req, res) => {
@@ -716,6 +727,171 @@ router.post('/categorize-songs', async (req, res) => {
   } catch (error) {
     console.error('Error categorizing songs:', error);
     res.status(500).json({ error: 'Failed to categorize songs', details: error.message });
+  }
+});
+
+// Bulk upload CSV endpoint
+router.post('/bulk-upload', upload.single('csv'), async (req, res) => {
+  let filePath = null;
+  
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No CSV file uploaded' });
+    }
+
+    filePath = req.file.path;
+    const results = [];
+    const errors = [];
+    let processed = 0;
+    let updated = 0;
+
+    // Parse CSV file
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(filePath)
+        .pipe(csv())
+        .on('data', (data) => results.push(data))
+        .on('end', resolve)
+        .on('error', reject);
+    });
+
+    console.log(`Processing ${results.length} rows from CSV`);
+
+    // Process each row
+    for (const row of results) {
+      processed++;
+      
+      try {
+        const songId = parseInt(row.ID || row.id);
+        
+        if (!songId || isNaN(songId)) {
+          errors.push(`Row ${processed}: Invalid or missing song ID`);
+          continue;
+        }
+
+        // Parse array fields (comma-separated values)
+        const parseArrayField = (value) => {
+          if (!value || value.trim() === '') return null;
+          return value.split(',').map(v => v.trim()).filter(v => v.length > 0);
+        };
+
+        const updateData = {
+          vegan_focus: parseArrayField(row['Vegan Focus'] || row.vegan_focus),
+          animal_category: parseArrayField(row['Animal Category'] || row.animal_category),
+          advocacy_style: parseArrayField(row['Advocacy Style'] || row.advocacy_style),
+          advocacy_issues: parseArrayField(row['Advocacy Issues'] || row.advocacy_issues),
+          lyrical_explicitness: parseArrayField(row['Lyrical Explicitness'] || row.lyrical_explicitness)
+        };
+
+        // Update song in database
+        const updateResult = await pool.query(`
+          UPDATE songs 
+          SET 
+            vegan_focus = $2,
+            animal_category = $3,
+            advocacy_style = $4,
+            advocacy_issues = $5,
+            lyrical_explicitness = $6,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = $1
+        `, [
+          songId,
+          updateData.vegan_focus,
+          updateData.animal_category,
+          updateData.advocacy_style,
+          updateData.advocacy_issues,
+          updateData.lyrical_explicitness
+        ]);
+
+        if (updateResult.rowCount > 0) {
+          updated++;
+        } else {
+          errors.push(`Row ${processed}: Song ID ${songId} not found`);
+        }
+
+      } catch (rowError) {
+        console.error(`Error processing row ${processed}:`, rowError);
+        errors.push(`Row ${processed}: ${rowError.message}`);
+      }
+    }
+
+    // Clean up uploaded file
+    if (filePath) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.json({
+      success: true,
+      processed,
+      updated,
+      errors: errors.length,
+      errorDetails: errors.slice(0, 10) // Return first 10 errors
+    });
+
+  } catch (error) {
+    console.error('Bulk upload error:', error);
+    
+    // Clean up uploaded file on error
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to process CSV upload', 
+      details: error.message 
+    });
+  }
+});
+
+// Update single song endpoint (for individual edits)
+router.put('/update-song/:id', async (req, res) => {
+  try {
+    console.log('PUT /songs/:id called with params:', req.params);
+    console.log('Request body:', req.body);
+    
+    const songId = parseInt(req.params.id);
+    const {
+      vegan_focus,
+      animal_category,
+      advocacy_style,
+      advocacy_issues,
+      lyrical_explicitness
+    } = req.body;
+
+    const result = await pool.query(`
+      UPDATE songs 
+      SET 
+        vegan_focus = $2,
+        animal_category = $3,
+        advocacy_style = $4,
+        advocacy_issues = $5,
+        lyrical_explicitness = $6,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING id, title
+    `, [
+      songId,
+      vegan_focus || null,
+      animal_category || null,
+      advocacy_style || null,
+      advocacy_issues || null,
+      lyrical_explicitness || null
+    ]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Song not found' });
+    }
+
+    res.json({
+      success: true,
+      song: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Error updating song:', error);
+    res.status(500).json({ 
+      error: 'Failed to update song', 
+      details: error.message 
+    });
   }
 });
 

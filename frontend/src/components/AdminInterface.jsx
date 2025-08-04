@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import BulkEditModal from './BulkEditModal';
 
 const API_BASE = 'http://localhost:5000/api/admin';
 
@@ -8,6 +9,7 @@ function AdminInterface() {
   const [categorOptions, setCategorOptions] = useState({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingSong, setEditingSong] = useState(null);
@@ -535,6 +537,12 @@ function AdminInterface() {
           <p>Manage songs and categorizations</p>
         </div>
         <div className="admin-actions">
+          <button 
+            className="compact-btn secondary"
+            onClick={() => setShowBulkEdit(true)}
+          >
+            📊 Bulk Edit Songs
+          </button>
           <button 
             className="compact-btn primary"
             onClick={() => setShowAddForm(!showAddForm)}
@@ -1589,6 +1597,11 @@ function AdminInterface() {
           )}
         </div>
       )}
+      {/* Bulk Edit Modal */}
+      <BulkEditModal 
+        isOpen={showBulkEdit}
+        onClose={() => setShowBulkEdit(false)}
+      />
     </div>
   );
 }

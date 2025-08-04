@@ -582,12 +582,7 @@ function SongCard({ song, songId }) {
 
   // Get primary genre for display
   const getPrimaryGenre = () => {
-    // Use the new genre fields first
-    if (song.genre) {
-      return song.genre;
-    }
-    
-    // Fallback to legacy artist_genres if available
+    // SIMPLIFIED: Use artist genres only
     if (song.artist_genres && song.artist_genres.length > 0) {
       const flatGenres = song.artist_genres.flat();
       return flatGenres[0] || null;
@@ -596,9 +591,35 @@ function SongCard({ song, songId }) {
     return null;
   };
 
-  // Get parent genre for display
+  // SIMPLIFIED: Calculate parent genre from artist genres directly
   const getParentGenre = () => {
-    return song.parent_genre || null;
+    if (!song.artist_genres || song.artist_genres.length === 0) return null;
+    
+    const genreMapping = {
+      'metal': ['metalcore', 'deathcore', 'mathcore', 'groove metal', 'death metal', 'black metal', 'thrash metal', 'doom metal', 'progressive metal', 'nu metal', 'melodic death metal', 'sludge metal', 'stoner metal', 'grindcore', 'heavy metal', 'alternative metal', 'industrial metal', 'speed metal', 'rap metal', 'djent'],
+      'punk': ['punk', 'hardcore punk', 'skate punk', 'ska punk', 'folk punk', 'pop punk', 'post-punk', 'anarcho-punk', 'street punk', 'queercore', 'riot grrrl', 'indie punk', 'celtic punk', 'proto-punk', 'egg punk'],
+      'hardcore': ['hardcore', 'melodic hardcore', 'post-hardcore', 'crossover hardcore', 'screamo', 'midwest emo'],
+      'rock': ['blues rock', 'hard rock', 'alternative rock', 'indie rock', 'classic rock', 'progressive rock', 'psychedelic rock', 'garage rock', 'gothic rock', 'industrial rock', 'art rock', 'acid rock', 'grunge', 'post-grunge', 'britpop', 'madchester', 'krautrock', 'noise rock', 'neo-psychedelic', 'folk rock', 'celtic rock', 'brazilian rock'],
+      'folk': ['folk punk', 'anti-folk', 'indie folk', 'folk rock', 'acoustic folk', 'contemporary folk', 'folk', 'traditional folk', 'americana', 'celtic', 'singer-songwriter', 'country blues'],
+      'blues': ['blues', 'blues rock', 'electric blues', 'acoustic blues', 'delta blues'],
+      'pop': ['pop', 'indie pop', 'electropop', 'synthpop', 'power pop', 'dream pop', 'jangle pop', 'swedish pop', 'german pop', 'new wave', 'pop soul'],
+      'electronic': ['electronic', 'ambient', 'techno', 'house', 'drum and bass', 'dubstep', 'edm', 'industrial', 'ebm', 'darkwave', 'coldwave', 'cold wave', 'downtempo', 'trip hop', 'glitch', 'witch house', 'footwork', 'bassline', 'riddim', 'minimalism', 'neoclassical'],
+      'hip-hop': ['hip hop', 'rap', 'conscious hip hop', 'alternative hip hop', 'underground hip hop', 'east coast hip hop', 'experimental hip hop', 'hardcore hip hop', 'old school hip hop', 'gangster rap', 'horrorcore', 'grime', 'uk grime'],
+      'reggae': ['reggae', 'ska', 'dub', 'roots reggae', 'nz reggae', 'lovers rock', 'ragga', 'dancehall', 'rocksteady'],
+      'jazz': ['free jazz', 'hard bop'],
+      'soul': ['philly soul', 'pop soul', 'gospel', 'gospel r&b']
+    };
+    
+    // Find parent genre for the first artist genre
+    const flatGenres = song.artist_genres.flat();
+    for (const genre of flatGenres) {
+      for (const [parent, subgenres] of Object.entries(genreMapping)) {
+        if (subgenres.includes(genre.toLowerCase())) {
+          return parent;
+        }
+      }
+    }
+    return 'other';
   };
 
   return (

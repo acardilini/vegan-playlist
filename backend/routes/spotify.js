@@ -233,43 +233,25 @@ router.get('/songs/featured', async (req, res) => {
         s.valence,
         s.tempo,
         s.custom_mood,
-        s.genre,
-        s.parent_genre,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
-        ARRAY_AGG(DISTINCT a.name) as artists
+        ARRAY_AGG(DISTINCT a.name) as artists,
+        ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
       FROM songs s
       JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
+      LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
       GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url, 
                s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
-               s.genre, s.parent_genre, al.name, al.release_date, al.images
+               al.name, al.release_date, al.images
       ORDER BY RANDOM()
       LIMIT $1
     `, [limit]);
     
-    // Post-process to add artist genres
-    const songsWithGenres = await Promise.all(result.rows.map(async (song) => {
-      try {
-        const genreResult = await pool.query(`
-          SELECT DISTINCT UNNEST(a.genres) as genre
-          FROM artists a
-          JOIN song_artists sa ON a.id = sa.artist_id
-          WHERE sa.song_id = $1 AND a.genres IS NOT NULL
-        `, [song.id]);
-        
-        song.artist_genres = genreResult.rows.map(row => row.genre);
-        return song;
-      } catch (error) {
-        console.warn('Error getting genres for song', song.id, error.message);
-        song.artist_genres = [];
-        return song;
-      }
-    }));
-    
-    res.json(songsWithGenres);
+    // SIMPLIFIED: No post-processing needed, artist_genres are included in query
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching enhanced featured songs:', error);
     res.status(500).json({ 
@@ -491,20 +473,57 @@ router.get('/search', async (req, res) => {
       paramIndex++;
     }
 
-    // Genre filtering (specific subgenres)
+    // Genre filtering (specific subgenres) - SIMPLIFIED: Use artist genres
     if (genres) {
       const genreList = Array.isArray(genres) ? genres : [genres];
-      whereConditions.push(`s.genre = ANY($${paramIndex}::text[])`);
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM song_artists sa2 
+        JOIN artists a2 ON sa2.artist_id = a2.id 
+        WHERE sa2.song_id = s.id 
+        AND a2.genres && $${paramIndex}::text[]
+      )`);
       queryParams.push(genreList);
       paramIndex++;
     }
     
-    // Parent genre filtering (higher-level genres)
+    // Parent genre filtering (higher-level genres) - SIMPLIFIED: Use artist genres
     if (parent_genres) {
       const parentGenreList = Array.isArray(parent_genres) ? parent_genres : [parent_genres];
-      whereConditions.push(`s.parent_genre = ANY($${paramIndex}::text[])`);
-      queryParams.push(parentGenreList);
-      paramIndex++;
+      
+      // Map parent genres to their subgenres for filtering
+      const genreMapping = {
+        'metal': ['metalcore', 'deathcore', 'mathcore', 'groove metal', 'death metal', 'black metal', 'thrash metal', 'doom metal', 'progressive metal', 'nu metal', 'melodic death metal', 'sludge metal', 'stoner metal', 'grindcore', 'heavy metal', 'alternative metal', 'industrial metal', 'speed metal', 'rap metal', 'djent'],
+        'punk': ['punk', 'hardcore punk', 'skate punk', 'ska punk', 'folk punk', 'pop punk', 'post-punk', 'anarcho-punk', 'street punk', 'queercore', 'riot grrrl', 'indie punk', 'celtic punk', 'proto-punk', 'egg punk'],
+        'hardcore': ['hardcore', 'melodic hardcore', 'post-hardcore', 'crossover hardcore', 'screamo', 'midwest emo'],
+        'rock': ['blues rock', 'hard rock', 'alternative rock', 'indie rock', 'classic rock', 'progressive rock', 'psychedelic rock', 'garage rock', 'gothic rock', 'industrial rock', 'art rock', 'acid rock', 'grunge', 'post-grunge', 'britpop', 'madchester', 'krautrock', 'noise rock', 'neo-psychedelic', 'folk rock', 'celtic rock', 'brazilian rock'],
+        'folk': ['folk punk', 'anti-folk', 'indie folk', 'folk rock', 'acoustic folk', 'contemporary folk', 'folk', 'traditional folk', 'americana', 'celtic', 'singer-songwriter', 'country blues'],
+        'blues': ['blues', 'blues rock', 'electric blues', 'acoustic blues', 'delta blues'],
+        'pop': ['pop', 'indie pop', 'electropop', 'synthpop', 'power pop', 'dream pop', 'jangle pop', 'swedish pop', 'german pop', 'new wave', 'pop soul'],
+        'electronic': ['electronic', 'ambient', 'techno', 'house', 'drum and bass', 'dubstep', 'edm', 'industrial', 'ebm', 'darkwave', 'coldwave', 'cold wave', 'downtempo', 'trip hop', 'glitch', 'witch house', 'footwork', 'bassline', 'riddim', 'minimalism', 'neoclassical'],
+        'hip-hop': ['hip hop', 'rap', 'conscious hip hop', 'alternative hip hop', 'underground hip hop', 'east coast hip hop', 'experimental hip hop', 'hardcore hip hop', 'old school hip hop', 'gangster rap', 'horrorcore', 'grime', 'uk grime'],
+        'reggae': ['reggae', 'ska', 'dub', 'roots reggae', 'nz reggae', 'lovers rock', 'ragga', 'dancehall', 'rocksteady'],
+        'jazz': ['free jazz', 'hard bop'],
+        'soul': ['philly soul', 'pop soul', 'gospel', 'gospel r&b']
+      };
+      
+      // Get all subgenres for the selected parent genres
+      const allSubgenres = [];
+      parentGenreList.forEach(parent => {
+        if (genreMapping[parent]) {
+          allSubgenres.push(...genreMapping[parent]);
+        }
+      });
+      
+      if (allSubgenres.length > 0) {
+        whereConditions.push(`EXISTS (
+          SELECT 1 FROM song_artists sa2 
+          JOIN artists a2 ON sa2.artist_id = a2.id 
+          WHERE sa2.song_id = s.id 
+          AND a2.genres && $${paramIndex}::text[]
+        )`);
+        queryParams.push(allSubgenres);
+        paramIndex++;
+      }
     }
 
     // Build WHERE clause
@@ -551,8 +570,6 @@ router.get('/search', async (req, res) => {
         s.energy,
         s.danceability,
         s.valence,
-        s.genre,
-        s.parent_genre,
         s.vegan_focus,
         s.animal_category,
         s.advocacy_style,
@@ -561,11 +578,13 @@ router.get('/search', async (req, res) => {
         al.name as album_name,
         al.release_date,
         al.images as album_images,
-        ARRAY_AGG(DISTINCT a.name) as artists
+        ARRAY_AGG(DISTINCT a.name) as artists,
+        ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
       FROM songs s
       JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
+      LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
       ${whereClause}
       GROUP BY s.id, al.id
       ${orderBy}
@@ -660,40 +679,50 @@ router.get('/filter-options', async (req, res) => {
       ORDER BY count DESC
     `;
     
-    // Use NEW genre system consistently for both subgenres and parent genres
-    // But also include songs that haven't been migrated yet by getting their artist genres
+    // SIMPLIFIED: Use artist genres directly - this is the source of truth
     const genresQuery = `
-      WITH all_song_genres AS (
-        -- Songs with new genre system
-        SELECT s.id, s.genre as genre_value, s.parent_genre
-        FROM songs s
-        WHERE s.genre IS NOT NULL AND s.genre != ''
-        
-        UNION ALL
-        
-        -- Songs still using old artist genre system
-        SELECT DISTINCT s.id, 
-               UNNEST(a.genres) as genre_value,
-               NULL as parent_genre
-        FROM songs s
-        JOIN song_artists sa ON s.id = sa.song_id
-        JOIN artists a ON sa.artist_id = a.id
-        WHERE s.genre IS NULL AND a.genres IS NOT NULL
-      )
-      SELECT genre_value as value, COUNT(*) as count
-      FROM all_song_genres
-      GROUP BY genre_value
+      SELECT 
+        UNNEST(a.genres) as value, 
+        COUNT(DISTINCT s.id) as count
+      FROM songs s
+      JOIN song_artists sa ON s.id = sa.song_id
+      JOIN artists a ON sa.artist_id = a.id
+      WHERE a.genres IS NOT NULL
+      GROUP BY UNNEST(a.genres)
       ORDER BY count DESC, value ASC
     `;
     
-    // Simplified parent genre query for testing
+    // SIMPLIFIED: Calculate parent genres from artist genres directly
     const parentGenresQuery = `
-      SELECT 'punk' as value, 108 as count
-      UNION ALL
-      SELECT 'metal' as value, 169 as count
-      UNION ALL  
-      SELECT 'hardcore' as value, 134 as count
-      ORDER BY count DESC
+      WITH artist_genre_mapping AS (
+        SELECT 
+          DISTINCT s.id,
+          CASE 
+            WHEN genre_val IN ('metalcore', 'deathcore', 'mathcore', 'groove metal', 'death metal', 'black metal', 'thrash metal', 'doom metal', 'progressive metal', 'nu metal', 'melodic death metal', 'sludge metal', 'stoner metal', 'grindcore', 'heavy metal', 'alternative metal', 'industrial metal', 'speed metal', 'rap metal', 'djent') THEN 'metal'
+            WHEN genre_val IN ('punk', 'hardcore punk', 'skate punk', 'ska punk', 'folk punk', 'pop punk', 'post-punk', 'anarcho-punk', 'street punk', 'queercore', 'riot grrrl', 'indie punk', 'celtic punk', 'proto-punk', 'egg punk') THEN 'punk'
+            WHEN genre_val IN ('hardcore', 'melodic hardcore', 'post-hardcore', 'crossover hardcore', 'screamo', 'midwest emo') THEN 'hardcore'
+            WHEN genre_val IN ('blues rock', 'hard rock', 'alternative rock', 'indie rock', 'classic rock', 'progressive rock', 'psychedelic rock', 'garage rock', 'gothic rock', 'industrial rock', 'art rock', 'acid rock', 'grunge', 'post-grunge', 'britpop', 'madchester', 'krautrock', 'noise rock', 'neo-psychedelic', 'folk rock', 'celtic rock', 'brazilian rock') THEN 'rock'
+            WHEN genre_val IN ('folk punk', 'anti-folk', 'indie folk', 'folk rock', 'acoustic folk', 'contemporary folk', 'folk', 'traditional folk', 'americana', 'celtic', 'singer-songwriter', 'country blues') THEN 'folk'
+            WHEN genre_val IN ('blues', 'blues rock', 'electric blues', 'acoustic blues', 'delta blues') THEN 'blues'
+            WHEN genre_val IN ('pop', 'indie pop', 'electropop', 'synthpop', 'power pop', 'dream pop', 'jangle pop', 'swedish pop', 'german pop', 'new wave', 'pop soul') THEN 'pop'
+            WHEN genre_val IN ('electronic', 'ambient', 'techno', 'house', 'drum and bass', 'dubstep', 'edm', 'industrial', 'ebm', 'darkwave', 'coldwave', 'cold wave', 'downtempo', 'trip hop', 'glitch', 'witch house', 'footwork', 'bassline', 'riddim', 'minimalism', 'neoclassical') THEN 'electronic'
+            WHEN genre_val IN ('hip hop', 'rap', 'conscious hip hop', 'alternative hip hop', 'underground hip hop', 'east coast hip hop', 'experimental hip hop', 'hardcore hip hop', 'old school hip hop', 'gangster rap', 'horrorcore', 'grime', 'uk grime') THEN 'hip-hop'
+            WHEN genre_val IN ('reggae', 'ska', 'dub', 'roots reggae', 'nz reggae', 'lovers rock', 'ragga', 'dancehall', 'rocksteady') THEN 'reggae'
+            WHEN genre_val IN ('free jazz', 'hard bop') THEN 'jazz'
+            WHEN genre_val IN ('philly soul', 'pop soul', 'gospel', 'gospel r&b') THEN 'soul'
+            ELSE 'other'
+          END as parent_genre
+        FROM songs s
+        JOIN song_artists sa ON s.id = sa.song_id
+        JOIN artists a ON sa.artist_id = a.id,
+        UNNEST(a.genres) as genre_val
+        WHERE a.genres IS NOT NULL
+      )
+      SELECT parent_genre as value, COUNT(DISTINCT id) as count
+      FROM artist_genre_mapping
+      WHERE parent_genre IS NOT NULL
+      GROUP BY parent_genre
+      ORDER BY count DESC, value ASC
     `;
     
     const yearRangeQuery = `

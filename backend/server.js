@@ -18,7 +18,10 @@ app.get('/api/test', (req, res) => {
 app.use('/api/spotify', require('./routes/spotify'));
 
 // Admin routes
-app.use('/api/admin', require('./routes/admin'));
+console.log('Loading admin routes...');
+const adminRouter = require('./routes/admin_simple');
+console.log('Admin router loaded, mounting at /api/admin');
+app.use('/api/admin', adminRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
