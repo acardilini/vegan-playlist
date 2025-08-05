@@ -18,10 +18,16 @@ app.get('/api/test', (req, res) => {
 app.use('/api/spotify', require('./routes/spotify'));
 
 // Admin routes
-console.log('Loading admin routes...');
-const adminRouter = require('./routes/admin_simple');
+console.log('Loading admin routes - FINAL...');
+const adminRouter = require('./routes/admin');
 console.log('Admin router loaded, mounting at /api/admin');
 app.use('/api/admin', adminRouter);
+
+// Playlist routes
+console.log('Loading playlist routes...');
+const playlistRouter = require('./routes/playlists');
+console.log('Playlist router loaded, mounting at /api/playlists');
+app.use('/api/playlists', playlistRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

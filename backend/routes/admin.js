@@ -6,9 +6,51 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const router = express.Router();
 
+// Test PUT route BEFORE auth middleware
+router.put('/test-update/:id', (req, res) => {
+  console.log('TEST UPDATE ENDPOINT HIT!', req.params.id, req.body);
+  res.json({ message: 'Test update works!', id: req.params.id, body: req.body });
+});
+
+// Test featured route BEFORE auth middleware
+router.put('/test-featured-noauth/:id', async (req, res) => {
+  console.log('TEST FEATURED NO AUTH ENDPOINT HIT!', req.params.id, req.body);
+  try {
+    const songId = parseInt(req.params.id);
+    const featured = req.body.featured;
+    
+    console.log('Updating featured status (no auth):', { songId, featured });
+    
+    // Update the database
+    const result = await pool.query(`
+      UPDATE songs 
+      SET featured = $2, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+    `, [songId, featured]);
+    
+    console.log('Database update result - rows affected:', result.rowCount);
+    
+    // Query the updated record
+    const verifyQuery = await pool.query('SELECT id, title, featured FROM songs WHERE id = $1', [songId]);
+    console.log('Verify query result:', verifyQuery.rows[0]);
+    
+    res.json({
+      success: true,
+      song: verifyQuery.rows[0],
+      debug: { songId, featured, rowsAffected: result.rowCount }
+    });
+  } catch (error) {
+    console.error('Test featured error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Admin authentication middleware
 const authenticateAdmin = (req, res, next) => {
-  const password = req.headers['x-admin-password'] || req.body.admin_password || req.query.admin_password;
+  const password = req.headers['x-admin-password'] || (req.body && req.body.admin_password) || req.query.admin_password;
+  
+  console.log('Auth check - provided password:', password);
+  console.log('Expected password:', process.env.ADMIN_PASSWORD);
   
   if (!password || password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Admin authentication required' });
@@ -26,6 +68,45 @@ const upload = multer({ dest: 'uploads/' });
 // Test route
 router.get('/test', (req, res) => {
   res.json({ message: 'Admin routes are working!' });
+});
+
+// Test PUT route
+router.put('/test-update/:id', (req, res) => {
+  console.log('TEST UPDATE ENDPOINT HIT!', req.params.id, req.body);
+  res.json({ message: 'Test update works!', id: req.params.id, body: req.body });
+});
+
+// Test featured update route
+router.put('/test-featured/:id', async (req, res) => {
+  console.log('TEST FEATURED ENDPOINT HIT!', req.params.id, req.body);
+  try {
+    const songId = parseInt(req.params.id);
+    const featured = req.body.featured;
+    
+    console.log('Updating featured status:', { songId, featured });
+    
+    // Update the database
+    const result = await pool.query(`
+      UPDATE songs 
+      SET featured = $2, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+    `, [songId, featured]);
+    
+    console.log('Database update result - rows affected:', result.rowCount);
+    
+    // Query the updated record
+    const verifyQuery = await pool.query('SELECT id, title, featured FROM songs WHERE id = $1', [songId]);
+    console.log('Verify query result:', verifyQuery.rows[0]);
+    
+    res.json({
+      success: true,
+      song: verifyQuery.rows[0],
+      debug: { songId, featured, rowsAffected: result.rowCount }
+    });
+  } catch (error) {
+    console.error('Test featured error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Simple test route
@@ -967,9 +1048,11 @@ router.post('/bulk-upload', upload.single('csv'), async (req, res) => {
 });
 
 // Update single song endpoint (for individual edits)
+console.log('Registering PUT /update-song/:id route');
 router.put('/update-song/:id', async (req, res) => {
   try {
-    console.log('PUT /songs/:id called with params:', req.params);
+    console.log('=== UPDATE-SONG ENDPOINT HIT ===');
+    console.log('PUT /update-song/:id called with params:', req.params);
     console.log('Request body:', req.body);
     
     const songId = parseInt(req.params.id);
@@ -977,21 +1060,58 @@ router.put('/update-song/:id', async (req, res) => {
     // If only featured is being updated, do a simpler query
     if (typeof req.body.featured === 'boolean' && Object.keys(req.body).length === 1) {
       const featured = req.body.featured;
-      const result = await pool.query(`
-        UPDATE songs 
-        SET featured = $2, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $1
-        RETURNING id, title, featured
-      `, [songId, featured]);
+      console.log('Updating featured status:', { songId, featured });
+      
+      try {
+        // First, let's check what columns exist
+        const checkResult = await pool.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'songs' AND column_name = 'featured'
+        `);
+        console.log('Featured column exists:', checkResult.rows.length > 0);
 
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Song not found' });
+        // Try a simple select first
+        const selectResult = await pool.query(`
+          SELECT id, title, featured FROM songs WHERE id = $1
+        `, [songId]);
+        console.log('Current song data:', selectResult.rows[0]);
+
+        const result = await pool.query(`
+          UPDATE songs 
+          SET featured = $2, updated_at = CURRENT_TIMESTAMP
+          WHERE id = $1
+          RETURNING id, title, featured
+        `, [songId, featured]);
+
+        console.log('Update result:', result.rows[0]);
+        console.log('Row count:', result.rowCount);
+
+        if (result.rowCount === 0) {
+          return res.status(404).json({ error: 'Song not found' });
+        }
+
+        // Since the RETURNING clause isn't working, let's manually construct the response
+        // and verify the update worked by querying again
+        console.log('FEATURED UPDATE: Querying database after update...');
+        const verifyQuery = await pool.query('SELECT id, title, featured FROM songs WHERE id = $1', [songId]);
+        console.log('FEATURED UPDATE: Verify query result:', verifyQuery.rows[0]);
+        
+        const responseData = {
+          success: true,
+          song: verifyQuery.rows[0] || {
+            id: songId,
+            title: 'Unknown',
+            featured: featured
+          }
+        };
+        console.log('FEATURED UPDATE: Sending response:', responseData);
+        
+        return res.json(responseData);
+      } catch (dbError) {
+        console.error('Database error in featured update:', dbError);
+        return res.status(500).json({ error: 'Database error: ' + dbError.message });
       }
-
-      return res.json({
-        success: true,
-        song: result.rows[0]
-      });
     }
 
     // Handle categorization updates

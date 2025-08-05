@@ -1,5 +1,5 @@
 import './App.css'
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { spotifyService } from './api/spotifyService';
 import MoodBadge from './components/MoodBadge';
@@ -8,6 +8,88 @@ import ArtistSearchResults from './components/ArtistSearchResults';
 import ArtistDetailPage from './components/ArtistDetailPage';
 import AdminInterface from './components/AdminInterface';
 import SearchAndFilter from './components/SearchAndFilter';
+import { playlistService } from './api/playlistService';
+
+function PaginationControls({ currentPage, totalPages, onPageChange }) {
+  const generatePageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 7;
+    
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total is small
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show truncated pagination
+      pages.push(1);
+      
+      if (currentPage > 4) {
+        pages.push('...');
+      }
+      
+      // Show pages around current page
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) {
+          pages.push(i);
+        }
+      }
+      
+      if (currentPage < totalPages - 3) {
+        pages.push('...');
+      }
+      
+      if (!pages.includes(totalPages)) {
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  return (
+    <div className="pagination">
+      <div className="pagination-info">
+        Page {currentPage} of {totalPages}
+      </div>
+      
+      <div className="pagination-controls">
+        {/* Previous button */}
+        <button 
+          className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+          onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          ← Previous
+        </button>
+        
+        {/* Page numbers */}
+        {generatePageNumbers().map((page, index) => (
+          <button
+            key={index}
+            className={`pagination-btn ${page === currentPage ? 'active' : ''} ${page === '...' ? 'ellipsis' : ''}`}
+            onClick={() => typeof page === 'number' && onPageChange(page)}
+            disabled={page === '...' || page === currentPage}
+          >
+            {page}
+          </button>
+        ))}
+        
+        {/* Next button */}
+        <button 
+          className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+          onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
 
 
 function NavigationMenu() {
@@ -28,11 +110,6 @@ function NavigationMenu() {
         <li className={`nav-item ${isActive('/') ? 'active' : ''}`}>
           <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/', 'Home'); }}>
             Home
-          </a>
-        </li>
-        <li className={`nav-item ${isActive('/search') ? 'active' : ''}`}>
-          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/search', 'Search'); }}>
-            Search
           </a>
         </li>
         <li className={`nav-item ${isActive('/artists') ? 'active' : ''}`}>
@@ -533,7 +610,7 @@ function SongDetailPage() {
 }
 
 
-function SongCard({ song, songId }) {
+function SongCard({ song, songId, showAddToPlaylist = true, onAddToPlaylist }) {
   const navigate = useNavigate();
 
   const handleSongClick = () => {
@@ -543,6 +620,13 @@ function SongCard({ song, songId }) {
   const handlePlayClick = (e) => {
     e.stopPropagation();
     alert(`Playing "${song.title}" (functionality coming soon!)`);
+  };
+
+  const handleAddToPlaylistClick = (e) => {
+    e.stopPropagation();
+    if (onAddToPlaylist) {
+      onAddToPlaylist(song);
+    }
   };
 
   // Format duration from milliseconds
@@ -626,10 +710,19 @@ function SongCard({ song, songId }) {
   return (
     <div className="song-card" onClick={handleSongClick}>
       <div className="song-artwork">
-        <div className="play-button" onClick={handlePlayClick}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
+        <div className="song-overlay-buttons">
+          <div className="play-button" onClick={handlePlayClick}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </div>
+          {showAddToPlaylist && onAddToPlaylist && (
+            <div className="add-to-playlist-button" onClick={handleAddToPlaylistClick} title="Add to Playlist">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14,10H2V12H14V10M14,6H2V8H14V6M2,16H10V14H2V16M21.5,11.5L23,13L16,20L11.5,15.5L13,14L16,17L21.5,11.5Z"/>
+              </svg>
+            </div>
+          )}
         </div>
         <img 
           src={getArtwork()}
@@ -702,6 +795,9 @@ function FeaturedSongs() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
+  const [selectedSong, setSelectedSong] = useState(null);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     const fetchFeaturedSongs = async () => {
@@ -725,7 +821,15 @@ function FeaturedSongs() {
     fetchFeaturedSongs();
   }, []);
 
-  // Rest of component stays the same...
+  const handleAddToPlaylist = (song) => {
+    setSelectedSong(song);
+    setShowAddToPlaylistModal(true);
+  };
+
+  const handleAddToPlaylistSuccess = (message) => {
+    setMessage(message);
+    setTimeout(() => setMessage(''), 3000);
+  };
   if (loading) {
     return (
       <section className="featured-songs">
@@ -759,28 +863,47 @@ function FeaturedSongs() {
       <div className="section-header">
         <h2>Featured Songs</h2>
         <p>Discover powerful vegan-themed music</p>
+        {message && (
+          <div className="success-message">✅ {message}</div>
+        )}
       </div>
       <div className="songs-grid">
         {songs.map((song) => (
-          <SongCard key={song.id} song={song} songId={song.id} />
+          <SongCard 
+            key={song.id} 
+            song={song} 
+            songId={song.id} 
+            onAddToPlaylist={handleAddToPlaylist}
+          />
         ))}
       </div>
+      
+      {showAddToPlaylistModal && selectedSong && (
+        <AddToPlaylistModal
+          song={selectedSong}
+          onClose={() => setShowAddToPlaylistModal(false)}
+          onSuccess={handleAddToPlaylistSuccess}
+        />
+      )}
     </section>
   );
 }
 
 
 
-function SearchSection() {
-  const [searchResults, setSearchResults] = useState([]);
+function SearchSection({ initialSearchQuery = '' }) {
+  const [searchResults, setSearchResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
+  const [selectedSong, setSelectedSong] = useState(null);
+  const [message, setMessage] = useState('');
 
   const handleResults = useCallback((results) => {
-    // Extract songs array from the API response object
-    const songs = results.songs || [];
-    setSearchResults(songs);
+    // Store the full API response object including pagination info
+    setSearchResults(results);
     setHasSearched(true);
   }, []);
 
@@ -793,14 +916,32 @@ function SearchSection() {
     setHasSearched(true);
   }, []);
 
+  const handleAddToPlaylist = (song) => {
+    setSelectedSong(song);
+    setShowAddToPlaylistModal(true);
+  };
+
+  const handleAddToPlaylistSuccess = (message) => {
+    setMessage(message);
+    setTimeout(() => setMessage(''), 3000); // Clear message after 3 seconds
+  };
+
   return (
     <section className="search-section">
       <div className="search-section-content">
         <h2>Find Your Perfect Vegan Song</h2>
+        
+        {message && (
+          <div className="success-message">✅ {message}</div>
+        )}
+        
         <SearchAndFilter 
           onResults={handleResults}
           onLoading={handleLoading}
           onError={handleError}
+          currentPage={currentPage}
+          onPageReset={() => setCurrentPage(1)}
+          initialQuery={initialSearchQuery}
         />
         
         {/* Search Results */}
@@ -808,25 +949,77 @@ function SearchSection() {
           <div className="home-search-results">
             {loading && <div className="loading">🎵 Searching...</div>}
             {error && <div className="error-message">❌ {error}</div>}
-            {!loading && !error && searchResults.length === 0 && (
+            {!loading && !error && (!searchResults || searchResults.songs?.length === 0) && (
               <div className="no-results">No songs found. Try different filters or search terms.</div>
             )}
-            {!loading && !error && searchResults.length > 0 && (
+            {!loading && !error && searchResults && searchResults.songs?.length > 0 && (
               <div className="search-results-container">
-                <h3>Search Results ({searchResults.length} songs)</h3>
+                <h3>
+                  {searchResults.pagination.total} songs found
+                  {searchResults.filters_applied?.query && (
+                    <span> for "{searchResults.filters_applied.query}"</span>
+                  )}
+                </h3>
+                
+                {/* Applied filters summary */}
+                {Object.values(searchResults.filters_applied || {}).some(filter => 
+                  filter && (Array.isArray(filter) ? filter.length > 0 : filter !== 'popularity')
+                ) && (
+                  <div className="applied-filters">
+                    <span>Filters applied:</span>
+                    {searchResults.filters_applied.vegan_focus && searchResults.filters_applied.vegan_focus.length > 0 && (
+                      <span className="applied-filter">
+                        Focus: {searchResults.filters_applied.vegan_focus.join(', ')}
+                      </span>
+                    )}
+                    {searchResults.filters_applied.advocacy_style && searchResults.filters_applied.advocacy_style.length > 0 && (
+                      <span className="applied-filter">
+                        Style: {searchResults.filters_applied.advocacy_style.join(', ')}
+                      </span>
+                    )}
+                    {searchResults.filters_applied.genres && searchResults.filters_applied.genres.length > 0 && (
+                      <span className="applied-filter">
+                        Genre: {searchResults.filters_applied.genres.join(', ')}
+                      </span>
+                    )}
+                    {searchResults.filters_applied.year_range && (searchResults.filters_applied.year_range.from || searchResults.filters_applied.year_range.to) && (
+                      <span className="applied-filter">
+                        Year: {searchResults.filters_applied.year_range.from || '?'} - {searchResults.filters_applied.year_range.to || '?'}
+                      </span>
+                    )}
+                  </div>
+                )}
+                
                 <div className="songs-grid">
-                  {searchResults.slice(0, 8).map((song) => (
-                    <SongCard key={song.id} song={song} songId={song.id} />
+                  {searchResults.songs.map((song) => (
+                    <SongCard 
+                      key={song.id} 
+                      song={song} 
+                      songId={song.id} 
+                      onAddToPlaylist={handleAddToPlaylist}
+                    />
                   ))}
                 </div>
-                {searchResults.length > 8 && (
-                  <div className="view-all-results">
-                    <p>Showing first 8 results. <a href="/search">View all {searchResults.length} results</a></p>
-                  </div>
+                
+                {/* Pagination */}
+                {searchResults.pagination.pages > 1 && (
+                  <PaginationControls 
+                    currentPage={searchResults.pagination.page}
+                    totalPages={searchResults.pagination.pages}
+                    onPageChange={setCurrentPage}
+                  />
                 )}
               </div>
             )}
           </div>
+        )}
+        
+        {showAddToPlaylistModal && selectedSong && (
+          <AddToPlaylistModal
+            song={selectedSong}
+            onClose={() => setShowAddToPlaylistModal(false)}
+            onSuccess={handleAddToPlaylistSuccess}
+          />
         )}
       </div>
     </section>
@@ -835,11 +1028,17 @@ function SearchSection() {
 
 
 function HomePage() {
+  const location = useLocation();
+  
+  // Extract search query from URL parameters
+  const searchParams = new URLSearchParams(location.search);
+  const initialSearchQuery = searchParams.get('q') || '';
+  
   return (
     <>
       <HeroArea />
       <FeaturedSongs />
-      <SearchSection />
+      <SearchSection initialSearchQuery={initialSearchQuery} />
     </>
   );
 }
@@ -944,53 +1143,48 @@ function ArtistsPage() {
 
 function PlaylistsPage() {
   const navigate = useNavigate();
-  
-  // Sample playlist data
-  const samplePlaylists = [
-    {
-      id: 1,
-      name: "Animal Liberation Anthems",
-      description: "Powerful songs directly advocating for animal rights and liberation",
-      songCount: 45,
-      creator: "Admin",
-      tags: ["Direct", "Animal Rights"],
-      image: null
-    },
-    {
-      id: 2,
-      name: "Vegan Hip Hop",
-      description: "Hip hop tracks promoting plant-based living and consciousness",
-      songCount: 23,
-      creator: "User Contributed",
-      tags: ["Hip Hop", "Educational"],
-      image: null
-    },
-    {
-      id: 3,
-      name: "Environmental Wake-Up Call",
-      description: "Songs addressing climate change and environmental destruction",
-      songCount: 34,
-      creator: "Admin",
-      tags: ["Environment", "Climate"],
-      image: null
-    },
-    {
-      id: 4,
-      name: "Gentle Advocacy",
-      description: "Subtle, story-based songs that promote compassion for animals",
-      songCount: 28,
-      creator: "User Contributed",
-      tags: ["Subtle", "Storytelling"],
-      image: null
+  const [playlists, setPlaylists] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [pagination, setPagination] = useState(null);
+
+  // Load playlists on component mount
+  useEffect(() => {
+    loadPlaylists();
+  }, []);
+
+  const loadPlaylists = async () => {
+    try {
+      setLoading(true);
+      const response = await playlistService.getPlaylists();
+      setPlaylists(response.playlists);
+      setPagination(response.pagination);
+    } catch (error) {
+      console.error('Error loading playlists:', error);
+      setError('Failed to load playlists');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const handlePlaylistClick = (playlistId) => {
-    alert(`Playlist page for ID ${playlistId} coming soon!`);
+    navigate(`/playlist/${playlistId}`);
   };
 
   const handleCreatePlaylist = () => {
-    alert("Create new playlist functionality coming soon!");
+    setShowCreateModal(true);
+  };
+
+  const handleCreatePlaylistSubmit = async (playlistData) => {
+    try {
+      await playlistService.createPlaylist(playlistData);
+      setShowCreateModal(false);
+      loadPlaylists(); // Refresh the list
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+      alert('Failed to create playlist');
+    }
   };
 
   return (
@@ -1003,39 +1197,430 @@ function PlaylistsPage() {
         </button>
       </div>
       
-      <div className="playlists-grid">
-        {samplePlaylists.map((playlist) => (
-          <div 
-            key={playlist.id} 
-            className="playlist-card"
-            onClick={() => handlePlaylistClick(playlist.id)}
-          >
-            <div className="playlist-image">
-              <img 
-                src={playlist.image || "https://via.placeholder.com/200x200/1DB954/000000?text=♪"} 
-                alt={playlist.name}
-              />
-              <div className="playlist-overlay">
-                <div className="play-button">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
+      {loading && (
+        <div className="loading">🎵 Loading playlists...</div>
+      )}
+      
+      {error && (
+        <div className="error-message">❌ {error}</div>
+      )}
+      
+      {!loading && !error && playlists.length === 0 && (
+        <div className="no-results">
+          <h3>No playlists found</h3>
+          <p>Be the first to create a playlist!</p>
+        </div>
+      )}
+      
+      {!loading && !error && playlists.length > 0 && (
+        <div className="playlists-grid">
+          {playlists.map((playlist) => (
+            <div 
+              key={playlist.id} 
+              className="playlist-card"
+              onClick={() => handlePlaylistClick(playlist.id)}
+            >
+              <div className="playlist-image">
+                <img 
+                  src="https://via.placeholder.com/200x200/1DB954/000000?text=♪"
+                  alt={playlist.name}
+                />
+                <div className="playlist-overlay">
+                  <div className="play-button">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="playlist-info">
-              <h3>{playlist.name}</h3>
-              <p className="playlist-song-count">{playlist.songCount} songs</p>
-              <p className="playlist-description">{playlist.description}</p>
-              <p className="playlist-creator">Created by {playlist.creator}</p>
-              <div className="playlist-tags">
-                {playlist.tags.map((tag, index) => (
-                  <span key={index} className="playlist-tag">{tag}</span>
-                ))}
+              <div className="playlist-info">
+                <h3>{playlist.name}</h3>
+                <p className="playlist-song-count">{playlist.song_count} songs</p>
+                <p className="playlist-description">{playlist.description || 'No description'}</p>
+                <p className="playlist-creator">Created by {playlist.creator}</p>
+                <p className="playlist-date">
+                  {new Date(playlist.created_at).toLocaleDateString()}
+                </p>
               </div>
             </div>
+          ))}
+        </div>
+      )}
+      
+      {showCreateModal && (
+        <CreatePlaylistModal 
+          onSubmit={handleCreatePlaylistSubmit}
+          onCancel={() => setShowCreateModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CreatePlaylistModal({ onSubmit, onCancel }) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [creator, setCreator] = useState('');
+  const [isPublic, setIsPublic] = useState(true);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (name.trim()) {
+      onSubmit({
+        name: name.trim(),
+        description: description.trim() || null,
+        creator: creator.trim() || 'Anonymous',
+        is_public: isPublic
+      });
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>Create New Playlist</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="playlist-name">Playlist Name *</label>
+            <input
+              id="playlist-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter playlist name"
+              required
+            />
           </div>
-        ))}
+          
+          <div className="form-group">
+            <label htmlFor="playlist-description">Description</label>
+            <textarea
+              id="playlist-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe your playlist (optional)"
+              rows="3"
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="playlist-creator">Creator Name</label>
+            <input
+              id="playlist-creator"
+              type="text"
+              value={creator}
+              onChange={(e) => setCreator(e.target.value)}
+              placeholder="Your name (optional)"
+            />
+          </div>
+          
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+              />
+              Make playlist public
+            </label>
+          </div>
+          
+          <div className="modal-actions">
+            <button type="button" onClick={onCancel} className="cancel-button">
+              Cancel
+            </button>
+            <button type="submit" className="submit-button">
+              Create Playlist
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function PlaylistDetailPage() {
+  const { playlistId } = useParams();
+  const navigate = useNavigate();
+  const [playlist, setPlaylist] = useState(null);
+  const [songs, setSongs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    loadPlaylist();
+  }, [playlistId]);
+
+  const loadPlaylist = async () => {
+    try {
+      setLoading(true);
+      const response = await playlistService.getPlaylist(playlistId);
+      setPlaylist(response.playlist);
+      setSongs(response.songs);
+    } catch (error) {
+      console.error('Error loading playlist:', error);
+      setError('Failed to load playlist');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSongClick = (songId) => {
+    navigate(`/song/${songId}`);
+  };
+
+  const handleRemoveSong = async (songId, songTitle) => {
+    if (!confirm(`Remove "${songTitle}" from this playlist?`)) return;
+    
+    try {
+      await playlistService.removeSongFromPlaylist(playlistId, songId);
+      setMessage(`Removed "${songTitle}" from playlist`);
+      setTimeout(() => setMessage(''), 3000);
+      loadPlaylist(); // Refresh the playlist
+    } catch (error) {
+      console.error('Error removing song:', error);
+      setMessage('Failed to remove song from playlist');
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const formatDuration = (durationMs) => {
+    const minutes = Math.floor(durationMs / 60000);
+    const seconds = Math.floor((durationMs % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="page-container">
+        <div className="loading">🎵 Loading playlist...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-container">
+        <div className="error-message">❌ {error}</div>
+        <button onClick={() => navigate('/playlists')} className="back-button">
+          Back to Playlists
+        </button>
+      </div>
+    );
+  }
+
+  if (!playlist) {
+    return (
+      <div className="page-container">
+        <div className="no-results">
+          <h3>Playlist not found</h3>
+          <button onClick={() => navigate('/playlists')} className="back-button">
+            Back to Playlists
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-container">
+      <div className="playlist-header">
+        <button onClick={() => navigate('/playlists')} className="back-button">
+          ← Back to Playlists
+        </button>
+        
+        <div className="playlist-info-header">
+          <div className="playlist-image-large">
+            <img 
+              src="https://via.placeholder.com/300x300/1DB954/000000?text=♪"
+              alt={playlist.name}
+            />
+          </div>
+          
+          <div className="playlist-details">
+            <h1>{playlist.name}</h1>
+            <p className="playlist-description">{playlist.description || 'No description'}</p>
+            {message && (
+              <div className="success-message">✅ {message}</div>
+            )}
+            <div className="playlist-meta">
+              <span className="playlist-creator">Created by {playlist.creator}</span>
+              <span className="playlist-date">
+                {new Date(playlist.created_at).toLocaleDateString()}
+              </span>
+              <span className="playlist-song-count">{songs.length} songs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="playlist-songs">
+        <h2>Songs</h2>
+        {songs.length === 0 ? (
+          <div className="no-results">
+            <p>This playlist is empty.</p>
+          </div>
+        ) : (
+          <div className="songs-list">
+            {songs.map((song, index) => (
+              <div 
+                key={song.id} 
+                className="song-item"
+                onClick={() => handleSongClick(song.id)}
+              >
+                <div className="song-position">{index + 1}</div>
+                <div className="song-artwork">
+                  <img 
+                    src={song.album_images?.[2]?.url || "https://via.placeholder.com/64x64/1DB954/000000?text=♪"}
+                    alt={song.title}
+                  />
+                </div>
+                <div className="song-info">
+                  <div className="song-title">{song.title}</div>
+                  <div className="song-artist">
+                    {Array.isArray(song.artists) ? song.artists.join(', ') : song.artists}
+                  </div>
+                  {song.album_name && (
+                    <div className="song-album">{song.album_name}</div>
+                  )}
+                </div>
+                <div className="song-duration">{formatDuration(song.duration_ms)}</div>
+                <button 
+                  className="remove-song-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveSong(song.id, song.title);
+                  }}
+                  title="Remove from playlist"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AddToPlaylistModal({ song, onClose, onSuccess }) {
+  const [playlists, setPlaylists] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedPlaylist, setSelectedPlaylist] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadPlaylists();
+  }, []);
+
+  const loadPlaylists = async () => {
+    try {
+      setLoading(true);
+      const response = await playlistService.getPlaylists(1, 100); // Get more playlists
+      setPlaylists(response.playlists);
+    } catch (error) {
+      console.error('Error loading playlists:', error);
+      setError('Failed to load playlists');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedPlaylist) return;
+
+    try {
+      setSubmitting(true);
+      await playlistService.addSongToPlaylist(selectedPlaylist, song.id);
+      onSuccess(`Added "${song.title}" to playlist!`);
+      onClose();
+    } catch (error) {
+      console.error('Error adding song to playlist:', error);
+      setError(error.message.includes('already exists') 
+        ? 'Song is already in this playlist' 
+        : 'Failed to add song to playlist'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h2>Add to Playlist</h2>
+        <div className="song-preview">
+          <img 
+            src={song.album_images?.[2]?.url || "https://via.placeholder.com/64x64/1DB954/000000?text=♪"}
+            alt={song.title}
+            className="song-preview-image"
+          />
+          <div className="song-preview-info">
+            <div className="song-preview-title">{song.title}</div>
+            <div className="song-preview-artist">
+              {Array.isArray(song.artists) ? song.artists.join(', ') : song.artists}
+            </div>
+          </div>
+        </div>
+
+        {loading && <div className="loading">Loading playlists...</div>}
+        
+        {error && <div className="error-message">❌ {error}</div>}
+        
+        {!loading && !error && (
+          <>
+            {playlists.length === 0 ? (
+              <div className="no-playlists">
+                <p>You don't have any playlists yet.</p>
+                <button 
+                  onClick={() => {
+                    onClose();
+                    // You could add navigation to create playlist here
+                  }}
+                  className="create-playlist-link"
+                >
+                  Create your first playlist
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label htmlFor="playlist-select">Select Playlist:</label>
+                  <select
+                    id="playlist-select"
+                    value={selectedPlaylist}
+                    onChange={(e) => setSelectedPlaylist(e.target.value)}
+                    required
+                  >
+                    <option value="">Choose a playlist...</option>
+                    {playlists.map((playlist) => (
+                      <option key={playlist.id} value={playlist.id}>
+                        {playlist.name} ({playlist.song_count} songs)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="modal-actions">
+                  <button type="button" onClick={onClose} className="cancel-button">
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="submit-button" 
+                    disabled={!selectedPlaylist || submitting}
+                  >
+                    {submitting ? 'Adding...' : 'Add to Playlist'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
@@ -1138,6 +1723,7 @@ function App() {
           <Route path="/artists" element={<ArtistSearchResults />} />
           <Route path="/artist/:artistId" element={<ArtistDetailPage />} />
           <Route path="/playlists" element={<PlaylistsPage />} />
+          <Route path="/playlist/:playlistId" element={<PlaylistDetailPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin" element={<AdminInterface />} />
         </Routes>

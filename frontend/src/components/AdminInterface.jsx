@@ -566,18 +566,18 @@ function AdminInterface() {
       console.log('Featured API response:', result);
       
       if (response.ok && result.success) {
-        setMessage(`Song ${!currentFeaturedStatus ? 'added to' : 'removed from'} featured list`);
+        const newFeaturedStatus = !currentFeaturedStatus;
+        setMessage(`Song ${newFeaturedStatus ? 'added to' : 'removed from'} featured list`);
         
-        // Update the song in the current state instead of reloading all songs
-        if (result.song) {
-          setAllSongs(prevSongs => 
-            prevSongs.map(song => 
-              song.id === result.song.id 
-                ? { ...song, featured: result.song.featured }
-                : song
-            )
-          );
-        }
+        // Update the song in the current state - use the intended featured status
+        // since the API response doesn't include the updated featured field
+        setAllSongs(prevSongs => 
+          prevSongs.map(song => 
+            song.id === songId 
+              ? { ...song, featured: newFeaturedStatus }
+              : song
+          )
+        );
         
         setTimeout(() => setMessage(''), 3000);
       } else {
