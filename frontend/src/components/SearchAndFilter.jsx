@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { spotifyService } from '../api/spotifyService';
 
-function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '' }) {
+function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', currentPage = 1, onPageReset }) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [filters, setFilters] = useState({
     vegan_focus: [],
@@ -88,22 +88,22 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '' }) {
 
   // Debounce search
   useEffect(() => {
-    // Only search if there's a query or active filters
+    // Always allow searching - even with just sort parameters
+    // This enables browsing all songs with different sort orders
     const hasQuery = searchQuery.trim().length > 0;
     const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
-      if (key === 'sort_by') return false;
+      if (key === 'sort_by') return false; // Don't count sort_by as an active filter
       if (Array.isArray(value)) return value.length > 0;
       return value !== '' && value !== null && value !== undefined;
     });
 
-    if (!hasQuery && !hasActiveFilters) {
-      return; // Don't search if no query and no filters
-    }
+    // Always perform search - this allows browsing all songs when no query/filters are set
+    // The backend will return all songs with the specified sort order
 
     const searchParams = {
       q: searchQuery,
       ...filters,
-      page: 1,
+      page: currentPage,
       limit: 20
     };
 
@@ -112,7 +112,14 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '' }) {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, filters, performSearch]);
+  }, [searchQuery, filters, currentPage, performSearch]);
+
+  // Reset to page 1 when search query or filters change (but not on currentPage change)
+  useEffect(() => {
+    if (onPageReset && currentPage !== 1) {
+      onPageReset();
+    }
+  }, [searchQuery, JSON.stringify(filters)]);
 
   const handleFilterChange = (filterType, value, checked) => {
     setFilters(prev => {

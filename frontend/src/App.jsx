@@ -893,13 +893,39 @@ function FeaturedSongs() {
 
 function SearchSection({ initialSearchQuery = '' }) {
   const [searchResults, setSearchResults] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true to load initial songs
   const [error, setError] = useState(null);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [hasSearched, setHasSearched] = useState(true); // Start with true to show results immediately
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
   const [selectedSong, setSelectedSong] = useState(null);
   const [message, setMessage] = useState('');
+
+  // Load initial songs when component mounts
+  useEffect(() => {
+    const loadInitialSongs = async () => {
+      try {
+        setLoading(true);
+        // Load first 20 songs with default sorting (popularity)
+        const results = await spotifyService.searchSongs({
+          q: initialSearchQuery, // Use initial query if provided
+          page: 1,
+          limit: 20,
+          sort_by: 'popularity'
+        });
+        setSearchResults(results);
+        setHasSearched(true);
+      } catch (err) {
+        console.error('Error loading initial songs:', err);
+        setError('Failed to load songs');
+        setHasSearched(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialSongs();
+  }, []); // Run only on mount, not when initialSearchQuery changes
 
   const handleResults = useCallback((results) => {
     // Store the full API response object including pagination info
@@ -929,7 +955,8 @@ function SearchSection({ initialSearchQuery = '' }) {
   return (
     <section className="search-section">
       <div className="search-section-content">
-        <h2>Find Your Perfect Vegan Song</h2>
+        <h2>Browse Our Vegan Music Collection</h2>
+        <p>Explore our curated collection of vegan-themed songs, or use search and filters to find exactly what you're looking for.</p>
         
         {message && (
           <div className="success-message">✅ {message}</div>
@@ -944,10 +971,10 @@ function SearchSection({ initialSearchQuery = '' }) {
           initialQuery={initialSearchQuery}
         />
         
-        {/* Search Results */}
+        {/* Song Results */}
         {hasSearched && (
           <div className="home-search-results">
-            {loading && <div className="loading">🎵 Searching...</div>}
+            {loading && <div className="loading">🎵 Loading songs...</div>}
             {error && <div className="error-message">❌ {error}</div>}
             {!loading && !error && (!searchResults || searchResults.songs?.length === 0) && (
               <div className="no-results">No songs found. Try different filters or search terms.</div>
@@ -955,9 +982,18 @@ function SearchSection({ initialSearchQuery = '' }) {
             {!loading && !error && searchResults && searchResults.songs?.length > 0 && (
               <div className="search-results-container">
                 <h3>
-                  {searchResults.pagination.total} songs found
-                  {searchResults.filters_applied?.query && (
-                    <span> for "{searchResults.filters_applied.query}"</span>
+                  {searchResults.filters_applied?.query || 
+                   Object.values(searchResults.filters_applied || {}).some(filter => 
+                     filter && (Array.isArray(filter) ? filter.length > 0 : filter !== 'popularity')
+                   ) ? (
+                    <>
+                      {searchResults.pagination.total} songs found
+                      {searchResults.filters_applied?.query && (
+                        <span> for "{searchResults.filters_applied.query}"</span>
+                      )}
+                    </>
+                  ) : (
+                    <>Showing {searchResults.pagination.total} songs</>
                   )}
                 </h3>
                 
