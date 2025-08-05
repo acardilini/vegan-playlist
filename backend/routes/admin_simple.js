@@ -5,12 +5,96 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const router = express.Router();
 
+console.log('ADMIN_SIMPLE.JS LOADED - FEATURED ROUTES SHOULD BE AVAILABLE');
+
 // Configure multer for file uploads
 const upload = multer({ dest: 'uploads/' });
 
 // Test route
 router.get('/test', (req, res) => {
   res.json({ message: 'Admin routes are working!' });
+});
+
+router.post('/test-featured', async (req, res) => {
+  try {
+    const { songId, featured } = req.body;
+    
+    if (!songId || typeof featured !== 'boolean') {
+      return res.status(400).json({ error: 'Invalid parameters' });
+    }
+    
+    // Update featured status
+    const result = await pool.query(
+      'UPDATE songs SET featured = $1 WHERE id = $2 RETURNING id, title, featured',
+      [featured, parseInt(songId)]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Song not found' });
+    }
+    
+    res.json({
+      message: `Song ${featured ? 'pinned as featured' : 'unpinned from featured'}`,
+      song: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Error toggling featured status:', error);
+    res.status(500).json({ 
+      error: 'Failed to update featured status', 
+      details: error.message 
+    });
+  }
+});
+
+// Simple featured test
+router.get('/simple-test', (req, res) => {
+  res.json({ message: 'Simple test works!' });
+});
+
+// Test featured route
+router.get('/test-featured-simple', (req, res) => {
+  res.json({ message: 'Featured routes test!' });
+});
+
+// Toggle featured status for a song
+router.patch('/toggle-featured/:id', async (req, res) => {
+  try {
+    const songId = parseInt(req.params.id);
+    const { featured } = req.body;
+    
+    if (isNaN(songId)) {
+      return res.status(400).json({ error: 'Invalid song ID' });
+    }
+    
+    if (typeof featured !== 'boolean') {
+      return res.status(400).json({ error: 'Featured must be a boolean value' });
+    }
+    
+    // Check if song exists
+    const songCheck = await pool.query('SELECT id FROM songs WHERE id = $1', [songId]);
+    if (songCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Song not found' });
+    }
+    
+    // Update featured status
+    const result = await pool.query(
+      'UPDATE songs SET featured = $1 WHERE id = $2 RETURNING id, title, featured',
+      [featured, songId]
+    );
+    
+    res.json({
+      message: `Song ${featured ? 'pinned as featured' : 'unpinned from featured'}`,
+      song: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Error toggling featured status:', error);
+    res.status(500).json({ 
+      error: 'Failed to update featured status', 
+      details: error.message 
+    });
+  }
 });
 
 // Get all songs (simplified version)
@@ -106,36 +190,62 @@ router.get('/categorization-options', async (req, res) => {
 // Update single song endpoint (for individual edits)
 router.put('/update-song/:id', async (req, res) => {
   try {
-    console.log('PUT /update-song/:id called with params:', req.params);
-    console.log('Request body:', req.body);
     
     const songId = parseInt(req.params.id);
+    
+    // If only featured is being updated, do a simpler query
+    if (typeof req.body.featured === 'boolean' && Object.keys(req.body).length === 1) {
+      const featured = req.body.featured;
+      const result = await pool.query(`
+        UPDATE songs 
+        SET featured = $2, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING id, title, featured
+      `, [songId, featured]);
+      
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Song not found' });
+      }
+
+      res.json({
+        success: true,
+        message: `Song ${featured ? 'pinned as featured' : 'unpinned from featured'}`,
+        song: result.rows[0],
+        path: 'featured-only'
+      });
+      return;
+    }
+
+    // Full update for other fields - destructure here
     const {
       vegan_focus,
       animal_category,
       advocacy_style,
       advocacy_issues,
-      lyrical_explicitness
+      lyrical_explicitness,
+      featured
     } = req.body;
-
+    
     const result = await pool.query(`
       UPDATE songs 
       SET 
-        vegan_focus = $2,
-        animal_category = $3,
-        advocacy_style = $4,
-        advocacy_issues = $5,
-        lyrical_explicitness = $6,
+        vegan_focus = COALESCE($2, vegan_focus),
+        animal_category = COALESCE($3, animal_category),
+        advocacy_style = COALESCE($4, advocacy_style),
+        advocacy_issues = COALESCE($5, advocacy_issues),
+        lyrical_explicitness = COALESCE($6, lyrical_explicitness),
+        featured = COALESCE($7, featured),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
-      RETURNING id, title
+      RETURNING id, title, featured
     `, [
       songId,
       vegan_focus || null,
       animal_category || null,
       advocacy_style || null,
       advocacy_issues || null,
-      lyrical_explicitness || null
+      lyrical_explicitness || null,
+      typeof featured === 'boolean' ? featured : null
     ]);
 
     if (result.rowCount === 0) {
@@ -144,7 +254,9 @@ router.put('/update-song/:id', async (req, res) => {
 
     res.json({
       success: true,
-      song: result.rows[0]
+      message: `Song updated successfully`,
+      song: result.rows[0],
+      path: 'full-update'
     });
 
   } catch (error) {
@@ -267,5 +379,6 @@ router.post('/bulk-upload', upload.single('csv'), async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;

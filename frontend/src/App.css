@@ -425,6 +425,33 @@ main {
   margin: 0 auto;
 }
 
+/* Featured Songs Grid - Responsive with even distribution */
+.featured-songs .songs-grid {
+  display: grid;
+  gap: var(--spacing-lg);
+  max-width: var(--max-width);
+  margin: 0 auto;
+  /* Default: 4 columns for wide screens */
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Responsive breakpoints for featured songs */
+@media (max-width: 900px) {
+  .featured-songs .songs-grid {
+    /* 2 columns for medium screens */
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .featured-songs .songs-grid {
+    /* 1 column for small screens */
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+}
+
 /* Song Card */
 .song-card {
   background-color: var(--color-bg-secondary);
@@ -618,6 +645,45 @@ main {
   justify-content: center;
   max-width: 600px;
   margin: 0 auto;
+}
+
+/* Home Search Results */
+.home-search-results {
+  margin-top: var(--spacing-xl);
+  text-align: left;
+}
+
+.search-results-container h3 {
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-xl);
+}
+
+.view-all-results {
+  text-align: center;
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-md);
+}
+
+.view-all-results a {
+  color: var(--color-accent-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.view-all-results a:hover {
+  text-decoration: underline;
+}
+
+.no-results {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-md);
+  margin-top: var(--spacing-lg);
 }
 
 /* Mobile Search Section */
@@ -2732,7 +2798,8 @@ main {
 
 .admin-categorize-btn,
 .admin-edit-btn,
-.admin-delete-btn {
+.admin-delete-btn,
+.admin-featured-btn {
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
   border-radius: var(--border-radius-sm);
@@ -2767,6 +2834,24 @@ main {
 
 .admin-delete-btn:hover {
   background: #c82333;
+}
+
+.admin-featured-btn.featured {
+  background: #ffd700;
+  color: #333;
+}
+
+.admin-featured-btn.featured:hover {
+  background: #ffed4e;
+}
+
+.admin-featured-btn.not-featured {
+  background: #6c757d;
+  color: white;
+}
+
+.admin-featured-btn.not-featured:hover {
+  background: #545b62;
 }
 
 /* Message Styling */

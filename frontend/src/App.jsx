@@ -1,12 +1,13 @@
 import './App.css'
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { spotifyService } from './api/spotifyService';
 import MoodBadge from './components/MoodBadge';
 import SearchResults from './components/SearchResults';
 import ArtistSearchResults from './components/ArtistSearchResults';
 import ArtistDetailPage from './components/ArtistDetailPage';
 import AdminInterface from './components/AdminInterface';
+import SearchAndFilter from './components/SearchAndFilter';
 
 
 function NavigationMenu() {
@@ -706,7 +707,7 @@ function FeaturedSongs() {
     const fetchFeaturedSongs = async () => {
       try {
         setLoading(true);
-        const fetchedSongs = await spotifyService.getFeaturedSongs(8);
+        const fetchedSongs = await spotifyService.getFeaturedSongs(4);
         
         // DEBUG: Log the raw data from API
         console.log('Raw API response:', fetchedSongs);
@@ -769,49 +770,64 @@ function FeaturedSongs() {
 }
 
 
-function SearchBar() {
-  const navigate = useNavigate();
-  
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const searchTerm = e.target.searchInput.value;
-    if (searchTerm.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
-    } else {
-      navigate('/search');
-    }
-  };
-
-  const handleQuickSearch = () => {
-    navigate('/search');
-  };
-
-  return (
-    <form className="search-container" onSubmit={handleSearch}>
-      <input 
-        type="text" 
-        name="searchInput"
-        className="search-input" 
-        placeholder="Search for vegan songs, artists, or playlists..." 
-        onClick={handleQuickSearch}
-      />
-      <button type="submit" className="search-button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-      </button>
-    </form>
-  );
-}
-
 
 function SearchSection() {
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const handleResults = useCallback((results) => {
+    // Extract songs array from the API response object
+    const songs = results.songs || [];
+    setSearchResults(songs);
+    setHasSearched(true);
+  }, []);
+
+  const handleLoading = useCallback((isLoading) => {
+    setLoading(isLoading);
+  }, []);
+
+  const handleError = useCallback((errorMessage) => {
+    setError(errorMessage);
+    setHasSearched(true);
+  }, []);
+
   return (
     <section className="search-section">
       <div className="search-section-content">
         <h2>Find Your Perfect Vegan Song</h2>
-        <SearchBar />
+        <SearchAndFilter 
+          onResults={handleResults}
+          onLoading={handleLoading}
+          onError={handleError}
+        />
+        
+        {/* Search Results */}
+        {hasSearched && (
+          <div className="home-search-results">
+            {loading && <div className="loading">🎵 Searching...</div>}
+            {error && <div className="error-message">❌ {error}</div>}
+            {!loading && !error && searchResults.length === 0 && (
+              <div className="no-results">No songs found. Try different filters or search terms.</div>
+            )}
+            {!loading && !error && searchResults.length > 0 && (
+              <div className="search-results-container">
+                <h3>Search Results ({searchResults.length} songs)</h3>
+                <div className="songs-grid">
+                  {searchResults.slice(0, 8).map((song) => (
+                    <SongCard key={song.id} song={song} songId={song.id} />
+                  ))}
+                </div>
+                {searchResults.length > 8 && (
+                  <div className="view-all-results">
+                    <p>Showing first 8 results. <a href="/search">View all {searchResults.length} results</a></p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -824,11 +840,6 @@ function HomePage() {
       <HeroArea />
       <FeaturedSongs />
       <SearchSection />
-      <main>
-        <section className="coming-soon">
-          <p>Search functionality coming soon!</p>
-        </section>
-      </main>
     </>
   );
 }

@@ -474,6 +474,36 @@ function AdminInterface() {
     }));
   };
 
+  // Toggle featured status for a song
+  const handleToggleFeatured = async (songId, currentFeaturedStatus) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE}/update-song/${songId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          featured: !currentFeaturedStatus
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setMessage(result.message);
+        loadAllSongs(); // Refresh the songs list
+      } else {
+        setMessage(`Error: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error toggling featured status:', error);
+      setMessage('Failed to update featured status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatDuration = (durationMs) => {
     if (!durationMs) return '';
     const minutes = Math.floor(durationMs / 60000);
@@ -1568,6 +1598,13 @@ function AdminInterface() {
                       onClick={() => handleEditCategorization(song)}
                     >
                       Edit Categories
+                    </button>
+                    <button 
+                      className={`admin-featured-btn ${song.featured ? 'featured' : 'not-featured'}`}
+                      onClick={() => handleToggleFeatured(song.id, song.featured)}
+                      title={song.featured ? 'Remove from featured' : 'Pin as featured'}
+                    >
+                      {song.featured ? '⭐ Featured' : '☆ Pin Featured'}
                     </button>
                     {song.source_type === 'Manual' && (
                       <>

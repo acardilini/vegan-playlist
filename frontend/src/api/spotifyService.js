@@ -2,7 +2,7 @@ const API_BASE = 'http://localhost:5000/api/spotify';
 
 export const spotifyService = {
   // Get featured songs for homepage
-  getFeaturedSongs: async (limit = 8) => {
+  getFeaturedSongs: async (limit = 4) => {
     try {
       const response = await fetch(`${API_BASE}/songs/featured?limit=${limit}`);
       if (!response.ok) throw new Error('Failed to fetch featured songs');

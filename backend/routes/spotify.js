@@ -214,28 +214,44 @@ router.get('/songs', async (req, res) => {
   }
 });
 
-// Get featured/random songs for homepage - WITH CUSTOM MOODS
+// TEST: Simple featured songs endpoint
+router.get('/songs/featured-simple', async (req, res) => {
+  try {
+    // Just get featured songs, no complex joins
+    const result = await pool.query(`
+      SELECT s.id, s.title, s.featured
+      FROM songs s
+      WHERE s.featured = true
+      ORDER BY s.id
+      LIMIT 4
+    `);
+    
+    res.json({
+      message: 'Simple featured endpoint',
+      count: result.rows.length,
+      songs: result.rows
+    });
+  } catch (error) {
+    console.error('Simple featured error:', error);
+    res.status(500).json({ error: 'Simple test failed' });
+  }
+});
+
+// Get featured/random songs for homepage - MANUAL PINS + SMART SELECTION
 router.get('/songs/featured', async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 8;
+    const limit = Math.min(parseInt(req.query.limit) || 4, 4); // Max 4 songs
     
-    const result = await pool.query(`
+    // SIMPLIFIED: Just get manually featured songs first, then fill with random
+    let featuredSongs = [];
+    
+    // 1. Get manually pinned songs (simple query)
+    console.log('DEBUG: Looking for featured songs with limit:', limit);
+    const pinnedResult = await pool.query(`
       SELECT 
-        s.id,
-        s.spotify_id,
-        s.title,
-        s.duration_ms,
-        s.popularity,
-        s.spotify_url,
-        s.playlist_added_at,
-        s.energy,
-        s.danceability,
-        s.valence,
-        s.tempo,
-        s.custom_mood,
-        al.name as album_name,
-        al.release_date,
-        al.images as album_images,
+        s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
+        s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
+        al.name as album_name, al.release_date, al.images as album_images,
         ARRAY_AGG(DISTINCT a.name) as artists,
         ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
       FROM songs s
@@ -243,15 +259,61 @@ router.get('/songs/featured', async (req, res) => {
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
+      WHERE s.featured = true
       GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url, 
                s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
                al.name, al.release_date, al.images
-      ORDER BY RANDOM()
+      ORDER BY s.playlist_added_at DESC
       LIMIT $1
     `, [limit]);
     
-    // SIMPLIFIED: No post-processing needed, artist_genres are included in query
-    res.json(result.rows);
+    console.log('DEBUG: Pinned songs found:', pinnedResult.rows.length);
+    console.log('DEBUG: Pinned songs:', pinnedResult.rows.map(s => ({ id: s.id, title: s.title })));
+    featuredSongs = pinnedResult.rows;
+    
+    // 2. If we need more songs, fill with random ones
+    if (featuredSongs.length < limit) {
+      const remainingSlots = limit - featuredSongs.length;
+      const usedIds = featuredSongs.map(s => s.id);
+      
+      let randomQuery = `
+        SELECT 
+          s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
+          s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
+          al.name as album_name, al.release_date, al.images as album_images,
+          ARRAY_AGG(DISTINCT a.name) as artists,
+          ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
+        FROM songs s
+        JOIN albums al ON s.album_id = al.id
+        JOIN song_artists sa ON s.id = sa.song_id
+        JOIN artists a ON sa.artist_id = a.id
+        LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
+        WHERE (s.featured = false OR s.featured IS NULL)
+      `;
+      
+      const queryParams = [];
+      
+      if (usedIds.length > 0) {
+        randomQuery += ' AND s.id != ALL($1)';
+        queryParams.push(usedIds);
+      }
+      
+      randomQuery += `
+        GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url, 
+                 s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
+                 al.name, al.release_date, al.images
+        ORDER BY RANDOM()
+        LIMIT $${queryParams.length + 1}
+      `;
+      
+      queryParams.push(remainingSlots);
+      
+      const randomResult = await pool.query(randomQuery, queryParams);
+      featuredSongs.push(...randomResult.rows);
+    }
+    
+    console.log('DEBUG: Final response:', featuredSongs.length, 'songs');
+    res.json(featuredSongs);
   } catch (error) {
     console.error('Error fetching enhanced featured songs:', error);
     res.status(500).json({ 

@@ -88,6 +88,18 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '' }) {
 
   // Debounce search
   useEffect(() => {
+    // Only search if there's a query or active filters
+    const hasQuery = searchQuery.trim().length > 0;
+    const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
+      if (key === 'sort_by') return false;
+      if (Array.isArray(value)) return value.length > 0;
+      return value !== '' && value !== null && value !== undefined;
+    });
+
+    if (!hasQuery && !hasActiveFilters) {
+      return; // Don't search if no query and no filters
+    }
+
     const searchParams = {
       q: searchQuery,
       ...filters,
