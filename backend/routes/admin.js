@@ -6,12 +6,136 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const router = express.Router();
 
+// Admin authentication middleware
+const authenticateAdmin = (req, res, next) => {
+  const password = req.headers['x-admin-password'] || req.body.admin_password || req.query.admin_password;
+  
+  if (!password || password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  
+  next();
+};
+
+// Apply admin authentication to all routes
+router.use(authenticateAdmin);
+
 // Configure multer for file uploads
 const upload = multer({ dest: 'uploads/' });
 
 // Test route
 router.get('/test', (req, res) => {
   res.json({ message: 'Admin routes are working!' });
+});
+
+// Simple test route
+router.get('/simple-test', (req, res) => {
+  res.json({ message: 'Simple test works!' });
+});
+
+// Get all playlists for admin (new route)
+router.get('/admin-playlists', async (req, res) => {
+  console.log('Admin playlists route hit!');
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    
+    console.log('Querying database for playlists...');
+    const result = await pool.query(`
+      SELECT 
+        p.*,
+        COUNT(ps.song_id) as song_count
+      FROM playlists p
+      LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    
+    console.log('Found', result.rows.length, 'playlists');
+    
+    // Get total count for pagination
+    const countResult = await pool.query(`SELECT COUNT(*) FROM playlists`);
+    const total = parseInt(countResult.rows[0].count);
+    
+    res.json({
+      playlists: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching playlists for admin:', error);
+    res.status(500).json({ error: 'Failed to fetch playlists', details: error.message });
+  }
+});
+
+// Get all playlists for admin management
+router.get('/playlists', async (req, res) => {
+  console.log('Admin playlists route hit!');
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    
+    console.log('Querying database for playlists...');
+    const result = await pool.query(`
+      SELECT 
+        p.*,
+        COUNT(ps.song_id) as song_count
+      FROM playlists p
+      LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    
+    console.log('Found', result.rows.length, 'playlists');
+    
+    // Get total count for pagination
+    const countResult = await pool.query(`SELECT COUNT(*) FROM playlists`);
+    const total = parseInt(countResult.rows[0].count);
+    
+    res.json({
+      playlists: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching playlists for admin:', error);
+    res.status(500).json({ error: 'Failed to fetch playlists', details: error.message });
+  }
+});
+
+// Delete a playlist (admin only)
+router.delete('/playlists/:id', async (req, res) => {
+  try {
+    const playlistId = parseInt(req.params.id);
+    
+    const result = await pool.query(`
+      DELETE FROM playlists WHERE id = $1 RETURNING *
+    `, [playlistId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Playlist not found' });
+    }
+    
+    res.json({
+      message: 'Playlist deleted successfully',
+      playlist: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error deleting playlist:', error);
+    res.status(500).json({ error: 'Failed to delete playlist' });
+  }
 });
 
 // Get all songs (both Spotify and manual) for management
@@ -849,33 +973,85 @@ router.put('/update-song/:id', async (req, res) => {
     console.log('Request body:', req.body);
     
     const songId = parseInt(req.params.id);
+    
+    // If only featured is being updated, do a simpler query
+    if (typeof req.body.featured === 'boolean' && Object.keys(req.body).length === 1) {
+      const featured = req.body.featured;
+      const result = await pool.query(`
+        UPDATE songs 
+        SET featured = $2, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING id, title, featured
+      `, [songId, featured]);
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Song not found' });
+      }
+
+      return res.json({
+        success: true,
+        song: result.rows[0]
+      });
+    }
+
+    // Handle categorization updates
     const {
       vegan_focus,
       animal_category,
       advocacy_style,
       advocacy_issues,
-      lyrical_explicitness
+      lyrical_explicitness,
+      featured
     } = req.body;
+
+    // Build dynamic query based on provided fields
+    const fields = [];
+    const values = [songId];
+    let paramCount = 1;
+
+    if (vegan_focus !== undefined) {
+      paramCount++;
+      fields.push(`vegan_focus = $${paramCount}`);
+      values.push(vegan_focus || null);
+    }
+    if (animal_category !== undefined) {
+      paramCount++;
+      fields.push(`animal_category = $${paramCount}`);
+      values.push(animal_category || null);
+    }
+    if (advocacy_style !== undefined) {
+      paramCount++;
+      fields.push(`advocacy_style = $${paramCount}`);
+      values.push(advocacy_style || null);
+    }
+    if (advocacy_issues !== undefined) {
+      paramCount++;
+      fields.push(`advocacy_issues = $${paramCount}`);
+      values.push(advocacy_issues || null);
+    }
+    if (lyrical_explicitness !== undefined) {
+      paramCount++;
+      fields.push(`lyrical_explicitness = $${paramCount}`);
+      values.push(lyrical_explicitness || null);
+    }
+    if (featured !== undefined) {
+      paramCount++;
+      fields.push(`featured = $${paramCount}`);
+      values.push(featured);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    fields.push('updated_at = CURRENT_TIMESTAMP');
 
     const result = await pool.query(`
       UPDATE songs 
-      SET 
-        vegan_focus = $2,
-        animal_category = $3,
-        advocacy_style = $4,
-        advocacy_issues = $5,
-        lyrical_explicitness = $6,
-        updated_at = CURRENT_TIMESTAMP
+      SET ${fields.join(', ')}
       WHERE id = $1
-      RETURNING id, title
-    `, [
-      songId,
-      vegan_focus || null,
-      animal_category || null,
-      advocacy_style || null,
-      advocacy_issues || null,
-      lyrical_explicitness || null
-    ]);
+      RETURNING id, title, featured
+    `, values);
 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Song not found' });
@@ -892,6 +1068,74 @@ router.put('/update-song/:id', async (req, res) => {
       error: 'Failed to update song', 
       details: error.message 
     });
+  }
+});
+
+console.log('About to define playlist routes...');
+
+// Test route before playlists
+router.get('/test-playlists', (req, res) => {
+  res.json({ message: 'Test route before playlists works!' });
+});
+
+// Get all playlists for admin management
+router.get('/playlists', async (req, res) => {
+  console.log('Admin playlists route hit!');
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    
+    const result = await pool.query(`
+      SELECT 
+        p.*,
+        COUNT(ps.song_id) as song_count
+      FROM playlists p
+      LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    
+    // Get total count for pagination
+    const countResult = await pool.query(`SELECT COUNT(*) FROM playlists`);
+    const total = parseInt(countResult.rows[0].count);
+    
+    res.json({
+      playlists: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching playlists for admin:', error);
+    res.status(500).json({ error: 'Failed to fetch playlists' });
+  }
+});
+
+// Delete a playlist (admin only)
+router.delete('/playlists/:id', async (req, res) => {
+  try {
+    const playlistId = parseInt(req.params.id);
+    
+    const result = await pool.query(`
+      DELETE FROM playlists WHERE id = $1 RETURNING *
+    `, [playlistId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Playlist not found' });
+    }
+    
+    res.json({
+      message: 'Playlist deleted successfully',
+      playlist: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error deleting playlist:', error);
+    res.status(500).json({ error: 'Failed to delete playlist' });
   }
 });
 

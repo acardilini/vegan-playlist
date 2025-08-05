@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import BulkEditModal from './BulkEditModal';
 
 const API_BASE = 'http://localhost:5000/api/admin';
+const ADMIN_PASSWORD = 'admin123';
 
 function AdminInterface() {
   const [activeTab, setActiveTab] = useState('manage-songs');
   const [allSongs, setAllSongs] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
   const [categorOptions, setCategorOptions] = useState({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -14,6 +16,8 @@ function AdminInterface() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingSong, setEditingSong] = useState(null);
   const [editingCategorization, setEditingCategorization] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
 
   // Complete form state with all Spotify fields
   const [songForm, setSongForm] = useState({
@@ -58,13 +62,34 @@ function AdminInterface() {
   });
 
   useEffect(() => {
-    loadCategorizationOptions();
-    loadAllSongs();
-  }, [searchTerm]);
+    if (isAuthenticated) {
+      loadCategorizationOptions();
+      loadAllSongs();
+      if (activeTab === 'manage-playlists') {
+        loadPlaylists();
+      }
+    }
+  }, [searchTerm, isAuthenticated, activeTab]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      setMessage('Admin access granted');
+      setTimeout(() => setMessage(''), 3000);
+    } else {
+      setMessage('Invalid admin password');
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
 
   const loadCategorizationOptions = async () => {
     try {
-      const response = await fetch(`${API_BASE}/categorization-options`);
+      const response = await fetch(`${API_BASE}/categorization-options`, {
+        headers: {
+          'X-Admin-Password': ADMIN_PASSWORD
+        }
+      });
       const options = await response.json();
       console.log('Loaded categorization options:', options);
       setCategorOptions(options);
@@ -78,12 +103,40 @@ function AdminInterface() {
     try {
       setLoading(true);
       const searchParam = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '';
-      const response = await fetch(`${API_BASE}/all-songs?limit=50${searchParam}`);
+      const response = await fetch(`${API_BASE}/all-songs?limit=50${searchParam}`, {
+        headers: {
+          'X-Admin-Password': ADMIN_PASSWORD
+        }
+      });
       const data = await response.json();
       setAllSongs(data.songs);
     } catch (error) {
       console.error('Error loading songs:', error);
       setMessage('Error loading songs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadPlaylists = async () => {
+    try {
+      setLoading(true);
+      // Use the regular playlists API temporarily
+      const response = await fetch(`http://localhost:5000/api/playlists`, {
+        headers: {
+          'X-Admin-Password': ADMIN_PASSWORD
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setPlaylists(data.playlists || []);
+    } catch (error) {
+      console.error('Error loading playlists:', error);
+      setMessage('Error loading playlists: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -166,7 +219,8 @@ function AdminInterface() {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Admin-Password': ADMIN_PASSWORD
         },
         body: JSON.stringify(formData)
       });
@@ -277,7 +331,10 @@ function AdminInterface() {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE}/manual-songs/${songId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Password': ADMIN_PASSWORD
+        }
       });
 
       const result = await response.json();
@@ -395,7 +452,8 @@ function AdminInterface() {
       const response = await fetch(`${API_BASE}/songs/${editingCategorization.id}/categorize`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Admin-Password': ADMIN_PASSWORD
         },
         body: JSON.stringify({
           // Basic info
@@ -476,29 +534,60 @@ function AdminInterface() {
 
   // Toggle featured status for a song
   const handleToggleFeatured = async (songId, currentFeaturedStatus) => {
+    console.log('Featured button clicked!', songId, currentFeaturedStatus);
+    console.log('API_BASE:', API_BASE);
+    console.log('Full URL:', `${API_BASE}/update-song/${songId}`);
     try {
       setLoading(true);
+      setMessage('Updating featured status...');
+      
       const response = await fetch(`${API_BASE}/update-song/${songId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'X-Admin-Password': ADMIN_PASSWORD
         },
         body: JSON.stringify({
           featured: !currentFeaturedStatus
         })
       });
 
-      const result = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      console.log('Response headers:', response.headers);
       
-      if (response.ok) {
-        setMessage(result.message);
-        loadAllSongs(); // Refresh the songs list
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Error response text:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Featured API response:', result);
+      
+      if (response.ok && result.success) {
+        setMessage(`Song ${!currentFeaturedStatus ? 'added to' : 'removed from'} featured list`);
+        
+        // Update the song in the current state instead of reloading all songs
+        if (result.song) {
+          setAllSongs(prevSongs => 
+            prevSongs.map(song => 
+              song.id === result.song.id 
+                ? { ...song, featured: result.song.featured }
+                : song
+            )
+          );
+        }
+        
+        setTimeout(() => setMessage(''), 3000);
       } else {
         setMessage(`Error: ${result.error}`);
+        setTimeout(() => setMessage(''), 5000);
       }
     } catch (error) {
       console.error('Error toggling featured status:', error);
-      setMessage('Failed to update featured status');
+      setMessage('Failed to update featured status: ' + error.message);
+      setTimeout(() => setMessage(''), 5000);
     } finally {
       setLoading(false);
     }
@@ -558,27 +647,108 @@ function AdminInterface() {
     );
   };
 
+  const handleDeletePlaylist = async (playlistId, playlistName) => {
+    if (!confirm(`Are you sure you want to delete the playlist "${playlistName}"? This will remove all songs from the playlist and cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:5000/api/playlists/${playlistId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-Admin-Password': ADMIN_PASSWORD
+        }
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setMessage(`Playlist "${playlistName}" deleted successfully`);
+        loadPlaylists();
+        setTimeout(() => setMessage(''), 5000);
+      } else {
+        setMessage(`Error: ${result.error}`);
+        setTimeout(() => setMessage(''), 5000);
+      }
+    } catch (error) {
+      console.error('Error deleting playlist:', error);
+      setMessage('Error deleting playlist');
+      setTimeout(() => setMessage(''), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-login">
+        <div className="admin-login-container">
+          <h2>Admin Access Required</h2>
+          <p>Please enter the admin password to access the admin dashboard.</p>
+          
+          {message && (
+            <div className={`admin-message ${message.includes('Invalid') ? 'error' : 'success'}`}>
+              {message}
+            </div>
+          )}
+          
+          <form onSubmit={handleLogin} className="admin-login-form">
+            <input
+              type="password"
+              className="admin-password-input"
+              placeholder="Admin password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              required
+            />
+            <button type="submit" className="admin-login-btn">
+              Login
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-interface">
       <div className="admin-header">
         <div className="admin-title">
           <h1>Admin Dashboard</h1>
-          <p>Manage songs and categorizations</p>
+          <p>Manage songs, playlists, and categorizations</p>
+        </div>
+        <div className="admin-nav">
+          <button 
+            className={`admin-tab ${activeTab === 'manage-songs' ? 'active' : ''}`}
+            onClick={() => setActiveTab('manage-songs')}
+          >
+            Songs
+          </button>
+          <button 
+            className={`admin-tab ${activeTab === 'manage-playlists' ? 'active' : ''}`}
+            onClick={() => setActiveTab('manage-playlists')}
+          >
+            Playlists
+          </button>
         </div>
         <div className="admin-actions">
-          <button 
-            className="compact-btn secondary"
-            onClick={() => setShowBulkEdit(true)}
-          >
-            📊 Bulk Edit Songs
-          </button>
-          <button 
-            className="compact-btn primary"
-            onClick={() => setShowAddForm(!showAddForm)}
-          >
-            {showAddForm ? 'Cancel' : '+ Add Manual Song'}
-          </button>
+          {activeTab === 'manage-songs' && (
+            <>
+              <button 
+                className="compact-btn secondary"
+                onClick={() => setShowBulkEdit(true)}
+              >
+                📊 Bulk Edit Songs
+              </button>
+              <button 
+                className="compact-btn primary"
+                onClick={() => setShowAddForm(!showAddForm)}
+              >
+                {showAddForm ? 'Cancel' : '+ Add Manual Song'}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -1084,8 +1254,54 @@ function AdminInterface() {
         </div>
       )}
 
+      {/* Manage Playlists Tab */}
+      {activeTab === 'manage-playlists' && (
+        <div className="admin-manage-section">
+          <div className="admin-manage-header">
+            <h2>Manage Playlists</h2>
+            <p>Delete playlists created by users</p>
+          </div>
+          
+          {loading ? (
+            <div className="admin-loading">Loading playlists...</div>
+          ) : (
+            <div className="admin-playlists-list">
+              {playlists.map(playlist => (
+                <div key={playlist.id} className="admin-playlist-card">
+                  <div className="admin-playlist-header">
+                    <h3>{playlist.name}</h3>
+                    <span className="playlist-song-count">{playlist.song_count} songs</span>
+                  </div>
+                  {playlist.description && (
+                    <p><strong>Description:</strong> {playlist.description}</p>
+                  )}
+                  <p><strong>Creator:</strong> {playlist.creator}</p>
+                  <p><strong>Created:</strong> {new Date(playlist.created_at).toLocaleDateString()}</p>
+                  <p><strong>Visibility:</strong> {playlist.is_public ? 'Public' : 'Private'}</p>
+                  
+                  <div className="admin-playlist-actions">
+                    <button 
+                      className="admin-delete-btn"
+                      onClick={() => handleDeletePlaylist(playlist.id, playlist.name)}
+                      disabled={loading}
+                    >
+                      Delete Playlist
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {playlists.length === 0 && (
+                <div className="admin-no-results">
+                  No playlists found
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main Songs Management */}
-      {(
+      {activeTab === 'manage-songs' && (
         <div className="admin-manage-section">
           <div className="admin-manage-header">
             <h2>Manage All Songs</h2>
@@ -1601,8 +1817,15 @@ function AdminInterface() {
                     </button>
                     <button 
                       className={`admin-featured-btn ${song.featured ? 'featured' : 'not-featured'}`}
-                      onClick={() => handleToggleFeatured(song.id, song.featured)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Button click event triggered');
+                        handleToggleFeatured(song.id, song.featured);
+                      }}
                       title={song.featured ? 'Remove from featured' : 'Pin as featured'}
+                      disabled={loading}
+                      style={{ pointerEvents: 'auto', zIndex: 10 }}
                     >
                       {song.featured ? '⭐ Featured' : '☆ Pin Featured'}
                     </button>
@@ -1634,11 +1857,14 @@ function AdminInterface() {
           )}
         </div>
       )}
+      
       {/* Bulk Edit Modal */}
-      <BulkEditModal 
-        isOpen={showBulkEdit}
-        onClose={() => setShowBulkEdit(false)}
-      />
+      {activeTab === 'manage-songs' && (
+        <BulkEditModal 
+          isOpen={showBulkEdit}
+          onClose={() => setShowBulkEdit(false)}
+        />
+      )}
     </div>
   );
 }
