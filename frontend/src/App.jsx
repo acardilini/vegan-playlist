@@ -8,6 +8,7 @@ import ArtistSearchResults from './components/ArtistSearchResults';
 import ArtistDetailPage from './components/ArtistDetailPage';
 import AdminInterface from './components/AdminInterface';
 import SearchAndFilter from './components/SearchAndFilter';
+import YouTubeEmbed from './components/YouTubeEmbed';
 import { playlistService } from './api/playlistService';
 
 function PaginationControls({ currentPage, totalPages, onPageChange }) {
@@ -215,6 +216,7 @@ function SongDetailPage() {
   const navigate = useNavigate();
   const [song, setSong] = useState(null);
   const [similarSongs, setSimilarSongs] = useState([]);
+  const [youtubeVideo, setYoutubeVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -222,16 +224,23 @@ function SongDetailPage() {
     const fetchSongData = async () => {
       try {
         setLoading(true);
-        const [songData, similarData] = await Promise.all([
+        const [songData, similarData, youtubeData] = await Promise.all([
           spotifyService.getSong(songId),
           spotifyService.getSimilarSongs(songId, 6).catch(err => {
             console.warn('Could not load similar songs:', err);
             return { similar_songs: [] };
-          })
+          }),
+          fetch(`http://localhost:5000/api/youtube/songs/${songId}/video/primary`)
+            .then(res => res.json())
+            .catch(err => {
+              console.warn('Could not load YouTube video:', err);
+              return { success: true, video: null };
+            })
         ]);
         
         setSong(songData);
         setSimilarSongs(similarData.similar_songs || []);
+        setYoutubeVideo(youtubeData.success ? youtubeData.video : null);
       } catch (err) {
         console.error('Error fetching song:', err);
         setError('Failed to load song details');
@@ -415,6 +424,16 @@ function SongDetailPage() {
           </div>
         </div>
 
+        {/* YouTube Video Section */}
+        <div className="video-section">
+          <h3>Music Video</h3>
+          <YouTubeEmbed 
+            videoId={youtubeVideo?.youtube_id}
+            title={`${song.title} by ${Array.isArray(song.artists) ? song.artists.join(', ') : song.artists}`}
+            fallbackMessage="No music video available for this song"
+          />
+        </div>
+
         {/* Grid Layout for Main Sections */}
         <div className="song-sections-grid">
           {/* Vegan Categorization Section */}
@@ -450,31 +469,10 @@ function SongDetailPage() {
           </div>
 
           {/* Audio Features Section */}
-          {(song.energy || song.danceability || song.valence) && (
+          {(song.acousticness || song.instrumentalness || song.speechiness) && (
             <div className="audio-features">
               <h3>Audio Characteristics</h3>
               <div className="features-grid">
-                {song.energy && (
-                  <AudioFeatureBar 
-                    label="Energy" 
-                    value={song.energy} 
-                    color="#FF6B6B"
-                  />
-                )}
-                {song.danceability && (
-                  <AudioFeatureBar 
-                    label="Danceability" 
-                    value={song.danceability} 
-                    color="#4ECDC4"
-                  />
-                )}
-                {song.valence && (
-                  <AudioFeatureBar 
-                    label="Positivity" 
-                    value={song.valence} 
-                    color="#FFD93D"
-                  />
-                )}
                 {song.acousticness && (
                   <AudioFeatureBar 
                     label="Acoustic" 
@@ -593,9 +591,6 @@ function SongDetailPage() {
                         song.advocacy_style?.includes(style)
                       ) && (
                         <span className="similarity-tag advocacy-style">Similar Style</span>
-                      )}
-                      {(Math.abs((similarSong.energy || 0) - (song.energy || 0)) <= 0.3) && (
-                        <span className="similarity-tag audio-feature">Similar Energy</span>
                       )}
                     </div>
                   </div>
@@ -753,23 +748,8 @@ function SongCard({ song, songId, showAddToPlaylist = true, onAddToPlaylist }) {
           </div>
         )}
         
-        {/* Enhanced metadata with audio features */}
+        {/* Metadata */}
         <div className="song-features">
-          {song.energy && (
-            <span className="feature-badge energy">
-              ⚡ {Math.round(song.energy * 100)}%
-            </span>
-          )}
-          {song.danceability && (
-            <span className="feature-badge danceability">
-              💃 {Math.round(song.danceability * 100)}%
-            </span>
-          )}
-          {song.valence && (
-            <span className="feature-badge valence">
-              😊 {Math.round(song.valence * 100)}%
-            </span>
-          )}
           {song.popularity > 20 && (
             <span className="feature-badge popularity">
               🔥 {song.popularity}% popular

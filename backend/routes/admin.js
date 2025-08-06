@@ -1259,4 +1259,103 @@ router.delete('/playlists/:id', async (req, res) => {
   }
 });
 
+// Save YouTube video endpoint (admin only)
+router.post('/save-youtube-video', async (req, res) => {
+  try {
+    const { song_id, youtube_url } = req.body;
+    
+    if (!song_id || !youtube_url) {
+      return res.status(400).json({
+        success: false,
+        error: 'Song ID and YouTube URL are required'
+      });
+    }
+    
+    // Utility function to extract YouTube video ID from URL
+    const extractYouTubeId = (url) => {
+      if (!url) return null;
+      
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+        /^([a-zA-Z0-9_-]{11})$/ // Direct video ID
+      ];
+      
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+      }
+      
+      return null;
+    };
+    
+    // Extract YouTube ID from URL
+    const youtubeId = extractYouTubeId(youtube_url);
+    if (!youtubeId || !/^[a-zA-Z0-9_-]{11}$/.test(youtubeId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid YouTube URL or video ID'
+      });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Check if video already exists for this song
+      const existingVideo = await client.query(
+        'SELECT id FROM youtube_videos WHERE song_id = $1 AND youtube_id = $2',
+        [song_id, youtubeId]
+      );
+      
+      if (existingVideo.rows.length > 0) {
+        await client.query('ROLLBACK');
+        return res.json({
+          success: true,
+          message: 'Video already exists for this song'
+        });
+      }
+      
+      // Unset other primary videos for this song
+      await client.query(
+        'UPDATE youtube_videos SET is_primary = false WHERE song_id = $1',
+        [song_id]
+      );
+      
+      // Generate thumbnail URL
+      const thumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`;
+      
+      // Insert new video
+      const result = await client.query(`
+        INSERT INTO youtube_videos (
+          song_id, youtube_id, thumbnail_url, video_type, is_primary, created_at
+        ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+        RETURNING *
+      `, [song_id, youtubeId, thumbnailUrl, 'official', true]);
+      
+      await client.query('COMMIT');
+      
+      res.json({
+        success: true,
+        video: result.rows[0],
+        message: 'YouTube video saved successfully'
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('Error saving YouTube video:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save YouTube video',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;

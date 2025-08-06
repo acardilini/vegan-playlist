@@ -29,6 +29,12 @@ const playlistRouter = require('./routes/playlists');
 console.log('Playlist router loaded, mounting at /api/playlists');
 app.use('/api/playlists', playlistRouter);
 
+// YouTube routes
+console.log('Loading YouTube routes...');
+const youtubeRouter = require('./routes/youtube');
+console.log('YouTube router loaded, mounting at /api/youtube');
+app.use('/api/youtube', youtubeRouter);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

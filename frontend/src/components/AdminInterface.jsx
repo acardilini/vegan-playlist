@@ -58,7 +58,9 @@ function AdminInterface() {
     loudness: '',
     key: '',
     mode: '',
-    time_signature: ''
+    time_signature: '',
+    // YouTube video
+    youtube_url: ''
   });
 
   useEffect(() => {
@@ -228,7 +230,39 @@ function AdminInterface() {
       const result = await response.json();
       
       if (result.success) {
-        setMessage(editingSong ? 'Song updated successfully!' : 'Song added successfully!');
+        let successMessage = editingSong ? 'Song updated successfully!' : 'Song added successfully!';
+        
+        // If there's a YouTube URL, save the video
+        if (songForm.youtube_url.trim()) {
+          try {
+            const songId = result.songId || (editingSong && editingSong.id);
+            if (songId) {
+              const youtubeResponse = await fetch(`http://localhost:5000/api/youtube/songs/${songId}/videos`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  youtube_url: songForm.youtube_url.trim(),
+                  video_type: 'official',
+                  is_primary: true
+                })
+              });
+              
+              const youtubeResult = await youtubeResponse.json();
+              if (youtubeResult.success) {
+                successMessage += ' YouTube video added!';
+              } else {
+                successMessage += ` (Note: ${youtubeResult.error})`;
+              }
+            }
+          } catch (youtubeError) {
+            console.error('Error saving YouTube video:', youtubeError);
+            successMessage += ' (Note: Could not save YouTube video)';
+          }
+        }
+        
+        setMessage(successMessage);
         setEditingSong(null);
         setShowAddForm(false);
         // Reset form
@@ -267,7 +301,9 @@ function AdminInterface() {
           loudness: '',
           key: '',
           mode: '',
-          time_signature: ''
+          time_signature: '',
+          // YouTube video
+          youtube_url: ''
         });
         loadAllSongs();
       } else {
@@ -391,13 +427,28 @@ function AdminInterface() {
       loudness: '',
       key: '',
       mode: '',
-      time_signature: ''
+      time_signature: '',
+      // YouTube video
+      youtube_url: ''
     });
   };
 
-  const handleEditCategorization = (song) => {
+  const handleEditCategorization = async (song) => {
     console.log('Editing categorization for song:', song);
     console.log('Available categorization options:', categorOptions);
+    
+    // Fetch existing YouTube video for this song
+    let youtubeUrl = '';
+    try {
+      const youtubeResponse = await fetch(`http://localhost:5000/api/youtube/songs/${song.id}/video/primary`);
+      const youtubeResult = await youtubeResponse.json();
+      if (youtubeResult.success && youtubeResult.video) {
+        youtubeUrl = `https://youtube.com/watch?v=${youtubeResult.video.youtube_id}`;
+      }
+    } catch (error) {
+      console.warn('Could not load existing YouTube video:', error);
+    }
+    
     setEditingCategorization({
       id: song.id,
       title: song.title,
@@ -440,7 +491,9 @@ function AdminInterface() {
       loudness: song.loudness || '',
       key: song.key !== null && song.key !== undefined ? song.key : '',
       mode: song.mode !== null && song.mode !== undefined ? song.mode : '',
-      time_signature: song.time_signature || ''
+      time_signature: song.time_signature || '',
+      // YouTube video
+      youtube_url: youtubeUrl
     });
   };
 
@@ -498,7 +551,44 @@ function AdminInterface() {
       const result = await response.json();
       
       if (result.success) {
-        setMessage('Categorization updated successfully!');
+        let successMessage = 'Categorization updated successfully!';
+        
+        // If there's a YouTube URL, save the video via admin endpoint
+        if (editingCategorization.youtube_url && editingCategorization.youtube_url.trim()) {
+          try {
+            const songId = editingCategorization.id;
+            const youtubeResponse = await fetch(`${API_BASE}/save-youtube-video`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Password': ADMIN_PASSWORD
+              },
+              body: JSON.stringify({
+                song_id: songId,
+                youtube_url: editingCategorization.youtube_url.trim(),
+                video_type: 'official',
+                is_primary: true
+              })
+            });
+            
+            const youtubeResult = await youtubeResponse.json();
+            if (youtubeResult.success) {
+              successMessage += ' YouTube video added!';
+            } else {
+              // Check if it's a duplicate video error
+              if (youtubeResult.error && youtubeResult.error.includes('already associated')) {
+                successMessage += ' (Video already exists for this song)';
+              } else {
+                successMessage += ` (Note: ${youtubeResult.error || 'YouTube API unavailable'})`;
+              }
+            }
+          } catch (youtubeError) {
+            console.error('Error saving YouTube video:', youtubeError);
+            successMessage += ' (Note: Could not save YouTube video - API unavailable)';
+          }
+        }
+        
+        setMessage(successMessage);
         setEditingCategorization(null);
         loadAllSongs();
       } else {
@@ -1194,6 +1284,24 @@ function AdminInterface() {
               </div>
             </div>
 
+            {/* YouTube Video Section */}
+            <div className="form-section">
+              <h4 className="section-title">🎥 YouTube Video</h4>
+              <div className="compact-form-group full-width">
+                <label className="compact-label">YouTube URL</label>
+                <input
+                  type="url"
+                  className="compact-input"
+                  value={songForm.youtube_url}
+                  onChange={(e) => handleInputChange('youtube_url', e.target.value)}
+                  placeholder="https://youtube.com/watch?v=... or https://youtu.be/..."
+                />
+                <small style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px', display: 'block' }}>
+                  Paste the full YouTube URL - the video ID will be extracted automatically
+                </small>
+              </div>
+            </div>
+
             {/* Text Content Section */}
             <div className="form-section">
               <h4 className="section-title">Additional Content</h4>
@@ -1705,6 +1813,24 @@ function AdminInterface() {
                           <option value="7">7/4</option>
                         </select>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* YouTube Video Section */}
+                  <div className="form-section">
+                    <h4 className="section-title">🎥 YouTube Video</h4>
+                    <div className="compact-form-group full-width">
+                      <label className="compact-label">YouTube URL</label>
+                      <input
+                        type="url"
+                        className="compact-input"
+                        value={editingCategorization.youtube_url || ''}
+                        onChange={(e) => handleCategorizationInputChange('youtube_url', e.target.value)}
+                        placeholder="https://youtube.com/watch?v=... or https://youtu.be/..."
+                      />
+                      <small style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px', display: 'block' }}>
+                        Paste the full YouTube URL - the video ID will be extracted automatically
+                      </small>
                     </div>
                   </div>
 
