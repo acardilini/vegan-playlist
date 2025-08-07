@@ -35,6 +35,12 @@ const youtubeRouter = require('./routes/youtube');
 console.log('YouTube router loaded, mounting at /api/youtube');
 app.use('/api/youtube', youtubeRouter);
 
+// Lyrics routes
+console.log('Loading lyrics routes...');
+const lyricsRouter = require('./routes/lyrics');
+console.log('Lyrics router loaded, mounting at /api/lyrics');
+app.use('/api/lyrics', lyricsRouter);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

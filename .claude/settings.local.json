@@ -8,7 +8,23 @@
       "Bash(node:*)",
       "Bash(pkill:*)",
       "Bash(true)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)",
+      "Bash(rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(move:*)",
+      "Bash(mv:*)",
+      "Bash(tasklist)",
+      "Bash(\"taskkill\" \"/PID\" \"26488\" \"/F\")",
+      "Bash(ls:*)",
+      "Bash(set PGPASSWORD=266266q!)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

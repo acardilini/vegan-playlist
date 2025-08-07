@@ -1358,4 +1358,567 @@ router.post('/save-youtube-video', async (req, res) => {
   }
 });
 
+// Get database completion statistics
+router.get('/completion-stats', async (req, res) => {
+  try {
+    console.log('Fetching completion statistics...');
+    
+    // Get total song count
+    const totalResult = await pool.query('SELECT COUNT(*) as total FROM songs');
+    const totalSongs = parseInt(totalResult.rows[0].total);
+
+    // Basic metadata completion
+    const metadataFields = [
+      { field: 'title', label: 'Song Title', type: 'string' },
+      { field: 'duration_ms', label: 'Duration', type: 'number' },
+      { field: 'popularity', label: 'Popularity Score', type: 'number' },
+      { field: 'explicit', label: 'Explicit Flag', type: 'boolean' },
+      { field: 'album_id', label: 'Album Info', type: 'number' },
+      { field: 'track_number', label: 'Track Number', type: 'number' },
+      { field: 'genre', label: 'Genre', type: 'string' },
+      { field: 'parent_genre', label: 'Parent Genre', type: 'string' }
+    ];
+
+    const metadataStats = {};
+    for (const { field, label, type } of metadataFields) {
+      let query;
+      if (type === 'string') {
+        query = `SELECT COUNT(*) as completed FROM songs WHERE ${field} IS NOT NULL AND TRIM(${field}) != ''`;
+      } else if (type === 'boolean') {
+        query = `SELECT COUNT(*) as completed FROM songs WHERE ${field} IS NOT NULL`;
+      } else {
+        query = `SELECT COUNT(*) as completed FROM songs WHERE ${field} IS NOT NULL AND ${field} != 0`;
+      }
+      
+      const result = await pool.query(query);
+      const completed = parseInt(result.rows[0].completed);
+      metadataStats[field] = {
+        label,
+        completed,
+        total: totalSongs,
+        percentage: Math.round((completed / totalSongs) * 100)
+      };
+    }
+
+    // Vegan categorization stats
+    const veganFields = [
+      'vegan_focus', 'animal_category', 'advocacy_style', 'advocacy_issues', 'lyrical_explicitness'
+    ];
+
+    const veganStats = {};
+    for (const field of veganFields) {
+      const result = await pool.query(`
+        SELECT COUNT(*) as completed 
+        FROM songs 
+        WHERE ${field} IS NOT NULL AND array_length(${field}, 1) > 0
+      `);
+      const completed = parseInt(result.rows[0].completed);
+      veganStats[field] = {
+        completed,
+        total: totalSongs,
+        percentage: Math.round((completed / totalSongs) * 100)
+      };
+    }
+
+    // YouTube video stats
+    const youtubeResult = await pool.query(`
+      SELECT COUNT(DISTINCT s.id) as songs_with_videos
+      FROM songs s
+      INNER JOIN youtube_videos yv ON s.id = yv.song_id
+    `);
+    const songsWithVideos = parseInt(youtubeResult.rows[0].songs_with_videos);
+    const youtubeStats = {
+      completed: songsWithVideos,
+      total: totalSongs,
+      percentage: Math.round((songsWithVideos / totalSongs) * 100),
+      missing: totalSongs - songsWithVideos
+    };
+
+    // Audio features stats
+    const audioFields = [
+      'energy', 'danceability', 'valence', 'acousticness', 
+      'instrumentalness', 'speechiness', 'tempo', 'loudness'
+    ];
+
+    const audioStats = {};
+    for (const field of audioFields) {
+      const result = await pool.query(`
+        SELECT COUNT(*) as completed FROM songs WHERE ${field} IS NOT NULL
+      `);
+      const completed = parseInt(result.rows[0].completed);
+      audioStats[field] = {
+        completed,
+        total: totalSongs,
+        percentage: Math.round((completed / totalSongs) * 100)
+      };
+    }
+
+    // Content stats (reviews, lyrics, etc.)
+    const contentStats = {};
+    
+    // Reviews and ratings (in songs table)
+    const reviewFields = [
+      { field: 'your_review', table: 'songs', type: 'text' },
+      { field: 'rating', table: 'songs', type: 'number' },
+      { field: 'inclusion_notes', table: 'songs', type: 'text' }
+    ];
+
+    for (const { field, type } of reviewFields) {
+      let query;
+      if (type === 'text') {
+        query = `SELECT COUNT(*) as completed FROM songs WHERE ${field} IS NOT NULL AND TRIM(${field}) != ''`;
+      } else {
+        query = `SELECT COUNT(*) as completed FROM songs WHERE ${field} IS NOT NULL AND ${field} > 0`;
+      }
+      
+      const result = await pool.query(query);
+      const completed = parseInt(result.rows[0].completed);
+      contentStats[field] = {
+        completed,
+        total: totalSongs,
+        percentage: Math.round((completed / totalSongs) * 100)
+      };
+    }
+
+    // Lyrics URL and highlights tracking (in songs table)
+    const lyricsFields = [
+      { field: 'lyrics_url', type: 'text' },
+      { field: 'lyrics_highlights', type: 'text' }
+    ];
+    
+    for (const { field, type } of lyricsFields) {
+      try {
+        // Check if column exists first
+        const columnExists = await pool.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'songs' 
+          AND table_schema = 'public'
+          AND column_name = $1
+        `, [field]);
+        
+        if (columnExists.rows.length > 0) {
+          const result = await pool.query(`
+            SELECT COUNT(*) as completed FROM songs 
+            WHERE ${field} IS NOT NULL AND TRIM(${field}) != ''
+          `);
+          const completed = parseInt(result.rows[0].completed);
+          contentStats[field] = {
+            completed,
+            total: totalSongs,
+            percentage: Math.round((completed / totalSongs) * 100)
+          };
+        } else {
+          // Column doesn't exist - set to 0
+          contentStats[field] = {
+            completed: 0,
+            total: totalSongs,
+            percentage: 0
+          };
+        }
+      } catch (error) {
+        console.log(`Error checking ${field}:`, error.message);
+        // Fallback to 0 if there's any error
+        contentStats[field] = {
+          completed: 0,
+          total: totalSongs,
+          percentage: 0
+        };
+      }
+    }
+
+    // Lyrics and notes (in manual_songs table)
+    const manualFields = ['lyrics', 'notes'];
+    for (const field of manualFields) {
+      const result = await pool.query(`
+        SELECT COUNT(*) as completed 
+        FROM songs s
+        LEFT JOIN manual_songs ms ON s.manual_song_id = ms.id
+        WHERE ms.${field} IS NOT NULL AND TRIM(ms.${field}) != ''
+      `);
+      const completed = parseInt(result.rows[0].completed);
+      contentStats[field] = {
+        completed,
+        total: totalSongs,
+        percentage: Math.round((completed / totalSongs) * 100)
+      };
+    }
+
+    // Most incomplete songs for recommendations
+    const incompleteResult = await pool.query(`
+      SELECT 
+        s.id,
+        s.title,
+        string_agg(a.name, ', ') as artists,
+        CASE WHEN yv.song_id IS NOT NULL THEN 1 ELSE 0 END as has_video,
+        CASE WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 THEN 1 ELSE 0 END as has_vegan_focus,
+        CASE WHEN s.genre IS NOT NULL THEN 1 ELSE 0 END as has_genre
+      FROM songs s
+      LEFT JOIN song_artists sa ON s.id = sa.song_id
+      LEFT JOIN artists a ON sa.artist_id = a.id
+      LEFT JOIN (SELECT DISTINCT song_id FROM youtube_videos) yv ON s.id = yv.song_id
+      GROUP BY s.id, s.title, s.vegan_focus, s.genre, yv.song_id
+      ORDER BY (CASE WHEN yv.song_id IS NOT NULL THEN 1 ELSE 0 END +
+                CASE WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 THEN 1 ELSE 0 END +
+                CASE WHEN s.genre IS NOT NULL THEN 1 ELSE 0 END) ASC
+      LIMIT 20
+    `);
+
+    const response = {
+      total: totalSongs,
+      metadata: metadataStats,
+      vegan: veganStats,
+      youtube: youtubeStats,
+      audio: audioStats,
+      content: contentStats,
+      mostIncomplete: incompleteResult.rows,
+      lastUpdated: new Date().toISOString()
+    };
+
+    console.log('Completion stats generated successfully');
+    res.json(response);
+
+  } catch (error) {
+    console.error('Error generating completion stats:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate completion statistics',
+      details: error.message 
+    });
+  }
+});
+
+// Save lyrics link endpoint (admin only)
+router.post('/save-lyrics-link', async (req, res) => {
+  try {
+    const { song_id, lyrics_url, lyrics_source = 'other', lyrics_highlights = '', link_type = 'external' } = req.body;
+    
+    if (!song_id || !lyrics_url) {
+      return res.status(400).json({
+        success: false,
+        error: 'Song ID and lyrics URL are required'
+      });
+    }
+
+    // Validate URL format
+    try {
+      new URL(lyrics_url);
+    } catch {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid URL format'
+      });
+    }
+
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Check if song exists
+      const songCheck = await client.query('SELECT id, title FROM songs WHERE id = $1', [song_id]);
+      if (songCheck.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({
+          success: false,
+          error: 'Song not found'
+        });
+      }
+
+      // Check if lyrics columns exist
+      const columnCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'songs' 
+        AND table_schema = 'public'
+        AND column_name IN ('lyrics_url', 'lyrics_source', 'lyrics_highlights')
+      `);
+      
+      const existingColumns = columnCheck.rows.map(row => row.column_name);
+      
+      if (existingColumns.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          success: false,
+          error: 'Lyrics functionality not enabled. Please run the lyrics setup script.',
+          setupRequired: true
+        });
+      }
+
+      // Auto-detect source from URL if not provided
+      let detectedSource = lyrics_source;
+      if (lyrics_url.includes('genius.com')) {
+        detectedSource = 'genius';
+      } else if (lyrics_url.includes('bandcamp.com')) {
+        detectedSource = 'bandcamp';
+      }
+
+      // Build update query based on available columns
+      let updateQuery = 'UPDATE songs SET updated_at = CURRENT_TIMESTAMP';
+      let params = [];
+      let paramIndex = 1;
+      
+      if (existingColumns.includes('lyrics_url')) {
+        updateQuery += `, lyrics_url = $${paramIndex}`;
+        params.push(lyrics_url);
+        paramIndex++;
+      }
+      
+      if (existingColumns.includes('lyrics_source')) {
+        updateQuery += `, lyrics_source = $${paramIndex}`;
+        params.push(detectedSource);
+        paramIndex++;
+      }
+      
+      if (existingColumns.includes('lyrics_highlights') && lyrics_highlights.trim()) {
+        updateQuery += `, lyrics_highlights = $${paramIndex}`;
+        params.push(lyrics_highlights.trim());
+        paramIndex++;
+      }
+      
+      updateQuery += ` WHERE id = $${paramIndex} RETURNING title`;
+      params.push(song_id);
+
+      const updateResult = await client.query(updateQuery, params);
+      
+      await client.query('COMMIT');
+      
+      res.json({
+        success: true,
+        message: 'Lyrics link saved successfully',
+        song_title: updateResult.rows[0].title,
+        source: detectedSource,
+        columnsUpdated: existingColumns
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    console.error('Error saving lyrics link:', error);
+    
+    if (error.message.includes('column') && error.message.includes('does not exist')) {
+      res.status(400).json({
+        success: false,
+        error: 'Lyrics database columns not found. Please run the lyrics setup script.',
+        setupRequired: true,
+        details: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to save lyrics link',
+        details: error.message
+      });
+    }
+  }
+});
+
+// Get songs missing lyrics links (admin endpoint)
+router.get('/songs-missing-lyrics', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    // First check if lyrics columns exist
+    const columnCheck = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'songs' 
+      AND table_schema = 'public'
+      AND column_name IN ('lyrics_url', 'lyrics_source')
+    `);
+    
+    const hasLyricsColumns = columnCheck.rows.length > 0;
+    
+    let songsQuery, countQuery;
+    
+    if (hasLyricsColumns) {
+      // Full query with lyrics support
+      songsQuery = `
+        SELECT 
+          s.id,
+          s.title,
+          string_agg(a.name, ', ') as artists,
+          s.popularity,
+          s.lyrics_url,
+          CASE 
+            WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 
+            THEN 1 ELSE 0 
+          END as has_vegan_focus,
+          s.created_at
+        FROM songs s
+        LEFT JOIN song_artists sa ON s.id = sa.song_id
+        LEFT JOIN artists a ON sa.artist_id = a.id
+        WHERE s.lyrics_url IS NULL OR s.lyrics_url = ''
+        GROUP BY s.id, s.title, s.popularity, s.lyrics_url, s.vegan_focus, s.created_at
+        ORDER BY 
+          (CASE WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 THEN 1 ELSE 0 END) DESC,
+          s.popularity DESC NULLS LAST, 
+          s.title
+        LIMIT $1 OFFSET $2
+      `;
+      
+      countQuery = `
+        SELECT COUNT(*) as total
+        FROM songs s
+        WHERE s.lyrics_url IS NULL OR s.lyrics_url = ''
+      `;
+    } else {
+      // Fallback query without lyrics columns - show all songs
+      songsQuery = `
+        SELECT 
+          s.id,
+          s.title,
+          string_agg(a.name, ', ') as artists,
+          s.popularity,
+          NULL as lyrics_url,
+          CASE 
+            WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 
+            THEN 1 ELSE 0 
+          END as has_vegan_focus,
+          s.created_at
+        FROM songs s
+        LEFT JOIN song_artists sa ON s.id = sa.song_id
+        LEFT JOIN artists a ON sa.artist_id = a.id
+        GROUP BY s.id, s.title, s.popularity, s.vegan_focus, s.created_at
+        ORDER BY 
+          (CASE WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 THEN 1 ELSE 0 END) DESC,
+          s.popularity DESC NULLS LAST, 
+          s.title
+        LIMIT $1 OFFSET $2
+      `;
+      
+      countQuery = `SELECT COUNT(*) as total FROM songs`;
+    }
+
+    // Get songs
+    const songsResult = await pool.query(songsQuery, [limit, offset]);
+
+    // Get total count
+    const countResult = await pool.query(countQuery);
+
+    const total = parseInt(countResult.rows[0].total);
+    const pages = Math.ceil(total / limit);
+
+    res.json({
+      success: true,
+      songs: songsResult.rows,
+      hasLyricsSupport: hasLyricsColumns,
+      pagination: {
+        page,
+        pages,
+        limit,
+        total,
+        hasNext: page < pages,
+        hasPrev: page > 1
+      },
+      message: hasLyricsColumns ? undefined : 'Lyrics columns not found - run setup script to enable lyrics functionality'
+    });
+
+  } catch (error) {
+    console.error('Error fetching songs missing lyrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch songs missing lyrics',
+      details: error.message
+    });
+  }
+});
+
+// Setup lyrics functionality endpoint (admin only)
+router.post('/setup-lyrics', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      console.log('🎵 Setting up lyrics functionality...');
+      
+      // Check existing columns
+      const columnCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'songs' 
+        AND table_schema = 'public'
+        AND column_name IN ('lyrics_url', 'lyrics_source', 'lyrics_highlights')
+      `);
+      
+      const existingColumns = columnCheck.rows.map(row => row.column_name);
+      let changes = [];
+      
+      // Add lyrics_url if missing
+      if (!existingColumns.includes('lyrics_url')) {
+        await client.query(`ALTER TABLE songs ADD COLUMN lyrics_url VARCHAR(500)`);
+        changes.push('Added lyrics_url column');
+        console.log('✅ Added lyrics_url column');
+      }
+      
+      // Add lyrics_source if missing
+      if (!existingColumns.includes('lyrics_source')) {
+        await client.query(`ALTER TABLE songs ADD COLUMN lyrics_source VARCHAR(50) DEFAULT 'other'`);
+        changes.push('Added lyrics_source column');
+        console.log('✅ Added lyrics_source column');
+      }
+      
+      // Add lyrics_highlights if missing
+      if (!existingColumns.includes('lyrics_highlights')) {
+        await client.query(`ALTER TABLE songs ADD COLUMN lyrics_highlights TEXT`);
+        changes.push('Added lyrics_highlights column');
+        console.log('✅ Added lyrics_highlights column');
+      }
+      
+      if (changes.length > 0) {
+        // Create index for better performance
+        await client.query(`
+          CREATE INDEX IF NOT EXISTS idx_songs_lyrics_url 
+          ON songs(lyrics_url) 
+          WHERE lyrics_url IS NOT NULL AND lyrics_url != ''
+        `);
+        changes.push('Created lyrics index');
+        console.log('✅ Created lyrics index');
+      }
+      
+      await client.query('COMMIT');
+      
+      // Get stats
+      const statsResult = await client.query(`
+        SELECT COUNT(*) as total_songs FROM songs
+      `);
+      
+      const message = changes.length > 0 
+        ? 'Lyrics functionality successfully set up!' 
+        : 'Lyrics functionality already enabled';
+      
+      res.json({
+        success: true,
+        message,
+        changes,
+        stats: {
+          totalSongs: parseInt(statsResult.rows[0].total_songs),
+          lyricsEnabled: true
+        }
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    console.error('Error setting up lyrics functionality:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to set up lyrics functionality',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;

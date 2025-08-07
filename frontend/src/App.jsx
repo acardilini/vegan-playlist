@@ -190,10 +190,6 @@ function StatsSection() {
           <div className="stat-number">40+</div>
           <div className="stat-label">Hours</div>
         </div>
-        <div className="stat-item" onClick={() => handleStatClick('Years Curated')}>
-          <div className="stat-number">7</div>
-          <div className="stat-label">Years Curated</div>
-        </div>
       </div>
     </section>
   );
@@ -203,8 +199,12 @@ function HeroArea() {
   return (
     <div className="hero-area">
       <div className="hero-content">
-        <DescriptionSection />
-        <StatsSection />
+        <div className="welcome-and-stats">
+          <div className="welcome-text">
+            Welcome to a searchable database of vegan, animal rights, and animal liberation songs.
+          </div>
+          <StatsSection />
+        </div>
       </div>
     </div>
   );
@@ -353,73 +353,125 @@ function SongDetailPage() {
       </div>
       
       <div className="song-detail-content">
-        {/* Main Song Info Section */}
+        {/* Main Song Info Section - New Layout */}
         <div className="song-hero">
-          <div className="song-artwork-large">
-            <img 
-              src={getArtwork()}
-              alt={`${song.title} artwork`}
-            />
-            <div className="artwork-overlay">
-              <button className="play-preview-button" onClick={handlePlayPreview}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div className="song-info-main">
-            <h1 className="song-title">{song.title}</h1>
-            <h2 className="song-artist">
-              {Array.isArray(song.artists) ? (
-                song.artists.map(artist => artist.name).join(', ')
-              ) : (
-                song.artists
-              )}
-            </h2>
-            
-            {song.album_name && (
-              <p className="song-album">
-                <strong>Album:</strong> {song.album_name}
-              </p>
-            )}
-            
-            <div className="song-meta-grid">
-              {song.release_date && (
-                <div className="meta-item">
-                  <span className="meta-label">Year</span>
-                  <span className="meta-value">{new Date(song.release_date).getFullYear()}</span>
+          <div className="hero-top-section">
+            <div className="artwork-and-info-column">
+              <div className="song-artwork-large">
+                <img 
+                  src={getArtwork()}
+                  alt={`${song.title} artwork`}
+                />
+                
+                {/* Explicit badge overlay */}
+                {song.explicit && (
+                  <div className="explicit-overlay">
+                    <span className="explicit-badge-overlay">EXPLICIT</span>
+                  </div>
+                )}
+                
+                <div className="artwork-overlay">
+                  <button className="play-preview-button" onClick={handlePlayPreview}>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
                 </div>
-              )}
-              <div className="meta-item">
-                <span className="meta-label">Duration</span>
-                <span className="meta-value">{formatDuration(song.duration_ms)}</span>
               </div>
-              {song.popularity > 0 && (
-                <div className="meta-item">
-                  <span className="meta-label">Popularity</span>
-                  <span className="meta-value">{song.popularity}%</span>
-                </div>
-              )}
-              {song.explicit && (
-                <div className="meta-item">
-                  <span className="explicit-badge">Explicit</span>
-                </div>
-              )}
+              
+              {/* Song Title, Artist, Album directly under image */}
+              <div className="song-primary-info">
+                <h1 className="song-title-large">{song.title}</h1>
+                <h2 className="song-artist-large">
+                  {Array.isArray(song.artists) ? (
+                    song.artists.map(artist => artist.name).join(', ')
+                  ) : (
+                    song.artists
+                  )}
+                </h2>
+                
+                {song.album_name && (
+                  <p className="song-album-large">
+                    {song.album_name}
+                  </p>
+                )}
+              </div>
             </div>
+            
+            {/* Lyrics Highlights - Next to artwork column */}
+            {song.lyrics_highlights && (
+              <div className="lyrics-highlights-section">
+                <h4 className="lyrics-highlights-title">
+                  💭 Lyric Highlights
+                </h4>
+                <div className="lyrics-highlights-content">
+                  <div className="lyrics-quote-wrapper">
+                    <span className="quote-icon">"</span>
+                    <div className="lyrics-text">
+                      {song.lyrics_highlights.split('\n').map((line, index) => (
+                        line.trim() && (
+                          <div key={index} className="lyrics-highlight-line">
+                            {line.startsWith('- ') || line.startsWith('• ') ? (
+                              <span className="highlight-bullet">{line}</span>
+                            ) : (
+                              <span className="highlight-quote">{line}</span>
+                            )}
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <small className="lyrics-highlights-disclaimer">
+                  Brief excerpts for analytical purposes
+                </small>
+              </div>
+            )}
+          </div>
+        
+        {/* Remaining Song Information - Below the main section */}
+        <div className="song-info-main">
+            
+            <div className="meta-and-actions">
+              <div className="song-meta-grid">
+                {song.release_date && (
+                  <div className="meta-item">
+                    <span className="meta-label">Year</span>
+                    <span className="meta-value">{new Date(song.release_date).getFullYear()}</span>
+                  </div>
+                )}
+                <div className="meta-item">
+                  <span className="meta-label">Duration</span>
+                  <span className="meta-value">{formatDuration(song.duration_ms)}</span>
+                </div>
+                {song.popularity > 0 && (
+                  <div className="meta-item">
+                    <span className="meta-label">Popularity</span>
+                    <span className="meta-value">{song.popularity}%</span>
+                  </div>
+                )}
+              </div>
 
-            <div className="external-links">
-              {song.spotify_url && (
-                <a href={song.spotify_url} target="_blank" rel="noopener noreferrer" className="spotify-link">
-                  <span>Open in Spotify</span>
-                </a>
-              )}
-              {song.preview_url && (
-                <button onClick={handlePlayPreview} className="preview-link">
-                  🎵 Play Preview
-                </button>
-              )}
+              <div className="external-links-compact">
+                {song.spotify_url && (
+                  <a href={song.spotify_url} target="_blank" rel="noopener noreferrer" className="spotify-link-compact">
+                    Open in Spotify
+                  </a>
+                )}
+                {song.lyrics_url && (
+                  <a href={song.lyrics_url} target="_blank" rel="noopener noreferrer" className="lyrics-link-compact">
+                    {song.lyrics_source === 'genius' && 'View Lyrics on Genius'}
+                    {song.lyrics_source === 'bandcamp' && 'View Lyrics on Bandcamp'}
+                    {song.lyrics_source === 'other' && 'View Lyrics'}
+                    {!song.lyrics_source && 'View Lyrics'}
+                  </a>
+                )}
+                {song.preview_url && (
+                  <button onClick={handlePlayPreview} className="preview-link-compact">
+                    🎵 Play Preview
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -842,7 +894,6 @@ function FeaturedSongs() {
     <section className="featured-songs">
       <div className="section-header">
         <h2>Featured Songs</h2>
-        <p>Discover powerful vegan-themed music</p>
         {message && (
           <div className="success-message">✅ {message}</div>
         )}
@@ -985,17 +1036,23 @@ function SearchSection({ initialSearchQuery = '' }) {
                     <span>Filters applied:</span>
                     {searchResults.filters_applied.vegan_focus && searchResults.filters_applied.vegan_focus.length > 0 && (
                       <span className="applied-filter">
-                        Focus: {searchResults.filters_applied.vegan_focus.join(', ')}
+                        Focus: {Array.isArray(searchResults.filters_applied.vegan_focus) 
+                          ? searchResults.filters_applied.vegan_focus.join(', ')
+                          : searchResults.filters_applied.vegan_focus}
                       </span>
                     )}
                     {searchResults.filters_applied.advocacy_style && searchResults.filters_applied.advocacy_style.length > 0 && (
                       <span className="applied-filter">
-                        Style: {searchResults.filters_applied.advocacy_style.join(', ')}
+                        Style: {Array.isArray(searchResults.filters_applied.advocacy_style) 
+                          ? searchResults.filters_applied.advocacy_style.join(', ')
+                          : searchResults.filters_applied.advocacy_style}
                       </span>
                     )}
                     {searchResults.filters_applied.genres && searchResults.filters_applied.genres.length > 0 && (
                       <span className="applied-filter">
-                        Genre: {searchResults.filters_applied.genres.join(', ')}
+                        Genre: {Array.isArray(searchResults.filters_applied.genres) 
+                          ? searchResults.filters_applied.genres.join(', ')
+                          : searchResults.filters_applied.genres}
                       </span>
                     )}
                     {searchResults.filters_applied.year_range && (searchResults.filters_applied.year_range.from || searchResults.filters_applied.year_range.to) && (

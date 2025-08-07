@@ -190,11 +190,17 @@ router.get('/categorization-options', async (req, res) => {
 // Update single song endpoint (for individual edits)
 router.put('/update-song/:id', async (req, res) => {
   try {
+    console.log('ADMIN_SIMPLE UPDATE-SONG ENDPOINT HIT!');
+    console.log('Request params:', req.params);
+    console.log('Request body:', req.body);
+    console.log('Body keys:', Object.keys(req.body));
+    console.log('Featured type:', typeof req.body.featured);
     
     const songId = parseInt(req.params.id);
     
     // If only featured is being updated, do a simpler query
     if (typeof req.body.featured === 'boolean' && Object.keys(req.body).length === 1) {
+      console.log('TAKING FEATURED-ONLY PATH');
       const featured = req.body.featured;
       const result = await pool.query(`
         UPDATE songs 

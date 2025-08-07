@@ -272,4 +272,142 @@ router.post('/extract-id', (req, res) => {
   }
 });
 
+// Search YouTube for videos based on song info
+router.post('/search', async (req, res) => {
+  try {
+    const { songId, query, maxResults = 5 } = req.body;
+    
+    // If we have a song ID, get song info for better search
+    let searchQuery = query;
+    if (songId && !query) {
+      const songResult = await pool.query(`
+        SELECT s.title, string_agg(a.name, ' ') as artists
+        FROM songs s
+        LEFT JOIN song_artists sa ON s.id = sa.song_id  
+        LEFT JOIN artists a ON sa.artist_id = a.id
+        WHERE s.id = $1
+        GROUP BY s.id, s.title
+      `, [songId]);
+      
+      if (songResult.rows.length > 0) {
+        const song = songResult.rows[0];
+        searchQuery = `${song.artists} ${song.title}`;
+      }
+    }
+    
+    if (!searchQuery) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query is required'
+      });
+    }
+
+    // For now, we'll create a simple search result structure
+    // In a real implementation, you'd integrate with YouTube Data API
+    // Since we don't have API keys, I'll create a mock structure that
+    // allows manual URL entry with search suggestions
+    
+    const mockResults = [
+      {
+        id: 'search_1',
+        title: `${searchQuery} - Official Video`,
+        description: 'Suggested search result',
+        thumbnailUrl: 'https://via.placeholder.com/320x180/1f1f1f/ffffff?text=Video+1',
+        channelTitle: 'Artist Channel',
+        publishedAt: new Date().toISOString(),
+        duration: 'Unknown',
+        viewCount: 'Unknown'
+      },
+      {
+        id: 'search_2', 
+        title: `${searchQuery} - Official Audio`,
+        description: 'Suggested search result',
+        thumbnailUrl: 'https://via.placeholder.com/320x180/1f1f1f/ffffff?text=Video+2',
+        channelTitle: 'Artist Channel',
+        publishedAt: new Date().toISOString(),
+        duration: 'Unknown',
+        viewCount: 'Unknown'
+      },
+      {
+        id: 'search_3',
+        title: `${searchQuery} - Live Performance`, 
+        description: 'Suggested search result',
+        thumbnailUrl: 'https://via.placeholder.com/320x180/1f1f1f/ffffff?text=Video+3',
+        channelTitle: 'Live Channel',
+        publishedAt: new Date().toISOString(),
+        duration: 'Unknown',
+        viewCount: 'Unknown'
+      }
+    ];
+
+    res.json({
+      success: true,
+      query: searchQuery,
+      results: mockResults.slice(0, maxResults),
+      message: 'Search completed (showing placeholder results - paste actual YouTube URLs below)'
+    });
+    
+  } catch (error) {
+    console.error('Error searching YouTube:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search YouTube'
+    });
+  }
+});
+
+// Get songs that need YouTube videos (for batch processing)
+router.get('/songs/missing-videos', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    
+    const result = await pool.query(`
+      SELECT 
+        s.id,
+        s.title,
+        string_agg(a.name, ', ') as artists,
+        s.popularity,
+        s.data_source
+      FROM songs s
+      LEFT JOIN song_artists sa ON s.id = sa.song_id
+      LEFT JOIN artists a ON sa.artist_id = a.id  
+      LEFT JOIN youtube_videos yv ON s.id = yv.song_id
+      WHERE yv.song_id IS NULL
+      GROUP BY s.id, s.title, s.popularity, s.data_source
+      ORDER BY s.popularity DESC NULLS LAST, s.title ASC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    
+    // Get total count
+    const countResult = await pool.query(`
+      SELECT COUNT(DISTINCT s.id) as total
+      FROM songs s
+      LEFT JOIN youtube_videos yv ON s.id = yv.song_id
+      WHERE yv.song_id IS NULL
+    `);
+    
+    const total = parseInt(countResult.rows[0].total);
+    
+    res.json({
+      success: true,
+      songs: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching songs missing videos:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch songs missing videos'
+    });
+  }
+});
+
 module.exports = router;

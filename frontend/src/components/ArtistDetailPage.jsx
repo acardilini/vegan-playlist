@@ -181,59 +181,6 @@ function ArtistDetailPage() {
               </div>
             )}
 
-            {/* Audio Stats */}
-            {(stats.avg_energy || stats.avg_danceability || stats.avg_valence) && (
-              <div className="audio-stats">
-                <h3>Average Audio Characteristics</h3>
-                <div className="audio-stats-grid">
-                  {stats.avg_energy && (
-                    <div className="audio-stat">
-                      <span className="audio-label">Energy</span>
-                      <div className="audio-bar">
-                        <div 
-                          className="audio-fill" 
-                          style={{ 
-                            width: `${Math.round(stats.avg_energy * 100)}%`,
-                            backgroundColor: '#FF6B6B'
-                          }}
-                        />
-                      </div>
-                      <span className="audio-value">{Math.round(stats.avg_energy * 100)}%</span>
-                    </div>
-                  )}
-                  {stats.avg_danceability && (
-                    <div className="audio-stat">
-                      <span className="audio-label">Danceability</span>
-                      <div className="audio-bar">
-                        <div 
-                          className="audio-fill" 
-                          style={{ 
-                            width: `${Math.round(stats.avg_danceability * 100)}%`,
-                            backgroundColor: '#4ECDC4'
-                          }}
-                        />
-                      </div>
-                      <span className="audio-value">{Math.round(stats.avg_danceability * 100)}%</span>
-                    </div>
-                  )}
-                  {stats.avg_valence && (
-                    <div className="audio-stat">
-                      <span className="audio-label">Positivity</span>
-                      <div className="audio-bar">
-                        <div 
-                          className="audio-fill" 
-                          style={{ 
-                            width: `${Math.round(stats.avg_valence * 100)}%`,
-                            backgroundColor: '#FFD93D'
-                          }}
-                        />
-                      </div>
-                      <span className="audio-value">{Math.round(stats.avg_valence * 100)}%</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

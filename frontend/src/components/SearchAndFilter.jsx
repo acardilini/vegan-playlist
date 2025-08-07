@@ -13,12 +13,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     parent_genres: [],
     year_from: '',
     year_to: '',
-    energy_min: '',
-    energy_max: '',
-    danceability_min: '',
-    danceability_max: '',
-    valence_min: '',
-    valence_max: '',
     sort_by: 'popularity'
   });
   const [filterOptions, setFilterOptions] = useState({});
@@ -79,7 +73,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       onResults(results);
     } catch (error) {
       console.error('Search error:', error);
-      onError('Failed to search songs');
+      onError('Failed to search songs: ' + error.message);
     } finally {
       setLoading(false);
       onLoading(false);
@@ -146,12 +140,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       parent_genres: [],
       year_from: '',
       year_to: '',
-      energy_min: '',
-      energy_max: '',
-      danceability_min: '',
-      danceability_max: '',
-      valence_min: '',
-      valence_max: '',
       sort_by: 'popularity'
     });
     setSearchQuery('');
@@ -166,6 +154,89 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       if (!Array.isArray(value) && value !== '') count++;
     });
     return count;
+  };
+
+  const getActiveFilters = () => {
+    const activeFilters = [];
+    
+    // Add search query as filter
+    if (searchQuery.trim()) {
+      activeFilters.push({
+        type: 'search',
+        key: 'q',
+        value: searchQuery,
+        label: `Search: "${searchQuery}"`,
+        displayValue: searchQuery
+      });
+    }
+    
+    // Add array filters (vegan categories, genres, etc.)
+    const arrayFilterLabels = {
+      vegan_focus: 'Vegan Focus',
+      animal_category: 'Animal Category', 
+      advocacy_style: 'Advocacy Style',
+      advocacy_issues: 'Advocacy Issues',
+      lyrical_explicitness: 'Lyrical Style',
+      genres: 'Genre',
+      parent_genres: 'Genre Group'
+    };
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (key === 'sort_by') return;
+      
+      if (Array.isArray(value) && value.length > 0) {
+        value.forEach(item => {
+          activeFilters.push({
+            type: 'filter',
+            key,
+            value: item,
+            label: arrayFilterLabels[key] || key,
+            displayValue: item.replace(/_/g, ' ')
+          });
+        });
+      } else if (!Array.isArray(value) && value !== '') {
+        // Handle non-array filters like year ranges
+        if (key === 'year_from') {
+          activeFilters.push({
+            type: 'filter',
+            key,
+            value,
+            label: 'From Year',
+            displayValue: value
+          });
+        } else if (key === 'year_to') {
+          activeFilters.push({
+            type: 'filter', 
+            key,
+            value,
+            label: 'To Year',
+            displayValue: value
+          });
+        }
+      }
+    });
+    
+    return activeFilters;
+  };
+
+  const removeFilter = (filterToRemove) => {
+    if (filterToRemove.type === 'search') {
+      setSearchQuery('');
+    } else if (filterToRemove.type === 'filter') {
+      setFilters(prev => {
+        const newFilters = { ...prev };
+        
+        if (Array.isArray(newFilters[filterToRemove.key])) {
+          newFilters[filterToRemove.key] = newFilters[filterToRemove.key].filter(
+            item => item !== filterToRemove.value
+          );
+        } else {
+          newFilters[filterToRemove.key] = '';
+        }
+        
+        return newFilters;
+      });
+    }
   };
 
   // Genre hierarchy mapping (matches backend)
@@ -472,6 +543,27 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
           </button>
         )}
       </div>
+
+      {/* Active Filter Chips */}
+      {getActiveFilters().length > 0 && (
+        <div className="active-filters-container">
+          <div className="active-filters-chips">
+            {getActiveFilters().map((filter, index) => (
+              <div key={`${filter.key}-${filter.value}-${index}`} className="filter-chip">
+                <span className="filter-chip-label">{filter.label}:</span>
+                <span className="filter-chip-value">{filter.displayValue}</span>
+                <button 
+                  className="filter-chip-remove"
+                  onClick={() => removeFilter(filter)}
+                  title={`Remove ${filter.label}: ${filter.displayValue}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sort Options */}
       <div className="sort-container">

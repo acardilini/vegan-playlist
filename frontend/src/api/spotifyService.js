@@ -53,9 +53,28 @@ export const spotifyService = {
         }
       });
       
-      const response = await fetch(`${API_BASE}/search?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to search songs');
-      return await response.json();
+      const url = `${API_BASE}/search?${params.toString()}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+      }
+      const result = await response.json();
+      
+      // Validate the response structure
+      if (!result || typeof result !== 'object') {
+        throw new Error('Invalid response format');
+      }
+      
+      if (!result.songs) {
+        result.songs = [];
+      }
+      
+      if (!result.pagination) {
+        result.pagination = { page: 1, total: 0, pages: 0 };
+      }
+      
+      return result;
     } catch (error) {
       console.error('Error searching songs:', error);
       throw error;

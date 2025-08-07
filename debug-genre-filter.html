@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Genre Filter</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .error { background: #fdd; border-color: #d00; }
+        .success { background: #dfd; border-color: #0d0; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Debug Genre Filter Issue</h1>
+    
+    <button onclick="testBasicSearch()">Test Basic Search (No Filter)</button>
+    <button onclick="testGenreFilter()">Test Hardcore Punk Filter</button>
+    <button onclick="testMultipleGenres()">Test Multiple Genres</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        const API_BASE = 'http://localhost:5000/api/spotify';
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            resultsDiv.appendChild(div);
+        }
+        
+        async function testBasicSearch() {
+            try {
+                addResult('Testing basic search (no filters)...');
+                const response = await fetch(`${API_BASE}/search?limit=3&sort_by=popularity`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addResult(`✅ Basic search: Found ${data.pagination.total} total songs, showing ${data.songs.length}`);
+                
+            } catch (error) {
+                addResult(`❌ Basic search failed: ${error.message}`, true);
+                console.error('Basic search error:', error);
+            }
+        }
+        
+        async function testGenreFilter() {
+            try {
+                addResult('Testing hardcore punk genre filter...');
+                
+                // Build URL exactly like frontend would
+                const params = new URLSearchParams();
+                params.append('genres', 'hardcore punk');
+                params.append('page', '1');
+                params.append('limit', '3');
+                params.append('sort_by', 'popularity');
+                
+                const url = `${API_BASE}/search?${params.toString()}`;
+                addResult(`URL: ${url}`);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addResult(`✅ Genre filter: Found ${data.pagination.total} total songs, showing ${data.songs.length}`);
+                
+                // Show first song for verification
+                if (data.songs.length > 0) {
+                    const firstSong = data.songs[0];
+                    addResult(`First song: "${firstSong.title}" by ${firstSong.artists}`);
+                }
+                
+            } catch (error) {
+                addResult(`❌ Genre filter failed: ${error.message}`, true);
+                console.error('Genre filter error:', error);
+            }
+        }
+        
+        async function testMultipleGenres() {
+            try {
+                addResult('Testing multiple genre filter (hardcore punk + punk)...');
+                
+                const params = new URLSearchParams();
+                params.append('genres', 'hardcore punk');
+                params.append('genres', 'punk');
+                params.append('page', '1');
+                params.append('limit', '3');
+                params.append('sort_by', 'popularity');
+                
+                const url = `${API_BASE}/search?${params.toString()}`;
+                addResult(`URL: ${url}`);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                addResult(`✅ Multiple genres: Found ${data.pagination.total} total songs, showing ${data.songs.length}`);
+                
+            } catch (error) {
+                addResult(`❌ Multiple genres failed: ${error.message}`, true);
+                console.error('Multiple genres error:', error);
+            }
+        }
+        
+        // Auto-run basic test on load
+        document.addEventListener('DOMContentLoaded', () => {
+            addResult('Page loaded. Click buttons to test API endpoints.');
+            testBasicSearch();
+        });
+    </script>
+</body>
+</html>

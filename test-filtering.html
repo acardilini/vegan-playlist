@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Genre Filtering</title>
+</head>
+<body>
+    <h1>Genre Filtering Test</h1>
+    <p>Open browser console (F12) to see results</p>
+    
+    <script>
+        // Test the exact URL construction that frontend should use
+        async function testGenreFiltering() {
+            const searchParams = {
+                q: '',
+                genres: ['hardcore punk'],
+                page: 1,
+                limit: 20,
+                sort_by: 'popularity'
+            };
+            
+            console.log('Testing with params:', searchParams);
+            
+            const params = new URLSearchParams();
+            
+            // Add all search parameters - exact same logic as frontend
+            Object.entries(searchParams).forEach(([key, value]) => {
+                if (value !== null && value !== undefined && value !== '') {
+                    if (Array.isArray(value)) {
+                        value.forEach(v => params.append(key, v));
+                    } else {
+                        params.append(key, value);
+                    }
+                }
+            });
+            
+            const url = `http://localhost:5000/api/spotify/search?${params.toString()}`;
+            console.log('🔍 Test URL:', url);
+            
+            try {
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    console.error('❌ Response not ok:', response.status, response.statusText);
+                    return;
+                }
+                
+                const result = await response.json();
+                console.log('✅ Test result:', result);
+                console.log('Songs found:', result.songs?.length);
+                console.log('Total:', result.pagination?.total);
+                
+            } catch (error) {
+                console.error('❌ Test error:', error);
+            }
+        }
+        
+        // Run test when page loads
+        testGenreFiltering();
+    </script>
+</body>
+</html>

@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import BulkEditModal from './BulkEditModal';
+import YouTubeVideoManager from './YouTubeVideoManager';
+import DataCompletionDashboard from './DataCompletionDashboard';
+import LyricsLookupManager from './LyricsLookupManager';
+import BulkCategorizationWorkflow from './BulkCategorizationWorkflow';
 
 const API_BASE = 'http://localhost:5000/api/admin';
 const ADMIN_PASSWORD = 'admin123';
@@ -821,6 +825,30 @@ function AdminInterface() {
           >
             Playlists
           </button>
+          <button 
+            className={`admin-tab ${activeTab === 'youtube-videos' ? 'active' : ''}`}
+            onClick={() => setActiveTab('youtube-videos')}
+          >
+            🎥 YouTube Videos
+          </button>
+          <button 
+            className={`admin-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            📊 Dashboard
+          </button>
+          <button 
+            className={`admin-tab ${activeTab === 'lyrics-manager' ? 'active' : ''}`}
+            onClick={() => setActiveTab('lyrics-manager')}
+          >
+            📝 Lyrics Links
+          </button>
+          <button 
+            className={`admin-tab ${activeTab === 'bulk-categorization' ? 'active' : ''}`}
+            onClick={() => setActiveTab('bulk-categorization')}
+          >
+            🚀 Bulk Categorization
+          </button>
         </div>
         <div className="admin-actions">
           {activeTab === 'manage-songs' && (
@@ -1406,6 +1434,26 @@ function AdminInterface() {
             </div>
           )}
         </div>
+      )}
+
+      {/* YouTube Video Manager Tab */}
+      {activeTab === 'youtube-videos' && (
+        <YouTubeVideoManager />
+      )}
+
+      {/* Data Completion Dashboard Tab */}
+      {activeTab === 'dashboard' && (
+        <DataCompletionDashboard />
+      )}
+
+      {/* Lyrics Lookup Manager Tab */}
+      {activeTab === 'lyrics-manager' && (
+        <LyricsLookupManager />
+      )}
+
+      {/* Bulk Categorization Workflow Tab */}
+      {activeTab === 'bulk-categorization' && (
+        <BulkCategorizationWorkflow />
       )}
 
       {/* Main Songs Management */}

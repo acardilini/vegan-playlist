@@ -1,22 +1,7 @@
 function MoodBadge({ song, size = 'small' }) {
   const getMoodFromSong = (song) => {
-    // Use custom_mood if available, otherwise fallback to analysis of audio features
-    if (song.custom_mood) {
-      return song.custom_mood;
-    }
-    
-    // Fallback analysis based on audio features
-    const { energy, valence, danceability } = song;
-    
-    if (!energy || !valence || !danceability) return null;
-    
-    if (energy > 0.7 && valence > 0.7) return 'energetic';
-    if (energy > 0.7 && valence < 0.4) return 'intense';
-    if (energy < 0.4 && valence > 0.6) return 'chill';
-    if (energy < 0.4 && valence < 0.4) return 'melancholic';
-    if (danceability > 0.8) return 'danceable';
-    
-    return 'balanced';
+    // Only use custom_mood - no audio feature fallback
+    return song.custom_mood || null;
   };
 
   const getMoodColor = (mood) => {
