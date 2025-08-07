@@ -152,5 +152,17 @@ export const spotifyService = {
       console.error('Error searching artists:', error);
       throw error;
     }
+  },
+
+  // Get artist filter options
+  getArtistFilterOptions: async () => {
+    try {
+      const response = await fetch(`${API_BASE}/artist-filter-options`);
+      if (!response.ok) throw new Error('Failed to fetch artist filter options');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching artist filter options:', error);
+      throw error;
+    }
   }
 };

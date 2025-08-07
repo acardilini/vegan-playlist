@@ -228,17 +228,22 @@ router.get('/all-songs', async (req, res) => {
     const search = req.query.search || '';
     
     let whereClause = '';
+    let havingClause = '';
     let params = [limit, offset];
     
     if (search) {
-      whereClause = `WHERE (s.title ILIKE $3 OR string_agg(a.name, ', ') ILIKE $3)`;
+      whereClause = `WHERE (s.title ILIKE $3 OR EXISTS (
+        SELECT 1 FROM song_artists sa2 
+        JOIN artists a2 ON sa2.artist_id = a2.id 
+        WHERE sa2.song_id = s.id AND a2.name ILIKE $3
+      ))`;
       params.push(`%${search}%`);
     }
     
     const result = await pool.query(`
       SELECT 
         s.*,
-        string_agg(a.name, ', ') as artists,
+        string_agg(a.name, ', ' ORDER BY a.name) as artists,
         al.name as album_name,
         ms.id as manual_song_id,
         ms.external_url,
@@ -251,8 +256,8 @@ router.get('/all-songs', async (req, res) => {
       LEFT JOIN artists a ON sa.artist_id = a.id
       LEFT JOIN albums al ON s.album_id = al.id
       LEFT JOIN manual_songs ms ON s.manual_song_id = ms.id
-      GROUP BY s.id, al.name, ms.id, ms.external_url, ms.audio_file_path, ms.lyrics, ms.notes
       ${whereClause}
+      GROUP BY s.id, al.name, ms.id, ms.external_url, ms.audio_file_path, ms.lyrics, ms.notes
       ORDER BY s.created_at DESC
       LIMIT $1 OFFSET $2
     `, params);

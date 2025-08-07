@@ -4,6 +4,7 @@ import YouTubeVideoManager from './YouTubeVideoManager';
 import DataCompletionDashboard from './DataCompletionDashboard';
 import LyricsLookupManager from './LyricsLookupManager';
 import BulkCategorizationWorkflow from './BulkCategorizationWorkflow';
+import SubmissionsManager from './SubmissionsManager';
 
 const API_BASE = 'http://localhost:5000/api/admin';
 const ADMIN_PASSWORD = 'admin123';
@@ -115,10 +116,11 @@ function AdminInterface() {
         }
       });
       const data = await response.json();
-      setAllSongs(data.songs);
+      setAllSongs(data.songs || []);
     } catch (error) {
       console.error('Error loading songs:', error);
       setMessage('Error loading songs');
+      setAllSongs([]);  // Ensure it remains an array
     } finally {
       setLoading(false);
     }
@@ -849,6 +851,12 @@ function AdminInterface() {
           >
             🚀 Bulk Categorization
           </button>
+          <button 
+            className={`admin-tab ${activeTab === 'song-submissions' ? 'active' : ''}`}
+            onClick={() => setActiveTab('song-submissions')}
+          >
+            🎵 Submissions
+          </button>
         </div>
         <div className="admin-actions">
           {activeTab === 'manage-songs' && (
@@ -1456,6 +1464,11 @@ function AdminInterface() {
         <BulkCategorizationWorkflow />
       )}
 
+      {/* Song Submissions Management Tab */}
+      {activeTab === 'song-submissions' && (
+        <SubmissionsManager />
+      )}
+
       {/* Main Songs Management */}
       {activeTab === 'manage-songs' && (
         <div className="admin-manage-section">
@@ -1957,7 +1970,7 @@ function AdminInterface() {
             <div className="admin-loading">Loading songs...</div>
           ) : (
             <div className="admin-songs-list">
-              {allSongs.map(song => (
+              {(allSongs || []).map(song => (
                 <div key={song.id} className="admin-song-card">
                   <div className="admin-song-header">
                     <h3>{song.title}</h3>

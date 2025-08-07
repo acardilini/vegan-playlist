@@ -41,6 +41,18 @@ const lyricsRouter = require('./routes/lyrics');
 console.log('Lyrics router loaded, mounting at /api/lyrics');
 app.use('/api/lyrics', lyricsRouter);
 
+// Song Submissions routes
+console.log('Loading song submissions routes...');
+const submissionsRouter = require('./routes/submissions');
+console.log('Submissions router loaded, mounting at /api/submissions');
+app.use('/api/submissions', submissionsRouter);
+
+// Analytics routes
+console.log('Loading analytics routes...');
+const analyticsRouter = require('./routes/analytics');
+console.log('Analytics router loaded, mounting at /api/analytics');
+app.use('/api/analytics', analyticsRouter);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

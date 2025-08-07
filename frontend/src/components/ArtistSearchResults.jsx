@@ -86,7 +86,12 @@ function ArtistSearchResults() {
                     <span className="filter-tag">Search: "{results.filters_applied.query}"</span>
                   )}
                   {results.filters_applied.genres && (
-                    <span className="filter-tag">Genres: {results.filters_applied.genres.join(', ')}</span>
+                    <span className="filter-tag">
+                      Genres: {Array.isArray(results.filters_applied.genres) 
+                        ? results.filters_applied.genres.join(', ') 
+                        : results.filters_applied.genres
+                      }
+                    </span>
                   )}
                   {results.filters_applied.min_songs > 1 && (
                     <span className="filter-tag">Min Songs: {results.filters_applied.min_songs}</span>

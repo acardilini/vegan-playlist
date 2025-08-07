@@ -9,6 +9,8 @@ import ArtistDetailPage from './components/ArtistDetailPage';
 import AdminInterface from './components/AdminInterface';
 import SearchAndFilter from './components/SearchAndFilter';
 import YouTubeEmbed from './components/YouTubeEmbed';
+import SongSubmissionForm from './components/SongSubmissionForm';
+import DataDashboard from './components/DataDashboard';
 import { playlistService } from './api/playlistService';
 
 function PaginationControls({ currentPage, totalPages, onPageChange }) {
@@ -121,6 +123,16 @@ function NavigationMenu() {
         <li className={`nav-item ${isActive('/playlists') ? 'active' : ''}`}>
           <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/playlists', 'Playlists'); }}>
             Playlists
+          </a>
+        </li>
+        <li className={`nav-item ${isActive('/submit') ? 'active' : ''}`}>
+          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/submit', 'Submit'); }}>
+            Submit Song
+          </a>
+        </li>
+        <li className={`nav-item ${isActive('/dashboard') ? 'active' : ''}`}>
+          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/dashboard', 'Dashboard'); }}>
+            Dashboard
           </a>
         </li>
         <li className={`nav-item ${isActive('/about') ? 'active' : ''}`}>
@@ -1797,6 +1809,8 @@ function App() {
           <Route path="/artist/:artistId" element={<ArtistDetailPage />} />
           <Route path="/playlists" element={<PlaylistsPage />} />
           <Route path="/playlist/:playlistId" element={<PlaylistDetailPage />} />
+          <Route path="/submit" element={<SongSubmissionForm />} />
+          <Route path="/dashboard" element={<DataDashboard />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin" element={<AdminInterface />} />
         </Routes>

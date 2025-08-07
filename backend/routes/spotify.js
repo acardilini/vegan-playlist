@@ -1,7 +1,7 @@
 const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const pool = require('../database/db');
-const { getParentGenres, getAllSubgenres } = require('../utils/genreMapping');
+const { getParentGenres, getAllSubgenres, getSubgenres } = require('../utils/genreMapping');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -798,6 +798,69 @@ router.get('/filter-options', async (req, res) => {
   }
 });
 
+// Get artist filter options and counts
+router.get('/artist-filter-options', async (req, res) => {
+  try {
+    // Get artist genres with counts (from the artists.genres array field)
+    const artistGenresQuery = `
+      SELECT 
+        UNNEST(a.genres) as value, 
+        COUNT(*) as count
+      FROM artists a
+      WHERE a.genres IS NOT NULL AND array_length(a.genres, 1) > 0
+      GROUP BY UNNEST(a.genres)
+      ORDER BY count DESC, value ASC
+    `;
+
+    // Calculate artist parent genres based on the genre hierarchy
+    const artistParentGenresQuery = `
+      SELECT 
+        parent_genre as value,
+        COUNT(*) as count
+      FROM (
+        SELECT DISTINCT a.id, 
+          CASE 
+            WHEN genre = ANY('{metalcore,deathcore,mathcore,groove metal,death metal,black metal,thrash metal,doom metal,progressive metal,nu metal,melodic death metal,sludge metal,stoner metal,grindcore,heavy metal,alternative metal,industrial metal,speed metal,rap metal,djent}') THEN 'metal'
+            WHEN genre = ANY('{blues rock,hard rock,alternative rock,indie rock,classic rock,progressive rock,psychedelic rock,garage rock,gothic rock,industrial rock,art rock,acid rock,grunge,post-grunge,britpop,madchester,krautrock,noise rock,neo-psychedelic,folk rock,celtic rock,brazilian rock}') THEN 'rock'
+            WHEN genre = ANY('{punk,hardcore punk,skate punk,ska punk,folk punk,pop punk,post-punk,anarcho-punk,street punk,queercore,riot grrrl,indie punk,celtic punk,proto-punk,egg punk}') THEN 'punk'
+            WHEN genre = ANY('{hardcore,melodic hardcore,post-hardcore,crossover hardcore,screamo,midwest emo}') THEN 'hardcore'
+            WHEN genre = ANY('{folk punk,anti-folk,indie folk,folk rock,acoustic folk,contemporary folk,folk,traditional folk,americana,celtic,singer-songwriter,country blues}') THEN 'folk'
+            WHEN genre = ANY('{blues,blues rock,electric blues,acoustic blues,delta blues}') THEN 'blues'
+            WHEN genre = ANY('{pop,indie pop,electropop,synthpop,power pop,dream pop,jangle pop,swedish pop,german pop,new wave,pop soul}') THEN 'pop'
+            WHEN genre = ANY('{electronic,ambient,techno,house,drum and bass,dubstep,edm,industrial,ebm,darkwave,coldwave,cold wave,downtempo,trip hop,glitch,witch house,footwork,bassline,riddim,minimalism,neoclassical}') THEN 'electronic'
+            WHEN genre = ANY('{hip hop,rap,conscious hip hop,alternative hip hop,underground hip hop,east coast hip hop,experimental hip hop,hardcore hip hop,old school hip hop,gangster rap,horrorcore,grime,uk grime}') THEN 'hip-hop'
+            WHEN genre = ANY('{reggae,ska,dub,roots reggae,nz reggae,lovers rock,ragga,dancehall,rocksteady}') THEN 'reggae'
+            WHEN genre = ANY('{free jazz,hard bop}') THEN 'jazz'
+            WHEN genre = ANY('{philly soul,pop soul,gospel,gospel r&b}') THEN 'soul'
+            ELSE 'other'
+          END as parent_genre
+        FROM artists a, UNNEST(a.genres) as genre
+        WHERE a.genres IS NOT NULL AND array_length(a.genres, 1) > 0
+      ) parent_calc
+      GROUP BY parent_genre
+      ORDER BY count DESC, parent_genre ASC
+    `;
+
+    const [
+      artistGenres,
+      artistParentGenres
+    ] = await Promise.all([
+      pool.query(artistGenresQuery),
+      pool.query(artistParentGenresQuery)
+    ]);
+
+    res.json({
+      genres: artistGenres.rows,
+      parent_genres: artistParentGenres.rows,
+      subgenres: artistGenres.rows // For compatibility with the hierarchical component
+    });
+  } catch (error) {
+    console.error('Error fetching artist filter options:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Failed to fetch artist filter options', details: error.message });
+  }
+});
+
 // Check database contents
 router.get('/database-check', async (req, res) => {
   try {
@@ -947,6 +1010,7 @@ router.get('/artists/search', async (req, res) => {
     const { 
       q: query,
       genres,
+      parent_genres,
       min_songs = 1,
       min_followers,
       max_followers,
@@ -975,12 +1039,29 @@ router.get('/artists/search', async (req, res) => {
       paramIndex++;
     }
 
-    // Genre filter
+    // Genre filter (handles both specific subgenres and parent genre hierarchies)
     if (genres) {
       const genreList = Array.isArray(genres) ? genres : [genres];
       whereConditions.push(`a.genres && $${paramIndex}::text[]`);
       queryParams.push(genreList);
       paramIndex++;
+    }
+
+    // Parent genres filter - expand to include all subgenres
+    if (parent_genres) {
+      const parentGenreList = Array.isArray(parent_genres) ? parent_genres : [parent_genres];
+      const allSubgenres = [];
+      
+      parentGenreList.forEach(parentGenre => {
+        const subgenres = getSubgenres(parentGenre);
+        allSubgenres.push(...subgenres);
+      });
+      
+      if (allSubgenres.length > 0) {
+        whereConditions.push(`a.genres && $${paramIndex}::text[]`);
+        queryParams.push(allSubgenres);
+        paramIndex++;
+      }
     }
 
     // Followers filter
@@ -1110,7 +1191,7 @@ router.get('/artists/search', async (req, res) => {
       },
       filters_applied: {
         query: query || null,
-        genres: genres || null,
+        genres: genres ? (Array.isArray(genres) ? genres : [genres]) : null,
         min_songs: parseInt(min_songs),
         min_followers: min_followers ? parseInt(min_followers) : null,
         max_followers: max_followers ? parseInt(max_followers) : null,
