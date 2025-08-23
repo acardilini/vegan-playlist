@@ -96,7 +96,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
       onLoading(true);
       
       const results = await spotifyService.searchArtists(searchParams);
-      onResults(results);
+      onResults(results, searchParams);
     } catch (error) {
       console.error('Artist search error:', error);
       onError('Failed to search artists: ' + error.message);

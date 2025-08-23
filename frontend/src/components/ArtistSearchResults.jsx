@@ -9,12 +9,18 @@ function ArtistSearchResults() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentSearchParams, setCurrentSearchParams] = useState(null);
 
   const initialQuery = searchParams.get('q') || '';
 
-  const handleResults = (searchResults) => {
+  const handleResults = (searchResults, searchParams) => {
     setResults(searchResults);
     setError(null);
+    if (searchParams) {
+      setCurrentSearchParams(searchParams);
+      setCurrentPage(searchParams.page || 1);
+    }
   };
 
   const handleLoading = (isLoading) => {
@@ -24,6 +30,24 @@ function ArtistSearchResults() {
   const handleError = (errorMessage) => {
     setError(errorMessage);
     setResults(null);
+  };
+
+  const handlePageChange = async (newPage) => {
+    if (!currentSearchParams || newPage === currentPage) return;
+    
+    try {
+      setLoading(true);
+      const searchParams = { ...currentSearchParams, page: newPage };
+      const results = await spotifyService.searchArtists(searchParams);
+      setResults(results);
+      setCurrentPage(newPage);
+      setError(null);
+    } catch (error) {
+      console.error('Page change error:', error);
+      setError('Failed to load page: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleArtistClick = (artistId) => {
@@ -186,13 +210,81 @@ function ArtistSearchResults() {
             </div>
           )}
 
-          {/* Pagination would go here if needed */}
           {results.pagination.pages > 1 && (
             <div className="pagination">
-              <p>
-                Page {results.pagination.page} of {results.pagination.pages} 
-                ({results.pagination.total} total artists)
-              </p>
+              <div className="pagination-info">
+                <p>
+                  Page {results.pagination.page} of {results.pagination.pages} 
+                  ({results.pagination.total} total artists)
+                </p>
+              </div>
+              
+              <div className="pagination-controls">
+                <button 
+                  className="pagination-btn" 
+                  onClick={() => handlePageChange(1)} 
+                  disabled={results.pagination.page === 1}
+                >
+                  &laquo; First
+                </button>
+                
+                <button 
+                  className="pagination-btn" 
+                  onClick={() => handlePageChange(results.pagination.page - 1)} 
+                  disabled={results.pagination.page === 1}
+                >
+                  &lsaquo; Previous
+                </button>
+                
+                <span className="page-numbers">
+                  {(() => {
+                    const current = results.pagination.page;
+                    const total = results.pagination.pages;
+                    const pages = [];
+                    
+                    let start = Math.max(1, current - 2);
+                    let end = Math.min(total, current + 2);
+                    
+                    if (end - start < 4) {
+                      if (start === 1) {
+                        end = Math.min(total, start + 4);
+                      } else {
+                        start = Math.max(1, end - 4);
+                      }
+                    }
+                    
+                    for (let i = start; i <= end; i++) {
+                      pages.push(
+                        <button
+                          key={i}
+                          className={`pagination-btn ${i === current ? 'active' : ''}`}
+                          onClick={() => handlePageChange(i)}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+                    
+                    return pages;
+                  })()}
+                </span>
+                
+                <button 
+                  className="pagination-btn" 
+                  onClick={() => handlePageChange(results.pagination.page + 1)} 
+                  disabled={results.pagination.page === results.pagination.pages}
+                >
+                  Next &rsaquo;
+                </button>
+                
+                <button 
+                  className="pagination-btn" 
+                  onClick={() => handlePageChange(results.pagination.pages)} 
+                  disabled={results.pagination.page === results.pagination.pages}
+                >
+                  Last &raquo;
+                </button>
+              </div>
             </div>
           )}
         </div>
