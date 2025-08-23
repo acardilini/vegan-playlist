@@ -8791,3 +8791,299 @@ main {
     margin: var(--spacing-xs) 0;
   }
 }
+
+/* Artists Manager Styles */
+.artists-manager {
+  padding: var(--spacing-lg);
+}
+
+.artists-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.stat-card {
+  background: var(--color-bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--color-accent-primary);
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+.admin-filters {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.filter-group label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.filter-select {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-bg-tertiary);
+  border-radius: var(--border-radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.artists-table-container {
+  overflow-x: auto;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.artists-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.artists-table th,
+.artists-table td {
+  padding: var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.artists-table th {
+  background: var(--color-bg-tertiary);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-standard);
+}
+
+.sortable-header:hover {
+  background: var(--color-bg-quaternary);
+  color: var(--color-text-primary);
+}
+
+.artists-table tr:hover {
+  background: rgba(29, 185, 84, 0.05);
+}
+
+.artists-table tr.reviewed {
+  background: rgba(29, 185, 84, 0.1);
+}
+
+.artist-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.artist-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--border-radius-sm);
+  object-fit: cover;
+}
+
+.artist-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.artist-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.genres {
+  color: var(--color-accent-primary);
+}
+
+.song-count {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.sample-songs {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.review-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.review-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.review-checkbox input[type="checkbox"] {
+  margin: 0;
+}
+
+.checkmark {
+  color: var(--color-accent-primary);
+}
+
+.review-date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.advocacy-notes .has-notes {
+  color: var(--color-accent-primary);
+  font-weight: 500;
+}
+
+.advocacy-notes .no-notes {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.btn-edit {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-accent-primary);
+  background: transparent;
+  color: var(--color-accent-primary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  transition: var(--transition-standard);
+}
+
+.btn-edit:hover {
+  background: var(--color-accent-primary);
+  color: var(--color-bg-primary);
+}
+
+.btn-spotify {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid #1db954;
+  background: transparent;
+  color: #1db954;
+  border-radius: var(--border-radius-sm);
+  text-decoration: none;
+  font-size: var(--font-size-xs);
+  transition: var(--transition-standard);
+}
+
+.btn-spotify:hover {
+  background: #1db954;
+  color: white;
+}
+
+/* Artist Edit Modal */
+.artist-edit-modal {
+  max-width: 600px;
+  width: 90vw;
+}
+
+.artist-edit-modal .form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.artist-edit-modal label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text-secondary);
+}
+
+.artist-edit-modal input[type="text"],
+.artist-edit-modal textarea {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-bg-tertiary);
+  border-radius: var(--border-radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  resize: vertical;
+}
+
+.artist-edit-modal textarea {
+  min-height: 80px;
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  margin-bottom: var(--spacing-xs) !important;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+}
+
+.checkbox-label + small {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  margin-left: calc(var(--spacing-sm) + 16px);
+}
+
+@media (max-width: 768px) {
+  .admin-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .artists-table th,
+  .artists-table td {
+    padding: var(--spacing-sm);
+  }
+  
+  .artist-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+}

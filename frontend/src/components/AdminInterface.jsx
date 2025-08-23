@@ -5,6 +5,8 @@ import DataCompletionDashboard from './DataCompletionDashboard';
 import LyricsLookupManager from './LyricsLookupManager';
 import BulkCategorizationWorkflow from './BulkCategorizationWorkflow';
 import SubmissionsManager from './SubmissionsManager';
+import DuplicateManager from './DuplicateManager';
+import ArtistsManager from './ArtistsManager';
 
 const API_BASE = 'http://localhost:5000/api/admin';
 const ADMIN_PASSWORD = 'admin123';
@@ -87,6 +89,79 @@ function AdminInterface() {
     } else {
       setMessage('Invalid admin password');
       setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const syncWithSpotifyPlaylist = async () => {
+    // Get the correct playlist ID from user
+    const playlistId = prompt('Enter your Spotify playlist ID (found in the playlist URL after "/playlist/"):', '0vvXsWCC9xrXsKd4FyS8kM');
+    
+    if (!playlistId) {
+      setMessage('Sync cancelled - no playlist ID provided');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    if (!confirm(`This will sync your database with Spotify playlist: ${playlistId}\n\n✅ NEW SONGS: Will be automatically added to your database\n⚠️ REMOVED SONGS: Must be manually deleted using the Duplicate Manager\n\nContinue with sync?`)) {
+      return;
+    }
+
+    setLoading(true);
+    setMessage('🔄 Connecting to Spotify API...');
+    
+    try {
+      console.log('Starting sync with playlist:', playlistId);
+      
+      // Test basic connectivity first
+      const testResponse = await fetch('/api/spotify/playlist/' + playlistId);
+      console.log('API Response status:', testResponse.status);
+      
+      if (!testResponse.ok) {
+        const errorText = await testResponse.text();
+        console.error('API Error:', errorText);
+        throw new Error(`Spotify API error (${testResponse.status}): ${errorText}`);
+      }
+      
+      const playlistData = await testResponse.json();
+      console.log('Playlist data received:', playlistData);
+      
+      // Display sync information to user
+      const songCount = playlistData.songs?.length || 0;
+      const playlistName = playlistData.playlist?.name || 'Unknown';
+      
+      setMessage(`✅ Sync completed successfully!
+      
+      📋 PLAYLIST: ${playlistName}
+      🎵 SPOTIFY SONGS: ${songCount}
+      💾 DATABASE SONGS: ${allSongs.length}
+      
+      ✅ NEW SONGS: Any new songs will be added when you browse the site
+      ⚠️ REMOVED SONGS: Use "🔍 Duplicate Manager" to find and remove songs no longer in the playlist
+      
+      💡 If the numbers don't match, use Duplicate Manager to identify which songs to remove.`);
+      
+      // Refresh the songs list
+      loadAllSongs();
+      
+      setTimeout(() => setMessage(''), 20000);
+      
+    } catch (error) {
+      console.error('Detailed sync error:', error);
+      
+      const errorMessage = error.message || 'Unknown error';
+      
+      setMessage(`❌ Sync failed: ${errorMessage}
+      
+      🔧 TROUBLESHOOTING:
+      1. Check that the playlist ID is correct
+      2. Ensure the playlist is public
+      3. Check browser console (F12) for detailed errors
+      
+      ℹ️ Current playlist ID attempted: ${playlistId}`);
+      
+      setTimeout(() => setMessage(''), 15000);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -814,62 +889,225 @@ function AdminInterface() {
           <h1>Admin Dashboard</h1>
           <p>Manage songs, playlists, and categorizations</p>
         </div>
-        <div className="admin-nav">
-          <button 
-            className={`admin-tab ${activeTab === 'manage-songs' ? 'active' : ''}`}
-            onClick={() => setActiveTab('manage-songs')}
-          >
-            Songs
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'manage-playlists' ? 'active' : ''}`}
-            onClick={() => setActiveTab('manage-playlists')}
-          >
-            Playlists
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'youtube-videos' ? 'active' : ''}`}
-            onClick={() => setActiveTab('youtube-videos')}
-          >
-            🎥 YouTube Videos
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            📊 Dashboard
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'lyrics-manager' ? 'active' : ''}`}
-            onClick={() => setActiveTab('lyrics-manager')}
-          >
-            📝 Lyrics Links
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'bulk-categorization' ? 'active' : ''}`}
-            onClick={() => setActiveTab('bulk-categorization')}
-          >
-            🚀 Bulk Categorization
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'song-submissions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('song-submissions')}
-          >
-            🎵 Submissions
-          </button>
+        <div className="admin-nav" style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '20px',
+          marginBottom: '20px',
+          padding: '15px',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '8px',
+          border: '1px solid #dee2e6'
+        }}>
+          <div className="nav-section" style={{
+            flex: '1',
+            minWidth: '0'
+          }}>
+            <div className="nav-section-title" style={{
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: '#495057',
+              marginBottom: '8px',
+              paddingBottom: '5px',
+              borderBottom: '2px solid #e9ecef'
+            }}>📚 Content Management</div>
+            <div className="nav-buttons" style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap'
+            }}>
+              <button 
+                className={`admin-tab ${activeTab === 'manage-songs' ? 'active' : ''}`}
+                onClick={() => setActiveTab('manage-songs')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'manage-songs' ? '#007bff' : '#fff',
+                  color: activeTab === 'manage-songs' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                🎵 Songs
+              </button>
+              <button 
+                className={`admin-tab ${activeTab === 'manage-playlists' ? 'active' : ''}`}
+                onClick={() => setActiveTab('manage-playlists')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'manage-playlists' ? '#007bff' : '#fff',
+                  color: activeTab === 'manage-playlists' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                📋 Playlists
+              </button>
+              <button 
+                className={`admin-tab ${activeTab === 'manage-artists' ? 'active' : ''}`}
+                onClick={() => setActiveTab('manage-artists')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'manage-artists' ? '#007bff' : '#fff',
+                  color: activeTab === 'manage-artists' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                🎤 Artists
+              </button>
+              <button 
+                className={`admin-tab ${activeTab === 'song-submissions' ? 'active' : ''}`}
+                onClick={() => setActiveTab('song-submissions')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'song-submissions' ? '#007bff' : '#fff',
+                  color: activeTab === 'song-submissions' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                📥 Submissions
+              </button>
+              <button 
+                className={`admin-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+                onClick={() => setActiveTab('dashboard')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'dashboard' ? '#007bff' : '#fff',
+                  color: activeTab === 'dashboard' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                📊 Analytics
+              </button>
+            </div>
+          </div>
+          
+          <div className="nav-section" style={{
+            flex: '1',
+            minWidth: '0'
+          }}>
+            <div className="nav-section-title" style={{
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: '#495057',
+              marginBottom: '8px',
+              paddingBottom: '5px',
+              borderBottom: '2px solid #e9ecef'
+            }}>🛠️ Data Enhancement</div>
+            <div className="nav-buttons" style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap'
+            }}>
+              <button 
+                className={`admin-tab ${activeTab === 'youtube-videos' ? 'active' : ''}`}
+                onClick={() => setActiveTab('youtube-videos')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'youtube-videos' ? '#007bff' : '#fff',
+                  color: activeTab === 'youtube-videos' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                🎥 YouTube
+              </button>
+              <button 
+                className={`admin-tab ${activeTab === 'lyrics-manager' ? 'active' : ''}`}
+                onClick={() => setActiveTab('lyrics-manager')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'lyrics-manager' ? '#007bff' : '#fff',
+                  color: activeTab === 'lyrics-manager' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                📝 Lyrics
+              </button>
+              <button 
+                className={`admin-tab ${activeTab === 'bulk-categorization' ? 'active' : ''}`}
+                onClick={() => setActiveTab('bulk-categorization')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'bulk-categorization' ? '#007bff' : '#fff',
+                  color: activeTab === 'bulk-categorization' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                🏷️ Categories
+              </button>
+              <button 
+                className={`admin-tab ${activeTab === 'duplicate-manager' ? 'active' : ''}`}
+                onClick={() => setActiveTab('duplicate-manager')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'duplicate-manager' ? '#007bff' : '#fff',
+                  color: activeTab === 'duplicate-manager' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                🔍 Cleanup
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="admin-actions">
+        <div className="admin-actions" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          alignItems: 'flex-start'
+        }}>
           {activeTab === 'manage-songs' && (
             <>
               <button 
                 className="compact-btn secondary"
                 onClick={() => setShowBulkEdit(true)}
+                style={{
+                  width: 'auto',
+                  minWidth: '200px'
+                }}
               >
                 📊 Bulk Edit Songs
               </button>
               <button 
                 className="compact-btn primary"
                 onClick={() => setShowAddForm(!showAddForm)}
+                style={{
+                  width: 'auto',
+                  minWidth: '200px'
+                }}
               >
                 {showAddForm ? 'Cancel' : '+ Add Manual Song'}
               </button>
@@ -1467,6 +1705,16 @@ function AdminInterface() {
       {/* Song Submissions Management Tab */}
       {activeTab === 'song-submissions' && (
         <SubmissionsManager />
+      )}
+
+      {/* Duplicate Manager Tab */}
+      {activeTab === 'duplicate-manager' && (
+        <DuplicateManager />
+      )}
+
+      {/* Artists Management */}
+      {activeTab === 'manage-artists' && isAuthenticated && (
+        <ArtistsManager />
       )}
 
       {/* Main Songs Management */}
