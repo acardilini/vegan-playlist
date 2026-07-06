@@ -58,17 +58,24 @@ Run before ending every working session:
 ## Architecture
 
 ### Backend Structure (`backend/`)
-- **server.js**: Main Express server with CORS and middleware setup
-- **routes/spotify.js**: Spotify API integration and database queries
-- **database/db.js**: PostgreSQL connection pool
-- **database/schema.sql**: Database schema with songs, artists, albums, playlists tables
-- **scripts/importSpotifyData.js**: Data import utilities
+- **server.js**: Main Express server; mounts 7 routers: `/api/spotify`, `/api/admin`,
+  `/api/playlists`, `/api/youtube`, `/api/lyrics`, `/api/submissions`, `/api/analytics`
+- **routes/**: `spotify.js` (public site API), `admin.js` (~3,100 lines, password-protected
+  curation API), `playlists.js`, `youtube.js`, `lyrics.js`, `submissions.js`, `analytics.js`.
+  `admin_simple.js` exists but is **not mounted** (dead)
+- **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
+- **scripts/**: 39 one-off/import scripts (cleanup scheduled in Phase 2.3)
+- **utils/genreMapping.js**: parent-genre mapping used by admin + search
 
 ### Frontend Structure (`frontend/`)
-- **src/App.jsx**: Main React app with routing (React Router)
-- **src/api/spotifyService.js**: API service for backend communication
-- **Components**: HomePage, SongDetailPage, ArtistsPage, PlaylistsPage, AboutPage
-- **Vite configuration**: Uses Vite for development and builds
+- **src/App.jsx** (~1,900 lines): routing plus **inline pages** — Home, Song Detail,
+  Playlists, Playlist Detail, About (decomposition scheduled in Phase 2.1)
+- **src/components/**: 18 components — public (SearchAndFilter, ArtistSearchResults,
+  ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge, YouTubeEmbed) and admin
+  (AdminInterface + 9 tab components)
+- **src/api/**: `spotifyService.js`, `playlistService.js`
+- See [`docs/FEATURE_INVENTORY.md`](docs/FEATURE_INVENTORY.md) for the full screen/endpoint
+  audit with keep/rebuild/drop/defer decisions
 
 ### Database Schema
 - **Core tables**: songs, artists, albums with many-to-many relationships

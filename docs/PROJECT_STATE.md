@@ -8,15 +8,21 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Phase:** Phase 0 — Discovery & Audit
-- **Current session:** _between sessions (pre-work complete: planning docs, security cleanup, launcher scripts)_
-- **Next session:** Session 0.1 — Feature Inventory
+- **Current session:** _between sessions (Session 0.1 complete)_
+- **Next session:** Session 0.2 — Database audit
 - **Last updated:** 2026-07-07
 
 ### Next Tasks (start here)
-1. **Session 0.1 — Feature Inventory:** walk every screen + endpoint, record keep/rebuild/drop/defer.
-2. **Session 0.2 — Database audit** (schema, counts, data quality).
-3. **Session 0.3 — Spotify API audit** (what's pulled, what's available, sync, rate limits).
-4. **Session 0.4 — Truth-source strategy** (design authoritative model + consolidation plan).
+1. **Session 0.2 — Database audit** (schema, counts, data quality). First questions: why
+   1,208 songs vs ~650 expected (check `removed_from_playlist`, `data_source`, duplicates);
+   why `analytics/vegan-themes` reports `songs_with_themes: 0`; document the real live schema
+   (base `schema.sql` + 6 add-on SQL files + HTTP-DDL endpoints have diverged from any file).
+2. **Session 0.3 — Spotify API audit** (what's pulled, what's available, sync, rate limits).
+   Note: Spotify deprecated the audio-features API for new apps (Nov 2024) — check our access.
+3. **Session 0.4 — Truth-source strategy** (design authoritative model + consolidation plan).
+4. **Small fix queued (user to confirm):** remove the two pre-auth admin test routes
+   (`admin.js:10-46`) — `test-featured-noauth/:id` writes to `songs` with **no password**
+   (verified live). One-line deletion; could ship before Phase 2.
 
 ### Known Context / Watch-outs
 - Frontend is a ~2,000-line `App.jsx` monolith with inline pages — Phase 2 target.
@@ -33,6 +39,13 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-07 — Feature Inventory decisions recorded** in
+  [`FEATURE_INVENTORY.md`](./FEATURE_INVENTORY.md): all public screens and curation tooling
+  **keep**; Spotify sync **rebuild** in Phase 1 (truth-source boundary); ~20 debug/superseded
+  endpoints, `admin_simple.js`, dead `ArtistsPage`, and 3 DDL-over-HTTP endpoints **drop**
+  (Phase 2); public playlist creation **defer** pending auth (⚑ user to confirm the flagged
+  items). Rationale: preserve every behaviour the curator relies on; remove only what nothing
+  calls.
 - **2026-07-06 — Security cleanup before Phase 0.** Rotated the Postgres password (old one was
   committed to public GitHub history via `.claude/settings.local.json`); untracked and
   gitignored that file; moved the admin password out of frontend source into env vars
@@ -59,7 +72,15 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
-- **2026-07-07** — Added `start-vegan-playlist.bat` / `stop-vegan-playlist.bat` launcher
+- **2026-07-07 (Session 0.1)** — Feature Inventory complete → `docs/FEATURE_INVENTORY.md`.
+  Walked all 11 frontend routes, 9 admin tabs, and ~100 backend endpoints (every route group
+  verified live). Key finds: `admin_simple.js` never mounted; `ArtistsPage` in `App.jsx` dead;
+  duplicate route definitions inside `admin.js`; **two admin test routes mounted before the
+  auth middleware — one writes `songs.featured` unauthenticated (verified)**; 3 endpoints run
+  schema DDL over HTTP; lyrics route file unused by the frontend; live data = 1,208 songs /
+  558 artists / 721 albums, lyrics links on 10 songs, vegan-theme analytics empty. Populated
+  the Backlog in `PROJECT_PLAN.md`; updated PRD §11 pointer and `CLAUDE.md` architecture
+  section. No code changed (audit only — smoke test n/a). / `stop-vegan-playlist.bat` launcher
   scripts (start opens both servers in titled log windows + browser, with already-running
   guard; stop kills by window title and by port 5000/5173). Smoke test: full
   stop → start → re-start cycle verified ✅. Documented in README Quick Start.

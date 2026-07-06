@@ -27,10 +27,10 @@ Legend: ☐ not started · ◐ in progress · ☑ complete
 **Exit criteria:** Feature Inventory complete; DB and Spotify audits documented; truth-source
 model designed and recorded as a decision.
 
-- ☐ **Session 0.1 — Feature Inventory.** Walk every screen and every endpoint of the running
+- ☑ **Session 0.1 — Feature Inventory.** Walk every screen and every endpoint of the running
   prototype. For each feature record: what it does, where it lives, what data it touches, and
   a decision (keep / rebuild / drop / defer). Output: a Feature Inventory document.
-  _Smoke test: n/a (audit only)._
+  _Smoke test: n/a (audit only). Done 2026-07-07 → [`FEATURE_INVENTORY.md`](./FEATURE_INVENTORY.md)._
 - ☐ **Session 0.2 — Database audit.** Document the real schema (including migration files),
   row counts, data-quality issues, orphaned records, and the categorisation data actually
   present vs. empty. _Smoke test: n/a (read-only audit)._
@@ -100,6 +100,15 @@ accessible.
 
 ## Backlog / Deferred (YAGNI)
 
-Items from the PRD intentionally deferred until needed. Populated during the Phase 0 Feature
-Inventory (e.g. analytics tracking, custom visualisation builder, offline capability). Nothing
-here is built until it earns its place.
+Items intentionally deferred until needed (from the PRD and the Session 0.1
+[Feature Inventory](./FEATURE_INVENTORY.md)). Nothing here is built until it earns its place.
+
+- **Public playlist creation/editing with accounts.** Today anyone can create playlists and
+  remove songs from any playlist, anonymously. Deferred until there is an auth/spam story
+  (Phase 4 at the earliest); curated playlists remain browsable.
+- **Audio previews / embedded player.** Song-card play buttons currently show a "coming soon"
+  alert.
+- **Clickable stat tiles** ("show all songs/artists" from the homepage stats).
+- **Analytics event tracking** (PRD §3.4).
+- **Custom visualisation builder** (PRD §3.4).
+- **Offline capability / PWA** (PRD deferral).

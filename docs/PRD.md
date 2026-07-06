@@ -290,8 +290,8 @@ This PRD provides comprehensive specifications for building The Vegan Playlist a
 _Added 2026-07-06. Sections 1–10 describe the product vision. This section records what is
 **actually implemented** in the prototype today, so the PRD reflects the full website feature
 list. Status: **✅ Implemented** · **◐ Partial** · **⛔ Planned (not built)**. The definitive
-keep/rebuild/drop/defer decisions are made in the Phase 0 Feature Inventory (see
-[`PROJECT_PLAN.md`](./PROJECT_PLAN.md))._
+keep/rebuild/drop/defer decisions are recorded in
+[`FEATURE_INVENTORY.md`](./FEATURE_INVENTORY.md) (Session 0.1, 2026-07-07)._
 
 ### 11.1 Public Website — Pages & Routes
 | Route | Page | Status | Notes |
