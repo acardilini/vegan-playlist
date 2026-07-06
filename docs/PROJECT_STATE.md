@@ -8,9 +8,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Phase:** Phase 0 — Discovery & Audit
-- **Current session:** _not yet started_
+- **Current session:** _between sessions (pre-work complete: planning docs, security cleanup, launcher scripts)_
 - **Next session:** Session 0.1 — Feature Inventory
-- **Last updated:** 2026-07-06
+- **Last updated:** 2026-07-07
 
 ### Next Tasks (start here)
 1. **Session 0.1 — Feature Inventory:** walk every screen + endpoint, record keep/rebuild/drop/defer.
