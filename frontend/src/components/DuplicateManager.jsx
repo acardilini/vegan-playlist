@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const API_BASE = 'http://localhost:5000/api/admin';
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
 function DuplicateManager() {
   const [activeTab, setActiveTab] = useState('duplicates');

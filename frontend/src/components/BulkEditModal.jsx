@@ -14,7 +14,7 @@ function BulkEditModal({ isOpen, onClose }) {
     try {
       const response = await fetch('/api/admin/all-songs?limit=1000', {
         headers: {
-          'X-Admin-Password': 'admin123'
+          'X-Admin-Password': import.meta.env.VITE_ADMIN_PASSWORD
         }
       }); // Get all songs
       const data = await response.json();
@@ -147,7 +147,7 @@ function BulkEditModal({ isOpen, onClose }) {
       const response = await fetch('/api/admin/bulk-upload', {
         method: 'POST',
         headers: {
-          'X-Admin-Password': 'admin123'
+          'X-Admin-Password': import.meta.env.VITE_ADMIN_PASSWORD
         },
         body: formData
       });

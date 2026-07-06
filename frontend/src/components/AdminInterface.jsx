@@ -9,7 +9,7 @@ import DuplicateManager from './DuplicateManager';
 import ArtistsManager from './ArtistsManager';
 
 const API_BASE = 'http://localhost:5000/api/admin';
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
 function AdminInterface() {
   const [activeTab, setActiveTab] = useState('manage-songs');

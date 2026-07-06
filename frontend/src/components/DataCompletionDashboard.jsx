@@ -20,7 +20,7 @@ function DataCompletionDashboard() {
       // Fetch completion statistics from our audit script
       const response = await fetch(`${API_BASE}/admin/completion-stats`, {
         headers: {
-          'X-Admin-Password': 'admin123'
+          'X-Admin-Password': import.meta.env.VITE_ADMIN_PASSWORD
         }
       });
 

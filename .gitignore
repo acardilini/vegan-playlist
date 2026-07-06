@@ -146,3 +146,5 @@ backend/.env
 .env.development.local
 .env.test.local
 .env.production.local
+# Claude Code local settings (may contain machine-specific permissions)
+.claude/settings.local.json

@@ -23,7 +23,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - Backend has duplicate route files (`admin.js` / `admin_simple.js`) and ~40 one-off scripts — Phase 2 target.
 - A separate, messy file of newly identified songs needs consolidating into the truth source — Phase 1.
 - Deployment must be cheap and GitHub-driven — decided in Phase 4.
-- There is an untracked `backend/nul` file (likely a stray Windows redirect artifact) — remove during cleanup.
+- The `songs` table holds **1,208 rows**, not the ~650 expected — investigate in Session 0.2 (may include removed/flagged/duplicate songs).
+- The old DB password remains in public GitHub history (rotated 2026-07-06, so harmless for the DB) — **user to change it anywhere else it was reused**.
+- Admin auth is still a shared password shipped in the frontend bundle (env var now, but visible to any visitor once deployed) — real auth is a Phase 4 requirement before the admin routes go public.
 
 ---
 
@@ -31,6 +33,12 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-06 — Security cleanup before Phase 0.** Rotated the Postgres password (old one was
+  committed to public GitHub history via `.claude/settings.local.json`); untracked and
+  gitignored that file; moved the admin password out of frontend source into env vars
+  (`ADMIN_PASSWORD` / `VITE_ADMIN_PASSWORD`) and rotated it; removed password logging from the
+  admin auth middleware. Proper admin authentication deferred to Phase 4 (YAGNI — env-var
+  shared password suffices while local-only).
 - **2026-07-06 — One living state doc.** Current-state and decision log live together in this
   file (not split) — simplest thing that works (YAGNI). Revisit if it grows unwieldy.
 - **2026-07-06 — Modernise, don't rewrite.** Preserve backend + PostgreSQL + 650-song dataset;
@@ -51,6 +59,11 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-06** — Security cleanup: rotated DB + admin passwords, moved admin password to env
+  vars (8 frontend components), untracked/gitignored `.claude/settings.local.json`, removed
+  password logging, expanded `.env.example` files, removed stray `backend/nul`. Smoke test:
+  DB connection ✅, admin auth new password 200 / old 401 ✅, frontend 200 ✅. Discovered
+  `songs` table has 1,208 rows (vs ~650 expected) — flagged for Session 0.2.
 - **2026-07-06** — Modernisation planning established: created `PROJECT_OVERVIEW.md`,
   `PROJECT_PLAN.md`, `PROJECT_STATE.md`; updated `PRD.md` with the as-built feature inventory;
   updated `CLAUDE.md` with the Start/End-Session workflow and YAGNI principle.

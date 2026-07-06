@@ -49,8 +49,6 @@ router.put('/test-featured-noauth/:id', async (req, res) => {
 const authenticateAdmin = (req, res, next) => {
   const password = req.headers['x-admin-password'] || (req.body && req.body.admin_password) || req.query.admin_password;
   
-  console.log('Auth check - provided password:', password);
-  console.log('Expected password:', process.env.ADMIN_PASSWORD);
   
   if (!password || password !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Admin authentication required' });
