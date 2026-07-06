@@ -103,10 +103,12 @@ route file, consolidating anything missing into admin (Phase 2.2).
 
 ### `routes/analytics.js` → `/api/analytics` (public)
 
-All 6 endpoints used by the Dashboard — **keep**. Note `vegan-themes` currently reports
-`songs_with_themes: 0` — per the curator this is expected: the vegan-themes analysis hasn't
-been done yet. It's future project work (the endpoint/chart will light up once songs are
-coded), not a bug.
+Used by the Dashboard — **keep**, except `GET /audio-features`: **drop** (curator decision
+2026-07-07 — all audio-feature data is NULL and Spotify no longer provides it; remove the
+endpoint, the Dashboard chart, and the Song Detail "Audio Characteristics" panel in Phase
+2/3). Note `vegan-themes` currently reports `songs_with_themes: 0` — per the curator this is
+expected: the vegan-themes analysis hasn't been done yet. It's future project work (the
+endpoint/chart will light up once songs are coded), not a bug.
 
 ### Unmounted / infrastructure
 

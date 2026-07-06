@@ -113,13 +113,14 @@ truth-source design should decide which of these earn a place (the manual-overri
 pattern is a promising skeleton for "Spotify never overwrites curation") and which get
 dropped as YAGNI.
 
-## Open questions for the curator
+## Open questions for the curator — ANSWERED 2026-07-07
 
-1. What is the 2026-04-06 batch of 534 songs — a playlist sync (playlist grew) or the
-   new-songs list import? Are they vetted?
-2. Where does the curatorial coding (focus/style/category, reviews, ratings) currently live,
-   and in what format? (Needed to design the Phase 1 import.)
-3. Should mood/genre tags (654/493 songs, script-derived) be treated as curation to keep, or
-   regenerate-able enrichment?
-4. Audio features are unobtainable from Spotify now — drop the UI panels, or plan a manual/
-   alternative source?
+1. The 2026-04-06 batch of 534 songs is a **vetted batch of new songs** (the Spotify playlist
+   grew; Session 0.3 confirmed the live playlist has 1,216 tracks). They were imported by
+   `simpleSyncSpotify.js` without album art/dates or artist genres — backfill queued for
+   Phase 1 (see `SPOTIFY_API_AUDIT.md` §6).
+2. The curatorial coding lives in **a couple of spreadsheets** — Phase 1's import will be
+   designed around them (get them into a known location before Session 1.1).
+3. Mood/genre tags are **regenerable enrichment**, not curation — a more robust generation
+   approach is future work.
+4. **Drop audio features** — remove the UI panels and analytics endpoint (Phase 2/3).

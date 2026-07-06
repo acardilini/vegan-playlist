@@ -2110,7 +2110,7 @@ router.post('/sync-spotify-playlist', async (req, res) => {
   try {
     console.log('Starting Spotify playlist sync...');
     
-    const { playlistId = '0vvXsWCC9xrXsKd4FyS8kM' } = req.body; // Default to your vegan playlist
+    const { playlistId = '5hVygGomw9zax38quC6mhi' } = req.body; // "Animal Lib & Vegan Songs" (the previous default pointed at an unrelated playlist)
     
     // Initialize Spotify API
     const SpotifyWebApi = require('spotify-web-api-node');
@@ -2496,7 +2496,7 @@ router.get('/spotify-playlist-mismatch', async (req, res) => {
   try {
     console.log('Detecting Spotify playlist mismatches...');
     
-    const { playlistId = '0vvXsWCC9xrXsKd4FyS8kM' } = req.query;
+    const { playlistId = '5hVygGomw9zax38quC6mhi' } = req.query;
     
     // Initialize Spotify API
     const SpotifyWebApi = require('spotify-web-api-node');

@@ -8,20 +8,17 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Phase:** Phase 0 — Discovery & Audit
-- **Current session:** _between sessions (Sessions 0.1 + 0.2 complete)_
-- **Next session:** Session 0.3 — Spotify API audit
+- **Current session:** _between sessions (Sessions 0.1–0.3 complete)_
+- **Next session:** Session 0.4 — Truth-source & data-source strategy
 - **Last updated:** 2026-07-07
 
 ### Next Tasks (start here)
-1. **Session 0.3 — Spotify API audit** (what's pulled, what's available, sync, rate limits).
-   Confirmed in 0.2: audio features + preview URLs are NULL for all songs and Spotify no
-   longer provides them — decide what replaces/removes the audio-features UI.
-2. **Session 0.4 — Truth-source strategy.** Now reshaped by the 0.2 finding that the DB holds
-   **no curatorial data**: design how the curator's external files (categorisation, reviews,
-   lyrics) become the truth source and get imported, not just how to protect DB fields.
-   Curator input needed on the open questions at the end of `DATABASE_AUDIT.md`.
-3. **Phase 1 prep:** get the messy song lists / curatorial files into the repo or a known
-   location so Session 1.1 can consolidate them.
+1. **Session 0.4 — Truth-source strategy.** All inputs are now in hand: the DB holds no
+   curatorial data (0.2); truth lives in the curator's **spreadsheets**; the truth/enrichment/
+   regenerable/dropped field classification is drafted in `SPOTIFY_API_AUDIT.md` §7. Design
+   the authoritative model + spreadsheet-import + consolidation plan and record as a decision.
+2. **Phase 1 prep:** get the curator's spreadsheets (song lists, lyrics, coding) into the
+   repo or a known location so Sessions 0.4/1.1 can work against the real files.
 
 ### Known Context / Watch-outs
 - Frontend is a ~2,000-line `App.jsx` monolith with inline pages — Phase 2 target.
@@ -38,9 +35,13 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   1,208 songs) — the curated dataset lives in the curator's external files. Protecting "the
   650-song dataset" means protecting those files + the DB's enrichment (671 YouTube videos,
   654 moods, 493 genres, 10 lyric links). See `DATABASE_AUDIT.md`.
-- ~~The `songs` table holds 1,208 rows, not ~650~~ **Solved (0.2):** 674 from the 2025
-  imports + 534 from an unexplained 2026-04-06 bulk import (⚑ curator to identify) − with 18
-  true duplicate pairs to merge in Session 1.1.
+- ~~The `songs` table holds 1,208 rows, not ~650~~ **Solved (0.2/0.3):** 674 from the 2025
+  imports + 534 synced 2026-04-06 after the Spotify playlist grew (curator: a vetted batch)
+  — with 18 true duplicate pairs to merge in Session 1.1. Live playlist ("Animal Lib & Vegan
+  Songs") now has 1,216 tracks; DB is 8 behind.
+- **450 songs are missing album covers** (275 bare albums from the Apr-2026 sync — also no
+  release dates, so year filters miss them; ~245 artists likewise bare). Not a Spotify
+  limitation — backfill via saved spotify_ids queued for Session 1.2.
 - The old DB password remains in public GitHub history (rotated 2026-07-06, so harmless for the DB) — **user to change it anywhere else it was reused**.
 - Admin auth is still a shared password shipped in the frontend bundle (env var now, but visible to any visitor once deployed) — real auth is a Phase 4 requirement before the admin routes go public.
 
@@ -50,6 +51,18 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-07 — Curator data decisions (from the 0.2 audit questions).** (1) The Apr-2026
+  534-song batch is a vetted batch of new songs. (2) Curatorial coding lives in a couple of
+  spreadsheets → they are the Phase 1 import source. (3) Mood/genre tags are **regenerable
+  enrichment**, not curation — a more robust generation approach is future work. (4) **Drop
+  audio features** (UI panels + analytics endpoint) — data is NULL and Spotify no longer
+  provides it.
+- **2026-07-07 — Sync endpoints re-pointed at the correct playlist.** The hardcoded default
+  in `sync-spotify-playlist` / `spotify-playlist-mismatch` was an unrelated 500-track Lofi
+  Girl playlist; one click of the admin Sync button would have flooded the DB and flagged the
+  whole catalogue as removed. Default now `5hVygGomw9zax38quC6mhi` ("Animal Lib & Vegan
+  Songs", verified live). Dataset-protection fix shipped mid-audit rather than waiting for
+  the Phase 1 sync rebuild.
 - **2026-07-07 — Curator confirmed the flagged inventory decisions.** Public playlist
   creation/mutation is **deferred** until a real auth story (Phase 4+); the two pre-auth
   admin test routes were **removed immediately** (`admin.js` — one wrote `songs.featured`
@@ -87,6 +100,15 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-07 (Session 0.3)** — Spotify API audit complete → `docs/SPOTIFY_API_AUDIT.md`.
+  Live-tested the API with the app's credentials: album images fully available (the missing
+  covers are our sync's bug — 450 songs affected, backfillable); audio features (403),
+  recommendations/related-artists (404), and preview URLs confirmed dead for this app; the
+  real playlist is "Animal Lib & Vegan Songs", 1,216 tracks (DB 8 behind). Truth vs
+  enrichment field classification drafted for Session 0.4. **Fix shipped:** sync endpoints'
+  default playlist ID pointed at an unrelated Lofi Girl playlist — corrected to the real one
+  (server reload + route smoke test ✅; sync itself intentionally not run). Curator answered
+  the four 0.2 questions (recorded in Decision Log).
 - **2026-07-07 (Session 0.2)** — Database audit complete → `docs/DATABASE_AUDIT.md`
   (read-only; no code changes, smoke test n/a). Headlines: **no curatorial data in the DB**
   (all categorisation/review fields = 0 rows); 1,208 songs = 674 (Jul–Aug 2025 imports, with

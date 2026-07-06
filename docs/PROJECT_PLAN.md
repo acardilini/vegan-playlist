@@ -37,9 +37,13 @@ model designed and recorded as a decision.
   [`DATABASE_AUDIT.md`](./DATABASE_AUDIT.md). Headline: the DB holds NO curatorial data —
   all categorisation/review fields are empty; 1,208 = 674 (2025 import) + 534 (Apr 2026
   import); 18 true duplicate pairs; audio features all NULL and unobtainable from Spotify._
-- ☐ **Session 0.3 — Spotify API audit.** Document what is currently pulled, what the API
+- ☑ **Session 0.3 — Spotify API audit.** Document what is currently pulled, what the API
   offers that we could use, the sync mechanism, auth flow, and rate limits. Identify which
-  fields should be "enrichment" vs. "truth". _Smoke test: n/a (read-only audit)._
+  fields should be "enrichment" vs. "truth". _Done 2026-07-07 →
+  [`SPOTIFY_API_AUDIT.md`](./SPOTIFY_API_AUDIT.md). Headlines: album covers still available —
+  missing ones are our sync's bug (backfillable); audio features/previews/recommendations
+  confirmed dead for this app; live playlist = 1,216 tracks vs 1,208 in DB. Shipped one fix:
+  sync endpoints defaulted to the WRONG playlist (a Lofi Girl list) — now the real one._
 - ☐ **Session 0.4 — Truth-source & data-source strategy.** Design the authoritative data
   model: how the curated dataset becomes the source of truth, how Spotify enrichment attaches,
   and how the messy new-songs file will be consolidated. Record as a decision. _Smoke test: n/a
@@ -57,7 +61,10 @@ enrichment pipeline defined; curatorial fields protected from sync overwrites.
   confirm counts and integrity._
 - ☐ **Session 1.2 — Spotify enrichment pipeline.** Implement/adjust so the truth source is
   authoritative and Spotify fills details where a match exists, without overwriting
-  curatorial data. _Smoke test: run enrichment on a sample, confirm reviews/coding untouched._
+  curatorial data. Includes the queued backfill: re-enrich the 534 Apr-2026 songs (275 bare
+  albums — covers/dates — and ~245 bare artists), and close the 8-track gap to the live
+  playlist. Replaces all three legacy import paths (see `SPOTIFY_API_AUDIT.md` §3).
+  _Smoke test: run enrichment on a sample, confirm reviews/coding untouched._
 - ☐ **Session 1.3 — Data integrity pass.** Reconcile artists/albums, fix orphans surfaced in
   the audit. _Smoke test: browse songs/artists in the app, confirm relationships render._
 
