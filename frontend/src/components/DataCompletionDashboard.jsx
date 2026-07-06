@@ -156,11 +156,11 @@ function DataCompletionDashboard() {
           color="#4ECDC4"
         />
         <StatCard
-          title="Missing Metadata"
-          value={`~${Math.round(100 - (completionStats.metadata?.popularity?.percentage || 70))}%`}
-          subtitle="Needs attention"
+          title="Lyrics Completion"
+          value={`${completionStats.content?.lyrics_url?.percentage || 0}%`}
+          subtitle={`${completionStats.content?.lyrics_url?.completed || 0} songs with lyrics URLs`}
           icon="📝"
-          color="#FFD93D"
+          color="#9B59B6"
         />
       </div>
 
@@ -168,6 +168,18 @@ function DataCompletionDashboard() {
       <div className="priority-section">
         <h3>🎯 Priority Areas</h3>
         <div className="priority-grid">
+          <CompletionBar
+            label="Lyrics URLs (Critical Priority)"
+            completed={completionStats.content?.lyrics_url?.completed || 0}
+            total={totalSongs}
+            priority={true}
+          />
+          <CompletionBar
+            label="Lyrics Highlights (Critical Priority)"
+            completed={completionStats.content?.lyrics_highlights?.completed || 0}
+            total={totalSongs}
+            priority={true}
+          />
           <CompletionBar
             label="YouTube Videos (Most Urgent)"
             completed={completionStats.youtube?.completed || 0}
@@ -258,9 +270,44 @@ function DataCompletionDashboard() {
         </div>
       </div>
 
+      {/* Lyrics Analysis (Priority Section) */}
+      <div className="completion-section lyrics-priority">
+        <h3>📝 Lyrics Completion Status (HIGH PRIORITY)</h3>
+        <div className="completion-grid">
+          <CompletionBar 
+            label="Lyrics URLs" 
+            completed={completionStats.content?.lyrics_url?.completed || 0} 
+            total={totalSongs} 
+            priority={true}
+          />
+          <CompletionBar 
+            label="Lyrics Highlights" 
+            completed={completionStats.content?.lyrics_highlights?.completed || 0} 
+            total={totalSongs} 
+            priority={true}
+          />
+          <CompletionBar 
+            label="Full Lyrics Text" 
+            completed={completionStats.content?.lyrics?.completed || 0} 
+            total={totalSongs} 
+          />
+        </div>
+        <div className="lyrics-summary">
+          <div className="lyrics-stat-card">
+            <h4>📊 Lyrics Progress Summary</h4>
+            <p><strong>URLs:</strong> {completionStats.content?.lyrics_url?.completed || 0} of {totalSongs} songs ({completionStats.content?.lyrics_url?.percentage || 0}%)</p>
+            <p><strong>Highlights:</strong> {completionStats.content?.lyrics_highlights?.completed || 0} of {totalSongs} songs ({completionStats.content?.lyrics_highlights?.percentage || 0}%)</p>
+            <p><strong>Missing:</strong> {totalSongs - (completionStats.content?.lyrics_url?.completed || 0)} songs still need lyrics URLs</p>
+            <div className="lyrics-priority-note">
+              🎯 <strong>Priority Action:</strong> Focus on adding lyrics URLs and highlights - this is critical for vegan music analysis
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Content & Reviews */}
       <div className="completion-section">
-        <h3>📝 Content & Reviews</h3>
+        <h3>📋 Content & Reviews</h3>
         <div className="completion-grid">
           <CompletionBar 
             label="Your Reviews" 
@@ -273,11 +320,6 @@ function DataCompletionDashboard() {
             total={totalSongs} 
           />
           <CompletionBar 
-            label="Lyrics" 
-            completed={completionStats.content?.lyrics?.completed || 0} 
-            total={totalSongs} 
-          />
-          <CompletionBar 
             label="Internal Notes" 
             completed={completionStats.content?.notes?.completed || 0} 
             total={totalSongs} 
@@ -287,16 +329,6 @@ function DataCompletionDashboard() {
             completed={completionStats.content?.inclusion_notes?.completed || 0} 
             total={totalSongs} 
           />
-          <CompletionBar 
-            label="Lyrics URLs" 
-            completed={completionStats.content?.lyrics_url?.completed || 0} 
-            total={totalSongs} 
-          />
-          <CompletionBar 
-            label="Lyrics Highlights" 
-            completed={completionStats.content?.lyrics_highlights?.completed || 0} 
-            total={totalSongs} 
-          />
         </div>
       </div>
 
@@ -304,6 +336,24 @@ function DataCompletionDashboard() {
       <div className="recommendations-section">
         <h3>💡 Recommended Next Steps</h3>
         <div className="recommendations-list">
+          <div className="recommendation-item urgent">
+            <div className="rec-icon">📝</div>
+            <div className="rec-content">
+              <h4>Add Lyrics URLs (HIGHEST PRIORITY)</h4>
+              <p>{totalSongs - (completionStats.content?.lyrics_url?.completed || 0)} songs need lyrics URLs. This is critical for vegan music analysis and content understanding.</p>
+              <span className="rec-progress">Progress: {completionStats.content?.lyrics_url?.percentage || 0}%</span>
+            </div>
+          </div>
+          
+          <div className="recommendation-item urgent">
+            <div className="rec-icon">🎯</div>
+            <div className="rec-content">
+              <h4>Create Lyrics Highlights (HIGHEST PRIORITY)</h4>
+              <p>{totalSongs - (completionStats.content?.lyrics_highlights?.completed || 0)} songs need vegan-themed lyrics highlights. Essential for categorization.</p>
+              <span className="rec-progress">Progress: {completionStats.content?.lyrics_highlights?.percentage || 0}%</span>
+            </div>
+          </div>
+          
           <div className="recommendation-item urgent">
             <div className="rec-icon">🎥</div>
             <div className="rec-content">
@@ -348,6 +398,12 @@ function DataCompletionDashboard() {
         <div className="action-buttons">
           <button 
             className="action-btn primary"
+            onClick={() => window.location.hash = '#admin/lyrics-manager'}
+          >
+            📝 Add Lyrics (PRIORITY)
+          </button>
+          <button 
+            className="action-btn primary"
             onClick={() => window.location.hash = '#admin/youtube-videos'}
           >
             🎥 Add YouTube Videos
@@ -366,6 +422,106 @@ function DataCompletionDashboard() {
           </button>
         </div>
       </div>
+      
+      <style jsx>{`
+        .lyrics-priority {
+          background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+          border: 2px solid #9B59B6;
+          border-radius: 12px;
+          padding: 24px;
+          margin: 20px 0;
+        }
+        
+        .lyrics-priority h3 {
+          color: #E8B5FF;
+          font-weight: bold;
+          text-align: center;
+          margin-bottom: 20px;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .lyrics-summary {
+          margin-top: 20px;
+        }
+        
+        .lyrics-stat-card {
+          background: linear-gradient(135deg, #333333 0%, #2a2a2a 100%);
+          padding: 20px;
+          border-radius: 8px;
+          border-left: 4px solid #9B59B6;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .lyrics-stat-card h4 {
+          color: #E8B5FF;
+          margin-bottom: 12px;
+          font-weight: 600;
+        }
+        
+        .lyrics-stat-card p {
+          margin: 8px 0;
+          color: #E0E0E0;
+          font-weight: 500;
+        }
+        
+        .lyrics-priority-note {
+          background: #9B59B6;
+          color: white;
+          padding: 12px;
+          border-radius: 6px;
+          margin-top: 12px;
+          font-weight: 500;
+        }
+        
+        .completion-bar.priority {
+          border: 2px solid #9B59B6;
+          background: linear-gradient(135deg, #333333 0%, #2a2a2a 100%);
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 12px;
+        }
+        
+        .completion-bar.priority .completion-label {
+          color: #FFFFFF;
+          font-weight: 600;
+          font-size: 14px;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .completion-bar.priority .completion-stats {
+          color: #E8B5FF;
+          font-weight: 500;
+        }
+        
+        .priority-grid .completion-bar.priority {
+          box-shadow: 0 2px 8px rgba(155, 89, 182, 0.2);
+        }
+        
+        .priority-section h3 {
+          color: #FFFFFF;
+          font-weight: 700;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .completion-section.lyrics-priority .completion-grid .completion-bar {
+          background: linear-gradient(135deg, #333333 0%, #2a2a2a 100%);
+          border: 1px solid #9B59B6;
+          padding: 12px;
+          margin-bottom: 8px;
+          border-radius: 6px;
+        }
+        
+        .completion-section.lyrics-priority .completion-label {
+          color: #FFFFFF;
+          font-weight: 600;
+          text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+        }
+        
+        .completion-section.lyrics-priority .completion-stats {
+          color: #E8B5FF;
+          font-weight: 500;
+        }
+      `}</style>
     </div>
   );
 }

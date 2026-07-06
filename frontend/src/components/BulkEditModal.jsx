@@ -12,7 +12,11 @@ function BulkEditModal({ isOpen, onClose }) {
     setMessage('');
     
     try {
-      const response = await fetch('/api/admin/all-songs?limit=1000'); // Get all songs
+      const response = await fetch('/api/admin/all-songs?limit=1000', {
+        headers: {
+          'X-Admin-Password': 'admin123'
+        }
+      }); // Get all songs
       const data = await response.json();
       
       if (!data.songs) {
@@ -20,20 +24,92 @@ function BulkEditModal({ isOpen, onClose }) {
       }
 
       const headers = [
-        'ID', 'Title', 'Artists', 'Album', 'Vegan Focus', 'Animal Category', 
-        'Advocacy Style', 'Advocacy Issues', 'Lyrical Explicitness'
+        // Basic Info
+        'ID', 'Title', 'Artists', 'Album', 'Source Type',
+        // Spotify Data
+        'Spotify ID', 'Spotify URL', 'Preview URL', 'Duration (ms)', 'Popularity', 'Explicit', 'Track Number', 'Disc Number',
+        // Genre & Classification
+        'Genre', 'Parent Genre', 'Custom Mood', 'Featured',
+        // Vegan Categorization
+        'Vegan Focus', 'Animal Category', 'Advocacy Style', 'Advocacy Issues', 'Lyrical Explicitness',
+        // Audio Features
+        'Energy', 'Danceability', 'Valence', 'Acousticness', 'Instrumentalness', 'Liveness', 'Speechiness', 'Tempo', 'Loudness', 'Key', 'Mode', 'Time Signature',
+        // Lyrics Data
+        'Lyrics URL', 'Lyrics Source', 'Lyrics Highlights', 'Manual Lyrics', 'Notes',
+        // YouTube Data
+        'YouTube ID', 'YouTube URL', 'YouTube Thumbnail', 'YouTube Video Type', 'YouTube Title',
+        // Review & Rating
+        'Your Review', 'Audio Review URL', 'Inclusion Notes', 'Rating',
+        // Manual Song Data
+        'External URL', 'Audio File Path',
+        // Timestamps
+        'Date Added', 'Created At', 'Updated At'
       ];
 
       const csvData = data.songs.map(song => [
+        // Basic Info
         song.id,
         `"${song.title || ''}"`,
         `"${song.artists || ''}"`,  
         `"${song.album_name || ''}"`,
+        `"${song.source_type || ''}"`,
+        // Spotify Data
+        `"${song.spotify_id || ''}"`,
+        `"${song.spotify_url || ''}"`,
+        `"${song.preview_url || ''}"`,
+        song.duration_ms || '',
+        song.popularity || '',
+        song.explicit || '',
+        song.track_number || '',
+        song.disc_number || '',
+        // Genre & Classification
+        `"${song.genre || ''}"`,
+        `"${song.parent_genre || ''}"`,
+        `"${song.custom_mood || ''}"`,
+        song.featured || false,
+        // Vegan Categorization
         `"${(song.vegan_focus || []).join(', ')}"`,
         `"${(song.animal_category || []).join(', ')}"`,
         `"${(song.advocacy_style || []).join(', ')}"`,
         `"${(song.advocacy_issues || []).join(', ')}"`,
         `"${(song.lyrical_explicitness || []).join(', ')}"`,
+        // Audio Features
+        song.energy || '',
+        song.danceability || '',
+        song.valence || '',
+        song.acousticness || '',
+        song.instrumentalness || '',
+        song.liveness || '',
+        song.speechiness || '',
+        song.tempo || '',
+        song.loudness || '',
+        song.key || '',
+        song.mode || '',
+        song.time_signature || '',
+        // Lyrics Data
+        `"${song.lyrics_url || ''}"`,
+        `"${song.lyrics_source || ''}"`,
+        `"${song.lyrics_highlights || ''}"`,
+        `"${song.lyrics || ''}"`,
+        `"${song.notes || ''}"`,
+        // YouTube Data
+        `"${song.youtube_id || ''}"`,
+        `"${song.youtube_id ? `https://www.youtube.com/watch?v=${song.youtube_id}` : ''}"`,
+        `"${song.youtube_thumbnail || ''}"`,
+        `"${song.youtube_video_type || ''}"`,
+        `"${song.youtube_title || ''}"`,
+        // Review & Rating
+        `"${song.your_review || ''}"`,
+        `"${song.audio_review_url || ''}"`,
+        `"${song.inclusion_notes || ''}"`,
+        song.rating || '',
+        // Manual Song Data
+        `"${song.external_url || ''}"`,
+        `"${song.audio_file_path || ''}"`,
+        // Timestamps
+        `"${song.date_added || ''}"`,
+        `"${song.created_at || ''}"`,
+        `"${song.updated_at || ''}"`,
       ]);
 
       const csvContent = [headers.join(','), ...csvData.map(row => row.join(','))].join('\n');
@@ -70,6 +146,9 @@ function BulkEditModal({ isOpen, onClose }) {
 
       const response = await fetch('/api/admin/bulk-upload', {
         method: 'POST',
+        headers: {
+          'X-Admin-Password': 'admin123'
+        },
         body: formData
       });
 

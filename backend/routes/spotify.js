@@ -388,24 +388,77 @@ router.get('/songs/:id', async (req, res) => {
   }
 });
 
-// Get all artists
+// Get all artists with pagination
 router.get('/artists', async (req, res) => {
   try {
-    const result = await pool.query(`
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+    const sortBy = req.query.sort_by || 'song_count';
+    
+    // Build search filter
+    let whereClause = '';
+    let queryParams = [];
+    
+    if (search) {
+      whereClause = 'WHERE LOWER(a.name) LIKE LOWER($1)';
+      queryParams.push(`%${search}%`);
+    }
+    
+    // Build sort clause
+    let orderClause = 'ORDER BY song_count DESC, a.name';
+    if (sortBy === 'name') {
+      orderClause = 'ORDER BY a.name ASC';
+    } else if (sortBy === 'song_count') {
+      orderClause = 'ORDER BY song_count DESC, a.name';
+    }
+    
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(DISTINCT a.id) as total
+      FROM artists a
+      JOIN song_artists sa ON a.id = sa.artist_id
+      JOIN songs s ON sa.song_id = s.id
+      ${whereClause}
+    `;
+    
+    const countResult = await pool.query(countQuery, queryParams);
+    const totalArtists = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(totalArtists / limit);
+    
+    // Get paginated artists  
+    const artistsQuery = `
       SELECT 
         a.id,
         a.name,
         a.spotify_id,
         a.spotify_url,
+        a.data_source,
+        a.created_at,
         COUNT(DISTINCT s.id) as song_count
       FROM artists a
       JOIN song_artists sa ON a.id = sa.artist_id
       JOIN songs s ON sa.song_id = s.id
-      GROUP BY a.id
-      ORDER BY song_count DESC, a.name
-    `);
+      ${whereClause}
+      GROUP BY a.id, a.name, a.spotify_id, a.spotify_url, a.data_source, a.created_at
+      ${orderClause}
+      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
+    `;
     
-    res.json(result.rows);
+    const artistsResult = await pool.query(artistsQuery, [...queryParams, limit, offset]);
+    
+    res.json({
+      artists: artistsResult.rows,
+      pagination: {
+        page,
+        limit,
+        total: totalArtists,
+        pages: totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
   } catch (error) {
     console.error('Error fetching artists:', error);
     res.status(500).json({ error: 'Failed to fetch artists' });

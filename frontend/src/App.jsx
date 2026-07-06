@@ -1131,61 +1131,153 @@ function HomePage() {
 
 function ArtistsPage() {
   const navigate = useNavigate();
+  const [artists, setArtists] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('song_count');
+  const [pagination, setPagination] = useState(null);
+  const [searchTimeout, setSearchTimeout] = useState(null);
   
-  // Sample artist data - will come from backend later
-  const sampleArtists = [
-    {
-      id: 1,
-      name: "The Smiths",
-      songCount: 3,
-      description: "British rock band known for their influential music and outspoken animal rights advocacy.",
-      genres: ["Alternative Rock", "Indie Pop"],
-      image: null
-    },
-    {
-      id: 2,
-      name: "UB40",
-      songCount: 2,
-      description: "British reggae and pop band with strong social justice themes.",
-      genres: ["Reggae", "Pop"],
-      image: null
-    },
-    {
-      id: 3,
-      name: "Prince Ea",
-      songCount: 4,
-      description: "American spoken word artist and activist promoting veganism and environmental awareness.",
-      genres: ["Hip Hop", "Spoken Word"],
-      image: null
-    },
-    {
-      id: 4,
-      name: "Moby",
-      songCount: 8,
-      description: "Electronic music pioneer and long-time vegan advocate.",
-      genres: ["Electronic", "Ambient"],
-      image: null
-    },
-    {
-      id: 5,
-      name: "Rise Against",
-      songCount: 6,
-      description: "Punk rock band with strong animal rights and environmental messages.",
-      genres: ["Punk Rock", "Hardcore"],
-      image: null
-    },
-    {
-      id: 6,
-      name: "Earth Crisis",
-      songCount: 5,
-      description: "Hardcore band known for their straight edge and animal liberation lyrics.",
-      genres: ["Hardcore", "Metalcore"],
-      image: null
+  const ITEMS_PER_PAGE = 20;
+
+  const fetchArtists = async (page = 1, search = '', sort = 'song_count') => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: ITEMS_PER_PAGE.toString(),
+        sort_by: sort
+      });
+      
+      if (search.trim()) {
+        params.append('search', search.trim());
+      }
+      
+      const response = await fetch(`http://localhost:5000/api/spotify/artists?${params}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch artists');
+      }
+      
+      const data = await response.json();
+      
+      setArtists(data.artists || []);
+      setPagination(data.pagination);
+      setTotalPages(data.pagination?.pages || 1);
+      setCurrentPage(page);
+      
+    } catch (err) {
+      console.error('Error fetching artists:', err);
+      setError('Failed to load artists. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+  
+  useEffect(() => {
+    fetchArtists(1, searchTerm, sortBy);
+  }, []);
+  
+  // Handle search with debouncing
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      setCurrentPage(1);
+      fetchArtists(1, searchTerm, sortBy);
+    }, 500);
+    
+    setSearchTimeout(timeout);
+    
+    return () => clearTimeout(timeout);
+  }, [searchTerm, sortBy]);
 
   const handleArtistClick = (artistId) => {
-    alert(`Artist page for ID ${artistId} coming soon!`);
+    navigate(`/artists/${artistId}`);
+  };
+  
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      fetchArtists(newPage, searchTerm, sortBy);
+      // Scroll to top when page changes
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  
+  const renderPagination = () => {
+    if (!pagination || totalPages <= 1) return null;
+    
+    const pages = [];
+    const showPages = 5; // Show 5 page numbers at a time
+    const startPage = Math.max(1, currentPage - Math.floor(showPages / 2));
+    const endPage = Math.min(totalPages, startPage + showPages - 1);
+    
+    return (
+      <div className="pagination">
+        <button 
+          className="pagination-btn"
+          onClick={() => handlePageChange(1)}
+          disabled={currentPage === 1}
+        >
+          &laquo; First
+        </button>
+        
+        <button 
+          className="pagination-btn"
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={!pagination.hasPrev}
+        >
+          &lsaquo; Previous
+        </button>
+        
+        {startPage > 1 && (
+          <>
+            <button className="pagination-btn" onClick={() => handlePageChange(1)}>1</button>
+            {startPage > 2 && <span className="pagination-ellipsis">...</span>}
+          </>
+        )}
+        
+        {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map(page => (
+          <button
+            key={page}
+            className={`pagination-btn ${page === currentPage ? 'active' : ''}`}
+            onClick={() => handlePageChange(page)}
+          >
+            {page}
+          </button>
+        ))}
+        
+        {endPage < totalPages && (
+          <>
+            {endPage < totalPages - 1 && <span className="pagination-ellipsis">...</span>}
+            <button className="pagination-btn" onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
+          </>
+        )}
+        
+        <button 
+          className="pagination-btn"
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={!pagination.hasNext}
+        >
+          Next &rsaquo;
+        </button>
+        
+        <button 
+          className="pagination-btn"
+          onClick={() => handlePageChange(totalPages)}
+          disabled={currentPage === totalPages}
+        >
+          Last &raquo;
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -1193,34 +1285,117 @@ function ArtistsPage() {
       <div className="page-header">
         <h1>Artists</h1>
         <p>Explore musicians advocating for animal rights and veganism</p>
+        
+        {/* Search and Filter Controls */}
+        <div className="artists-controls">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search artists..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          
+          <div className="sort-container">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="sort-select"
+            >
+              <option value="song_count">Sort by Song Count</option>
+              <option value="name">Sort by Name</option>
+            </select>
+          </div>
+        </div>
+        
+        {/* Results Info */}
+        {pagination && (
+          <div className="results-info">
+            Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, pagination.total)} of {pagination.total} artists
+          </div>
+        )}
       </div>
       
-      <div className="artists-grid">
-        {sampleArtists.map((artist) => (
-          <div 
-            key={artist.id} 
-            className="artist-card"
-            onClick={() => handleArtistClick(artist.id)}
-          >
-            <div className="artist-image">
-              <img 
-                src={artist.image || "https://via.placeholder.com/200x200/1DB954/000000?text=" + artist.name.charAt(0)} 
-                alt={`${artist.name}`}
-              />
-            </div>
-            <div className="artist-info">
-              <h3>{artist.name}</h3>
-              <p className="artist-song-count">{artist.songCount} songs in playlist</p>
-              <p className="artist-description">{artist.description}</p>
-              <div className="artist-genres">
-                {artist.genres.map((genre, index) => (
-                  <span key={index} className="genre-tag">{genre}</span>
-                ))}
-              </div>
-            </div>
+      {loading && (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading artists...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="error-container">
+          <p className="error-message">{error}</p>
+          <button onClick={() => fetchArtists(currentPage, searchTerm, sortBy)} className="retry-button">
+            Try Again
+          </button>
+        </div>
+      )}
+      
+      {!loading && !error && artists.length === 0 && (
+        <div className="no-results">
+          <h3>No artists found</h3>
+          <p>Try adjusting your search terms or filters.</p>
+        </div>
+      )}
+      
+      {!loading && !error && artists.length > 0 && (
+        <>
+          <div className="artists-grid">
+            {artists.map((artist) => {
+              const genreList = artist.genres ? artist.genres.split(', ').filter(g => g && g.trim()) : [];
+              
+              return (
+                <div 
+                  key={artist.id} 
+                  className="artist-card"
+                  onClick={() => handleArtistClick(artist.id)}
+                >
+                  <div className="artist-image">
+                    <img 
+                      src={`https://via.placeholder.com/200x200/1DB954/ffffff?text=${encodeURIComponent(artist.name.charAt(0))}`}
+                      alt={artist.name}
+                    />
+                  </div>
+                  <div className="artist-info">
+                    <h3>{artist.name}</h3>
+                    <p className="artist-song-count">{artist.song_count} songs in playlist</p>
+                    {genreList.length > 0 && (
+                      <div className="artist-genres">
+                        {genreList.slice(0, 3).map((genre, index) => (
+                          <span key={index} className="genre-tag">{genre}</span>
+                        ))}
+                        {genreList.length > 3 && (
+                          <span className="genre-tag more">+{genreList.length - 3} more</span>
+                        )}
+                      </div>
+                    )}
+                    <div className="artist-meta">
+                      <span className="data-source">{artist.data_source}</span>
+                      {artist.spotify_url && (
+                        <a 
+                          href={artist.spotify_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="spotify-link"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          🎵 Spotify
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+          
+          {/* Pagination */}
+          {renderPagination()}
+        </>
+      )}
     </div>
   );
 }
