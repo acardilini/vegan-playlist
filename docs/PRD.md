@@ -282,3 +282,77 @@ The most comprehensive, expertly curated collection of vegan-themed music with d
 - **Security**: Input validation and XSS prevention
 
 This PRD provides comprehensive specifications for building The Vegan Playlist as a fully functional, scalable web application suitable for LLM-assisted development.
+
+---
+
+## 11. Current Feature Inventory (As-Built)
+
+_Added 2026-07-06. Sections 1–10 describe the product vision. This section records what is
+**actually implemented** in the prototype today, so the PRD reflects the full website feature
+list. Status: **✅ Implemented** · **◐ Partial** · **⛔ Planned (not built)**. The definitive
+keep/rebuild/drop/defer decisions are made in the Phase 0 Feature Inventory (see
+[`PROJECT_PLAN.md`](./PROJECT_PLAN.md))._
+
+### 11.1 Public Website — Pages & Routes
+| Route | Page | Status | Notes |
+|---|---|---|---|
+| `/` | Home | ✅ | Stats display, featured songs, search entry |
+| `/search` | Browse / Search Results | ✅ | Full-text search, faceted filters, sorting, pagination |
+| `/song/:songId` | Song Detail | ✅ | Metadata, coding, YouTube embed, platform links, similar songs |
+| `/artists` | Artists (search results) | ✅ | Artist search + filters |
+| `/artist/:artistId` | Artist Detail | ✅ | Artist songs, stats, bio, advocacy notes, discography |
+| `/playlists` | Playlists directory | ✅ | User/curated playlist listing |
+| `/playlist/:playlistId` | Playlist Detail | ✅ | Playlist songs and metadata |
+| `/submit` | Submit a Song | ✅ | Community suggestion form |
+| `/dashboard` | Data Dashboard | ✅ | Visualisations (Chart.js) |
+| `/about` | About | ✅ | Methodology / coding-system explanation |
+| `/admin` | Admin Interface | ✅ | Private content-management console (no auth yet — see 11.5) |
+
+### 11.2 Public Features
+- **Search & discovery:** full-text search; filter options endpoint; faceted filtering;
+  sorting; pagination. ✅
+- **Featured songs:** curated highlighting on the homepage (`featured` field). ✅
+- **Song detail:** coding categories, platform links, similar-songs navigation. ✅
+- **YouTube integration:** per-song video embeds with a primary-video concept. ✅
+- **Lyrics links:** lyrics lookup/links per song. ✅
+- **Artist pages:** stats, discography tracking, advocacy notes. ✅
+- **User playlists:** create/list/detail, add/remove songs (CRUD). ✅
+- **Song submissions:** public submit + stats. ✅
+- **Data dashboard:** year distribution, genre distribution, audio-features, vegan-themes,
+  summary. ✅
+- **Analytics of user behaviour** (popular songs, filter combinations, search queries): ⛔
+  (the `/api/analytics` routes serve dataset visualisations, not user-interaction tracking).
+- **Social sharing / anonymous share links:** ◐ (partial/varies by page).
+- **Offline capability:** ⛔.
+
+### 11.3 Admin / CMS Features (`/admin`)
+- Song editing & full update ✅ · Bulk categorisation workflow ✅ · Bulk CSV upload ✅ ·
+  Duplicate detection & management ✅ · Submissions review queue ✅ · YouTube video manager
+  ✅ · Lyrics lookup manager ✅ · Data-completion dashboard ✅ · Artists manager ✅ ·
+  Manual (non-Spotify) song add/edit ✅ · Featured toggle ✅.
+- **Spotify playlist sync & validation:** sync playlist, detect mismatches/discrepancies,
+  flag removed songs. ✅ (to be re-framed under the truth-source model — see Overview).
+
+### 11.4 Backend API Surface (mounted routers)
+`/api/spotify` (songs, artists, search, filter-options, similar, db-stats) ·
+`/api/admin` (song/artist/playlist management, categorisation, sync, cleanup) ·
+`/api/admin_simple` (experimental duplicate of admin — to be consolidated) ·
+`/api/playlists` (user playlist CRUD) · `/api/youtube` (video CRUD, search, extract-id) ·
+`/api/lyrics` (status, stats, missing) · `/api/submissions` (submit, admin queue, stats) ·
+`/api/analytics` (dataset visualisation data).
+
+### 11.5 Data Model (implemented tables)
+`artists`, `albums`, `songs` (rich `TEXT[]` coding arrays: `vegan_focus`, `animal_category`,
+`advocacy_style`, `advocacy_issues`, `lyrical_explicitness`; plus `your_review`,
+`audio_review_url`, `inclusion_notes`, `rating`), `song_artists`, `categories`,
+`song_categories`, `playlists`, `playlist_songs`. Extended via migrations: featured field,
+lyrics fields, manual-additions, YouTube videos, song-submissions, playlist-sync.
+
+### 11.6 Known Gaps vs. Vision (Sections 1–10)
+- **Authentication/authorisation:** the admin console is not access-controlled. ⛔ (Phase 4).
+- **Deployment:** no hosting, secrets strategy, or CI/CD. ⛔ (Phase 4).
+- **Truth source:** data is currently Spotify-mirrored, not curator-authoritative.
+  ◐ → addressed in Phase 0/1.
+- **User-interaction analytics, custom visualisation builder, audio reviews, offline mode,
+  GDPR tooling:** ⛔ (deferred under YAGNI until needed).
+

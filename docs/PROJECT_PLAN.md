@@ -1,0 +1,105 @@
+# The Vegan Playlist — Modernisation Project Plan
+
+_Last updated: 2026-07-06_
+
+This is the phased roadmap for modernising the prototype into a clean, branded, deployable
+product. See [`PROJECT_OVERVIEW.md`](./PROJECT_OVERVIEW.md) for the philosophy and
+[`PROJECT_STATE.md`](./PROJECT_STATE.md) for where we currently are.
+
+## How This Plan Works
+
+- **Phases** are large, ordered stages of the modernisation. Finish one before starting the
+  next (though Phase 0 findings may re-shape later phases).
+- **Sessions** are the unit of work inside a phase — one focused chunk completable in a
+  single working session. Sessions are a guide, not a contract; split or merge as reality
+  demands, and record any change in `PROJECT_STATE.md`.
+- **Smoke test** — every session that changes code ends with one: launch the backend and
+  frontend and exercise the affected flow (as a user would), confirming nothing broke.
+  Audit/design-only sessions have no smoke test (nothing to run) — note that instead.
+- **YAGNI governs everything** — defer anything not needed now.
+
+Legend: ☐ not started · ◐ in progress · ☑ complete
+
+---
+
+## Phase 0 — Discovery & Audit
+**Goal:** Capture the full current state so nothing is lost. No production code changes.
+**Exit criteria:** Feature Inventory complete; DB and Spotify audits documented; truth-source
+model designed and recorded as a decision.
+
+- ☐ **Session 0.1 — Feature Inventory.** Walk every screen and every endpoint of the running
+  prototype. For each feature record: what it does, where it lives, what data it touches, and
+  a decision (keep / rebuild / drop / defer). Output: a Feature Inventory document.
+  _Smoke test: n/a (audit only)._
+- ☐ **Session 0.2 — Database audit.** Document the real schema (including migration files),
+  row counts, data-quality issues, orphaned records, and the categorisation data actually
+  present vs. empty. _Smoke test: n/a (read-only audit)._
+- ☐ **Session 0.3 — Spotify API audit.** Document what is currently pulled, what the API
+  offers that we could use, the sync mechanism, auth flow, and rate limits. Identify which
+  fields should be "enrichment" vs. "truth". _Smoke test: n/a (read-only audit)._
+- ☐ **Session 0.4 — Truth-source & data-source strategy.** Design the authoritative data
+  model: how the curated dataset becomes the source of truth, how Spotify enrichment attaches,
+  and how the messy new-songs file will be consolidated. Record as a decision. _Smoke test: n/a
+  (design only)._
+
+## Phase 1 — Data Foundation (Truth Source)
+**Goal:** Stand up the authoritative dataset and the Spotify-enrichment approach.
+**Exit criteria:** A single trusted dataset containing existing + newly identified songs;
+enrichment pipeline defined; curatorial fields protected from sync overwrites.
+
+- ☐ **Session 1.1 — Consolidate the new-songs file.** Bring the separate messy song list into
+  the authoritative source; de-duplicate against the existing 650. _Smoke test: query the
+  consolidated data via the app / API and confirm counts and integrity._
+- ☐ **Session 1.2 — Spotify enrichment pipeline.** Implement/adjust so the truth source is
+  authoritative and Spotify fills details where a match exists, without overwriting
+  curatorial data. _Smoke test: run enrichment on a sample, confirm reviews/coding untouched._
+- ☐ **Session 1.3 — Data integrity pass.** Reconcile artists/albums, fix orphans surfaced in
+  the audit. _Smoke test: browse songs/artists in the app, confirm relationships render._
+
+## Phase 2 — Architecture Cleanup
+**Goal:** A maintainable codebase, same behaviour.
+**Exit criteria:** `App.jsx` decomposed into pages/components; dead scripts and duplicate
+routes pruned; clear frontend/backend structure and conventions documented.
+
+- ☐ **Session 2.1 — Frontend decomposition.** Extract inline pages (Home, Song Detail,
+  Artists, Playlists, About) from `App.jsx` into their own files; establish folder structure.
+  _Smoke test: every route loads and behaves as before._
+- ☐ **Session 2.2 — Backend consolidation.** Resolve `admin.js` vs `admin_simple.js`; group
+  routes; retire experimental/test endpoints. _Smoke test: exercise admin + public endpoints._
+- ☐ **Session 2.3 — Script cleanup.** Archive/remove the ~40 one-off scripts; keep the few
+  still needed (import, sync, migrations) in a documented location. _Smoke test: run a retained
+  script against a safe target; confirm app unaffected._
+
+## Phase 3 — Brand & UI Rebuild
+**Goal:** Apply the brand kit onto the now-clean frontend.
+**Exit criteria:** Design system in place; all pages restyled to brand; responsive and
+accessible.
+
+- ☐ **Session 3.1 — Design system foundation.** Tokens (colour, type, spacing), global
+  styles, and core reusable components from the brand kit. _Smoke test: component gallery /
+  key pages render with brand styling._
+- ☐ **Session 3.2 — Public pages restyle.** Home, Browse/Search, Song Detail, Artists.
+  _Smoke test: walk each page on desktop + mobile widths._
+- ☐ **Session 3.3 — Remaining pages & polish.** Playlists, Submit, Dashboard, About, Admin.
+  Accessibility and responsive pass. _Smoke test: full walkthrough of every route._
+
+## Phase 4 — Deployment Hardening
+**Goal:** Ship it, cheaply, from GitHub.
+**Exit criteria:** Live deployment; secrets managed; DB hosted; documented deploy process.
+
+- ☐ **Session 4.1 — Environment & security.** Externalise config/secrets; input validation
+  and basic hardening on public + admin endpoints; admin access control. _Smoke test: run
+  locally from env config; confirm secrets not committed._
+- ☐ **Session 4.2 — Deploy pipeline & DB hosting.** Choose final platform; add deploy config
+  (e.g. `render.yaml`); provision hosted Postgres; migrate data. _Smoke test: deploy a branch
+  and load the live site._
+- ☐ **Session 4.3 — Launch checklist.** Domain, HTTPS, performance/load-time check, backups.
+  _Smoke test: full production walkthrough against the PRD's launch success criteria._
+
+---
+
+## Backlog / Deferred (YAGNI)
+
+Items from the PRD intentionally deferred until needed. Populated during the Phase 0 Feature
+Inventory (e.g. analytics tracking, custom visualisation builder, offline capability). Nothing
+here is built until it earns its place.
