@@ -8,18 +8,20 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Phase:** Phase 0 — Discovery & Audit
-- **Current session:** _between sessions (Session 0.1 complete)_
-- **Next session:** Session 0.2 — Database audit
+- **Current session:** _between sessions (Sessions 0.1 + 0.2 complete)_
+- **Next session:** Session 0.3 — Spotify API audit
 - **Last updated:** 2026-07-07
 
 ### Next Tasks (start here)
-1. **Session 0.2 — Database audit** (schema, counts, data quality). First questions: why
-   1,208 songs vs ~650 expected (check `removed_from_playlist`, `data_source`, duplicates);
-   document the real live schema (base `schema.sql` + 6 add-on SQL files + HTTP-DDL endpoints
-   have diverged from any file).
-2. **Session 0.3 — Spotify API audit** (what's pulled, what's available, sync, rate limits).
-   Note: Spotify deprecated the audio-features API for new apps (Nov 2024) — check our access.
-3. **Session 0.4 — Truth-source strategy** (design authoritative model + consolidation plan).
+1. **Session 0.3 — Spotify API audit** (what's pulled, what's available, sync, rate limits).
+   Confirmed in 0.2: audio features + preview URLs are NULL for all songs and Spotify no
+   longer provides them — decide what replaces/removes the audio-features UI.
+2. **Session 0.4 — Truth-source strategy.** Now reshaped by the 0.2 finding that the DB holds
+   **no curatorial data**: design how the curator's external files (categorisation, reviews,
+   lyrics) become the truth source and get imported, not just how to protect DB fields.
+   Curator input needed on the open questions at the end of `DATABASE_AUDIT.md`.
+3. **Phase 1 prep:** get the messy song lists / curatorial files into the repo or a known
+   location so Session 1.1 can consolidate them.
 
 ### Known Context / Watch-outs
 - Frontend is a ~2,000-line `App.jsx` monolith with inline pages — Phase 2 target.
@@ -32,7 +34,13 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   because the thematic coding of songs hasn't been done yet. Plan it as its own workstream
   once the truth source is in place.
 - Deployment must be cheap and GitHub-driven — decided in Phase 4.
-- The `songs` table holds **1,208 rows**, not the ~650 expected — investigate in Session 0.2 (may include removed/flagged/duplicate songs).
+- **The DB holds no curatorial data** (all categorisation/review/rating fields empty across
+  1,208 songs) — the curated dataset lives in the curator's external files. Protecting "the
+  650-song dataset" means protecting those files + the DB's enrichment (671 YouTube videos,
+  654 moods, 493 genres, 10 lyric links). See `DATABASE_AUDIT.md`.
+- ~~The `songs` table holds 1,208 rows, not ~650~~ **Solved (0.2):** 674 from the 2025
+  imports + 534 from an unexplained 2026-04-06 bulk import (⚑ curator to identify) − with 18
+  true duplicate pairs to merge in Session 1.1.
 - The old DB password remains in public GitHub history (rotated 2026-07-06, so harmless for the DB) — **user to change it anywhere else it was reused**.
 - Admin auth is still a shared password shipped in the frontend bundle (env var now, but visible to any visitor once deployed) — real auth is a Phase 4 requirement before the admin routes go public.
 
@@ -79,6 +87,14 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-07 (Session 0.2)** — Database audit complete → `docs/DATABASE_AUDIT.md`
+  (read-only; no code changes, smoke test n/a). Headlines: **no curatorial data in the DB**
+  (all categorisation/review fields = 0 rows); 1,208 songs = 674 (Jul–Aug 2025 imports, with
+  moods/genres/playlist-dates) + 534 (bare 2026-04-06 import, origin ⚑ unconfirmed); id
+  sequence at 5,195 → ~4k rows of historic churn; 18 true duplicate pairs identified; audio
+  features + preview URLs NULL for all songs (Spotify API no longer provides them); live
+  `songs` table has 51 columns vs 23 in `schema.sql`, much of it in no SQL file;
+  `database/migrations/` is empty. Four open questions for the curator recorded in the audit.
 - **2026-07-07 (Session 0.1 follow-up)** — Removed the two unauthenticated admin test routes
   from `backend/routes/admin.js` (the pre-auth `test-update/:id` and `test-featured-noauth/:id`,
   the latter writing `songs.featured` without a password). Smoke test: both endpoints now 401

@@ -31,9 +31,12 @@ model designed and recorded as a decision.
   prototype. For each feature record: what it does, where it lives, what data it touches, and
   a decision (keep / rebuild / drop / defer). Output: a Feature Inventory document.
   _Smoke test: n/a (audit only). Done 2026-07-07 → [`FEATURE_INVENTORY.md`](./FEATURE_INVENTORY.md)._
-- ☐ **Session 0.2 — Database audit.** Document the real schema (including migration files),
+- ☑ **Session 0.2 — Database audit.** Document the real schema (including migration files),
   row counts, data-quality issues, orphaned records, and the categorisation data actually
-  present vs. empty. _Smoke test: n/a (read-only audit)._
+  present vs. empty. _Smoke test: n/a (read-only audit). Done 2026-07-07 →
+  [`DATABASE_AUDIT.md`](./DATABASE_AUDIT.md). Headline: the DB holds NO curatorial data —
+  all categorisation/review fields are empty; 1,208 = 674 (2025 import) + 534 (Apr 2026
+  import); 18 true duplicate pairs; audio features all NULL and unobtainable from Spotify._
 - ☐ **Session 0.3 — Spotify API audit.** Document what is currently pulled, what the API
   offers that we could use, the sync mechanism, auth flow, and rate limits. Identify which
   fields should be "enrichment" vs. "truth". _Smoke test: n/a (read-only audit)._
@@ -47,9 +50,11 @@ model designed and recorded as a decision.
 **Exit criteria:** A single trusted dataset containing existing + newly identified songs;
 enrichment pipeline defined; curatorial fields protected from sync overwrites.
 
-- ☐ **Session 1.1 — Consolidate the new-songs file.** Bring the separate messy song list into
-  the authoritative source; de-duplicate against the existing 650. _Smoke test: query the
-  consolidated data via the app / API and confirm counts and integrity._
+- ☐ **Session 1.1 — Consolidate the new-songs file.** Bring the separate messy song lists
+  (songs, lyrics, and any categorisation/review data — the 0.2 audit found the DB holds none
+  of it) into the authoritative source; de-duplicate against what's in the DB (incl. the 18
+  known duplicate pairs). _Smoke test: query the consolidated data via the app / API and
+  confirm counts and integrity._
 - ☐ **Session 1.2 — Spotify enrichment pipeline.** Implement/adjust so the truth source is
   authoritative and Spotify fills details where a match exists, without overwriting
   curatorial data. _Smoke test: run enrichment on a sample, confirm reviews/coding untouched._
