@@ -15,19 +15,22 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ### Next Tasks (start here)
 1. **Session 0.2 — Database audit** (schema, counts, data quality). First questions: why
    1,208 songs vs ~650 expected (check `removed_from_playlist`, `data_source`, duplicates);
-   why `analytics/vegan-themes` reports `songs_with_themes: 0`; document the real live schema
-   (base `schema.sql` + 6 add-on SQL files + HTTP-DDL endpoints have diverged from any file).
+   document the real live schema (base `schema.sql` + 6 add-on SQL files + HTTP-DDL endpoints
+   have diverged from any file).
 2. **Session 0.3 — Spotify API audit** (what's pulled, what's available, sync, rate limits).
    Note: Spotify deprecated the audio-features API for new apps (Nov 2024) — check our access.
 3. **Session 0.4 — Truth-source strategy** (design authoritative model + consolidation plan).
-4. **Small fix queued (user to confirm):** remove the two pre-auth admin test routes
-   (`admin.js:10-46`) — `test-featured-noauth/:id` writes to `songs` with **no password**
-   (verified live). One-line deletion; could ship before Phase 2.
 
 ### Known Context / Watch-outs
 - Frontend is a ~2,000-line `App.jsx` monolith with inline pages — Phase 2 target.
 - Backend has duplicate route files (`admin.js` / `admin_simple.js`) and ~40 one-off scripts — Phase 2 target.
 - A separate, messy file of newly identified songs needs consolidating into the truth source — Phase 1.
+- **Lyrics:** the curator is actively sourcing lyrics and has many more than the 10 links in
+  the DB — but they live in the messy song lists awaiting cleanup. Bring them in during the
+  Phase 1 consolidation.
+- **Vegan-themes analysis is future work, not a bug:** `analytics/vegan-themes` reports 0
+  because the thematic coding of songs hasn't been done yet. Plan it as its own workstream
+  once the truth source is in place.
 - Deployment must be cheap and GitHub-driven — decided in Phase 4.
 - The `songs` table holds **1,208 rows**, not the ~650 expected — investigate in Session 0.2 (may include removed/flagged/duplicate songs).
 - The old DB password remains in public GitHub history (rotated 2026-07-06, so harmless for the DB) — **user to change it anywhere else it was reused**.
@@ -39,6 +42,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-07 — Curator confirmed the flagged inventory decisions.** Public playlist
+  creation/mutation is **deferred** until a real auth story (Phase 4+); the two pre-auth
+  admin test routes were **removed immediately** (`admin.js` — one wrote `songs.featured`
+  with no password). Verified post-fix: both return 401; public API unaffected.
 - **2026-07-07 — Feature Inventory decisions recorded** in
   [`FEATURE_INVENTORY.md`](./FEATURE_INVENTORY.md): all public screens and curation tooling
   **keep**; Spotify sync **rebuild** in Phase 1 (truth-source boundary); ~20 debug/superseded
@@ -72,6 +79,12 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-07 (Session 0.1 follow-up)** — Removed the two unauthenticated admin test routes
+  from `backend/routes/admin.js` (the pre-auth `test-update/:id` and `test-featured-noauth/:id`,
+  the latter writing `songs.featured` without a password). Smoke test: both endpoints now 401
+  without credentials, `db-stats` still 200 ✅. Recorded curator confirmations (playlist
+  deferral) and new context (lyrics being sourced in messy lists; vegan-themes coding is
+  future work) in the inventory and this doc.
 - **2026-07-07 (Session 0.1)** — Feature Inventory complete → `docs/FEATURE_INVENTORY.md`.
   Walked all 11 frontend routes, 9 admin tabs, and ~100 backend endpoints (every route group
   verified live). Key finds: `admin_simple.js` never mounted; `ArtistsPage` in `App.jsx` dead;

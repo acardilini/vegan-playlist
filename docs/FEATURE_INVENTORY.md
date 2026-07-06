@@ -11,6 +11,9 @@ modernisation: nothing gets rebuilt or removed without appearing here first._
 - **defer** — intentionally postponed; listed in the Backlog in `PROJECT_PLAN.md`.
 
 Decisions marked **⚑ confirm** need the curator's sign-off before being acted on.
+_Update 2026-07-07: the curator confirmed all flagged items — public playlist creation is
+**deferred** pending auth, and the two pre-auth admin test routes were **removed** same day
+(verified: both now return 401)._
 
 ---
 
@@ -75,7 +78,7 @@ body, **or query string** (`admin.js:49`) — query-string acceptance should go 
 | `setup-lyrics`, `setup-playlist-sync`, `setup-discography-tracking` | **One-off schema migrations run over HTTP** (DDL from the browser) | **drop** — convert to migration files (Phase 2.2) |
 | `admin-playlists`, `playlists` GET ×2, `playlists/:id` DELETE ×2 | Duplicate definitions *within the same file* (Express only ever hits the first) | **drop** duplicates, keep one (Phase 2.2) |
 | `categorize-songs` (bulk POST) | Unused by frontend (UI categorises per-song) | **drop** |
-| `test-update/:id` ×2, `test-featured-noauth/:id`, `test-featured/:id`, `test`, `simple-test`, `test-playlists`, `test-sync` | Debug leftovers. **Two are mounted BEFORE the auth middleware** — verified live: `PUT /api/admin/test-update/:id` answers without a password, and `test-featured-noauth/:id` **writes `songs.featured` unauthenticated** | **drop** — the two pre-auth routes ASAP, not waiting for Phase 2 **⚑ confirm** |
+| `test-update/:id`, `test-featured/:id`, `test`, `simple-test`, `test-playlists`, `test-sync` | Debug leftovers (behind auth) | **drop** (Phase 2.2). The two copies mounted *before* the auth middleware — incl. `test-featured-noauth/:id`, which wrote `songs.featured` unauthenticated — were **removed 2026-07-07** after curator sign-off |
 
 ### `routes/playlists.js` → `/api/playlists` (public, no auth)
 
@@ -101,8 +104,9 @@ route file, consolidating anything missing into admin (Phase 2.2).
 ### `routes/analytics.js` → `/api/analytics` (public)
 
 All 6 endpoints used by the Dashboard — **keep**. Note `vegan-themes` currently reports
-`songs_with_themes: 0` (categorisation data absent or in a different column than the query
-expects) — investigate in Session 0.2, fix in Phase 1.
+`songs_with_themes: 0` — per the curator this is expected: the vegan-themes analysis hasn't
+been done yet. It's future project work (the endpoint/chart will light up once songs are
+coded), not a bug.
 
 ### Unmounted / infrastructure
 

@@ -6,45 +6,6 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const router = express.Router();
 
-// Test PUT route BEFORE auth middleware
-router.put('/test-update/:id', (req, res) => {
-  console.log('TEST UPDATE ENDPOINT HIT!', req.params.id, req.body);
-  res.json({ message: 'Test update works!', id: req.params.id, body: req.body });
-});
-
-// Test featured route BEFORE auth middleware
-router.put('/test-featured-noauth/:id', async (req, res) => {
-  console.log('TEST FEATURED NO AUTH ENDPOINT HIT!', req.params.id, req.body);
-  try {
-    const songId = parseInt(req.params.id);
-    const featured = req.body.featured;
-    
-    console.log('Updating featured status (no auth):', { songId, featured });
-    
-    // Update the database
-    const result = await pool.query(`
-      UPDATE songs 
-      SET featured = $2, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-    `, [songId, featured]);
-    
-    console.log('Database update result - rows affected:', result.rowCount);
-    
-    // Query the updated record
-    const verifyQuery = await pool.query('SELECT id, title, featured FROM songs WHERE id = $1', [songId]);
-    console.log('Verify query result:', verifyQuery.rows[0]);
-    
-    res.json({
-      success: true,
-      song: verifyQuery.rows[0],
-      debug: { songId, featured, rowsAffected: result.rowCount }
-    });
-  } catch (error) {
-    console.error('Test featured error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Admin authentication middleware
 const authenticateAdmin = (req, res, next) => {
   const password = req.headers['x-admin-password'] || (req.body && req.body.admin_password) || req.query.admin_password;
