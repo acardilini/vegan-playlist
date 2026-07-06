@@ -59,6 +59,11 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-07** — Added `start-vegan-playlist.bat` / `stop-vegan-playlist.bat` launcher
+  scripts (start opens both servers in titled log windows + browser, with already-running
+  guard; stop kills by window title and by port 5000/5173). Smoke test: full
+  stop → start → re-start cycle verified ✅. Documented in README Quick Start.
+
 - **2026-07-06** — Security cleanup: rotated DB + admin passwords, moved admin password to env
   vars (8 frontend components), untracked/gitignored `.claude/settings.local.json`, removed
   password logging, expanded `.env.example` files, removed stray `backend/nul`. Smoke test:

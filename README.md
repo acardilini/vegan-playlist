@@ -23,7 +23,14 @@ A web-based resource for vegan-themed music. Curated database of songs sourced f
 
 **Prerequisites:** Node.js, PostgreSQL running, Spotify API credentials
 
-### 1. Backend
+### Easiest: launcher scripts (Windows)
+
+Double-click **`start-vegan-playlist.bat`** in the repo root — it opens the backend and
+frontend in their own log windows and opens the site in your browser. Double-click
+**`stop-vegan-playlist.bat`** to stop everything (it kills whatever is listening on ports
+5000 and 5173). Running start twice is safe; already-running servers are skipped.
+
+### Manual: 1. Backend
 
 ```bash
 cd backend
@@ -31,7 +38,7 @@ npm install
 npm run dev        # runs on http://localhost:5000
 ```
 
-### 2. Frontend
+### Manual: 2. Frontend
 
 ```bash
 cd frontend
