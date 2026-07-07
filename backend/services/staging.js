@@ -121,4 +121,80 @@ async function insertCandidates(db, tracks) {
   return { added, skippedExisting };
 }
 
-module.exports = { normalizeName, listQueue, includeSong, rejectSong, setPlayLink, insertCandidates };
+// 'https://open.spotify.com/track/ID', 'spotify:playlist:ID', or a bare 22-char id (assumed track)
+function parseSpotifyRef(u) {
+  const s = String(u).trim();
+  const m = s.match(/(track|playlist)[/:]([A-Za-z0-9]{22})/);
+  if (m) return { type: m[1], id: m[2] };
+  if (/^[A-Za-z0-9]{22}$/.test(s)) return { type: 'track', id: s };
+  return null;
+}
+
+// Shape a raw Spotify track object like fetchPlaylistTracks does (no added_at).
+function mapTrack(t) {
+  return {
+    spotify_id: t.id, title: t.name, duration_ms: t.duration_ms, popularity: t.popularity,
+    explicit: t.explicit, track_number: t.track_number, disc_number: t.disc_number,
+    spotify_url: t.external_urls && t.external_urls.spotify, added_at: null,
+    artists: (t.artists || []).map(a => ({ spotify_id: a.id, name: a.name, spotify_url: a.external_urls && a.external_urls.spotify })),
+    album: t.album && t.album.id ? {
+      spotify_id: t.album.id, name: t.album.name, images: t.album.images || [],
+      release_date: t.album.release_date || null, total_tracks: t.album.total_tracks || null,
+      album_type: t.album.album_type || null, spotify_url: t.album.external_urls && t.album.external_urls.spotify,
+    } : null,
+  };
+}
+
+async function resolveSpotifyUrls(urls) {
+  const api = await getSpotifyClient();
+  const refs = urls.map(parseSpotifyRef);
+  const invalid = urls.filter((_, i) => !refs[i]);
+  const trackIds = [], playlistIds = [];
+  refs.forEach(r => { if (!r) return; (r.type === 'track' ? trackIds : playlistIds).push(r.id); });
+  const tracks = [];
+  for (let i = 0; i < trackIds.length; i += 50) {
+    const batch = trackIds.slice(i, i + 50);
+    const res = await withRetry(() => api.getTracks(batch));
+    for (const t of res.body.tracks) if (t && t.id) tracks.push(mapTrack(t));
+  }
+  for (const pid of playlistIds) tracks.push(...await fetchPlaylistTracks(api, pid));
+  return { tracks, invalid };
+}
+
+// Conservative single-song attach: normalised title AND artist must both match a Spotify hit.
+async function attachSpotifyToSong(db, id) {
+  const song = (await db.query('SELECT id, title FROM songs WHERE id=$1', [id])).rows[0];
+  if (!song) { const e = new Error('song not found'); e.code = 'NOT_FOUND'; throw e; }
+  const artists = (await db.query(
+    'SELECT a.name FROM song_artists sa JOIN artists a ON a.id=sa.artist_id WHERE sa.song_id=$1', [id])).rows.map(r => r.name);
+  const api = await getSpotifyClient();
+  const res = await withRetry(() => api.searchTracks(`track:${song.title} artist:${artists[0] || ''}`, { limit: 10 }));
+  const nt = normalizeName(song.title), na0 = normalizeName(artists[0] || '');
+  const hit = (res.body.tracks.items || []).find(t =>
+    normalizeName(t.name) === nt && t.artists.some(a => normalizeName(a.name) === na0));
+  if (!hit) return { matched: false };
+  const track = mapTrack(hit);
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const albumId = await upsertAlbum(client, track.album);
+    await client.query(`
+      UPDATE songs SET spotify_id=$2, spotify_url=$3, album_id=COALESCE(album_id,$4),
+        duration_ms=COALESCE(duration_ms,$5), popularity=$6, explicit=$7,
+        track_number=COALESCE(track_number,$8), disc_number=COALESCE(disc_number,$9),
+        updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+      [id, track.spotify_id, track.spotify_url, albumId, track.duration_ms, track.popularity,
+       track.explicit, track.track_number, track.disc_number]);
+    for (const a of track.artists) {
+      const artistId = await upsertArtist(client, a);
+      await client.query('INSERT INTO song_artists (song_id, artist_id) VALUES ($1,$2) ON CONFLICT (song_id, artist_id) DO NOTHING', [id, artistId]);
+    }
+    await client.query('COMMIT');
+  } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+  return { matched: true, spotify_id: track.spotify_id };
+}
+
+module.exports = {
+  normalizeName, listQueue, includeSong, rejectSong, setPlayLink, insertCandidates,
+  resolveSpotifyUrls, attachSpotifyToSong, parseSpotifyRef,
+};
