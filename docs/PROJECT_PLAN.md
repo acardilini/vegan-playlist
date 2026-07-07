@@ -65,17 +65,22 @@ enrichment pipeline defined; curatorial fields protected from sync overwrites.
   175 pending / 243 rejected / 929 local lyrics (matches design ±the 18 sheet-vs-DB status
   conflicts, reported not applied). Public routes also gained LEFT JOIN albums so
   non-Spotify songs render. Smoke test ✅._
-- ☐ **Session 1.2 — Spotify enrichment pipeline.** Implement/adjust so the truth source is
+- ☑ **Session 1.2 — Spotify enrichment pipeline.** Implement/adjust so the truth source is
   authoritative and Spotify fills details where a match exists, without overwriting
   curatorial data. Includes the queued backfill: re-enrich the 534 Apr-2026 songs (275 bare
   albums — covers/dates — and ~245 bare artists), and close the 8-track gap to the live
   playlist. Replaces all three legacy import paths (see `SPOTIFY_API_AUDIT.md` §3).
-  _Smoke test: run enrichment on a sample, confirm reviews/coding untouched._
+  _Smoke test: run enrichment on a sample, confirm reviews/coding untouched._ _Done
+  2026-07-07: `scripts/enrichFromSpotify.js` + `utils/playlistSync.js`; 151/190 manual songs
+  attached (34 to review in 1.3), all albums backfilled (covers/dates/labels), 414 artists
+  enriched, 3 playlist tracks added as pending; admin sync endpoints rebuilt import-only.
+  Curatorial md5 checksum byte-identical pre/post ✅._
 - ☐ **Session 1.3 — Data integrity pass.** Merge the 18 duplicate pairs (re-pointing videos/
   lyrics/featured), reconcile artists/albums, fix the 2 orphan artists + 14 orphan albums.
-  Also work the 1.1 import review report (`backend/logs/consolidation-apply-*.log`): 27
-  file-1 rows blocked by the dup pairs (re-run the consolidation script after merging to
-  apply their lyrics), 18 sheet-vs-DB status conflicts for the curator, 7 unmatched rows.
+  Also work the 1.1/1.2 review reports (`backend/logs/`): 27 file-1 rows blocked by the dup
+  pairs (re-run the consolidation script after merging to apply their lyrics), 18
+  sheet-vs-DB status conflicts for the curator, 7 unmatched rows, and 34 Spotify-attach
+  no-matches from 1.2 (fix spreadsheet typos, then `enrichFromSpotify.js --attach --apply`).
   _Smoke test: browse songs/artists in the app, confirm relationships render._
 - ☐ **Session 1.4 — Minimal pending-queue admin UI.** Work the `pending` songs in the
   website: search/play links, lyrics paste (local) + URL, categorisation, include/reject;

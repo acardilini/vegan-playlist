@@ -8,22 +8,23 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Phase:** Phase 1 — Data Foundation (Truth Source). **Phase 0 complete 2026-07-07.**
-- **Current session:** _between sessions (Session 1.1 complete)_
-- **Next session:** Session 1.2 — Spotify enrichment pipeline
+- **Current session:** _between sessions (Session 1.2 complete)_
+- **Next session:** Session 1.3 — Data integrity pass
 - **Last updated:** 2026-07-07
 
 ### Next Tasks (start here)
-1. **Session 1.2 — Spotify enrichment pipeline**: attach Spotify matches for the 190 new
-   manual `included` songs; backfill the 534 bare Apr-2026 songs (275 albums missing
-   covers/dates, ~245 bare artists); close the playlist gap (was 8 tracks); import-only diff
-   report. Never overwrite curatorial fields (`status`, `status_notes`, categorisation).
-2. **Session 1.3 — integrity pass** now also covers the import review report
-   (`backend/logs/consolidation-apply-*.log`, gitignored): 27 file-1 rows that hit the known
-   DB duplicate pairs (re-run `consolidateSpreadsheets.js --apply` after merging to apply
-   their lyrics), 13 sheet-rejects + 5 sheet-pendings that match already-included DB songs
-   (curator to adjudicate), 7 unmatched file-1 rows, 2 unclassified spreadsheet rows.
-3. Then Session 1.4 (pending-queue admin UI) — 175 `pending` songs are now in the DB
-   waiting for it.
+1. **Session 1.3 — integrity pass**: merge the 18 duplicate pairs (re-point videos/lyrics/
+   featured), fix 2 orphan artists + 14 orphan albums, then work the review reports
+   (`backend/logs/`, gitignored): 27 file-1 rows blocked by dup pairs (re-run
+   `consolidateSpreadsheets.js --apply` after merging to apply their lyrics), 18 sheet-vs-DB
+   status conflicts (curator), 34 attach no-matches from 1.2 (mostly spreadsheet typos —
+   e.g. "Scared Earth"→"Sacred Earth", "Queen V"→"Vegan Queen V"; fix artist/title then
+   re-run `enrichFromSpotify.js --attach --apply`), 7 unmatched file-1 rows.
+2. Then Session 1.4 (pending-queue admin UI) — 178 `pending` songs are in the DB waiting
+   (175 from spreadsheets + 3 playlist tracks added by the 1.2 diff).
+3. The curator has a to-do surfaced by the diff: **149 included songs are not on the Spotify
+   playlist** (the newly identified songs) — add them to Spotify by hand if desired
+   (`GET /api/admin/spotify-playlist-mismatch` lists them).
 4. The two source spreadsheets at `docs/playlist/` are now imported and can retire after the
    curator spot-checks the site (keep the files as archive; still gitignored — lyrics).
 
@@ -33,9 +34,13 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   **local-only** `song_lyrics` table — no API route may ever SELECT it (grep before deploy),
   and Phase 4 production dumps must use `--exclude-table-data=song_lyrics`. `backups/` and
   `backend/logs/` are gitignored because they can contain lyrics.
-- The 190 new manual songs have no album/spotify data yet (placeholder art on the site) —
-  Session 1.2 attaches Spotify matches. Public queries use `LEFT JOIN albums` so
-  non-Spotify songs render; keep it that way.
+- ~~The 190 new manual songs have no album/spotify data yet~~ **Solved (1.2):** 151 attached
+  to Spotify (full album/artist enrichment); 39 remain manual-only (5 confirmed not on
+  Spotify, 34 in review for typos). Public queries use `LEFT JOIN albums` so non-Spotify
+  songs render; keep it that way.
+- **Schema check constraints matter for enrichment:** `artists`/`albums` require
+  `data_source='spotify'` whenever `spotify_id` is set (so attaching an id flips
+  `data_source`); `songs` may stay `manual` with a spotify_id (provenance preserved).
 - Frontend is a ~2,000-line `App.jsx` monolith with inline pages — Phase 2 target.
 - Backend has duplicate route files (`admin.js` / `admin_simple.js`) and ~40 one-off scripts — Phase 2 target.
 - **Vegan-themes analysis is future work, not a bug:** `analytics/vegan-themes` reports 0
@@ -50,9 +55,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   imports + 534 synced 2026-04-06 after the Spotify playlist grew (curator: a vetted batch)
   — with 18 true duplicate pairs to merge in Session 1.3. Live playlist ("Animal Lib & Vegan
   Songs") now has 1,216 tracks; DB is 8 behind.
-- **450 songs are missing album covers** (275 bare albums from the Apr-2026 sync — also no
-  release dates, so year filters miss them; ~245 artists likewise bare). Not a Spotify
-  limitation — backfill via saved spotify_ids queued for Session 1.2.
+- ~~450 songs are missing album covers~~ **Solved (1.2):** every album with a spotify_id now
+  has images + release date (1,359/1,398 included songs have covers; the 39 without are the
+  manual-only songs). Artists with genres 218 → 432 (the rest have no genres on Spotify's
+  side).
 - The old DB password remains in public GitHub history (rotated 2026-07-06, so harmless for the DB) — **user to change it anywhere else it was reused**.
 - Admin auth is still a shared password shipped in the frontend bundle (env var now, but visible to any visitor once deployed) — real auth is a Phase 4 requirement before the admin routes go public.
 
@@ -62,6 +68,13 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-07 — Enrichment is provably curatorial-safe (Session 1.2).** The pipeline writes
+  only enrichment-class fields (audit §7); verified with an md5 checksum over all
+  curator-owned columns + `song_lyrics` before/after the run — byte-identical for every
+  pre-existing row. Attach matching is conservative (normalised title AND artist must both
+  match) — 34 unmatched go to review rather than guessing. Sync endpoints are now
+  import-only: playlist tracks missing from the catalogue become `pending`; nothing is ever
+  flagged removed or auto-changed (`removed_from_playlist` is no longer written by anything).
 - **2026-07-07 — Import conflicts never change curator state (Session 1.1).** Where a
   spreadsheet row said reject/pending but the matched DB song is `included` (18 rows), the
   import reports it and leaves the song untouched — sheet vs DB disagreements are for the
@@ -129,6 +142,18 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-07 (Session 1.2)** — Spotify enrichment pipeline live:
+  `backend/scripts/enrichFromSpotify.js` + shared `backend/utils/playlistSync.js` (single
+  replacement for the three legacy import paths; batched, honours Retry-After, dry-run
+  default). Results: **151/190** manual songs attached to Spotify (34 to review — mostly
+  spreadsheet typos; 5 confirmed not-on-Spotify); **817 albums** backfilled (covers,
+  release dates, labels — 0 albums left without images/dates); **414 artists** backfilled
+  (genres 218→432, images, followers); playlist diff added **3 tracks as pending** (other 3
+  of the 6-track gap resolved via attach). Admin endpoints rebuilt truth-source-safe:
+  `sync-spotify-playlist` = import-only (adds pending, never flags), `spotify-playlist-
+  mismatch` = read-only two-way diff. Curatorial md5 checksum verified byte-identical
+  pre/post. Pre-run backup in `backups/`. Smoke test ✅: 1,359/1,398 included songs with
+  covers, year range intact, both admin endpoints exercised live, frontend loads.
 - **2026-07-07 (Session 1.1)** — Truth source stood up. Migration
   `backend/database/migrations/001_truth_source.sql` (first tracked migration): `songs.status`
   /`status_notes`/`lyrics_status`/`bandcamp_url`/`soundcloud_url` + local-only `song_lyrics`

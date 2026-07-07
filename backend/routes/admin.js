@@ -2106,206 +2106,42 @@ router.delete('/songs/:id', async (req, res) => {
 });
 
 // Sync with Spotify playlist to detect changes
+// IMPORT-ONLY sync (Session 1.2 rebuild — docs/TRUTH_SOURCE_DESIGN.md).
+// The website is master: playlist tracks missing from the catalogue are added as
+// status='pending' for the curator to review; nothing is flagged as removed and no
+// existing song is modified. Included songs absent from the playlist are reported
+// only — the curator updates Spotify by hand if desired.
 router.post('/sync-spotify-playlist', async (req, res) => {
   try {
-    console.log('Starting Spotify playlist sync...');
-    
-    const { playlistId = '5hVygGomw9zax38quC6mhi' } = req.body; // "Animal Lib & Vegan Songs" (the previous default pointed at an unrelated playlist)
-    
-    // Initialize Spotify API
-    const SpotifyWebApi = require('spotify-web-api-node');
-    const spotifyApi = new SpotifyWebApi({
-      clientId: process.env.SPOTIFY_CLIENT_ID,
-      clientSecret: process.env.SPOTIFY_CLIENT_SECRET
-    });
-    
-    // Get access token
-    const authResult = await spotifyApi.clientCredentialsGrant();
-    spotifyApi.setAccessToken(authResult.body['access_token']);
-    
-    // Get all tracks from the Spotify playlist
-    console.log(`Fetching tracks from Spotify playlist: ${playlistId}`);
-    let allPlaylistTracks = [];
-    let offset = 0;
-    const limit = 100;
-    
-    while (true) {
-      const playlistResult = await spotifyApi.getPlaylistTracks(playlistId, {
-        offset,
-        limit,
-        fields: 'items(track(id,name,artists,album,duration_ms,popularity,preview_url,external_urls.spotify,explicit,available_markets,track_number,disc_number)),next'
-      });
-      
-      const tracks = playlistResult.body.items
-        .filter(item => item.track && item.track.id) // Filter out null tracks
-        .map(item => ({
-          spotify_id: item.track.id,
-          title: item.track.name,
-          artists: item.track.artists.map(artist => artist.name),
-          album_name: item.track.album.name,
-          duration_ms: item.track.duration_ms,
-          popularity: item.track.popularity,
-          preview_url: item.track.preview_url,
-          spotify_url: item.track.external_urls.spotify,
-          explicit: item.track.explicit,
-          available_markets: item.track.available_markets,
-          track_number: item.track.track_number,
-          disc_number: item.track.disc_number
-        }));
-      
-      allPlaylistTracks.push(...tracks);
-      
-      if (!playlistResult.body.next) break;
-      offset += limit;
-    }
-    
-    console.log(`Found ${allPlaylistTracks.length} tracks in Spotify playlist`);
-    
-    // Get all songs currently in our database
-    const dbSongsResult = await pool.query(`
-      SELECT spotify_id, id, title, string_agg(a.name, ', ') as artists
-      FROM songs s
-      LEFT JOIN song_artists sa ON s.id = sa.song_id
-      LEFT JOIN artists a ON sa.artist_id = a.id
-      WHERE s.data_source = 'spotify'
-      GROUP BY s.id, s.spotify_id, s.title
-    `);
-    
-    const dbSongs = dbSongsResult.rows;
-    const dbSpotifyIds = new Set(dbSongs.map(song => song.spotify_id));
-    const playlistSpotifyIds = new Set(allPlaylistTracks.map(track => track.spotify_id));
-    
-    // Find new songs (in playlist but not in database)
-    const newSongs = allPlaylistTracks.filter(track => !dbSpotifyIds.has(track.spotify_id));
-    
-    // Find removed songs (in database but not in current playlist)
-    const removedSongs = dbSongs.filter(song => !playlistSpotifyIds.has(song.spotify_id));
-    
-    console.log(`New songs found: ${newSongs.length}`);
-    console.log(`Songs removed from playlist: ${removedSongs.length}`);
-    
-    let addedCount = 0;
-    let flaggedCount = 0;
-    
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      // Add new songs to database
-      for (const track of newSongs) {
-        try {
-          // Create or find artists
-          const artistIds = [];
-          for (const artistName of track.artists) {
-            let artistResult = await client.query(
-              'SELECT id FROM artists WHERE LOWER(name) = LOWER($1) AND data_source = $2',
-              [artistName, 'spotify']
-            );
-            
-            if (artistResult.rows.length === 0) {
-              artistResult = await client.query(`
-                INSERT INTO artists (name, data_source, created_at)
-                VALUES ($1, $2, CURRENT_TIMESTAMP)
-                RETURNING id
-              `, [artistName, 'spotify']);
-            }
-            
-            artistIds.push(artistResult.rows[0].id);
-          }
-          
-          // Create or find album
-          let albumId = null;
-          if (track.album_name) {
-            let albumResult = await client.query(
-              'SELECT id FROM albums WHERE LOWER(name) = LOWER($1) AND data_source = $2',
-              [track.album_name, 'spotify']
-            );
-            
-            if (albumResult.rows.length === 0) {
-              albumResult = await client.query(`
-                INSERT INTO albums (name, data_source, created_at)
-                VALUES ($1, $2, CURRENT_TIMESTAMP)
-                RETURNING id
-              `, [track.album_name, 'spotify']);
-            }
-            
-            albumId = albumResult.rows[0].id;
-          }
-          
-          // Insert song
-          const songResult = await client.query(`
-            INSERT INTO songs (
-              spotify_id, title, album_id, duration_ms, popularity, spotify_url, 
-              preview_url, explicit, available_markets, track_number, disc_number,
-              data_source, created_at, date_added, playlist_added_at, playlist_added_by
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $13)
-            RETURNING id
-          `, [
-            track.spotify_id, track.title, albumId, track.duration_ms, track.popularity,
-            track.spotify_url, track.preview_url, track.explicit, track.available_markets,
-            track.track_number, track.disc_number, 'spotify', 'system-sync'
-          ]);
-          
-          const songId = songResult.rows[0].id;
-          
-          // Link artists to song
-          for (const artistId of artistIds) {
-            await client.query(
-              'INSERT INTO song_artists (song_id, artist_id) VALUES ($1, $2)',
-              [songId, artistId]
-            );
-          }
-          
-          addedCount++;
-          console.log(`Added new song: ${track.title} by ${track.artists.join(', ')}`);
-          
-        } catch (songError) {
-          console.error(`Error adding song ${track.title}:`, songError);
-        }
-      }
-      
-      // Flag removed songs (don't delete them)
-      for (const song of removedSongs) {
-        await client.query(`
-          UPDATE songs 
-          SET 
-            removed_from_playlist = true,
-            removed_from_playlist_at = CURRENT_TIMESTAMP,
-            updated_at = CURRENT_TIMESTAMP
-          WHERE spotify_id = $1
-        `, [song.spotify_id]);
-        
-        flaggedCount++;
-        console.log(`Flagged removed song: ${song.title} by ${song.artists}`);
-      }
-      
-      await client.query('COMMIT');
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-    
+    const { getSpotifyClient, fetchPlaylistTracks, computeDiff, addTracksAsPending, DEFAULT_PLAYLIST_ID } = require('../utils/playlistSync');
+    const { playlistId = DEFAULT_PLAYLIST_ID } = req.body;
+
+    const spotifyApi = await getSpotifyClient();
+    const tracks = await fetchPlaylistTracks(spotifyApi, playlistId);
+    const diff = await computeDiff(pool, tracks);
+    const added = await addTracksAsPending(pool, diff.missingFromCatalogue);
+
     res.json({
       success: true,
       summary: {
-        playlistTracks: allPlaylistTracks.length,
-        databaseSongs: dbSongs.length,
-        newSongsAdded: addedCount,
-        songsRemovedFromPlaylist: flaggedCount,
-        totalProcessed: addedCount + flaggedCount
+        playlistTracks: diff.playlistTrackCount,
+        addedAsPending: added,
+        includedNotOnPlaylist: diff.includedNotOnPlaylist.length,
+        nonIncludedOnPlaylist: diff.nonIncludedOnPlaylist.length
       },
-      newSongs: newSongs.slice(0, 10), // Return first 10 new songs as examples
-      removedSongs: removedSongs.slice(0, 10), // Return first 10 removed songs as examples
-      message: `Sync completed! Added ${addedCount} new songs and flagged ${flaggedCount} songs as removed from playlist.`
+      addedSongs: diff.missingFromCatalogue.slice(0, 10).map(t => ({
+        spotify_id: t.spotify_id, title: t.title,
+        artists: t.artists.map(a => a.name).join(', ')
+      })),
+      includedNotOnPlaylist: diff.includedNotOnPlaylist.slice(0, 10),
+      message: `Import-only sync: added ${added} playlist track(s) to the pending queue. ` +
+        `${diff.includedNotOnPlaylist.length} included song(s) are not on the Spotify playlist ` +
+        `(informational — update Spotify manually if desired). No songs were changed or flagged.`
     });
-    
+
   } catch (error) {
     console.error('Error syncing Spotify playlist:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to sync Spotify playlist', 
       details: error.message 
     });
@@ -2492,109 +2328,46 @@ router.get('/spotify-validation', async (req, res) => {
 });
 
 // Legacy endpoint - redirect to new one
+// Read-only playlist diff (Session 1.2 rebuild): reports differences between the
+// catalogue and the Spotify playlist in both directions. Website is master — this
+// endpoint never writes anything.
 router.get('/spotify-playlist-mismatch', async (req, res) => {
   try {
-    console.log('Detecting Spotify playlist mismatches...');
-    
-    const { playlistId = '5hVygGomw9zax38quC6mhi' } = req.query;
-    
-    // Initialize Spotify API
-    const SpotifyWebApi = require('spotify-web-api-node');
-    const spotifyApi = new SpotifyWebApi({
-      clientId: process.env.SPOTIFY_CLIENT_ID,
-      clientSecret: process.env.SPOTIFY_CLIENT_SECRET
-    });
-    
-    // Get access token
-    const authResult = await spotifyApi.clientCredentialsGrant();
-    spotifyApi.setAccessToken(authResult.body['access_token']);
-    
-    // Get all tracks from the Spotify playlist
-    console.log(`Fetching tracks from Spotify playlist: ${playlistId}`);
-    let allPlaylistTracks = [];
-    let offset = 0;
-    const limit = 100;
-    
-    while (true) {
-      const playlistResult = await spotifyApi.getPlaylistTracks(playlistId, {
-        offset,
-        limit,
-        fields: 'items(track(id)),next'
-      });
-      
-      const tracks = playlistResult.body.items
-        .filter(item => item.track && item.track.id)
-        .map(item => item.track.id);
-      
-      allPlaylistTracks.push(...tracks);
-      
-      if (!playlistResult.body.next) break;
-      offset += limit;
-    }
-    
-    console.log(`Found ${allPlaylistTracks.length} tracks in Spotify playlist`);
-    
-    // Get all songs currently in our database
-    const dbSongsResult = await pool.query(`
-      SELECT 
-        s.id,
-        s.spotify_id, 
-        s.title, 
-        s.popularity,
-        s.spotify_url,
-        s.removed_from_playlist,
-        s.created_at,
-        string_agg(a.name, ', ') as artists,
-        al.name as album_name,
-        COUNT(yv.id) as youtube_videos_count,
-        CASE WHEN s.lyrics_url IS NOT NULL AND s.lyrics_url != '' THEN 1 ELSE 0 END as has_lyrics
-      FROM songs s
-      LEFT JOIN song_artists sa ON s.id = sa.song_id
-      LEFT JOIN artists a ON sa.artist_id = a.id
-      LEFT JOIN albums al ON s.album_id = al.id
-      LEFT JOIN youtube_videos yv ON s.id = yv.song_id
-      WHERE s.data_source = 'spotify'
-      GROUP BY s.id, s.spotify_id, s.title, s.popularity, s.spotify_url, s.removed_from_playlist, s.created_at, al.name, s.lyrics_url
-      ORDER BY s.created_at DESC
-    `);
-    
-    const dbSongs = dbSongsResult.rows;
-    const playlistSpotifyIds = new Set(allPlaylistTracks);
-    
-    // Find songs in database that are NOT in current Spotify playlist
-    const songsNotInPlaylist = dbSongs.filter(song => 
-      !playlistSpotifyIds.has(song.spotify_id) && !song.removed_from_playlist
-    );
-    
-    // Find songs already flagged as removed but still showing in our results
-    const songsAlreadyFlagged = dbSongs.filter(song => song.removed_from_playlist);
-    
-    console.log(`Songs in database not in playlist: ${songsNotInPlaylist.length}`);
-    console.log(`Songs already flagged as removed: ${songsAlreadyFlagged.length}`);
-    
+    const { getSpotifyClient, fetchPlaylistTracks, computeDiff, DEFAULT_PLAYLIST_ID } = require('../utils/playlistSync');
+    const { playlistId = DEFAULT_PLAYLIST_ID } = req.query;
+
+    const spotifyApi = await getSpotifyClient();
+    const tracks = await fetchPlaylistTracks(spotifyApi, playlistId);
+    const diff = await computeDiff(pool, tracks);
+
     res.json({
       success: true,
-      mismatchSongs: songsNotInPlaylist.map(song => ({
+      mismatchSongs: diff.includedNotOnPlaylist.map(song => ({
         ...song,
-        status: 'not_in_playlist',
-        recommendation: 'Consider removing from database or check if manually added'
+        recommendation: 'Website is master — update the Spotify playlist manually if desired'
       })),
-      alreadyFlagged: songsAlreadyFlagged,
+      playlistTracksNotInCatalogue: diff.missingFromCatalogue.map(t => ({
+        spotify_id: t.spotify_id, title: t.title,
+        artists: t.artists.map(a => a.name).join(', '),
+        recommendation: 'Run the import-only sync to add to the pending queue'
+      })),
+      nonIncludedOnPlaylist: diff.nonIncludedOnPlaylist,
       summary: {
-        totalDatabaseSongs: dbSongs.length,
-        totalPlaylistTracks: allPlaylistTracks.length,
-        songsNotInPlaylist: songsNotInPlaylist.length,
-        songsAlreadyFlagged: songsAlreadyFlagged.length,
+        totalPlaylistTracks: diff.playlistTrackCount,
+        includedNotOnPlaylist: diff.includedNotOnPlaylist.length,
+        playlistTracksNotInCatalogue: diff.missingFromCatalogue.length,
+        nonIncludedOnPlaylist: diff.nonIncludedOnPlaylist.length,
         playlistId: playlistId
       },
-      message: `Found ${songsNotInPlaylist.length} songs in database that are not in the current Spotify playlist`
+      message: `${diff.includedNotOnPlaylist.length} included song(s) not on the playlist; ` +
+        `${diff.missingFromCatalogue.length} playlist track(s) not in the catalogue. Read-only report — nothing was changed.`
     });
-    
+
   } catch (error) {
     console.error('Error detecting Spotify playlist mismatches:', error);
-    res.status(500).json({ 
-      error: 'Failed to detect Spotify playlist mismatches', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to detect Spotify playlist mismatches',
+      details: error.message
     });
   }
 });

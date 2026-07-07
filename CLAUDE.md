@@ -66,6 +66,9 @@ Run before ending every working session:
 - **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
 - **scripts/**: 39 one-off/import scripts (cleanup scheduled in Phase 2.3)
 - **utils/genreMapping.js**: parent-genre mapping used by admin + search
+- **utils/playlistSync.js**: truth-source-safe Spotify helpers (import-only playlist diff,
+  add-as-pending, album/artist upserts) shared by `scripts/enrichFromSpotify.js` and the
+  admin sync endpoints
 
 ### Frontend Structure (`frontend/`)
 - **src/App.jsx** (~1,900 lines): routing plus **inline pages** — Home, Song Detail,
