@@ -44,29 +44,36 @@ model designed and recorded as a decision.
   missing ones are our sync's bug (backfillable); audio features/previews/recommendations
   confirmed dead for this app; live playlist = 1,216 tracks vs 1,208 in DB. Shipped one fix:
   sync endpoints defaulted to the WRONG playlist (a Lofi Girl list) — now the real one._
-- ☐ **Session 0.4 — Truth-source & data-source strategy.** Design the authoritative data
+- ☑ **Session 0.4 — Truth-source & data-source strategy.** Design the authoritative data
   model: how the curated dataset becomes the source of truth, how Spotify enrichment attaches,
-  and how the messy new-songs file will be consolidated. Record as a decision. _Smoke test: n/a
-  (design only)._
+  and how the messy new-songs file will be consolidated. Record as a decision. _Done
+  2026-07-07 → [`TRUTH_SOURCE_DESIGN.md`](./TRUTH_SOURCE_DESIGN.md) (approved by curator).
+  **Phase 0 exit criteria met — Phase 0 complete.**_
 
 ## Phase 1 — Data Foundation (Truth Source)
 **Goal:** Stand up the authoritative dataset and the Spotify-enrichment approach.
 **Exit criteria:** A single trusted dataset containing existing + newly identified songs;
 enrichment pipeline defined; curatorial fields protected from sync overwrites.
 
-- ☐ **Session 1.1 — Consolidate the new-songs file.** Bring the separate messy song lists
-  (songs, lyrics, and any categorisation/review data — the 0.2 audit found the DB holds none
-  of it) into the authoritative source; de-duplicate against what's in the DB (incl. the 18
-  known duplicate pairs). _Smoke test: query the consolidated data via the app / API and
-  confirm counts and integrity._
+- ☐ **Session 1.1 — Schema migration + consolidation import.** Per
+  [`TRUTH_SOURCE_DESIGN.md`](./TRUTH_SOURCE_DESIGN.md): add `status`/`lyrics_status`/link
+  columns + local-only `song_lyrics` table (first tracked migration file); import both
+  spreadsheets (idempotent script, dry-run first, DB backup); public routes filter to
+  `status='included'`. _Smoke test: site shows only included songs; counts match the design's
+  expected end state; no lyrics reachable via API._
 - ☐ **Session 1.2 — Spotify enrichment pipeline.** Implement/adjust so the truth source is
   authoritative and Spotify fills details where a match exists, without overwriting
   curatorial data. Includes the queued backfill: re-enrich the 534 Apr-2026 songs (275 bare
   albums — covers/dates — and ~245 bare artists), and close the 8-track gap to the live
   playlist. Replaces all three legacy import paths (see `SPOTIFY_API_AUDIT.md` §3).
   _Smoke test: run enrichment on a sample, confirm reviews/coding untouched._
-- ☐ **Session 1.3 — Data integrity pass.** Reconcile artists/albums, fix orphans surfaced in
-  the audit. _Smoke test: browse songs/artists in the app, confirm relationships render._
+- ☐ **Session 1.3 — Data integrity pass.** Merge the 18 duplicate pairs (re-pointing videos/
+  lyrics/featured), reconcile artists/albums, fix the 2 orphan artists + 14 orphan albums.
+  _Smoke test: browse songs/artists in the app, confirm relationships render._
+- ☐ **Session 1.4 — Minimal pending-queue admin UI.** Work the `pending` songs in the
+  website: search/play links, lyrics paste (local) + URL, categorisation, include/reject;
+  bulk candidate intake. Retires the spreadsheets. _Smoke test: process a few real pending
+  songs end-to-end._
 
 ## Phase 2 — Architecture Cleanup
 **Goal:** A maintainable codebase, same behaviour.

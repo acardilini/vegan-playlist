@@ -7,18 +7,19 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 0 — Discovery & Audit
-- **Current session:** _between sessions (Sessions 0.1–0.3 complete)_
-- **Next session:** Session 0.4 — Truth-source & data-source strategy
+- **Phase:** Phase 1 — Data Foundation (Truth Source). **Phase 0 complete 2026-07-07.**
+- **Current session:** _between sessions (Session 0.4 complete)_
+- **Next session:** Session 1.1 — Schema migration + consolidation import
 - **Last updated:** 2026-07-07
 
 ### Next Tasks (start here)
-1. **Session 0.4 — Truth-source strategy.** All inputs are now in hand: the DB holds no
-   curatorial data (0.2); truth lives in the curator's **spreadsheets**; the truth/enrichment/
-   regenerable/dropped field classification is drafted in `SPOTIFY_API_AUDIT.md` §7. Design
-   the authoritative model + spreadsheet-import + consolidation plan and record as a decision.
-2. **Phase 1 prep:** get the curator's spreadsheets (song lists, lyrics, coding) into the
-   repo or a known location so Sessions 0.4/1.1 can work against the real files.
+1. **Session 1.1 — Schema migration + consolidation import**, implementing
+   [`TRUTH_SOURCE_DESIGN.md`](./TRUTH_SOURCE_DESIGN.md) (read it first — it is the approved
+   spec with exact import rules and expected counts). Backup the DB before the real run.
+2. The two source spreadsheets are at `docs/playlist/` (gitignored — they contain lyrics;
+   **never commit lyrics** to git, API responses, or the production DB).
+3. Then Session 1.2 (enrichment pipeline + backfill), 1.3 (integrity/dedup), 1.4 (pending-
+   queue admin UI).
 
 ### Known Context / Watch-outs
 - Frontend is a ~2,000-line `App.jsx` monolith with inline pages — Phase 2 target.
@@ -51,6 +52,14 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-07 — Truth-source model decided (Session 0.4, approved).** A song is in the
+  catalogue because the curator says so: `songs.status` (`pending`/`included`/`rejected`) is
+  curator-owned; Spotify is optional enrichment, **import-only** (no push, no auto-removal);
+  non-Spotify songs are first-class (Bandcamp/YouTube/SoundCloud); full lyrics live in a
+  **local-only** `song_lyrics` table (never git/API/production — copyright); undecided
+  spreadsheet rows become an in-website pending queue; rejected candidates are kept as
+  `rejected` rows. Full spec: `TRUTH_SOURCE_DESIGN.md`. Spreadsheets at `docs/playlist/`
+  gitignored same day.
 - **2026-07-07 — Curator data decisions (from the 0.2 audit questions).** (1) The Apr-2026
   534-song batch is a vetted batch of new songs. (2) Curatorial coding lives in a couple of
   spreadsheets → they are the Phase 1 import source. (3) Mood/genre tags are **regenerable
@@ -100,6 +109,12 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-07 (Session 0.4)** — Truth-source design session (brainstorming with curator):
+  inspected both spreadsheets (711 + 1,013 rows), measured DB overlap (659 exact matches;
+  192 new included songs; 256 rejects; 179 pending), worked through 9 curator decisions, and
+  wrote the approved spec → `docs/TRUTH_SOURCE_DESIGN.md`. Gitignored `docs/playlist/`
+  (lyrics copyright). Phase 0 closed; Phase 1 sessions resequenced (1.1 import, 1.2
+  enrichment, 1.3 integrity, 1.4 pending-queue UI). No production code changed.
 - **2026-07-07 (Session 0.3)** — Spotify API audit complete → `docs/SPOTIFY_API_AUDIT.md`.
   Live-tested the API with the app's credentials: album images fully available (the missing
   covers are our sync's bug — 450 songs affected, backfillable); audio features (403),
