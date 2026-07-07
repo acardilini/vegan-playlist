@@ -61,4 +61,23 @@ async function listQueue(db, { queue, q = '', limit = null, offset = 0 } = {}) {
   return { queue, total: rows.length, rows };
 }
 
-module.exports = { normalizeName, listQueue };
+async function includeSong(db, id, { publish = false } = {}) {
+  const sql = publish
+    ? `UPDATE songs SET status='included', published=true, published_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
+       WHERE id=$1 RETURNING id, title, status, published`
+    : `UPDATE songs SET status='included', updated_at=CURRENT_TIMESTAMP
+       WHERE id=$1 RETURNING id, title, status, published`;
+  const r = await db.query(sql, [id]);
+  if (r.rows.length === 0) { const e = new Error('song not found'); e.code = 'NOT_FOUND'; throw e; }
+  return r.rows[0];
+}
+
+async function rejectSong(db, id) {
+  const r = await db.query(
+    `UPDATE songs SET status='rejected', published=false, published_at=NULL, updated_at=CURRENT_TIMESTAMP
+     WHERE id=$1 RETURNING id, title, status, published`, [id]);
+  if (r.rows.length === 0) { const e = new Error('song not found'); e.code = 'NOT_FOUND'; throw e; }
+  return r.rows[0];
+}
+
+module.exports = { normalizeName, listQueue, includeSong, rejectSong };

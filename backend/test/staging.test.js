@@ -64,3 +64,28 @@ test('listQueue live with q finds published match, excludes pending', async () =
   assert.ok(ids.includes(liveId), 'published match present');
   assert.ok(!ids.includes(pendId), 'pending excluded from live');
 });
+
+test('includeSong moves pending -> included, stays unpublished', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Include A', status: 'pending' });
+  const r = await staging.includeSong(pool, id, {});
+  assert.equal(r.status, 'included');
+  assert.equal(r.published, false);
+});
+
+test('includeSong {publish:true} includes and publishes', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Include B', status: 'pending' });
+  const r = await staging.includeSong(pool, id, { publish: true });
+  assert.equal(r.status, 'included');
+  assert.equal(r.published, true);
+});
+
+test('rejectSong on a published row also unpublishes', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Reject A', status: 'included', published: true });
+  const r = await staging.rejectSong(pool, id);
+  assert.equal(r.status, 'rejected');
+  assert.equal(r.published, false);
+});
+
+test('includeSong on missing id throws NOT_FOUND', async () => {
+  await assert.rejects(() => staging.includeSong(pool, 999999999, {}), (e) => e.code === 'NOT_FOUND');
+});
