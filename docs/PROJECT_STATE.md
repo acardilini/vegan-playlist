@@ -8,26 +8,36 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Phase:** Phase 1 — Data Foundation (Truth Source). **Phase 0 complete 2026-07-07.**
-- **Current session:** _between sessions (Session 0.4 complete)_
-- **Next session:** Session 1.1 — Schema migration + consolidation import
+- **Current session:** _between sessions (Session 1.1 complete)_
+- **Next session:** Session 1.2 — Spotify enrichment pipeline
 - **Last updated:** 2026-07-07
 
 ### Next Tasks (start here)
-1. **Session 1.1 — Schema migration + consolidation import**, implementing
-   [`TRUTH_SOURCE_DESIGN.md`](./TRUTH_SOURCE_DESIGN.md) (read it first — it is the approved
-   spec with exact import rules and expected counts). Backup the DB before the real run.
-2. The two source spreadsheets are at `docs/playlist/` (gitignored — they contain lyrics;
-   **never commit lyrics** to git, API responses, or the production DB).
-3. Then Session 1.2 (enrichment pipeline + backfill), 1.3 (integrity/dedup), 1.4 (pending-
-   queue admin UI).
+1. **Session 1.2 — Spotify enrichment pipeline**: attach Spotify matches for the 190 new
+   manual `included` songs; backfill the 534 bare Apr-2026 songs (275 albums missing
+   covers/dates, ~245 bare artists); close the playlist gap (was 8 tracks); import-only diff
+   report. Never overwrite curatorial fields (`status`, `status_notes`, categorisation).
+2. **Session 1.3 — integrity pass** now also covers the import review report
+   (`backend/logs/consolidation-apply-*.log`, gitignored): 27 file-1 rows that hit the known
+   DB duplicate pairs (re-run `consolidateSpreadsheets.js --apply` after merging to apply
+   their lyrics), 13 sheet-rejects + 5 sheet-pendings that match already-included DB songs
+   (curator to adjudicate), 7 unmatched file-1 rows, 2 unclassified spreadsheet rows.
+3. Then Session 1.4 (pending-queue admin UI) — 175 `pending` songs are now in the DB
+   waiting for it.
+4. The two source spreadsheets at `docs/playlist/` are now imported and can retire after the
+   curator spot-checks the site (keep the files as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
+- **Truth source is live (1.1):** `songs.status` now gates every public route
+  (`included` 1,398 / `pending` 175 / `rejected` 243). Full lyrics for 929 songs live in the
+  **local-only** `song_lyrics` table — no API route may ever SELECT it (grep before deploy),
+  and Phase 4 production dumps must use `--exclude-table-data=song_lyrics`. `backups/` and
+  `backend/logs/` are gitignored because they can contain lyrics.
+- The 190 new manual songs have no album/spotify data yet (placeholder art on the site) —
+  Session 1.2 attaches Spotify matches. Public queries use `LEFT JOIN albums` so
+  non-Spotify songs render; keep it that way.
 - Frontend is a ~2,000-line `App.jsx` monolith with inline pages — Phase 2 target.
 - Backend has duplicate route files (`admin.js` / `admin_simple.js`) and ~40 one-off scripts — Phase 2 target.
-- A separate, messy file of newly identified songs needs consolidating into the truth source — Phase 1.
-- **Lyrics:** the curator is actively sourcing lyrics and has many more than the 10 links in
-  the DB — but they live in the messy song lists awaiting cleanup. Bring them in during the
-  Phase 1 consolidation.
 - **Vegan-themes analysis is future work, not a bug:** `analytics/vegan-themes` reports 0
   because the thematic coding of songs hasn't been done yet. Plan it as its own workstream
   once the truth source is in place.
@@ -38,7 +48,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   654 moods, 493 genres, 10 lyric links). See `DATABASE_AUDIT.md`.
 - ~~The `songs` table holds 1,208 rows, not ~650~~ **Solved (0.2/0.3):** 674 from the 2025
   imports + 534 synced 2026-04-06 after the Spotify playlist grew (curator: a vetted batch)
-  — with 18 true duplicate pairs to merge in Session 1.1. Live playlist ("Animal Lib & Vegan
+  — with 18 true duplicate pairs to merge in Session 1.3. Live playlist ("Animal Lib & Vegan
   Songs") now has 1,216 tracks; DB is 8 behind.
 - **450 songs are missing album covers** (275 bare albums from the Apr-2026 sync — also no
   release dates, so year filters miss them; ~245 artists likewise bare). Not a Spotify
@@ -52,6 +62,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-07 — Import conflicts never change curator state (Session 1.1).** Where a
+  spreadsheet row said reject/pending but the matched DB song is `included` (18 rows), the
+  import reports it and leaves the song untouched — sheet vs DB disagreements are for the
+  curator, not the script. Rejected rows are imported minimally and stay minimal on re-runs
+  (no lyrics/URLs). Unclassifiable `Processed` values become `pending` with the raw value in
+  `status_notes` rather than being guessed at.
+- **2026-07-07 — Public catalogue queries use `LEFT JOIN albums` (Session 1.1).** Non-Spotify
+  songs have no album row; the old inner joins made them invisible while still counted.
+  First-class non-Spotify songs are a core truth-source requirement, so album data is
+  optional everywhere public.
 - **2026-07-07 — Truth-source model decided (Session 0.4, approved).** A song is in the
   catalogue because the curator says so: `songs.status` (`pending`/`included`/`rejected`) is
   curator-owned; Spotify is optional enrichment, **import-only** (no push, no auto-removal);
@@ -109,6 +129,19 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-07 (Session 1.1)** — Truth source stood up. Migration
+  `backend/database/migrations/001_truth_source.sql` (first tracked migration): `songs.status`
+  /`status_notes`/`lyrics_status`/`bandcamp_url`/`soundcloud_url` + local-only `song_lyrics`
+  table. Full DB backup to `backups/` (gitignored), then
+  `backend/scripts/consolidateSpreadsheets.js` (dry-run default, idempotent — verified by
+  three converging runs) imported both spreadsheets: end state **1,398 included** (+190 new),
+  **175 pending**, **243 rejected**, **929 songs with local lyrics**, 519 lyrics links, 78
+  bandcamp links, 278 new artists; 72-item review report in `backend/logs/` (multi-matches =
+  the known dup pairs; 18 sheet-vs-DB status conflicts left for the curator). All public
+  routes (spotify/analytics/playlists/youtube/lyrics) now filter `status='included'` and
+  LEFT JOIN albums so non-Spotify songs render. Smoke test ✅: site totals 1,398 everywhere,
+  pending/rejected songs 404, manual song renders with placeholder art, frontend loads, no
+  route reads `song_lyrics`. exceljs added as backend devDependency.
 - **2026-07-07 (Session 0.4)** — Truth-source design session (brainstorming with curator):
   inspected both spreadsheets (711 + 1,013 rows), measured DB overlap (659 exact matches;
   192 new included songs; 256 rejects; 179 pending), worked through 9 curator decisions, and

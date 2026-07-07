@@ -11,10 +11,10 @@ router.get('/year-distribution', async (req, res) => {
       vegan_focus = null,
       advocacy_style = null,
       min_year = null,
-      max_year = null 
+      max_year = null
     } = req.query;
 
-    let whereConditions = [];
+    let whereConditions = [`s.status = 'included'`];
     let params = [];
     let paramIndex = 1;
 
@@ -91,7 +91,7 @@ router.get('/genre-distribution', async (req, res) => {
       limit = 20
     } = req.query;
 
-    let whereConditions = [];
+    let whereConditions = [`s.status = 'included'`];
     let params = [];
     let paramIndex = 1;
 
@@ -158,7 +158,7 @@ router.get('/audio-features', async (req, res) => {
       feature = 'energy' // energy, danceability, valence
     } = req.query;
 
-    let whereConditions = [];
+    let whereConditions = [`s.status = 'included'`];
     let params = [];
     let paramIndex = 1;
 
@@ -262,10 +262,10 @@ router.get('/vegan-themes', async (req, res) => {
       genre = null,
       parent_genre = null,
       min_year = null,
-      max_year = null 
+      max_year = null
     } = req.query;
 
-    let whereConditions = [];
+    let whereConditions = [`s.status = 'included'`];
     let params = [];
     let paramIndex = 1;
 
@@ -297,7 +297,7 @@ router.get('/vegan-themes', async (req, res) => {
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
     const query = `
-      SELECT 
+      SELECT
         unnest(s.vegan_focus) as theme,
         COUNT(*) as song_count
       FROM songs s
@@ -321,15 +321,15 @@ router.get('/vegan-themes', async (req, res) => {
 router.get('/summary', async (req, res) => {
   try {
     const queries = [
-      'SELECT COUNT(*) as total_songs FROM songs',
-      'SELECT COUNT(DISTINCT s.genre) as total_genres FROM songs s WHERE s.genre IS NOT NULL',
-      `SELECT 
+      `SELECT COUNT(*) as total_songs FROM songs WHERE status = 'included'`,
+      `SELECT COUNT(DISTINCT s.genre) as total_genres FROM songs s WHERE s.genre IS NOT NULL AND s.status = 'included'`,
+      `SELECT
          MIN(EXTRACT(YEAR FROM al.release_date)) as earliest_year,
          MAX(EXTRACT(YEAR FROM al.release_date)) as latest_year
-       FROM songs s 
-       LEFT JOIN albums al ON s.album_id = al.id 
-       WHERE al.release_date IS NOT NULL`,
-      'SELECT COUNT(*) as songs_with_vegan_focus FROM songs WHERE vegan_focus IS NOT NULL AND array_length(vegan_focus, 1) > 0'
+       FROM songs s
+       LEFT JOIN albums al ON s.album_id = al.id
+       WHERE al.release_date IS NOT NULL AND s.status = 'included'`,
+      `SELECT COUNT(*) as songs_with_vegan_focus FROM songs WHERE vegan_focus IS NOT NULL AND array_length(vegan_focus, 1) > 0 AND status = 'included'`
     ];
 
     const results = await Promise.all(queries.map(query => pool.query(query)));
@@ -355,10 +355,10 @@ router.get('/summary', async (req, res) => {
 router.get('/filter-options', async (req, res) => {
   try {
     const queries = [
-      'SELECT DISTINCT genre FROM songs WHERE genre IS NOT NULL ORDER BY genre',
-      'SELECT DISTINCT parent_genre FROM songs WHERE parent_genre IS NOT NULL ORDER BY parent_genre',
-      'SELECT DISTINCT unnest(vegan_focus) as theme FROM songs WHERE vegan_focus IS NOT NULL ORDER BY theme',
-      'SELECT DISTINCT unnest(advocacy_style) as style FROM songs WHERE advocacy_style IS NOT NULL ORDER BY style'
+      `SELECT DISTINCT genre FROM songs WHERE genre IS NOT NULL AND status = 'included' ORDER BY genre`,
+      `SELECT DISTINCT parent_genre FROM songs WHERE parent_genre IS NOT NULL AND status = 'included' ORDER BY parent_genre`,
+      `SELECT DISTINCT unnest(vegan_focus) as theme FROM songs WHERE vegan_focus IS NOT NULL AND status = 'included' ORDER BY theme`,
+      `SELECT DISTINCT unnest(advocacy_style) as style FROM songs WHERE advocacy_style IS NOT NULL AND status = 'included' ORDER BY style`
     ];
 
     const results = await Promise.all(queries.map(query => pool.query(query)));

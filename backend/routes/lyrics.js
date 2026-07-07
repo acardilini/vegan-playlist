@@ -21,7 +21,7 @@ router.get('/songs/missing-lyrics', async (req, res) => {
       FROM songs s
       LEFT JOIN song_artists sa ON s.id = sa.song_id
       LEFT JOIN artists a ON sa.artist_id = a.id
-      WHERE s.lyrics_url IS NULL OR s.lyrics_url = ''
+      WHERE (s.lyrics_url IS NULL OR s.lyrics_url = '') AND s.status = 'included'
       GROUP BY s.id, s.title, s.popularity, s.lyrics_url
       ORDER BY s.popularity DESC NULLS LAST, s.title
       LIMIT $1 OFFSET $2
@@ -31,7 +31,7 @@ router.get('/songs/missing-lyrics', async (req, res) => {
     const countResult = await pool.query(`
       SELECT COUNT(*) as total
       FROM songs s
-      WHERE s.lyrics_url IS NULL OR s.lyrics_url = ''
+      WHERE (s.lyrics_url IS NULL OR s.lyrics_url = '') AND s.status = 'included'
     `);
 
     const total = parseInt(countResult.rows[0].total);
@@ -79,13 +79,14 @@ router.get('/songs/lyrics-status', async (req, res) => {
       FROM songs s
       LEFT JOIN song_artists sa ON s.id = sa.song_id
       LEFT JOIN artists a ON sa.artist_id = a.id
+      WHERE s.status = 'included'
       GROUP BY s.id, s.title, s.lyrics_url, s.lyrics_source, s.updated_at
       ORDER BY s.updated_at DESC
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
     // Get total count
-    const countResult = await pool.query('SELECT COUNT(*) as total FROM songs');
+    const countResult = await pool.query(`SELECT COUNT(*) as total FROM songs WHERE status = 'included'`);
     const total = parseInt(countResult.rows[0].total);
     const pages = Math.ceil(total / limit);
 
@@ -120,6 +121,7 @@ router.get('/stats', async (req, res) => {
         COUNT(CASE WHEN lyrics_source = 'bandcamp' THEN 1 END) as bandcamp_links,
         COUNT(CASE WHEN lyrics_source = 'other' THEN 1 END) as other_links
       FROM songs
+      WHERE status = 'included'
     `);
 
     const result = stats.rows[0];

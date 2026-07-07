@@ -55,12 +55,16 @@ model designed and recorded as a decision.
 **Exit criteria:** A single trusted dataset containing existing + newly identified songs;
 enrichment pipeline defined; curatorial fields protected from sync overwrites.
 
-- ☐ **Session 1.1 — Schema migration + consolidation import.** Per
+- ☑ **Session 1.1 — Schema migration + consolidation import.** Per
   [`TRUTH_SOURCE_DESIGN.md`](./TRUTH_SOURCE_DESIGN.md): add `status`/`lyrics_status`/link
   columns + local-only `song_lyrics` table (first tracked migration file); import both
   spreadsheets (idempotent script, dry-run first, DB backup); public routes filter to
   `status='included'`. _Smoke test: site shows only included songs; counts match the design's
-  expected end state; no lyrics reachable via API._
+  expected end state; no lyrics reachable via API._ _Done 2026-07-07: migration
+  `001_truth_source.sql` + `scripts/consolidateSpreadsheets.js`. End state 1,398 included /
+  175 pending / 243 rejected / 929 local lyrics (matches design ±the 18 sheet-vs-DB status
+  conflicts, reported not applied). Public routes also gained LEFT JOIN albums so
+  non-Spotify songs render. Smoke test ✅._
 - ☐ **Session 1.2 — Spotify enrichment pipeline.** Implement/adjust so the truth source is
   authoritative and Spotify fills details where a match exists, without overwriting
   curatorial data. Includes the queued backfill: re-enrich the 534 Apr-2026 songs (275 bare
@@ -69,6 +73,9 @@ enrichment pipeline defined; curatorial fields protected from sync overwrites.
   _Smoke test: run enrichment on a sample, confirm reviews/coding untouched._
 - ☐ **Session 1.3 — Data integrity pass.** Merge the 18 duplicate pairs (re-pointing videos/
   lyrics/featured), reconcile artists/albums, fix the 2 orphan artists + 14 orphan albums.
+  Also work the 1.1 import review report (`backend/logs/consolidation-apply-*.log`): 27
+  file-1 rows blocked by the dup pairs (re-run the consolidation script after merging to
+  apply their lyrics), 18 sheet-vs-DB status conflicts for the curator, 7 unmatched rows.
   _Smoke test: browse songs/artists in the app, confirm relationships render._
 - ☐ **Session 1.4 — Minimal pending-queue admin UI.** Work the `pending` songs in the
   website: search/play links, lyrics paste (local) + URL, categorisation, include/reject;

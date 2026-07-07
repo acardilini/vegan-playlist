@@ -130,10 +130,16 @@ router.get('/artist/:artistId', async (req, res) => {
 // Database test routes
 router.get('/db-stats', async (req, res) => {
   try {
-    const songCount = await pool.query('SELECT COUNT(*) FROM songs');
-    const artistCount = await pool.query('SELECT COUNT(*) FROM artists');
-    const albumCount = await pool.query('SELECT COUNT(*) FROM albums');
-    
+    const songCount = await pool.query(`SELECT COUNT(*) FROM songs WHERE status = 'included'`);
+    const artistCount = await pool.query(`
+      SELECT COUNT(DISTINCT a.id) FROM artists a
+      JOIN song_artists sa ON a.id = sa.artist_id
+      JOIN songs s ON sa.song_id = s.id
+      WHERE s.status = 'included'`);
+    const albumCount = await pool.query(`
+      SELECT COUNT(DISTINCT album_id) FROM songs
+      WHERE status = 'included' AND album_id IS NOT NULL`);
+
     res.json({
       songs: parseInt(songCount.rows[0].count),
       artists: parseInt(artistCount.rows[0].count),
@@ -154,6 +160,7 @@ router.get('/db-songs', async (req, res) => {
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
       JOIN albums al ON s.album_id = al.id
+      WHERE s.status = 'included'
       ORDER BY s.title
       LIMIT 20
     `);
@@ -187,16 +194,17 @@ router.get('/songs', async (req, res) => {
         ARRAY_AGG(DISTINCT a.name) as artists,
         ARRAY_AGG(DISTINCT a.spotify_id) as artist_ids
       FROM songs s
-      JOIN albums al ON s.album_id = al.id
+      LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
+      WHERE s.status = 'included'
       GROUP BY s.id, al.id
       ORDER BY s.title
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
-    
+
     // Get total count for pagination
-    const countResult = await pool.query('SELECT COUNT(*) FROM songs');
+    const countResult = await pool.query(`SELECT COUNT(*) FROM songs WHERE status = 'included'`);
     const totalSongs = parseInt(countResult.rows[0].count);
     
     res.json({
@@ -221,7 +229,7 @@ router.get('/songs/featured-simple', async (req, res) => {
     const result = await pool.query(`
       SELECT s.id, s.title, s.featured
       FROM songs s
-      WHERE s.featured = true
+      WHERE s.featured = true AND s.status = 'included'
       ORDER BY s.id
       LIMIT 4
     `);
@@ -255,12 +263,12 @@ router.get('/songs/featured', async (req, res) => {
         ARRAY_AGG(DISTINCT a.name) as artists,
         ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
       FROM songs s
-      JOIN albums al ON s.album_id = al.id
+      LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
-      WHERE s.featured = true
-      GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url, 
+      WHERE s.featured = true AND s.status = 'included'
+      GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
                s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
                al.name, al.release_date, al.images
       ORDER BY s.playlist_added_at DESC
@@ -284,11 +292,11 @@ router.get('/songs/featured', async (req, res) => {
           ARRAY_AGG(DISTINCT a.name) as artists,
           ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
         FROM songs s
-        JOIN albums al ON s.album_id = al.id
+        LEFT JOIN albums al ON s.album_id = al.id
         JOIN song_artists sa ON s.id = sa.song_id
         JOIN artists a ON sa.artist_id = a.id
         LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
-        WHERE (s.featured = false OR s.featured IS NULL)
+        WHERE (s.featured = false OR s.featured IS NULL) AND s.status = 'included'
       `;
       
       const queryParams = [];
@@ -370,10 +378,10 @@ router.get('/songs/:id', async (req, res) => {
           'followers', a.followers
         )) as artists
       FROM songs s
-      JOIN albums al ON s.album_id = al.id
+      LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
-      WHERE s.id = $1
+      WHERE s.id = $1 AND s.status = 'included'
       GROUP BY s.id, al.id
     `, [songId]);
     
@@ -419,10 +427,10 @@ router.get('/artists', async (req, res) => {
       SELECT COUNT(DISTINCT a.id) as total
       FROM artists a
       JOIN song_artists sa ON a.id = sa.artist_id
-      JOIN songs s ON sa.song_id = s.id
+      JOIN songs s ON sa.song_id = s.id AND s.status = 'included'
       ${whereClause}
     `;
-    
+
     const countResult = await pool.query(countQuery, queryParams);
     const totalArtists = parseInt(countResult.rows[0].total);
     const totalPages = Math.ceil(totalArtists / limit);
@@ -439,7 +447,7 @@ router.get('/artists', async (req, res) => {
         COUNT(DISTINCT s.id) as song_count
       FROM artists a
       JOIN song_artists sa ON a.id = sa.artist_id
-      JOIN songs s ON sa.song_id = s.id
+      JOIN songs s ON sa.song_id = s.id AND s.status = 'included'
       ${whereClause}
       GROUP BY a.id, a.name, a.spotify_id, a.spotify_url, a.data_source, a.created_at
       ${orderClause}
@@ -491,7 +499,7 @@ router.get('/search', async (req, res) => {
       sort_by = 'popularity'
     } = req.query;
 
-    let whereConditions = [];
+    let whereConditions = [`s.status = 'included'`];
     let queryParams = [];
     let paramIndex = 1;
 
@@ -499,7 +507,7 @@ router.get('/search', async (req, res) => {
     if (query && query.trim()) {
       const searchTerm = `%${query.trim()}%`;
       whereConditions.push(`(
-        LOWER(s.title) LIKE LOWER($${paramIndex}) OR 
+        LOWER(s.title) LIKE LOWER($${paramIndex}) OR
         LOWER(a.name) LIKE LOWER($${paramIndex}) OR
         LOWER(al.name) LIKE LOWER($${paramIndex}) OR
         LOWER(s.your_review) LIKE LOWER($${paramIndex})
@@ -663,7 +671,7 @@ router.get('/search', async (req, res) => {
         ARRAY_AGG(DISTINCT a.name) as artists,
         ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
       FROM songs s
-      JOIN albums al ON s.album_id = al.id
+      LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
@@ -679,7 +687,7 @@ router.get('/search', async (req, res) => {
     const countQuery = `
       SELECT COUNT(DISTINCT s.id) as total
       FROM songs s
-      JOIN albums al ON s.album_id = al.id
+      LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
       ${whereClause}
@@ -724,81 +732,83 @@ router.get('/filter-options', async (req, res) => {
     // Get all unique filter values with counts
     const veganFocusQuery = `
       SELECT UNNEST(vegan_focus) as value, COUNT(*) as count
-      FROM songs 
-      WHERE vegan_focus IS NOT NULL 
+      FROM songs
+      WHERE vegan_focus IS NOT NULL AND status = 'included'
       GROUP BY UNNEST(vegan_focus)
       ORDER BY count DESC
     `;
-    
+
     const animalCategoryQuery = `
       SELECT UNNEST(animal_category) as value, COUNT(*) as count
-      FROM songs 
-      WHERE animal_category IS NOT NULL 
+      FROM songs
+      WHERE animal_category IS NOT NULL AND status = 'included'
       GROUP BY UNNEST(animal_category)
       ORDER BY count DESC
     `;
-    
+
     const advocacyStyleQuery = `
       SELECT UNNEST(advocacy_style) as value, COUNT(*) as count
-      FROM songs 
-      WHERE advocacy_style IS NOT NULL 
+      FROM songs
+      WHERE advocacy_style IS NOT NULL AND status = 'included'
       GROUP BY UNNEST(advocacy_style)
       ORDER BY count DESC
     `;
-    
+
     const advocacyIssuesQuery = `
       SELECT UNNEST(advocacy_issues) as value, COUNT(*) as count
-      FROM songs 
-      WHERE advocacy_issues IS NOT NULL 
+      FROM songs
+      WHERE advocacy_issues IS NOT NULL AND status = 'included'
       GROUP BY UNNEST(advocacy_issues)
       ORDER BY count DESC
     `;
-    
+
     const lyricalExplicitnessQuery = `
       SELECT UNNEST(lyrical_explicitness) as value, COUNT(*) as count
-      FROM songs 
-      WHERE lyrical_explicitness IS NOT NULL 
+      FROM songs
+      WHERE lyrical_explicitness IS NOT NULL AND status = 'included'
       GROUP BY UNNEST(lyrical_explicitness)
       ORDER BY count DESC
     `;
-    
+
     // Use song-level genres to match the filtering logic
     const genresQuery = `
-      SELECT 
-        s.genre as value, 
+      SELECT
+        s.genre as value,
         COUNT(*) as count
       FROM songs s
-      WHERE s.genre IS NOT NULL AND s.genre != ''
+      WHERE s.genre IS NOT NULL AND s.genre != '' AND s.status = 'included'
       GROUP BY s.genre
       ORDER BY count DESC, value ASC
     `;
-    
+
     // Calculate parent genres from song-level parent_genre field to match filtering
     const parentGenresQuery = `
-      SELECT 
-        s.parent_genre as value, 
+      SELECT
+        s.parent_genre as value,
         COUNT(*) as count
       FROM songs s
-      WHERE s.parent_genre IS NOT NULL AND s.parent_genre != ''
+      WHERE s.parent_genre IS NOT NULL AND s.parent_genre != '' AND s.status = 'included'
       GROUP BY s.parent_genre
       ORDER BY count DESC, value ASC
     `;
-    
+
     const yearRangeQuery = `
-      SELECT 
+      SELECT
         MIN(EXTRACT(YEAR FROM release_date)) as min_year,
         MAX(EXTRACT(YEAR FROM release_date)) as max_year
       FROM albums
       WHERE release_date IS NOT NULL
+        AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND album_id IS NOT NULL)
     `;
-    
+
     const audioFeaturesQuery = `
-      SELECT 
+      SELECT
         MIN(energy) as min_energy, MAX(energy) as max_energy,
         MIN(danceability) as min_danceability, MAX(danceability) as max_danceability,
         MIN(valence) as min_valence, MAX(valence) as max_valence
       FROM songs
-      WHERE energy IS NOT NULL OR danceability IS NOT NULL OR valence IS NOT NULL
+      WHERE (energy IS NOT NULL OR danceability IS NOT NULL OR valence IS NOT NULL)
+        AND status = 'included'
     `;
 
     const [
@@ -861,6 +871,8 @@ router.get('/artist-filter-options', async (req, res) => {
         COUNT(*) as count
       FROM artists a
       WHERE a.genres IS NOT NULL AND array_length(a.genres, 1) > 0
+        AND EXISTS (SELECT 1 FROM song_artists sa JOIN songs s ON s.id = sa.song_id
+                    WHERE sa.artist_id = a.id AND s.status = 'included')
       GROUP BY UNNEST(a.genres)
       ORDER BY count DESC, value ASC
     `;
@@ -889,6 +901,8 @@ router.get('/artist-filter-options', async (req, res) => {
           END as parent_genre
         FROM artists a, UNNEST(a.genres) as genre
         WHERE a.genres IS NOT NULL AND array_length(a.genres, 1) > 0
+          AND EXISTS (SELECT 1 FROM song_artists sa JOIN songs s ON s.id = sa.song_id
+                      WHERE sa.artist_id = a.id AND s.status = 'included')
       ) parent_calc
       GROUP BY parent_genre
       ORDER BY count DESC, parent_genre ASC
@@ -918,14 +932,14 @@ router.get('/artist-filter-options', async (req, res) => {
 router.get('/database-check', async (req, res) => {
   try {
     // Count totals
-    const songCount = await pool.query('SELECT COUNT(*) FROM songs');
+    const songCount = await pool.query(`SELECT COUNT(*) FROM songs WHERE status = 'included'`);
     const artistCount = await pool.query('SELECT COUNT(*) FROM artists');
     const albumCount = await pool.query('SELECT COUNT(*) FROM albums');
-    
+
     // Sample data
     const sampleData = await pool.query(`
-      SELECT 
-        s.title, 
+      SELECT
+        s.title,
         s.spotify_id,
         s.date_added,
         s.vegan_focus,
@@ -934,6 +948,7 @@ router.get('/database-check', async (req, res) => {
       FROM songs s
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
+      WHERE s.status = 'included'
       GROUP BY s.id, s.title, s.spotify_id, s.date_added, s.vegan_focus, s.animal_category
       LIMIT 5
     `);
@@ -966,29 +981,29 @@ router.get('/debug/audio-features', async (req, res) => {
     // Check if any songs have audio features
     const withFeatures = await pool.query(`
       SELECT COUNT(*) as count
-      FROM songs 
-      WHERE energy IS NOT NULL OR danceability IS NOT NULL
+      FROM songs
+      WHERE (energy IS NOT NULL OR danceability IS NOT NULL) AND status = 'included'
     `);
-    
+
     // Get a sample of songs with and without features
     const sampleWithFeatures = await pool.query(`
       SELECT title, energy, danceability, valence, tempo
-      FROM songs 
-      WHERE energy IS NOT NULL 
+      FROM songs
+      WHERE energy IS NOT NULL AND status = 'included'
       LIMIT 5
     `);
-    
+
     const sampleWithoutFeatures = await pool.query(`
       SELECT title, spotify_id, energy, danceability, valence, tempo
-      FROM songs 
-      WHERE energy IS NULL 
+      FROM songs
+      WHERE energy IS NULL AND status = 'included'
       LIMIT 5
     `);
-    
+
     res.json({
       summary: {
         songs_with_features: parseInt(withFeatures.rows[0].count),
-        total_songs: await pool.query('SELECT COUNT(*) FROM songs').then(r => parseInt(r.rows[0].count))
+        total_songs: await pool.query(`SELECT COUNT(*) FROM songs WHERE status = 'included'`).then(r => parseInt(r.rows[0].count))
       },
       samples: {
         with_features: sampleWithFeatures.rows,
@@ -1030,11 +1045,12 @@ router.get('/songs/:id/similar', async (req, res) => {
         al.images as album_images,
         ARRAY_AGG(DISTINCT a.name) as artists
       FROM songs s
-      JOIN albums al ON s.album_id = al.id
+      LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
       CROSS JOIN current_song cs
       WHERE s.id != $1
+        AND s.status = 'included'
         AND (
           s.vegan_focus && cs.vegan_focus 
           OR s.advocacy_style && cs.advocacy_style
@@ -1147,7 +1163,8 @@ router.get('/artists/search', async (req, res) => {
         SELECT 1 FROM songs s2 
         JOIN albums al2 ON s2.album_id = al2.id 
         JOIN song_artists sa2 ON s2.id = sa2.song_id 
-        WHERE sa2.artist_id = a.id 
+        WHERE sa2.artist_id = a.id
+        AND s2.status = 'included'
         AND EXTRACT(YEAR FROM al2.release_date) >= $${paramIndex}
       )`);
       queryParams.push(parseInt(year_from));
@@ -1158,7 +1175,8 @@ router.get('/artists/search', async (req, res) => {
         SELECT 1 FROM songs s2 
         JOIN albums al2 ON s2.album_id = al2.id 
         JOIN song_artists sa2 ON s2.id = sa2.song_id 
-        WHERE sa2.artist_id = a.id 
+        WHERE sa2.artist_id = a.id
+        AND s2.status = 'included'
         AND EXTRACT(YEAR FROM al2.release_date) <= $${paramIndex}
       )`);
       queryParams.push(parseInt(year_to));
@@ -1210,7 +1228,7 @@ router.get('/artists/search', async (req, res) => {
         AVG(s.popularity) as avg_song_popularity
       FROM artists a
       JOIN song_artists sa ON a.id = sa.artist_id
-      JOIN songs s ON sa.song_id = s.id
+      JOIN songs s ON sa.song_id = s.id AND s.status = 'included'
       ${whereClause}
       GROUP BY a.id
       ${havingClause}
@@ -1225,7 +1243,7 @@ router.get('/artists/search', async (req, res) => {
       SELECT COUNT(DISTINCT a.id) as total
       FROM artists a
       JOIN song_artists sa ON a.id = sa.artist_id
-      JOIN songs s ON sa.song_id = s.id
+      JOIN songs s ON sa.song_id = s.id AND s.status = 'included'
       ${whereClause}
       GROUP BY a.id
       ${havingClause}
@@ -1311,11 +1329,11 @@ router.get('/artists/:id', async (req, res) => {
         al.images as album_images,
         ARRAY_AGG(DISTINCT a2.name) as collaborators
       FROM songs s
-      JOIN albums al ON s.album_id = al.id
+      LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN song_artists sa2 ON s.id = sa2.song_id
       JOIN artists a2 ON sa2.artist_id = a2.id
-      WHERE sa.artist_id = $1
+      WHERE sa.artist_id = $1 AND s.status = 'included'
       GROUP BY s.id, al.id
       ORDER BY s.popularity DESC, s.title ASC
     `, [artistId]);
@@ -1330,9 +1348,9 @@ router.get('/artists/:id', async (req, res) => {
         AVG(s.danceability) as avg_danceability,
         AVG(s.valence) as avg_valence
       FROM songs s
-      JOIN albums al ON s.album_id = al.id
+      LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
-      WHERE sa.artist_id = $1
+      WHERE sa.artist_id = $1 AND s.status = 'included'
     `, [artistId]);
     
     res.json({

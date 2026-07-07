@@ -151,3 +151,6 @@ backend/.env
 
 # Curator source spreadsheets - contain scraped lyrics (copyright: never commit lyrics)
 docs/playlist/
+
+# Database backups - contain song_lyrics rows (copyright: never commit lyrics)
+backups/

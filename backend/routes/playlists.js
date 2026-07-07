@@ -80,11 +80,11 @@ router.get('/:id', async (req, res) => {
         ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
       FROM playlist_songs ps
       JOIN songs s ON ps.song_id = s.id
-      JOIN albums al ON s.album_id = al.id
+      LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
-      WHERE ps.playlist_id = $1
+      WHERE ps.playlist_id = $1 AND s.status = 'included'
       GROUP BY s.id, ps.position, ps.added_at, al.name, al.release_date, al.images
       ORDER BY ps.position ASC, ps.added_at ASC
     `, [playlistId]);
@@ -144,9 +144,9 @@ router.post('/:id/songs', async (req, res) => {
       return res.status(404).json({ error: 'Playlist not found' });
     }
     
-    // Check if song exists
+    // Check if song exists (and is in the public catalogue)
     const songCheck = await pool.query(
-      'SELECT id FROM songs WHERE id = $1', 
+      `SELECT id FROM songs WHERE id = $1 AND status = 'included'`,
       [song_id]
     );
     
