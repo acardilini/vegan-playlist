@@ -14,13 +14,14 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 1. **Session 1.4 — staging-queue admin UI** (see `PUBLICATION_STAGING_DESIGN.md`): three
-   queues — **To process** (178 `pending`), **To finalise** (included+unpublished — 39),
+   queues — **To process** (177 `pending`), **To finalise** (included+unpublished — 39),
    **Live** (1,341 included+published). Process pending songs end-to-end; finalise + publish.
-2. **Curator decisions from 1.3** (no code needed — rulings, then a small follow-up script or
-   the 1.4 UI): work through [`SESSION_1.3_CURATOR_DECISIONS.md`](./SESSION_1.3_CURATOR_DECISIONS.md)
-   — 13 reject-but-included + 5 pending-but-included status conflicts; the new **CLEARxCUT**
-   duplicate (reject pending 5804); 6 clear attach typos to fix then re-run
-   `enrichFromSpotify.js --attach --apply`; 3 unmatched rows; 2 unclassified Processed values.
+2. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
+   include → default to include, so the 18 reject/pending-but-included stay live, no change;
+   the new CLEARxCUT dup 5804 was merged into 80). Remaining **optional** items in
+   [`SESSION_1.3_CURATOR_DECISIONS.md`](./SESSION_1.3_CURATOR_DECISIONS.md): 6 clear attach
+   typos to fix then re-run `enrichFromSpotify.js --attach --apply`; 3 unmatched rows; 2
+   unclassified Processed values — enrichment only, not blocking.
 3. Optional curator to-do: **149 included songs are not on the Spotify playlist** — add by
    hand if desired (`GET /api/admin/spotify-playlist-mismatch` lists them).
 4. The two source spreadsheets at `docs/playlist/` are now fully imported and can retire after
@@ -28,9 +29,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Known Context / Watch-outs
 - **Truth source is live (1.1) + publication staging (1.2b):** the public site shows
-  `status='included' AND published=true` — **1,341 live / 39 to-finalise / 178 to-process
-  (pending) / 243 rejected** (1,380 included total; down 18 after the 1.3 dedup). Publishing
-  is an explicit curator click (admin endpoints
+  `status='included' AND published=true` — **1,341 live / 39 to-finalise / 177 to-process
+  (pending) / 243 rejected** (1,380 included total; 1,800 songs after the 1.3 dedup).
+  Publishing is an explicit curator click (admin endpoints
   `POST /api/admin/songs/:id/publish|unpublish`); the 1.4 admin UI presents the three
   queues. Full lyrics for 947 songs live in the **local-only** `song_lyrics` table — no API
   route may ever SELECT it (grep before deploy), and Phase 4 production dumps must use
@@ -55,9 +56,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   654 moods, 493 genres, 10 lyric links). See `DATABASE_AUDIT.md`.
 - ~~The `songs` table holds 1,208 rows, not ~650~~ **Solved (0.2/0.3):** 674 from the 2025
   imports + 534 synced 2026-04-06 after the Spotify playlist grew (curator: a vetted batch).
-  ~~18 true duplicate pairs to merge~~ **merged (1.3):** kept the 2025 canonical each time;
-  songs 1,819 → 1,801. One new dup (CLEARxCUT 80/5804) surfaced from the 1.2 diff — deferred
-  to the curator (see decisions doc).
+  ~~18 true duplicate pairs to merge~~ **merged (1.3):** kept the 2025 canonical each time.
+  A 19th dup (CLEARxCUT 80/5804, surfaced by the 1.2 diff) was merged after the curator's
+  "default to include" ruling. Songs 1,819 → **1,800**.
 - ~~2 orphan artists + 14 orphan albums~~ **Solved (1.3):** swept 19 orphan albums (13 old +
   6 freed by the merge) + 1 orphan artist (Flaex); Queen V had already been re-linked in 1.2.
   0 orphans remain.
@@ -180,7 +181,10 @@ Newest first. What actually happened each session.
   calls written to `docs/SESSION_1.3_CURATOR_DECISIONS.md` (18 status conflicts, new CLEARxCUT
   dup, 6 attach typos, 3 unmatched, 2 unclassified). No application code changed. Smoke test
   ✅: db-stats=1341, merged songs render with artist/album, search returns one row per former
-  dup, deleted dup ids 404.
+  dup, deleted dup ids 404. **Follow-up (same day):** curator ruled "one instance of include →
+  default to include" — the 18 sheet-vs-DB status conflicts stay included (no change); the new
+  CLEARxCUT dup (pending 5804) was merged into included 80 (songs 1,801 → 1,800, pending
+  178 → 177). Decisions recorded in `SESSION_1.3_CURATOR_DECISIONS.md`.
 - **2026-07-07 (Session 1.2b)** — Publication staging (curator-requested design session +
   implementation): migration `002_published_flag.sql` adds `published`/`published_at` +
   CHECK (only included songs can be live) and grandfathers the 1,359 complete included

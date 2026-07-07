@@ -8,6 +8,19 @@ ids are given so a follow-up script can act precisely._
 The mechanical part of 1.3 is already done: 18 duplicate pairs merged, 19 orphan albums + 1
 orphan artist removed, and the previously-blocked lyrics applied (song_lyrics 929 → 947).
 
+> **Curator ruling — 2026-07-07:** _"Where something has one instance of include, default to
+> include. The 'rejected' mark was likely because it was already included in the original
+> data."_ This resolves **Groups A, B, and C** below:
+> - **A & B (18 status conflicts): keep INCLUDED — no DB change** (the DB already has them
+>   `included` + live; the sheet's reject/pending was the "already in the data" note). They
+>   will keep appearing on consolidation reports since the spreadsheet is unchanged, but
+>   nothing acts on them.
+> - **C (CLEARxCUT): DONE** — pending duplicate **5804 merged into the included row 80** and
+>   removed (backup `backups/pre-clearxcut-merge-*.dump`). pending 178 → 177, songs 1801 → 1800.
+>
+> Groups D–I remain optional/informational (enrichment and unmatched rows); tackle in Session
+> 1.4 or later.
+
 ---
 
 ## A. Sheet-vs-DB status conflicts — spreadsheet says REJECT, DB has INCLUDED (13)
