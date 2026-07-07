@@ -95,4 +95,30 @@ async function setPlayLink(db, id, { bandcamp_url, soundcloud_url } = {}) {
   return r.rows[0];
 }
 
-module.exports = { normalizeName, listQueue, includeSong, rejectSong, setPlayLink };
+async function insertCandidates(db, tracks) {
+  const existing = (await db.query(`
+    SELECT s.spotify_id, s.title, COALESCE(string_agg(a.name, ', '), '') AS artists
+    FROM songs s
+    LEFT JOIN song_artists sa ON sa.song_id = s.id
+    LEFT JOIN artists a ON a.id = sa.artist_id
+    GROUP BY s.id`)).rows;
+  const existingIds = new Set(existing.filter(e => e.spotify_id).map(e => e.spotify_id));
+  const existingTA = new Set(existing.map(e => normalizeName(e.title) + '|' + normalizeName(e.artists)));
+
+  const seenIds = new Set(), seenTA = new Set(), toAdd = [];
+  let skippedExisting = 0;
+  for (const t of tracks) {
+    const ta = normalizeName(t.title) + '|' + normalizeName((t.artists || []).map(a => a.name).join(', '));
+    if ((t.spotify_id && existingIds.has(t.spotify_id)) || existingTA.has(ta) ||
+        (t.spotify_id && seenIds.has(t.spotify_id)) || seenTA.has(ta)) {
+      skippedExisting++; continue;
+    }
+    if (t.spotify_id) seenIds.add(t.spotify_id);
+    seenTA.add(ta);
+    toAdd.push(t);
+  }
+  const added = await addTracksAsPending(db, toAdd, 'added as candidate via staging intake');
+  return { added, skippedExisting };
+}
+
+module.exports = { normalizeName, listQueue, includeSong, rejectSong, setPlayLink, insertCandidates };

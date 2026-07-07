@@ -105,3 +105,30 @@ test('setPlayLink with non-http url throws BAD_INPUT', async () => {
   const id = await mkSong({ title: 'ZZZTEST Link C', status: 'pending' });
   await assert.rejects(() => staging.setPlayLink(pool, id, { soundcloud_url: 'not-a-url' }), (e) => e.code === 'BAD_INPUT');
 });
+
+test('insertCandidates adds new, skips existing spotify_id and title+artist dupes', async () => {
+  // existing catalogue row with a known spotify_id + artist
+  const dupSpotifyId = 'ZZZTESTSPOTIFYID000001';
+  await pool.query(
+    `INSERT INTO songs (title, status, spotify_id, data_source) VALUES ('ZZZTEST Existing By Id', 'included', $1, 'manual')`,
+    [dupSpotifyId]);
+  const existTitleId = await mkSong({ title: 'ZZZTEST Existing By Title', status: 'included', artist: 'ZZZTEST DupArtist' });
+
+  const mkTrack = (sid, title, artist) => ({
+    spotify_id: sid, title, duration_ms: 1000, popularity: 0, explicit: false,
+    track_number: 1, disc_number: 1, spotify_url: 'http://x', added_at: null,
+    artists: [{ spotify_id: sid + 'A', name: artist, spotify_url: 'http://a' }], album: null,
+  });
+
+  const tracks = [
+    mkTrack(dupSpotifyId, 'ZZZTEST Existing By Id', 'ZZZTEST WhoeverArtist'),      // skip: spotify_id
+    mkTrack('ZZZTESTSPOTIFYID000002', 'ZZZTEST Existing By Title', 'ZZZTEST DupArtist'), // skip: title+artist
+    mkTrack('ZZZTESTSPOTIFYID000003', 'ZZZTEST Brand New Candidate', 'ZZZTEST NewArtist'), // add
+  ];
+  const res = await staging.insertCandidates(pool, tracks);
+  assert.equal(res.added, 1);
+  assert.equal(res.skippedExisting, 2);
+
+  const check = await pool.query(`SELECT status FROM songs WHERE spotify_id = 'ZZZTESTSPOTIFYID000003'`);
+  assert.equal(check.rows[0].status, 'pending');
+});
