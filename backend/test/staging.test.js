@@ -51,3 +51,16 @@ test('listQueue to-finalise annotates missing[]', async () => {
 test('listQueue unknown queue throws BAD_QUEUE', async () => {
   await assert.rejects(() => staging.listQueue(pool, { queue: 'nope' }), (e) => e.code === 'BAD_QUEUE');
 });
+
+test('listQueue live without q throws Q_REQUIRED', async () => {
+  await assert.rejects(() => staging.listQueue(pool, { queue: 'live' }), (e) => e.code === 'Q_REQUIRED');
+});
+
+test('listQueue live with q finds published match, excludes pending', async () => {
+  const liveId = await mkSong({ title: 'ZZZTEST LiveSong Zeta', status: 'included', published: true });
+  const pendId = await mkSong({ title: 'ZZZTEST LiveSong Zeta Pending', status: 'pending' });
+  const { rows } = await staging.listQueue(pool, { queue: 'live', q: 'ZZZTEST LiveSong Zeta' });
+  const ids = rows.map(r => r.id);
+  assert.ok(ids.includes(liveId), 'published match present');
+  assert.ok(!ids.includes(pendId), 'pending excluded from live');
+});
