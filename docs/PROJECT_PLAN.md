@@ -80,13 +80,17 @@ enrichment pipeline defined; curatorial fields protected from sync overwrites.
   `published` flag orthogonal to `status`; public site = included **and** published;
   publish/unpublish admin endpoints; 1,359 grandfathered live, 39 in To-finalise.
   _Smoke test ✅: totals 1,359, publish/unpublish cycle, 409 on non-included._
-- ☐ **Session 1.3 — Data integrity pass.** Merge the 18 duplicate pairs (re-pointing videos/
-  lyrics/featured), reconcile artists/albums, fix the 2 orphan artists + 14 orphan albums.
-  Also work the 1.1/1.2 review reports (`backend/logs/`): 27 file-1 rows blocked by the dup
-  pairs (re-run the consolidation script after merging to apply their lyrics), 18
-  sheet-vs-DB status conflicts for the curator, 7 unmatched rows, and 34 Spotify-attach
-  no-matches from 1.2 (fix spreadsheet typos, then `enrichFromSpotify.js --attach --apply`).
-  _Smoke test: browse songs/artists in the app, confirm relationships render._
+- ☑ **Session 1.3 — Data integrity pass.** Merged the 18 duplicate pairs (kept the 2025
+  canonical with its enrichment/YouTube; backfilled only NULL enrichment scalars; the one
+  loser-side YouTube video was re-pointed, not lost). Swept 19 orphan albums + 1 orphan
+  artist (Flaex — Queen V was no longer orphaned). Re-ran the consolidation: file-1
+  multi-matches 27 → 5, lyrics applied to the newly-unblocked rows (song_lyrics 929 → 947).
+  End state: **1,801 songs / 1,380 included / 1,341 live / 178 pending / 243 rejected**;
+  0 orphans. Remaining curator judgment calls captured in
+  [`SESSION_1.3_CURATOR_DECISIONS.md`](./SESSION_1.3_CURATOR_DECISIONS.md) (status conflicts,
+  attach typos vs not-on-Spotify, a new CLEARxCUT dup from the 1.2 diff, unmatched rows).
+  _Smoke test ✅: db-stats=1341, merged songs render with artists, search returns one row per
+  former dup, deleted dup ids 404._
 - ☐ **Session 1.4 — Minimal staging-queue admin UI.** Three queues per
   `PUBLICATION_STAGING_DESIGN.md`: **To process** (pending — search/play links, lyrics
   paste (local) + URL, categorisation, include/reject), **To finalise** (included but

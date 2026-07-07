@@ -8,32 +8,31 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Phase:** Phase 1 — Data Foundation (Truth Source). **Phase 0 complete 2026-07-07.**
-- **Current session:** _between sessions (Session 1.2b complete)_
-- **Next session:** Session 1.3 — Data integrity pass
+- **Current session:** _between sessions (Session 1.3 complete)_
+- **Next session:** Session 1.4 — Minimal staging-queue admin UI
 - **Last updated:** 2026-07-07
 
 ### Next Tasks (start here)
-1. **Session 1.3 — integrity pass**: merge the 18 duplicate pairs (re-point videos/lyrics/
-   featured), fix 2 orphan artists + 14 orphan albums, then work the review reports
-   (`backend/logs/`, gitignored): 27 file-1 rows blocked by dup pairs (re-run
-   `consolidateSpreadsheets.js --apply` after merging to apply their lyrics), 18 sheet-vs-DB
-   status conflicts (curator), 34 attach no-matches from 1.2 (mostly spreadsheet typos —
-   e.g. "Scared Earth"→"Sacred Earth", "Queen V"→"Vegan Queen V"; fix artist/title then
-   re-run `enrichFromSpotify.js --attach --apply`), 7 unmatched file-1 rows.
-2. Then Session 1.4 (pending-queue admin UI) — 178 `pending` songs are in the DB waiting
-   (175 from spreadsheets + 3 playlist tracks added by the 1.2 diff).
-3. The curator has a to-do surfaced by the diff: **149 included songs are not on the Spotify
-   playlist** (the newly identified songs) — add them to Spotify by hand if desired
-   (`GET /api/admin/spotify-playlist-mismatch` lists them).
-4. The two source spreadsheets at `docs/playlist/` are now imported and can retire after the
-   curator spot-checks the site (keep the files as archive; still gitignored — lyrics).
+1. **Session 1.4 — staging-queue admin UI** (see `PUBLICATION_STAGING_DESIGN.md`): three
+   queues — **To process** (178 `pending`), **To finalise** (included+unpublished — 39),
+   **Live** (1,341 included+published). Process pending songs end-to-end; finalise + publish.
+2. **Curator decisions from 1.3** (no code needed — rulings, then a small follow-up script or
+   the 1.4 UI): work through [`SESSION_1.3_CURATOR_DECISIONS.md`](./SESSION_1.3_CURATOR_DECISIONS.md)
+   — 13 reject-but-included + 5 pending-but-included status conflicts; the new **CLEARxCUT**
+   duplicate (reject pending 5804); 6 clear attach typos to fix then re-run
+   `enrichFromSpotify.js --attach --apply`; 3 unmatched rows; 2 unclassified Processed values.
+3. Optional curator to-do: **149 included songs are not on the Spotify playlist** — add by
+   hand if desired (`GET /api/admin/spotify-playlist-mismatch` lists them).
+4. The two source spreadsheets at `docs/playlist/` are now fully imported and can retire after
+   the curator spot-checks the site (keep as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
 - **Truth source is live (1.1) + publication staging (1.2b):** the public site shows
-  `status='included' AND published=true` — **1,359 live / 39 to-finalise / 178 to-process
-  (pending) / 243 rejected**. Publishing is an explicit curator click (admin endpoints
+  `status='included' AND published=true` — **1,341 live / 39 to-finalise / 178 to-process
+  (pending) / 243 rejected** (1,380 included total; down 18 after the 1.3 dedup). Publishing
+  is an explicit curator click (admin endpoints
   `POST /api/admin/songs/:id/publish|unpublish`); the 1.4 admin UI presents the three
-  queues. Full lyrics for 929 songs live in the **local-only** `song_lyrics` table — no API
+  queues. Full lyrics for 947 songs live in the **local-only** `song_lyrics` table — no API
   route may ever SELECT it (grep before deploy), and Phase 4 production dumps must use
   `--exclude-table-data=song_lyrics`. `backups/` and `backend/logs/` are gitignored because
   they can contain lyrics.
@@ -55,9 +54,13 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   650-song dataset" means protecting those files + the DB's enrichment (671 YouTube videos,
   654 moods, 493 genres, 10 lyric links). See `DATABASE_AUDIT.md`.
 - ~~The `songs` table holds 1,208 rows, not ~650~~ **Solved (0.2/0.3):** 674 from the 2025
-  imports + 534 synced 2026-04-06 after the Spotify playlist grew (curator: a vetted batch)
-  — with 18 true duplicate pairs to merge in Session 1.3. Live playlist ("Animal Lib & Vegan
-  Songs") now has 1,216 tracks; DB is 8 behind.
+  imports + 534 synced 2026-04-06 after the Spotify playlist grew (curator: a vetted batch).
+  ~~18 true duplicate pairs to merge~~ **merged (1.3):** kept the 2025 canonical each time;
+  songs 1,819 → 1,801. One new dup (CLEARxCUT 80/5804) surfaced from the 1.2 diff — deferred
+  to the curator (see decisions doc).
+- ~~2 orphan artists + 14 orphan albums~~ **Solved (1.3):** swept 19 orphan albums (13 old +
+  6 freed by the merge) + 1 orphan artist (Flaex); Queen V had already been re-linked in 1.2.
+  0 orphans remain.
 - ~~450 songs are missing album covers~~ **Solved (1.2):** every album with a spotify_id now
   has images + release date (1,359/1,398 included songs have covers; the 39 without are the
   manual-only songs). Artists with genres 218 → 432 (the rest have no genres on Spotify's
@@ -71,6 +74,17 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-07 — Duplicate merge keeps the 2025 canonical (Session 1.3).** For all 18 true
+  dup pairs the 2025-import row was kept: it carries the curatorial enrichment (genre / mood),
+  the YouTube video, and the playlist-added date; the 2026 row was bare except a fresher
+  `popularity`. Merge backfills **only NULL enrichment scalars** (never curator-owned fields;
+  `popularity` takes the max) and re-points child refs before deleting the loser — so nothing
+  is lost (the one case where the loser also had a YouTube video re-pointed it, demoted to
+  non-primary). To The Grave's two both-2026 pairs had no richer side; curator chose the
+  "Still" release. Orphan albums/artists are pure Spotify enrichment with no songs pointing at
+  them → safe to delete. Sheet-vs-DB status conflicts and attach typos stay curator calls
+  (`SESSION_1.3_CURATOR_DECISIONS.md`), consistent with the 1.1 "import never overrides
+  curator state" rule.
 - **2026-07-07 — Publication staging added (Session 1.2b, approved).** Being in the
   catalogue (`status`, curator's inclusion decision — unchanged from 0.4) and being
   presentable are separate facts: a new `published` boolean marks included songs as live.
@@ -154,6 +168,19 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-07 (Session 1.3)** — Data-integrity pass. Pre-run backup to `backups/`
+  (gitignored). **Merged 18 duplicate pairs** (transaction-wrapped merge script, dry-run
+  first: keep 2025 canonical, backfill only NULL enrichment scalars + max `popularity`,
+  re-point child refs, delete loser; sanity-checked keeps=18/drops=0/Δ=−18). **Swept orphans**
+  (dry-run first): 19 albums + 1 artist (Flaex); confirmed only `songs.album_id` and
+  `song_artists.artist_id` reference those tables. **Re-ran `consolidateSpreadsheets.js
+  --apply`**: file-1 multi-matches 27 → 5 (the 5 remaining are genuinely non-dup), lyrics
+  applied to the unblocked rows. End state: songs **1,819 → 1,801**, included **1,398 →
+  1,380**, live **1,359 → 1,341**, song_lyrics **929 → 947**, orphans **0**. Curator judgment
+  calls written to `docs/SESSION_1.3_CURATOR_DECISIONS.md` (18 status conflicts, new CLEARxCUT
+  dup, 6 attach typos, 3 unmatched, 2 unclassified). No application code changed. Smoke test
+  ✅: db-stats=1341, merged songs render with artist/album, search returns one row per former
+  dup, deleted dup ids 404.
 - **2026-07-07 (Session 1.2b)** — Publication staging (curator-requested design session +
   implementation): migration `002_published_flag.sql` adds `published`/`published_at` +
   CHECK (only included songs can be live) and grandfathers the 1,359 complete included
