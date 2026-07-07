@@ -75,6 +75,11 @@ enrichment pipeline defined; curatorial fields protected from sync overwrites.
   attached (34 to review in 1.3), all albums backfilled (covers/dates/labels), 414 artists
   enriched, 3 playlist tracks added as pending; admin sync endpoints rebuilt import-only.
   Curatorial md5 checksum byte-identical pre/post ✅._
+- ☑ **Session 1.2b — Publication staging** (curator-requested, designed + approved
+  2026-07-07 → [`PUBLICATION_STAGING_DESIGN.md`](./PUBLICATION_STAGING_DESIGN.md)).
+  `published` flag orthogonal to `status`; public site = included **and** published;
+  publish/unpublish admin endpoints; 1,359 grandfathered live, 39 in To-finalise.
+  _Smoke test ✅: totals 1,359, publish/unpublish cycle, 409 on non-included._
 - ☐ **Session 1.3 — Data integrity pass.** Merge the 18 duplicate pairs (re-pointing videos/
   lyrics/featured), reconcile artists/albums, fix the 2 orphan artists + 14 orphan albums.
   Also work the 1.1/1.2 review reports (`backend/logs/`): 27 file-1 rows blocked by the dup
@@ -82,10 +87,12 @@ enrichment pipeline defined; curatorial fields protected from sync overwrites.
   sheet-vs-DB status conflicts for the curator, 7 unmatched rows, and 34 Spotify-attach
   no-matches from 1.2 (fix spreadsheet typos, then `enrichFromSpotify.js --attach --apply`).
   _Smoke test: browse songs/artists in the app, confirm relationships render._
-- ☐ **Session 1.4 — Minimal pending-queue admin UI.** Work the `pending` songs in the
-  website: search/play links, lyrics paste (local) + URL, categorisation, include/reject;
-  bulk candidate intake. Retires the spreadsheets. _Smoke test: process a few real pending
-  songs end-to-end._
+- ☐ **Session 1.4 — Minimal staging-queue admin UI.** Three queues per
+  `PUBLICATION_STAGING_DESIGN.md`: **To process** (pending — search/play links, lyrics
+  paste (local) + URL, categorisation, include/reject), **To finalise** (included but
+  unpublished — shows missing play link/artwork, Publish button), **Live** (published —
+  Unpublish). Bulk candidate intake. Retires the spreadsheets. _Smoke test: process a few
+  real pending songs end-to-end; finalise + publish one._
 
 ## Phase 2 — Architecture Cleanup
 **Goal:** A maintainable codebase, same behaviour.

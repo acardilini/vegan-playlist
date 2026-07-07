@@ -2803,10 +2803,48 @@ router.get('/artists-stats', async (req, res) => {
     
   } catch (error) {
     console.error('Error fetching artist stats:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch artist statistics', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to fetch artist statistics',
+      details: error.message
     });
+  }
+});
+
+// --- Publication staging (Session 1.2b — docs/PUBLICATION_STAGING_DESIGN.md) ---
+// status stays the curator's inclusion decision; published is the "ready to show"
+// dimension. Publishing is always an explicit curator action.
+
+router.post('/songs/:id/publish', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      UPDATE songs SET published = true, published_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1 AND status = 'included'
+      RETURNING id, title, published, published_at`, [req.params.id]);
+    if (result.rows.length === 0) {
+      const exists = await pool.query(`SELECT status FROM songs WHERE id = $1`, [req.params.id]);
+      if (exists.rows.length === 0) return res.status(404).json({ error: 'Song not found' });
+      return res.status(409).json({
+        error: `Only included songs can be published (song is '${exists.rows[0].status}')`
+      });
+    }
+    res.json({ success: true, song: result.rows[0], message: `Published: ${result.rows[0].title}` });
+  } catch (error) {
+    console.error('Error publishing song:', error);
+    res.status(500).json({ error: 'Failed to publish song', details: error.message });
+  }
+});
+
+router.post('/songs/:id/unpublish', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      UPDATE songs SET published = false, published_at = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING id, title, published`, [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Song not found' });
+    res.json({ success: true, song: result.rows[0], message: `Unpublished: ${result.rows[0].title}` });
+  } catch (error) {
+    console.error('Error unpublishing song:', error);
+    res.status(500).json({ error: 'Failed to unpublish song', details: error.message });
   }
 });
 

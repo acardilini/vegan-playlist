@@ -8,7 +8,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Phase:** Phase 1 — Data Foundation (Truth Source). **Phase 0 complete 2026-07-07.**
-- **Current session:** _between sessions (Session 1.2 complete)_
+- **Current session:** _between sessions (Session 1.2b complete)_
 - **Next session:** Session 1.3 — Data integrity pass
 - **Last updated:** 2026-07-07
 
@@ -29,11 +29,14 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    curator spot-checks the site (keep the files as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
-- **Truth source is live (1.1):** `songs.status` now gates every public route
-  (`included` 1,398 / `pending` 175 / `rejected` 243). Full lyrics for 929 songs live in the
-  **local-only** `song_lyrics` table — no API route may ever SELECT it (grep before deploy),
-  and Phase 4 production dumps must use `--exclude-table-data=song_lyrics`. `backups/` and
-  `backend/logs/` are gitignored because they can contain lyrics.
+- **Truth source is live (1.1) + publication staging (1.2b):** the public site shows
+  `status='included' AND published=true` — **1,359 live / 39 to-finalise / 178 to-process
+  (pending) / 243 rejected**. Publishing is an explicit curator click (admin endpoints
+  `POST /api/admin/songs/:id/publish|unpublish`); the 1.4 admin UI presents the three
+  queues. Full lyrics for 929 songs live in the **local-only** `song_lyrics` table — no API
+  route may ever SELECT it (grep before deploy), and Phase 4 production dumps must use
+  `--exclude-table-data=song_lyrics`. `backups/` and `backend/logs/` are gitignored because
+  they can contain lyrics.
 - ~~The 190 new manual songs have no album/spotify data yet~~ **Solved (1.2):** 151 attached
   to Spotify (full album/artist enrichment); 39 remain manual-only (5 confirmed not on
   Spotify, 34 in review for typos). Public queries use `LEFT JOIN albums` so non-Spotify
@@ -68,6 +71,15 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-07 — Publication staging added (Session 1.2b, approved).** Being in the
+  catalogue (`status`, curator's inclusion decision — unchanged from 0.4) and being
+  presentable are separate facts: a new `published` boolean marks included songs as live.
+  Essentials for publishing: a play link (Spotify/Bandcamp/SoundCloud/YouTube) + album
+  artwork + curator verification — verification IS the Publish click (never automatic;
+  categorisation deliberately not required, or the site would empty). Migration
+  grandfathered the 1,359 complete included songs as published; 39 incomplete wait in
+  "To finalise". Workflow queues: To process = pending, To finalise = included+unpublished,
+  Live = included+published. Spec: `PUBLICATION_STAGING_DESIGN.md`.
 - **2026-07-07 — Enrichment is provably curatorial-safe (Session 1.2).** The pipeline writes
   only enrichment-class fields (audit §7); verified with an md5 checksum over all
   curator-owned columns + `song_lyrics` before/after the run — byte-identical for every
@@ -142,6 +154,15 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-07 (Session 1.2b)** — Publication staging (curator-requested design session +
+  implementation): migration `002_published_flag.sql` adds `published`/`published_at` +
+  CHECK (only included songs can be live) and grandfathers the 1,359 complete included
+  songs; all public routes now filter `status='included' AND published=true`; admin
+  `publish`/`unpublish` endpoints added (409 on non-included). Site totals 1,398 → 1,359;
+  the 39 incomplete songs wait in To-finalise. Spec: `PUBLICATION_STAGING_DESIGN.md`.
+  Smoke test ✅: totals consistent, to-finalise song 404s, publish→200/unpublish→404 cycle,
+  state restored (one test hiccup caught: 5587 was legitimately published by the backfill —
+  it gained artwork in 1.2 — republished after the test).
 - **2026-07-07 (Session 1.2)** — Spotify enrichment pipeline live:
   `backend/scripts/enrichFromSpotify.js` + shared `backend/utils/playlistSync.js` (single
   replacement for the three legacy import paths; batched, honours Retry-After, dry-run

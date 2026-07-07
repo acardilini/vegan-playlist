@@ -82,10 +82,12 @@ Run before ending every working session:
 
 ### Database Schema
 - **Core tables**: songs, artists, albums with many-to-many relationships
-- **Truth source**: `songs.status` (`pending`/`included`/`rejected`) is curator-owned; every
-  public route filters `status='included'` and LEFT JOINs albums (non-Spotify songs have no
-  album row). See `docs/TRUTH_SOURCE_DESIGN.md`. Migrations live in
-  `backend/database/migrations/`
+- **Truth source**: `songs.status` (`pending`/`included`/`rejected`) is curator-owned; the
+  orthogonal `songs.published` flag marks included songs as ready-to-show (curator clicks
+  Publish — never automatic). Every public route filters
+  `status='included' AND published=true` and LEFT JOINs albums (non-Spotify songs have no
+  album row). See `docs/TRUTH_SOURCE_DESIGN.md` + `docs/PUBLICATION_STAGING_DESIGN.md`.
+  Migrations live in `backend/database/migrations/`
 - **`song_lyrics` is LOCAL ONLY** (copyright): full lyrics for analysis; never SELECT it from
   an API route, never commit it (`backups/` and `backend/logs/` are gitignored), and exclude
   it from production dumps (`pg_dump --exclude-table-data=song_lyrics`)

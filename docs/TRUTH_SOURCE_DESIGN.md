@@ -3,6 +3,10 @@
 _Designed with the curator 2026-07-07 and approved. This is the decision record that closes
 Phase 0 and the spec that drives Phase 1._
 
+> **Addendum (Session 1.2b, 2026-07-07):** a `published` flag now sits alongside `status` —
+> the public site shows `status='included' AND published=true`, and publishing is an
+> explicit curator action. See [`PUBLICATION_STAGING_DESIGN.md`](./PUBLICATION_STAGING_DESIGN.md).
+
 ## The model in one paragraph
 
 **A song is in the catalogue because the curator says so.** The `songs` table becomes the

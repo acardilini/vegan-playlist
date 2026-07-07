@@ -43,7 +43,7 @@ router.get('/songs/:songId/videos', async (req, res) => {
         updated_at
       FROM youtube_videos
       WHERE song_id = $1
-        AND EXISTS (SELECT 1 FROM songs WHERE id = $1 AND status = 'included')
+        AND EXISTS (SELECT 1 FROM songs WHERE id = $1 AND status = 'included' AND published = true)
       ORDER BY is_primary DESC, created_at DESC
     `, [songId]);
     
@@ -74,7 +74,7 @@ router.get('/songs/:songId/video/primary', async (req, res) => {
         thumbnail_url
       FROM youtube_videos
       WHERE song_id = $1 AND is_primary = true
-        AND EXISTS (SELECT 1 FROM songs WHERE id = $1 AND status = 'included')
+        AND EXISTS (SELECT 1 FROM songs WHERE id = $1 AND status = 'included' AND published = true)
       LIMIT 1
     `, [songId]);
     
@@ -376,7 +376,7 @@ router.get('/songs/missing-videos', async (req, res) => {
       LEFT JOIN song_artists sa ON s.id = sa.song_id
       LEFT JOIN artists a ON sa.artist_id = a.id  
       LEFT JOIN youtube_videos yv ON s.id = yv.song_id
-      WHERE yv.song_id IS NULL AND s.status = 'included'
+      WHERE yv.song_id IS NULL AND s.status = 'included' AND s.published = true
       GROUP BY s.id, s.title, s.popularity, s.data_source
       ORDER BY s.popularity DESC NULLS LAST, s.title ASC
       LIMIT $1 OFFSET $2
@@ -387,7 +387,7 @@ router.get('/songs/missing-videos', async (req, res) => {
       SELECT COUNT(DISTINCT s.id) as total
       FROM songs s
       LEFT JOIN youtube_videos yv ON s.id = yv.song_id
-      WHERE yv.song_id IS NULL AND s.status = 'included'
+      WHERE yv.song_id IS NULL AND s.status = 'included' AND s.published = true
     `);
     
     const total = parseInt(countResult.rows[0].total);

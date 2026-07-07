@@ -84,7 +84,7 @@ router.get('/:id', async (req, res) => {
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
-      WHERE ps.playlist_id = $1 AND s.status = 'included'
+      WHERE ps.playlist_id = $1 AND s.status = 'included' AND s.published = true
       GROUP BY s.id, ps.position, ps.added_at, al.name, al.release_date, al.images
       ORDER BY ps.position ASC, ps.added_at ASC
     `, [playlistId]);
@@ -146,7 +146,7 @@ router.post('/:id/songs', async (req, res) => {
     
     // Check if song exists (and is in the public catalogue)
     const songCheck = await pool.query(
-      `SELECT id FROM songs WHERE id = $1 AND status = 'included'`,
+      `SELECT id FROM songs WHERE id = $1 AND status = 'included' AND published = true`,
       [song_id]
     );
     
