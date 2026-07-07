@@ -80,4 +80,19 @@ async function rejectSong(db, id) {
   return r.rows[0];
 }
 
-module.exports = { normalizeName, listQueue, includeSong, rejectSong };
+async function setPlayLink(db, id, { bandcamp_url, soundcloud_url } = {}) {
+  const provided = [['bandcamp_url', bandcamp_url], ['soundcloud_url', soundcloud_url]].filter(([, v]) => v != null && v !== '');
+  if (provided.length === 0) { const e = new Error('a bandcamp_url or soundcloud_url is required'); e.code = 'BAD_INPUT'; throw e; }
+  for (const [, v] of provided) {
+    if (!/^https?:\/\//i.test(v)) { const e = new Error('play link must be an http(s) URL'); e.code = 'BAD_INPUT'; throw e; }
+  }
+  const params = [id];
+  const sets = provided.map(([col, v]) => { params.push(v); return `${col}=$${params.length}`; });
+  const r = await db.query(
+    `UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP
+     WHERE id=$1 RETURNING id, title, bandcamp_url, soundcloud_url`, params);
+  if (r.rows.length === 0) { const e = new Error('song not found'); e.code = 'NOT_FOUND'; throw e; }
+  return r.rows[0];
+}
+
+module.exports = { normalizeName, listQueue, includeSong, rejectSong, setPlayLink };

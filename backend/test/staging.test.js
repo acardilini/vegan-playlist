@@ -89,3 +89,19 @@ test('rejectSong on a published row also unpublishes', async () => {
 test('includeSong on missing id throws NOT_FOUND', async () => {
   await assert.rejects(() => staging.includeSong(pool, 999999999, {}), (e) => e.code === 'NOT_FOUND');
 });
+
+test('setPlayLink sets bandcamp_url', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Link A', status: 'pending' });
+  const r = await staging.setPlayLink(pool, id, { bandcamp_url: 'https://x.bandcamp.com/track/y' });
+  assert.equal(r.bandcamp_url, 'https://x.bandcamp.com/track/y');
+});
+
+test('setPlayLink with no url throws BAD_INPUT', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Link B', status: 'pending' });
+  await assert.rejects(() => staging.setPlayLink(pool, id, {}), (e) => e.code === 'BAD_INPUT');
+});
+
+test('setPlayLink with non-http url throws BAD_INPUT', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Link C', status: 'pending' });
+  await assert.rejects(() => staging.setPlayLink(pool, id, { soundcloud_url: 'not-a-url' }), (e) => e.code === 'BAD_INPUT');
+});
