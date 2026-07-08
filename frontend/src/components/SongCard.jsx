@@ -1,0 +1,170 @@
+import { useNavigate } from 'react-router-dom';
+import MoodBadge from './MoodBadge';
+
+function SongCard({ song, songId, showAddToPlaylist = true, onAddToPlaylist }) {
+  const navigate = useNavigate();
+
+  const handleSongClick = () => {
+    navigate(`/song/${songId}`);
+  };
+
+  const handlePlayClick = (e) => {
+    e.stopPropagation();
+    alert(`Playing "${song.title}" (functionality coming soon!)`);
+  };
+
+  const handleAddToPlaylistClick = (e) => {
+    e.stopPropagation();
+    if (onAddToPlaylist) {
+      onAddToPlaylist(song);
+    }
+  };
+
+  // Format duration from milliseconds
+  const formatDuration = (durationMs) => {
+    const minutes = Math.floor(durationMs / 60000);
+    const seconds = Math.floor((durationMs % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Format playlist add date
+  const formatPlaylistAddDate = (dateString) => {
+    if (!dateString) return null;
+
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 30) {
+      return `Added ${diffDays} days ago`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `Added ${months} month${months > 1 ? 's' : ''} ago`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return `Added ${years} year${years > 1 ? 's' : ''} ago`;
+    }
+  };
+
+  // Get album artwork
+  const getArtwork = () => {
+    if (song.album_images && song.album_images.length > 0) {
+      const mediumImage = song.album_images.find(img => img.width === 300);
+      return mediumImage ? mediumImage.url : song.album_images[0].url;
+    }
+    return "https://via.placeholder.com/150x150/1DB954/000000?text=♪";
+  };
+
+  // Get primary genre for display
+  const getPrimaryGenre = () => {
+    // SIMPLIFIED: Use artist genres only
+    if (song.artist_genres && song.artist_genres.length > 0) {
+      const flatGenres = song.artist_genres.flat();
+      return flatGenres[0] || null;
+    }
+
+    return null;
+  };
+
+  // SIMPLIFIED: Calculate parent genre from artist genres directly
+  const getParentGenre = () => {
+    if (!song.artist_genres || song.artist_genres.length === 0) return null;
+
+    const genreMapping = {
+      'metal': ['metalcore', 'deathcore', 'mathcore', 'groove metal', 'death metal', 'black metal', 'thrash metal', 'doom metal', 'progressive metal', 'nu metal', 'melodic death metal', 'sludge metal', 'stoner metal', 'grindcore', 'heavy metal', 'alternative metal', 'industrial metal', 'speed metal', 'rap metal', 'djent'],
+      'punk': ['punk', 'hardcore punk', 'skate punk', 'ska punk', 'folk punk', 'pop punk', 'post-punk', 'anarcho-punk', 'street punk', 'queercore', 'riot grrrl', 'indie punk', 'celtic punk', 'proto-punk', 'egg punk'],
+      'hardcore': ['hardcore', 'melodic hardcore', 'post-hardcore', 'crossover hardcore', 'screamo', 'midwest emo'],
+      'rock': ['blues rock', 'hard rock', 'alternative rock', 'indie rock', 'classic rock', 'progressive rock', 'psychedelic rock', 'garage rock', 'gothic rock', 'industrial rock', 'art rock', 'acid rock', 'grunge', 'post-grunge', 'britpop', 'madchester', 'krautrock', 'noise rock', 'neo-psychedelic', 'folk rock', 'celtic rock', 'brazilian rock'],
+      'folk': ['folk punk', 'anti-folk', 'indie folk', 'folk rock', 'acoustic folk', 'contemporary folk', 'folk', 'traditional folk', 'americana', 'celtic', 'singer-songwriter', 'country blues'],
+      'blues': ['blues', 'blues rock', 'electric blues', 'acoustic blues', 'delta blues'],
+      'pop': ['pop', 'indie pop', 'electropop', 'synthpop', 'power pop', 'dream pop', 'jangle pop', 'swedish pop', 'german pop', 'new wave', 'pop soul'],
+      'electronic': ['electronic', 'ambient', 'techno', 'house', 'drum and bass', 'dubstep', 'edm', 'industrial', 'ebm', 'darkwave', 'coldwave', 'cold wave', 'downtempo', 'trip hop', 'glitch', 'witch house', 'footwork', 'bassline', 'riddim', 'minimalism', 'neoclassical'],
+      'hip-hop': ['hip hop', 'rap', 'conscious hip hop', 'alternative hip hop', 'underground hip hop', 'east coast hip hop', 'experimental hip hop', 'hardcore hip hop', 'old school hip hop', 'gangster rap', 'horrorcore', 'grime', 'uk grime'],
+      'reggae': ['reggae', 'ska', 'dub', 'roots reggae', 'nz reggae', 'lovers rock', 'ragga', 'dancehall', 'rocksteady'],
+      'jazz': ['free jazz', 'hard bop'],
+      'soul': ['philly soul', 'pop soul', 'gospel', 'gospel r&b']
+    };
+
+    // Find parent genre for the first artist genre
+    const flatGenres = song.artist_genres.flat();
+    for (const genre of flatGenres) {
+      for (const [parent, subgenres] of Object.entries(genreMapping)) {
+        if (subgenres.includes(genre.toLowerCase())) {
+          return parent;
+        }
+      }
+    }
+    return 'other';
+  };
+
+  return (
+    <div className="song-card" onClick={handleSongClick}>
+      <div className="song-artwork">
+        <div className="song-overlay-buttons">
+          <div className="play-button" onClick={handlePlayClick}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </div>
+          {showAddToPlaylist && onAddToPlaylist && (
+            <div className="add-to-playlist-button" onClick={handleAddToPlaylistClick} title="Add to Playlist">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14,10H2V12H14V10M14,6H2V8H14V6M2,16H10V14H2V16M21.5,11.5L23,13L16,20L11.5,15.5L13,14L16,17L21.5,11.5Z"/>
+              </svg>
+            </div>
+          )}
+        </div>
+        <img
+          src={getArtwork()}
+          alt={`${song.title} artwork`}
+        />
+
+        {/* Mood badge overlay */}
+        <div className="mood-badge-overlay">
+          <MoodBadge song={song} size="small" />
+        </div>
+      </div>
+
+      <div className="song-info">
+        <h3 className="song-title">{song.title}</h3>
+        <p className="song-artist">
+          {Array.isArray(song.artists) ? song.artists.join(', ') : song.artists}
+        </p>
+
+        {/* Show genre information if available */}
+        {(getPrimaryGenre() || getParentGenre()) && (
+          <div className="song-genre-info">
+            {getParentGenre() && (
+              <span className="song-parent-genre">{getParentGenre()}</span>
+            )}
+            {getPrimaryGenre() && (
+              <span className="song-genre">{getPrimaryGenre()}</span>
+            )}
+          </div>
+        )}
+
+        {/* Metadata */}
+        <div className="song-features">
+          {song.popularity > 20 && (
+            <span className="feature-badge popularity">
+              🔥 {song.popularity}% popular
+            </span>
+          )}
+        </div>
+
+        <div className="song-meta">
+          <span className="song-year">
+            {song.release_date ? new Date(song.release_date).getFullYear() : 'Unknown'}
+          </span>
+          <span className="song-duration">{formatDuration(song.duration_ms)}</span>
+          {song.playlist_added_at && (
+            <span className="song-added">{formatPlaylistAddDate(song.playlist_added_at)}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default SongCard;

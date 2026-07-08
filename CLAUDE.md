@@ -71,10 +71,12 @@ Run before ending every working session:
   admin sync endpoints
 
 ### Frontend Structure (`frontend/`)
-- **src/App.jsx** (~1,900 lines): routing plus **inline pages** — Home, Song Detail,
-  Playlists, Playlist Detail, About (decomposition scheduled in Phase 2.1)
-- **src/components/**: 18 components — public (SearchAndFilter, ArtistSearchResults,
-  ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge, YouTubeEmbed) and admin
+- **src/App.jsx** (~50 lines): router shell only — routes, header/nav, footer
+- **src/pages/**: one file per route — HomePage, SongDetailPage, PlaylistsPage,
+  PlaylistDetailPage, AboutPage. Single-consumer helpers stay local to their page file
+- **src/components/**: 22 components — public (SearchAndFilter, ArtistSearchResults,
+  ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge, YouTubeEmbed, plus the
+  shared NavigationMenu, SongCard, PaginationControls, AddToPlaylistModal) and admin
   (AdminInterface + 9 tab components)
 - **src/api/**: `spotifyService.js`, `playlistService.js`
 - See [`docs/FEATURE_INVENTORY.md`](docs/FEATURE_INVENTORY.md) for the full screen/endpoint

@@ -34,7 +34,7 @@ _Update 2026-07-07: the curator confirmed all flagged items — public playlist 
 | `/admin` | AdminInterface.jsx (2,188 lines) | Whole admin suite behind a shared password | **keep** features, **rebuild** auth (Phase 4.1); split into components (Phase 2.1) |
 
 Dead code found in `App.jsx`:
-- `ArtistsPage` (App.jsx:1132, ~270 lines) — never routed; `/artists` renders `ArtistSearchResults` instead. **drop** (Phase 2.1).
+- `ArtistsPage` (App.jsx:1132, ~270 lines) — never routed; `/artists` renders `ArtistSearchResults` instead. ~~**drop** (Phase 2.1)~~ **dropped 2026-07-08** (Session 2.1, along with the unused `DescriptionSection`; inline pages now live in `src/pages/`).
 - `SongCard` play button and stat-tile clicks show "coming soon" alerts; "40+ Hours" stat is hardcoded. Resolve in Phase 3 (real behaviour or remove the affordance).
 
 ## 2. Admin interface — 9 tabs (`AdminInterface.jsx`)
