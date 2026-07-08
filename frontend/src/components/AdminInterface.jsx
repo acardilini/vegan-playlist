@@ -7,6 +7,7 @@ import BulkCategorizationWorkflow from './BulkCategorizationWorkflow';
 import SubmissionsManager from './SubmissionsManager';
 import DuplicateManager from './DuplicateManager';
 import ArtistsManager from './ArtistsManager';
+import StagingQueue from './StagingQueue';
 
 const API_BASE = 'http://localhost:5000/api/admin';
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
@@ -932,7 +933,23 @@ function AdminInterface() {
               >
                 🎵 Songs
               </button>
-              <button 
+              <button
+                className={`admin-tab ${activeTab === 'staging' ? 'active' : ''}`}
+                onClick={() => setActiveTab('staging')}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: activeTab === 'staging' ? '#007bff' : '#fff',
+                  color: activeTab === 'staging' ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Staging
+              </button>
+              <button
                 className={`admin-tab ${activeTab === 'manage-playlists' ? 'active' : ''}`}
                 onClick={() => setActiveTab('manage-playlists')}
                 style={{
@@ -1711,6 +1728,9 @@ function AdminInterface() {
       {activeTab === 'duplicate-manager' && (
         <DuplicateManager />
       )}
+
+      {/* Staging Queue Tab */}
+      {activeTab === 'staging' && <StagingQueue />}
 
       {/* Artists Management */}
       {activeTab === 'manage-artists' && isAuthenticated && (

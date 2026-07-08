@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/genreMapping');
+const staging = require('../services/staging');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
@@ -2845,6 +2846,80 @@ router.post('/songs/:id/unpublish', async (req, res) => {
   } catch (error) {
     console.error('Error unpublishing song:', error);
     res.status(500).json({ error: 'Failed to unpublish song', details: error.message });
+  }
+});
+
+// ---- Session 1.4 staging queue ----
+router.get('/staging', async (req, res) => {
+  try {
+    const { queue, q, limit, offset } = req.query;
+    const out = await staging.listQueue(pool, {
+      queue, q: q || '', limit: limit ? parseInt(limit) : null, offset: offset ? parseInt(offset) : 0,
+    });
+    res.json(out);
+  } catch (e) {
+    if (e.code === 'BAD_QUEUE') return res.status(400).json({ error: 'Unknown queue' });
+    if (e.code === 'Q_REQUIRED') return res.status(400).json({ error: 'A search term (q) is required for the live queue' });
+    console.error('staging list error:', e);
+    res.status(500).json({ error: 'Failed to list queue', details: e.message });
+  }
+});
+
+router.post('/songs/:id/include', async (req, res) => {
+  try {
+    const song = await staging.includeSong(pool, parseInt(req.params.id), { publish: req.body && req.body.publish === true });
+    res.json({ success: true, song, message: `Included${song.published ? ' & published' : ''}: ${song.title}` });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    console.error('include error:', e);
+    res.status(500).json({ error: 'Failed to include song', details: e.message });
+  }
+});
+
+router.post('/songs/:id/reject', async (req, res) => {
+  try {
+    const song = await staging.rejectSong(pool, parseInt(req.params.id));
+    res.json({ success: true, song, message: `Rejected: ${song.title}` });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    console.error('reject error:', e);
+    res.status(500).json({ error: 'Failed to reject song', details: e.message });
+  }
+});
+
+router.post('/songs/:id/play-link', async (req, res) => {
+  try {
+    const song = await staging.setPlayLink(pool, parseInt(req.params.id), req.body || {});
+    res.json({ success: true, song, message: `Play link saved: ${song.title}` });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    console.error('play-link error:', e);
+    res.status(500).json({ error: 'Failed to save play link', details: e.message });
+  }
+});
+
+router.post('/songs/:id/attach-spotify', async (req, res) => {
+  try {
+    const result = await staging.attachSpotifyToSong(pool, parseInt(req.params.id));
+    res.json({ success: true, ...result });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    console.error('attach-spotify error:', e);
+    res.status(500).json({ error: 'Failed to attach Spotify', details: e.message });
+  }
+});
+
+router.post('/staging/candidates', async (req, res) => {
+  try {
+    const urls = (req.body && req.body.urls) || [];
+    if (!Array.isArray(urls) || urls.length === 0) return res.status(400).json({ error: 'Provide urls: [] (Spotify track/playlist URLs)' });
+    const { tracks, invalid } = await staging.resolveSpotifyUrls(urls);
+    const { added, skippedExisting } = await staging.insertCandidates(pool, tracks);
+    res.json({ success: true, added, skippedExisting, invalid });
+  } catch (e) {
+    console.error('candidates error:', e);
+    res.status(500).json({ error: 'Failed to import candidates', details: e.message });
   }
 });
 

@@ -7,24 +7,29 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 1 — Data Foundation (Truth Source). **Phase 0 complete 2026-07-07.**
-- **Current session:** _between sessions (Session 1.3 complete)_
-- **Next session:** Session 1.4 — Minimal staging-queue admin UI
-- **Last updated:** 2026-07-07
+- **Phase:** Phase 1 — Data Foundation (Truth Source) **complete**. **Phase 0 complete
+  2026-07-07.** Next up: Phase 2 — Architecture Cleanup.
+- **Current session:** _between sessions (Session 1.4 complete — Phase 1 done)_
+- **Next session:** Session 2.1 — Frontend decomposition (extract inline pages from `App.jsx`)
+- **Last updated:** 2026-07-08
 
 ### Next Tasks (start here)
-1. **Session 1.4 — staging-queue admin UI** (see `PUBLICATION_STAGING_DESIGN.md`): three
-   queues — **To process** (177 `pending`), **To finalise** (included+unpublished — 39),
-   **Live** (1,341 included+published). Process pending songs end-to-end; finalise + publish.
-2. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
+1. **Session 2.1 — Frontend decomposition** (Phase 2, see `PROJECT_PLAN.md`): extract the
+   inline pages (Home, Song Detail, Artists, Playlists, About) out of the ~2,000-line
+   `App.jsx` into their own files; establish the folder structure. Smoke test: every route
+   loads and behaves as before.
+2. **Merge `session-1.4-staging-queue` → `main`** — ✅ curator click-through done 2026-07-08
+   (Staging tab confirmed working live in the browser). The branch is built, smoke-tested, and
+   curator-verified; it is **ready to merge** and just awaiting the go-ahead.
+3. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
    include → default to include, so the 18 reject/pending-but-included stay live, no change;
    the new CLEARxCUT dup 5804 was merged into 80). Remaining **optional** items in
    [`SESSION_1.3_CURATOR_DECISIONS.md`](./SESSION_1.3_CURATOR_DECISIONS.md): 6 clear attach
    typos to fix then re-run `enrichFromSpotify.js --attach --apply`; 3 unmatched rows; 2
    unclassified Processed values — enrichment only, not blocking.
-3. Optional curator to-do: **149 included songs are not on the Spotify playlist** — add by
+4. Optional curator to-do: **149 included songs are not on the Spotify playlist** — add by
    hand if desired (`GET /api/admin/spotify-playlist-mismatch` lists them).
-4. The two source spreadsheets at `docs/playlist/` are now fully imported and can retire after
+5. The two source spreadsheets at `docs/playlist/` are now fully imported and can retire after
    the curator spot-checks the site (keep as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
@@ -75,6 +80,14 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-08 — Staging UI ships without lyrics paste / categorisation (Session 1.4).** The
+  `PROJECT_PLAN.md` line for 1.4 mentioned lyrics paste + categorisation in the To-process
+  view, but `PUBLICATION_STAGING_DESIGN.md` §4 rules categorisation explicitly *non-essential*
+  for going live (requiring it would empty the site; vegan-themes coding is its own future
+  workstream). Curator confirmed **ship as-is** (YAGNI): the To-process view exposes Attach
+  Spotify / Add play link / Include / Include&Publish / Reject — enough to take a pending song
+  live end-to-end. Local-only lyrics paste and categorisation editing are deferred to a later
+  session when the thematic-coding workstream starts.
 - **2026-07-07 — Duplicate merge keeps the 2025 canonical (Session 1.3).** For all 18 true
   dup pairs the 2025-import row was kept: it carries the curatorial enrichment (genre / mood),
   the YouTube video, and the playlist-added date; the 2026 row was bare except a fresher
@@ -169,6 +182,24 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-08 (Session 1.4)** — Staging-queue admin UI (closes Phase 1). Built on branch
+  `session-1.4-staging-queue`: `backend/services/staging.js` (queue listing +
+  include/reject/play-link/attach-spotify/candidate-intake, `db`-first for testability),
+  6 admin endpoints in `admin.js`, `backend/test/staging.test.js` (13 node:test cases, all
+  green), and `frontend/src/components/StagingQueue.jsx` with 4 sub-views (To process / To
+  finalise / Live / Add candidates) mounted as a Staging tab in `AdminInterface`. Scope call:
+  shipped without lyrics paste / categorisation (deferred — see Decision Log). Smoke test ✅
+  (reversible, ran against real DB then restored state byte-for-byte): queue totals **177
+  pending / 39 to-finalise** as expected; live queue requires a search term (400 without `q`,
+  133 hits for `q=vegan`); include moves pending→included and across queues; play-link saves
+  and rejects non-http URLs (400); reject→rejected; publish makes a To-finalise song appear in
+  Live search, unpublish removes it; candidate intake dedupes an existing Spotify id (added 0 /
+  skipped 1, exercising the live Spotify API) and reports invalid URLs; unknown id → 404;
+  frontend `npm run build` clean. `RESTORE MATCHES ORIGINAL: true`. **Curator click-through
+  confirmed live 2026-07-08** — Staging tab verified working in the browser at `/admin` (also
+  surfaced that the admin password had been rotated in the 2026-07-06 cleanup and the curator
+  needed the current one from `frontend/.env.local`; a stale Vite process was restarted with
+  its cache cleared). Branch is ready to merge to `main`, awaiting the go-ahead.
 - **2026-07-07 (Session 1.3)** — Data-integrity pass. Pre-run backup to `backups/`
   (gitignored). **Merged 18 duplicate pairs** (transaction-wrapped merge script, dry-run
   first: keep 2025 canonical, backfill only NULL enrichment scalars + max `popularity`,

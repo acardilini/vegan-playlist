@@ -50,10 +50,13 @@ model designed and recorded as a decision.
   2026-07-07 → [`TRUTH_SOURCE_DESIGN.md`](./TRUTH_SOURCE_DESIGN.md) (approved by curator).
   **Phase 0 exit criteria met — Phase 0 complete.**_
 
-## Phase 1 — Data Foundation (Truth Source)
+## Phase 1 — Data Foundation (Truth Source) ✅ complete (2026-07-08)
 **Goal:** Stand up the authoritative dataset and the Spotify-enrichment approach.
 **Exit criteria:** A single trusted dataset containing existing + newly identified songs;
-enrichment pipeline defined; curatorial fields protected from sync overwrites.
+enrichment pipeline defined; curatorial fields protected from sync overwrites. — _Met: truth
+source + publication staging live, enrichment pipeline shipped, integrity pass done, and the
+staging-queue admin UI (1.4) gives the curator end-to-end control over the pending → included →
+published lifecycle._
 
 - ☑ **Session 1.1 — Schema migration + consolidation import.** Per
   [`TRUTH_SOURCE_DESIGN.md`](./TRUTH_SOURCE_DESIGN.md): add `status`/`lyrics_status`/link
@@ -91,12 +94,18 @@ enrichment pipeline defined; curatorial fields protected from sync overwrites.
   attach typos vs not-on-Spotify, a new CLEARxCUT dup from the 1.2 diff, unmatched rows).
   _Smoke test ✅: db-stats=1341, merged songs render with artists, search returns one row per
   former dup, deleted dup ids 404._
-- ☐ **Session 1.4 — Minimal staging-queue admin UI.** Three queues per
-  `PUBLICATION_STAGING_DESIGN.md`: **To process** (pending — search/play links, lyrics
-  paste (local) + URL, categorisation, include/reject), **To finalise** (included but
-  unpublished — shows missing play link/artwork, Publish button), **Live** (published —
-  Unpublish). Bulk candidate intake. Retires the spreadsheets. _Smoke test: process a few
-  real pending songs end-to-end; finalise + publish one._
+- ☑ **Session 1.4 — Minimal staging-queue admin UI.** Staging tab in `AdminInterface` with
+  four sub-views per `PUBLICATION_STAGING_DESIGN.md`: **To process** (pending — Attach
+  Spotify / Add play link / Include / Include&Publish / Reject), **To finalise** (included
+  but unpublished — shows missing play link/artwork, Publish button), **Live** (published,
+  search-to-find — Unpublish), and **Add candidates** (bulk Spotify track/playlist URL
+  intake → pending, with spotify_id + title/artist dedupe). Lyrics paste + categorisation
+  deferred (categorisation is non-essential per the design §4; YAGNI). Backend =
+  `services/staging.js` + 6 admin endpoints + 13 node:test cases. _Smoke test ✅: totals 177
+  pending / 39 to-finalise; include/reject/play-link/publish/unpublish and candidate-dedupe
+  all exercised reversibly against the real DB, state restored byte-for-byte; frontend build
+  clean._ **Branch `session-1.4-staging-queue` awaiting merge to `main` after curator
+  click-through.**
 
 ## Phase 2 — Architecture Cleanup
 **Goal:** A maintainable codebase, same behaviour.
