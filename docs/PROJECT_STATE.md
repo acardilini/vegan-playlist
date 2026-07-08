@@ -18,9 +18,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    inline pages (Home, Song Detail, Artists, Playlists, About) out of the ~2,000-line
    `App.jsx` into their own files; establish the folder structure. Smoke test: every route
    loads and behaves as before.
-2. **Merge `session-1.4-staging-queue` → `main`** once the curator has clicked through the
-   Staging tab on the running app and is happy (the staging UI is built + smoke-tested but the
-   branch is not yet merged).
+2. **Merge `session-1.4-staging-queue` → `main`** — ✅ curator click-through done 2026-07-08
+   (Staging tab confirmed working live in the browser). The branch is built, smoke-tested, and
+   curator-verified; it is **ready to merge** and just awaiting the go-ahead.
 3. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
    include → default to include, so the 18 reject/pending-but-included stay live, no change;
    the new CLEARxCUT dup 5804 was merged into 80). Remaining **optional** items in
@@ -195,8 +195,11 @@ Newest first. What actually happened each session.
   and rejects non-http URLs (400); reject→rejected; publish makes a To-finalise song appear in
   Live search, unpublish removes it; candidate intake dedupes an existing Spotify id (added 0 /
   skipped 1, exercising the live Spotify API) and reports invalid URLs; unknown id → 404;
-  frontend `npm run build` clean. `RESTORE MATCHES ORIGINAL: true`. **Branch not yet merged to
-  `main`** — pending curator click-through of the running Staging tab.
+  frontend `npm run build` clean. `RESTORE MATCHES ORIGINAL: true`. **Curator click-through
+  confirmed live 2026-07-08** — Staging tab verified working in the browser at `/admin` (also
+  surfaced that the admin password had been rotated in the 2026-07-06 cleanup and the curator
+  needed the current one from `frontend/.env.local`; a stale Vite process was restarted with
+  its cache cleared). Branch is ready to merge to `main`, awaiting the go-ahead.
 - **2026-07-07 (Session 1.3)** — Data-integrity pass. Pre-run backup to `backups/`
   (gitignored). **Merged 18 duplicate pairs** (transaction-wrapped merge script, dry-run
   first: keep 2025 canonical, backfill only NULL enrichment scalars + max `popularity`,
