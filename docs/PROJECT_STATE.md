@@ -18,9 +18,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    inline pages (Home, Song Detail, Artists, Playlists, About) out of the ~2,000-line
    `App.jsx` into their own files; establish the folder structure. Smoke test: every route
    loads and behaves as before.
-2. **Merge `session-1.4-staging-queue` → `main`** — ✅ curator click-through done 2026-07-08
-   (Staging tab confirmed working live in the browser). The branch is built, smoke-tested, and
-   curator-verified; it is **ready to merge** and just awaiting the go-ahead.
+2. ✅ **Done — `session-1.4-staging-queue` merged to `main`** 2026-07-08 (merge `032a126`,
+   pushed). The now-merged feature branch can be deleted at leisure.
 3. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
    include → default to include, so the 18 reject/pending-but-included stay live, no change;
    the new CLEARxCUT dup 5804 was merged into 80). Remaining **optional** items in
