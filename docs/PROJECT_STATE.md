@@ -8,16 +8,15 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Phase:** Phase 2 — Architecture Cleanup (Session 2.1 ☑). Phases 0–1 complete.
-- **Current session:** _between sessions (Session 2.1 frontend decomposition done
-  2026-07-08 on branch `session-2.1-frontend-decomposition`, awaiting curator click-through
-  before merge)_
+- **Current session:** _between sessions (Session 2.1 frontend decomposition done and
+  merged to `main` 2026-07-08)_
 - **Next session:** Session 2.2 — Backend consolidation (scoped by
   [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md))
 - **Last updated:** 2026-07-08
 
 ### Next Tasks (start here)
-1. **Merge `session-2.1-frontend-decomposition` to `main`** after the curator clicks through
-   the site (all routes verified headlessly 2026-07-08; a human pass is the usual gate).
+1. ✅ **Done — `session-2.1-frontend-decomposition` merged to `main`** 2026-07-08 (curator
+   go-ahead; the merged feature branch can be deleted at leisure).
 2. **Session 2.2 — Backend consolidation**, now precisely scoped by
    [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md): 17 dead admin routes + `admin_simple.js` to delete,
    2 DDL routes → migrations, 28 keepers grouped into six domains, submissions→pending
