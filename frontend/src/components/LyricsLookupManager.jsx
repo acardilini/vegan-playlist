@@ -17,8 +17,6 @@ function LyricsLookupManager() {
   const [batchMode, setBatchMode] = useState(false);
   const [selectedSongs, setSelectedSongs] = useState(new Set());
   const [batchUrls, setBatchUrls] = useState('');
-  const [needsSetup, setNeedsSetup] = useState(false);
-  const [settingUp, setSettingUp] = useState(false);
 
   useEffect(() => {
     loadSongsNeedingLyrics();
@@ -38,7 +36,6 @@ function LyricsLookupManager() {
         const data = await response.json();
         setSongsNeedingLyrics(data.songs || []);
         setPagination(data.pagination || { page: 1, pages: 1, total: 0 });
-        setNeedsSetup(!data.hasLyricsSupport);
         if (data.message) {
           setMessage(data.message);
         }
@@ -182,7 +179,7 @@ function LyricsLookupManager() {
         } else {
           errors.push(`${song.title}: ${result.error}`);
         }
-      } catch (error) {
+      } catch {
         errors.push(`${song.title}: Network error`);
       }
     }
@@ -197,39 +194,6 @@ function LyricsLookupManager() {
       loadSongsNeedingLyrics();
     } else {
       setMessage(`❌ No lyrics links added. Errors: ${errors.slice(0, 3).join(', ')}`);
-    }
-  };
-
-  const setupLyricsDatabase = async () => {
-    try {
-      setSettingUp(true);
-      setMessage('Setting up lyrics database...');
-
-      const response = await fetch(`${API_BASE}/admin/setup-lyrics`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Password': ADMIN_PASSWORD
-        }
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setMessage(`✅ ${result.message}`);
-        setNeedsSetup(false);
-        // Reload songs list now that database is ready
-        setTimeout(() => {
-          loadSongsNeedingLyrics();
-        }, 1000);
-      } else {
-        setMessage(`❌ Setup failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Error setting up lyrics database:', error);
-      setMessage('❌ Failed to set up lyrics database');
-    } finally {
-      setSettingUp(false);
     }
   };
 
@@ -263,23 +227,9 @@ function LyricsLookupManager() {
           No copyrighted lyrics content is stored in your database.
         </p>
         
-        {needsSetup ? (
-          <div className="setup-required">
-            <h3>🔧 Database Setup Required</h3>
-            <p>The lyrics functionality needs to be enabled in your database first.</p>
-            <button
-              className="setup-button"
-              onClick={setupLyricsDatabase}
-              disabled={settingUp}
-            >
-              {settingUp ? '⚙️ Setting up...' : '🚀 Enable Lyrics Functionality'}
-            </button>
-          </div>
-        ) : (
-          <p className="stats">
-            {pagination.total || 0} songs available for lyrics linking • Page {pagination.page} of {pagination.pages}
-          </p>
-        )}
+        <p className="stats">
+          {pagination.total || 0} songs available for lyrics linking • Page {pagination.page} of {pagination.pages}
+        </p>
         <div className="batch-mode-toggle">
           <button
             className={`batch-toggle-btn ${batchMode ? 'active' : ''}`}

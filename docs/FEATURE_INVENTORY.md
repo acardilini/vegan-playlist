@@ -53,6 +53,13 @@ Dead code found in `App.jsx`:
 
 ## 3. Backend endpoints (verified live 2026-07-07)
 
+> **All backend `drop` decisions in this section were executed 2026-07-08 (Session 2.2)**,
+> per the rescoped [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md): dead admin/spotify/youtube routes,
+> `admin_simple.js`, the `lyrics.js` route group (router unmounted), submissions
+> `GET /stats`, analytics `GET /audio-features` (+ its Dashboard chart), and the DDL-over-HTTP
+> setups (the remaining 2 became catch-up migrations 003/004, their UI callers removed).
+> Route counts below are pre-2.2 history.
+
 All 7 route groups respond. Auth: admin routes use a shared password accepted via header,
 body, **or query string** (`admin.js:49`) — query-string acceptance should go in Phase 4.1.
 

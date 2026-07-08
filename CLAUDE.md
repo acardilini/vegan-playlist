@@ -58,11 +58,16 @@ Run before ending every working session:
 ## Architecture
 
 ### Backend Structure (`backend/`)
-- **server.js**: Main Express server; mounts 7 routers: `/api/spotify`, `/api/admin`,
-  `/api/playlists`, `/api/youtube`, `/api/lyrics`, `/api/submissions`, `/api/analytics`
-- **routes/**: `spotify.js` (public site API), `admin.js` (~3,100 lines, password-protected
-  curation API), `playlists.js`, `youtube.js`, `lyrics.js`, `submissions.js`, `analytics.js`.
-  `admin_simple.js` exists but is **not mounted** (dead)
+- **server.js**: Main Express server; mounts 6 routers: `/api/spotify`, `/api/admin`,
+  `/api/playlists`, `/api/youtube`, `/api/submissions`, `/api/analytics`
+- **routes/**: `spotify.js` (public site API), `admin.js` (~2,200 lines, password-protected
+  curation API — 29 routes in six banner-named domains: Songs/curation · Enrichment ·
+  Data quality · Sync (import-only) · Artists · Staging/lifecycle; see
+  `docs/ADMIN_AUDIT.md`), `playlists.js`, `youtube.js`, `submissions.js`, `analytics.js`.
+  Dead code pruned in Session 2.2 (`admin_simple.js`, `lyrics.js`, ~33 endpoints).
+  Note: `/api/submissions/admin*` is currently unauthenticated (Phase 4 item)
+- **services/staging.js**: staging-queue service (queues, include/reject/publish, candidate
+  intake, submissions→pending bridge); tests in `test/staging.test.js` (node:test)
 - **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
 - **scripts/**: 39 one-off/import scripts (cleanup scheduled in Phase 2.3)
 - **utils/genreMapping.js**: parent-genre mapping used by admin + search

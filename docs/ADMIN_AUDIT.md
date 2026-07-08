@@ -1,5 +1,11 @@
 # Admin Consolidation Audit — 2026-07-08 (pre-Session 2.2)
 
+> **Status: §1 + §4 backend items executed in Session 2.2 (2026-07-08)** — deletions,
+> catch-up migrations, six-domain grouping, and the submissions→pending bridge
+> (`POST /api/admin/submissions/:id/add-to-pending`) are live. §3's UI work (sync →
+> Staging, shared categorisation form, approve button wiring, AdminInterface
+> decomposition) remains for Session 2.2b.
+
 _Compiled by cross-referencing every route definition in `backend/routes/admin.js` against
 every fetch call in the frontend (`AdminInterface.jsx` + the 9 admin tab components +
 `BulkEditModal`). Supersedes the admin sections of `FEATURE_INVENTORY.md` (Session 0.1) where

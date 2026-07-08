@@ -1,3 +1,6 @@
+// Admin API (password-protected via x-admin-password). Routes are grouped into
+// six domains — Songs / curation · Enrichment · Data quality · Sync (import-only) ·
+// Artists · Staging / lifecycle — per docs/ADMIN_AUDIT.md (Session 2.2).
 const express = require('express');
 const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/genreMapping');
@@ -25,159 +28,7 @@ router.use(authenticateAdmin);
 // Configure multer for file uploads
 const upload = multer({ dest: 'uploads/' });
 
-// Test route
-router.get('/test', (req, res) => {
-  res.json({ message: 'Admin routes are working!' });
-});
-
-// Test PUT route
-router.put('/test-update/:id', (req, res) => {
-  console.log('TEST UPDATE ENDPOINT HIT!', req.params.id, req.body);
-  res.json({ message: 'Test update works!', id: req.params.id, body: req.body });
-});
-
-// Test featured update route
-router.put('/test-featured/:id', async (req, res) => {
-  console.log('TEST FEATURED ENDPOINT HIT!', req.params.id, req.body);
-  try {
-    const songId = parseInt(req.params.id);
-    const featured = req.body.featured;
-    
-    console.log('Updating featured status:', { songId, featured });
-    
-    // Update the database
-    const result = await pool.query(`
-      UPDATE songs 
-      SET featured = $2, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-    `, [songId, featured]);
-    
-    console.log('Database update result - rows affected:', result.rowCount);
-    
-    // Query the updated record
-    const verifyQuery = await pool.query('SELECT id, title, featured FROM songs WHERE id = $1', [songId]);
-    console.log('Verify query result:', verifyQuery.rows[0]);
-    
-    res.json({
-      success: true,
-      song: verifyQuery.rows[0],
-      debug: { songId, featured, rowsAffected: result.rowCount }
-    });
-  } catch (error) {
-    console.error('Test featured error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Simple test route
-router.get('/simple-test', (req, res) => {
-  res.json({ message: 'Simple test works!' });
-});
-
-// Get all playlists for admin (new route)
-router.get('/admin-playlists', async (req, res) => {
-  console.log('Admin playlists route hit!');
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const offset = (page - 1) * limit;
-    
-    console.log('Querying database for playlists...');
-    const result = await pool.query(`
-      SELECT 
-        p.*,
-        COUNT(ps.song_id) as song_count
-      FROM playlists p
-      LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
-      GROUP BY p.id
-      ORDER BY p.created_at DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
-    
-    console.log('Found', result.rows.length, 'playlists');
-    
-    // Get total count for pagination
-    const countResult = await pool.query(`SELECT COUNT(*) FROM playlists`);
-    const total = parseInt(countResult.rows[0].count);
-    
-    res.json({
-      playlists: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching playlists for admin:', error);
-    res.status(500).json({ error: 'Failed to fetch playlists', details: error.message });
-  }
-});
-
-// Get all playlists for admin management
-router.get('/playlists', async (req, res) => {
-  console.log('Admin playlists route hit!');
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const offset = (page - 1) * limit;
-    
-    console.log('Querying database for playlists...');
-    const result = await pool.query(`
-      SELECT 
-        p.*,
-        COUNT(ps.song_id) as song_count
-      FROM playlists p
-      LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
-      GROUP BY p.id
-      ORDER BY p.created_at DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
-    
-    console.log('Found', result.rows.length, 'playlists');
-    
-    // Get total count for pagination
-    const countResult = await pool.query(`SELECT COUNT(*) FROM playlists`);
-    const total = parseInt(countResult.rows[0].count);
-    
-    res.json({
-      playlists: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching playlists for admin:', error);
-    res.status(500).json({ error: 'Failed to fetch playlists', details: error.message });
-  }
-});
-
-// Delete a playlist (admin only)
-router.delete('/playlists/:id', async (req, res) => {
-  try {
-    const playlistId = parseInt(req.params.id);
-    
-    const result = await pool.query(`
-      DELETE FROM playlists WHERE id = $1 RETURNING *
-    `, [playlistId]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Playlist not found' });
-    }
-    
-    res.json({
-      message: 'Playlist deleted successfully',
-      playlist: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Error deleting playlist:', error);
-    res.status(500).json({ error: 'Failed to delete playlist' });
-  }
-});
+// ==================== Songs / curation ====================
 
 // Get all songs (both Spotify and manual) for management
 router.get('/all-songs', async (req, res) => {
@@ -252,48 +103,6 @@ router.get('/all-songs', async (req, res) => {
   } catch (error) {
     console.error('Error fetching all songs:', error);
     res.status(500).json({ error: 'Failed to fetch songs' });
-  }
-});
-
-// Get all manual songs
-router.get('/manual-songs', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const offset = (page - 1) * limit;
-    
-    const result = await pool.query(`
-      SELECT 
-        ms.*,
-        s.id as song_id,
-        s.vegan_focus,
-        s.animal_category,
-        s.advocacy_style,
-        s.advocacy_issues,
-        s.lyrical_explicitness,
-        s.your_review,
-        s.rating
-      FROM manual_songs ms
-      LEFT JOIN songs s ON s.manual_song_id = ms.id
-      ORDER BY ms.created_at DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
-    
-    const countResult = await pool.query('SELECT COUNT(*) FROM manual_songs');
-    const total = parseInt(countResult.rows[0].count);
-    
-    res.json({
-      manual_songs: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching manual songs:', error);
-    res.status(500).json({ error: 'Failed to fetch manual songs' });
   }
 });
 
@@ -860,51 +669,6 @@ router.put('/songs/:id/categorize', async (req, res) => {
   }
 });
 
-// Bulk categorize existing songs
-router.post('/categorize-songs', async (req, res) => {
-  try {
-    const { song_ids, categories } = req.body;
-    
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      for (const songId of song_ids) {
-        // Insert or update manual categorizations
-        for (const [categoryType, categoryValues] of Object.entries(categories)) {
-          if (categoryValues && categoryValues.length > 0) {
-            await client.query(`
-              INSERT INTO manual_categorizations (song_id, category_type, category_values, created_by)
-              VALUES ($1, $2, $3, $4)
-              ON CONFLICT (song_id, category_type) DO UPDATE SET
-                category_values = EXCLUDED.category_values,
-                updated_at = CURRENT_TIMESTAMP
-            `, [songId, categoryType, categoryValues, 'admin']);
-          }
-        }
-      }
-      
-      await client.query('COMMIT');
-      
-      res.json({
-        success: true,
-        message: `Successfully categorized ${song_ids.length} songs`
-      });
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-    
-  } catch (error) {
-    console.error('Error categorizing songs:', error);
-    res.status(500).json({ error: 'Failed to categorize songs', details: error.message });
-  }
-});
-
 // Bulk upload CSV endpoint
 router.post('/bulk-upload', upload.single('csv'), async (req, res) => {
   let filePath = null;
@@ -1018,7 +782,6 @@ router.post('/bulk-upload', upload.single('csv'), async (req, res) => {
 });
 
 // Update single song endpoint (for individual edits)
-console.log('Registering PUT /update-song/:id route');
 router.put('/update-song/:id', async (req, res) => {
   try {
     console.log('=== UPDATE-SONG ENDPOINT HIT ===');
@@ -1154,80 +917,77 @@ router.put('/update-song/:id', async (req, res) => {
 
   } catch (error) {
     console.error('Error updating song:', error);
-    res.status(500).json({ 
-      error: 'Failed to update song', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to update song',
+      details: error.message
     });
   }
 });
 
-console.log('About to define playlist routes...');
-
-// Test route before playlists
-router.get('/test-playlists', (req, res) => {
-  res.json({ message: 'Test route before playlists works!' });
-});
-
-// Get all playlists for admin management
-router.get('/playlists', async (req, res) => {
-  console.log('Admin playlists route hit!');
+// Remove a song (mark as deleted or actually delete)
+router.delete('/songs/:id', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const offset = (page - 1) * limit;
+    const songId = parseInt(req.params.id);
+    const { reason = 'duplicate' } = req.body;
     
-    const result = await pool.query(`
-      SELECT 
-        p.*,
-        COUNT(ps.song_id) as song_count
-      FROM playlists p
-      LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
-      GROUP BY p.id
-      ORDER BY p.created_at DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+    console.log(`Removing song ${songId} for reason: ${reason}`);
     
-    // Get total count for pagination
-    const countResult = await pool.query(`SELECT COUNT(*) FROM playlists`);
-    const total = parseInt(countResult.rows[0].count);
+    const client = await pool.connect();
     
-    res.json({
-      playlists: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
+    try {
+      await client.query('BEGIN');
+      
+      // Get song info before deletion
+      const songInfo = await client.query(`
+        SELECT s.id, s.title, s.spotify_id, string_agg(a.name, ', ') as artists
+        FROM songs s
+        LEFT JOIN song_artists sa ON s.id = sa.song_id
+        LEFT JOIN artists a ON sa.artist_id = a.id
+        WHERE s.id = $1
+        GROUP BY s.id, s.title, s.spotify_id
+      `, [songId]);
+      
+      if (songInfo.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Song not found' });
       }
-    });
-  } catch (error) {
-    console.error('Error fetching playlists for admin:', error);
-    res.status(500).json({ error: 'Failed to fetch playlists' });
-  }
-});
-
-// Delete a playlist (admin only)
-router.delete('/playlists/:id', async (req, res) => {
-  try {
-    const playlistId = parseInt(req.params.id);
-    
-    const result = await pool.query(`
-      DELETE FROM playlists WHERE id = $1 RETURNING *
-    `, [playlistId]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Playlist not found' });
+      
+      const song = songInfo.rows[0];
+      
+      // Delete related records (cascading should handle most, but let's be explicit)
+      await client.query('DELETE FROM song_artists WHERE song_id = $1', [songId]);
+      await client.query('DELETE FROM youtube_videos WHERE song_id = $1', [songId]);
+      await client.query('DELETE FROM playlist_songs WHERE song_id = $1', [songId]);
+      
+      // Delete the song itself
+      const deleteResult = await client.query('DELETE FROM songs WHERE id = $1', [songId]);
+      
+      await client.query('COMMIT');
+      
+      res.json({
+        success: true,
+        message: `Song "${song.title}" by ${song.artists} has been removed`,
+        deletedSong: song,
+        reason
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
     
-    res.json({
-      message: 'Playlist deleted successfully',
-      playlist: result.rows[0]
-    });
   } catch (error) {
-    console.error('Error deleting playlist:', error);
-    res.status(500).json({ error: 'Failed to delete playlist' });
+    console.error('Error removing song:', error);
+    res.status(500).json({
+      error: 'Failed to remove song',
+      details: error.message
+    });
   }
 });
+
+// ==================== Enrichment (YouTube / lyrics links / completion stats) ====================
 
 // Save YouTube video endpoint (admin only)
 router.post('/save-youtube-video', async (req, res) => {
@@ -1800,96 +1560,7 @@ router.get('/songs-missing-lyrics', async (req, res) => {
   }
 });
 
-// Setup lyrics functionality endpoint (admin only)
-router.post('/setup-lyrics', async (req, res) => {
-  try {
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      console.log('🎵 Setting up lyrics functionality...');
-      
-      // Check existing columns
-      const columnCheck = await client.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'songs' 
-        AND table_schema = 'public'
-        AND column_name IN ('lyrics_url', 'lyrics_source', 'lyrics_highlights')
-      `);
-      
-      const existingColumns = columnCheck.rows.map(row => row.column_name);
-      let changes = [];
-      
-      // Add lyrics_url if missing
-      if (!existingColumns.includes('lyrics_url')) {
-        await client.query(`ALTER TABLE songs ADD COLUMN lyrics_url VARCHAR(500)`);
-        changes.push('Added lyrics_url column');
-        console.log('✅ Added lyrics_url column');
-      }
-      
-      // Add lyrics_source if missing
-      if (!existingColumns.includes('lyrics_source')) {
-        await client.query(`ALTER TABLE songs ADD COLUMN lyrics_source VARCHAR(50) DEFAULT 'other'`);
-        changes.push('Added lyrics_source column');
-        console.log('✅ Added lyrics_source column');
-      }
-      
-      // Add lyrics_highlights if missing
-      if (!existingColumns.includes('lyrics_highlights')) {
-        await client.query(`ALTER TABLE songs ADD COLUMN lyrics_highlights TEXT`);
-        changes.push('Added lyrics_highlights column');
-        console.log('✅ Added lyrics_highlights column');
-      }
-      
-      if (changes.length > 0) {
-        // Create index for better performance
-        await client.query(`
-          CREATE INDEX IF NOT EXISTS idx_songs_lyrics_url 
-          ON songs(lyrics_url) 
-          WHERE lyrics_url IS NOT NULL AND lyrics_url != ''
-        `);
-        changes.push('Created lyrics index');
-        console.log('✅ Created lyrics index');
-      }
-      
-      await client.query('COMMIT');
-      
-      // Get stats
-      const statsResult = await client.query(`
-        SELECT COUNT(*) as total_songs FROM songs
-      `);
-      
-      const message = changes.length > 0 
-        ? 'Lyrics functionality successfully set up!' 
-        : 'Lyrics functionality already enabled';
-      
-      res.json({
-        success: true,
-        message,
-        changes,
-        stats: {
-          totalSongs: parseInt(statsResult.rows[0].total_songs),
-          lyricsEnabled: true
-        }
-      });
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-
-  } catch (error) {
-    console.error('Error setting up lyrics functionality:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to set up lyrics functionality',
-      details: error.message
-    });
-  }
-});
+// ==================== Data quality ====================
 
 // Detect potential duplicate songs
 router.get('/duplicate-songs', async (req, res) => {
@@ -2043,229 +1714,6 @@ router.get('/duplicate-songs', async (req, res) => {
   }
 });
 
-// Remove a song (mark as deleted or actually delete)
-router.delete('/songs/:id', async (req, res) => {
-  try {
-    const songId = parseInt(req.params.id);
-    const { reason = 'duplicate' } = req.body;
-    
-    console.log(`Removing song ${songId} for reason: ${reason}`);
-    
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      // Get song info before deletion
-      const songInfo = await client.query(`
-        SELECT s.id, s.title, s.spotify_id, string_agg(a.name, ', ') as artists
-        FROM songs s
-        LEFT JOIN song_artists sa ON s.id = sa.song_id
-        LEFT JOIN artists a ON sa.artist_id = a.id
-        WHERE s.id = $1
-        GROUP BY s.id, s.title, s.spotify_id
-      `, [songId]);
-      
-      if (songInfo.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({ error: 'Song not found' });
-      }
-      
-      const song = songInfo.rows[0];
-      
-      // Delete related records (cascading should handle most, but let's be explicit)
-      await client.query('DELETE FROM song_artists WHERE song_id = $1', [songId]);
-      await client.query('DELETE FROM youtube_videos WHERE song_id = $1', [songId]);
-      await client.query('DELETE FROM playlist_songs WHERE song_id = $1', [songId]);
-      
-      // Delete the song itself
-      const deleteResult = await client.query('DELETE FROM songs WHERE id = $1', [songId]);
-      
-      await client.query('COMMIT');
-      
-      res.json({
-        success: true,
-        message: `Song "${song.title}" by ${song.artists} has been removed`,
-        deletedSong: song,
-        reason
-      });
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-    
-  } catch (error) {
-    console.error('Error removing song:', error);
-    res.status(500).json({ 
-      error: 'Failed to remove song', 
-      details: error.message 
-    });
-  }
-});
-
-// Sync with Spotify playlist to detect changes
-// IMPORT-ONLY sync (Session 1.2 rebuild — docs/TRUTH_SOURCE_DESIGN.md).
-// The website is master: playlist tracks missing from the catalogue are added as
-// status='pending' for the curator to review; nothing is flagged as removed and no
-// existing song is modified. Included songs absent from the playlist are reported
-// only — the curator updates Spotify by hand if desired.
-router.post('/sync-spotify-playlist', async (req, res) => {
-  try {
-    const { getSpotifyClient, fetchPlaylistTracks, computeDiff, addTracksAsPending, DEFAULT_PLAYLIST_ID } = require('../utils/playlistSync');
-    const { playlistId = DEFAULT_PLAYLIST_ID } = req.body;
-
-    const spotifyApi = await getSpotifyClient();
-    const tracks = await fetchPlaylistTracks(spotifyApi, playlistId);
-    const diff = await computeDiff(pool, tracks);
-    const added = await addTracksAsPending(pool, diff.missingFromCatalogue);
-
-    res.json({
-      success: true,
-      summary: {
-        playlistTracks: diff.playlistTrackCount,
-        addedAsPending: added,
-        includedNotOnPlaylist: diff.includedNotOnPlaylist.length,
-        nonIncludedOnPlaylist: diff.nonIncludedOnPlaylist.length
-      },
-      addedSongs: diff.missingFromCatalogue.slice(0, 10).map(t => ({
-        spotify_id: t.spotify_id, title: t.title,
-        artists: t.artists.map(a => a.name).join(', ')
-      })),
-      includedNotOnPlaylist: diff.includedNotOnPlaylist.slice(0, 10),
-      message: `Import-only sync: added ${added} playlist track(s) to the pending queue. ` +
-        `${diff.includedNotOnPlaylist.length} included song(s) are not on the Spotify playlist ` +
-        `(informational — update Spotify manually if desired). No songs were changed or flagged.`
-    });
-
-  } catch (error) {
-    console.error('Error syncing Spotify playlist:', error);
-    res.status(500).json({
-      error: 'Failed to sync Spotify playlist', 
-      details: error.message 
-    });
-  }
-});
-
-// Get songs flagged as removed from playlist
-router.get('/removed-songs', async (req, res) => {
-  try {
-    console.log('Fetching songs removed from playlist...');
-    
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const offset = (page - 1) * limit;
-    
-    const result = await pool.query(`
-      SELECT 
-        s.id,
-        s.spotify_id,
-        s.title,
-        s.removed_from_playlist_at,
-        s.popularity,
-        s.spotify_url,
-        string_agg(a.name, ', ' ORDER BY a.name) as artists,
-        al.name as album_name,
-        COUNT(yv.id) as youtube_videos_count,
-        CASE WHEN s.lyrics_url IS NOT NULL THEN 1 ELSE 0 END as has_lyrics
-      FROM songs s
-      LEFT JOIN song_artists sa ON s.id = sa.song_id
-      LEFT JOIN artists a ON sa.artist_id = a.id
-      LEFT JOIN albums al ON s.album_id = al.id
-      LEFT JOIN youtube_videos yv ON s.id = yv.song_id
-      WHERE s.removed_from_playlist = true
-      GROUP BY s.id, s.spotify_id, s.title, s.removed_from_playlist_at, s.popularity, s.spotify_url, al.name, s.lyrics_url
-      ORDER BY s.removed_from_playlist_at DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
-    
-    const countResult = await pool.query(`
-      SELECT COUNT(*) as total
-      FROM songs s
-      WHERE s.removed_from_playlist = true
-    `);
-    
-    const total = parseInt(countResult.rows[0].total);
-    
-    res.json({
-      success: true,
-      removedSongs: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-    
-  } catch (error) {
-    console.error('Error fetching removed songs:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch removed songs', 
-      details: error.message 
-    });
-  }
-});
-
-// Initialize database schema for playlist sync
-router.post('/setup-playlist-sync', async (req, res) => {
-  try {
-    console.log('Setting up playlist sync database schema...');
-    
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      // Add columns for tracking removed songs
-      await client.query(`
-        ALTER TABLE songs 
-        ADD COLUMN IF NOT EXISTS removed_from_playlist BOOLEAN DEFAULT false
-      `);
-      
-      await client.query(`
-        ALTER TABLE songs 
-        ADD COLUMN IF NOT EXISTS removed_from_playlist_at TIMESTAMP
-      `);
-      
-      // Add indexes
-      await client.query(`
-        CREATE INDEX IF NOT EXISTS idx_songs_removed_from_playlist 
-        ON songs(removed_from_playlist) 
-        WHERE removed_from_playlist = true
-      `);
-      
-      await client.query(`
-        CREATE INDEX IF NOT EXISTS idx_songs_removed_playlist_date 
-        ON songs(removed_from_playlist_at DESC) 
-        WHERE removed_from_playlist = true
-      `);
-      
-      await client.query('COMMIT');
-      
-      res.json({
-        success: true,
-        message: 'Playlist sync database schema has been set up successfully'
-      });
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-    
-  } catch (error) {
-    console.error('Error setting up playlist sync schema:', error);
-    res.status(500).json({ 
-      error: 'Failed to set up playlist sync schema', 
-      details: error.message 
-    });
-  }
-});
-
 // Check for Spotify songs that may have been removed/unavailable
 router.get('/spotify-validation', async (req, res) => {
   try {
@@ -2328,7 +1776,51 @@ router.get('/spotify-validation', async (req, res) => {
   }
 });
 
-// Legacy endpoint - redirect to new one
+// ==================== Sync (import-only — website is master) ====================
+
+// Sync with Spotify playlist to detect changes
+// IMPORT-ONLY sync (Session 1.2 rebuild — docs/TRUTH_SOURCE_DESIGN.md).
+// The website is master: playlist tracks missing from the catalogue are added as
+// status='pending' for the curator to review; nothing is flagged as removed and no
+// existing song is modified. Included songs absent from the playlist are reported
+// only — the curator updates Spotify by hand if desired.
+router.post('/sync-spotify-playlist', async (req, res) => {
+  try {
+    const { getSpotifyClient, fetchPlaylistTracks, computeDiff, addTracksAsPending, DEFAULT_PLAYLIST_ID } = require('../utils/playlistSync');
+    const { playlistId = DEFAULT_PLAYLIST_ID } = req.body;
+
+    const spotifyApi = await getSpotifyClient();
+    const tracks = await fetchPlaylistTracks(spotifyApi, playlistId);
+    const diff = await computeDiff(pool, tracks);
+    const added = await addTracksAsPending(pool, diff.missingFromCatalogue);
+
+    res.json({
+      success: true,
+      summary: {
+        playlistTracks: diff.playlistTrackCount,
+        addedAsPending: added,
+        includedNotOnPlaylist: diff.includedNotOnPlaylist.length,
+        nonIncludedOnPlaylist: diff.nonIncludedOnPlaylist.length
+      },
+      addedSongs: diff.missingFromCatalogue.slice(0, 10).map(t => ({
+        spotify_id: t.spotify_id, title: t.title,
+        artists: t.artists.map(a => a.name).join(', ')
+      })),
+      includedNotOnPlaylist: diff.includedNotOnPlaylist.slice(0, 10),
+      message: `Import-only sync: added ${added} playlist track(s) to the pending queue. ` +
+        `${diff.includedNotOnPlaylist.length} included song(s) are not on the Spotify playlist ` +
+        `(informational — update Spotify manually if desired). No songs were changed or flagged.`
+    });
+
+  } catch (error) {
+    console.error('Error syncing Spotify playlist:', error);
+    res.status(500).json({
+      error: 'Failed to sync Spotify playlist', 
+      details: error.message 
+    });
+  }
+});
+
 // Read-only playlist diff (Session 1.2 rebuild): reports differences between the
 // catalogue and the Spotify playlist in both directions. Website is master — this
 // endpoint never writes anything.
@@ -2373,206 +1865,7 @@ router.get('/spotify-playlist-mismatch', async (req, res) => {
   }
 });
 
-// Get songs that are in database but not in current Spotify playlist
-router.get('/playlist-discrepancies', async (req, res) => {
-  try {
-    console.log('Checking for playlist discrepancies...');
-    
-    // Initialize Spotify API
-    const SpotifyWebApi = require('spotify-web-api-node');
-    const spotifyApi = new SpotifyWebApi({
-      clientId: process.env.SPOTIFY_CLIENT_ID,
-      clientSecret: process.env.SPOTIFY_CLIENT_SECRET
-    });
-    
-    // Get access token
-    const authResult = await spotifyApi.clientCredentialsGrant();
-    spotifyApi.setAccessToken(authResult.body['access_token']);
-    
-    // Get current playlist tracks
-    const playlistId = '5hVygGomw9zax38quC6mhi';
-    let currentPlaylistTracks = [];
-    let offset = 0;
-    const limit = 100;
-    
-    while (true) {
-      const playlistResult = await spotifyApi.getPlaylistTracks(playlistId, {
-        offset,
-        limit,
-        fields: 'items(track(id)),next'
-      });
-      
-      const tracks = playlistResult.body.items
-        .filter(item => item.track && item.track.id)
-        .map(item => item.track.id);
-      
-      currentPlaylistTracks.push(...tracks);
-      
-      if (!playlistResult.body.next) break;
-      offset += limit;
-    }
-    
-    console.log(`Current playlist has ${currentPlaylistTracks.length} tracks`);
-    
-    // Get all database songs
-    const dbSongsResult = await pool.query(`
-      SELECT 
-        s.id,
-        s.spotify_id, 
-        s.title, 
-        s.popularity,
-        s.spotify_url,
-        s.created_at,
-        string_agg(a.name, ', ') as artists,
-        al.name as album_name
-      FROM songs s
-      LEFT JOIN song_artists sa ON s.id = sa.song_id
-      LEFT JOIN artists a ON sa.artist_id = a.id
-      LEFT JOIN albums al ON s.album_id = al.id
-      WHERE s.data_source = 'spotify'
-      GROUP BY s.id, s.spotify_id, s.title, s.popularity, s.spotify_url, s.created_at, al.name
-      ORDER BY s.created_at DESC
-    `);
-    
-    const dbSongs = dbSongsResult.rows;
-    const currentPlaylistIds = new Set(currentPlaylistTracks);
-    
-    // Find songs in database that are NOT in current playlist
-    const discrepancies = dbSongs.filter(song => 
-      !currentPlaylistIds.has(song.spotify_id)
-    );
-    
-    console.log(`Found ${discrepancies.length} songs in database not in current playlist`);
-    
-    res.json({
-      success: true,
-      discrepancies: discrepancies.map(song => ({
-        ...song,
-        status: 'removed_from_playlist',
-        recommendation: 'This song was removed from your Spotify playlist. Consider deleting from database.'
-      })),
-      summary: {
-        totalDatabaseSongs: dbSongs.length,
-        totalPlaylistTracks: currentPlaylistTracks.length,
-        songsRemovedFromPlaylist: discrepancies.length
-      },
-      message: discrepancies.length > 0 
-        ? `Found ${discrepancies.length} songs in database that are no longer in your Spotify playlist`
-        : 'Database is perfectly synced with your Spotify playlist!'
-    });
-    
-  } catch (error) {
-    console.error('Error checking playlist discrepancies:', error);
-    res.status(500).json({ 
-      error: 'Failed to check playlist discrepancies', 
-      details: error.message 
-    });
-  }
-});
-
-// Simple endpoint for removed songs (working version)
-router.get('/removed-songs-simple', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT 
-        s.id,
-        s.spotify_id,
-        s.title,
-        s.removed_from_playlist_at,
-        s.popularity,
-        s.spotify_url,
-        string_agg(a.name, ', ') as artists,
-        al.name as album_name
-      FROM songs s
-      LEFT JOIN song_artists sa ON s.id = sa.song_id
-      LEFT JOIN artists a ON sa.artist_id = a.id
-      LEFT JOIN albums al ON s.album_id = al.id
-      WHERE s.removed_from_playlist = true
-      GROUP BY s.id, s.spotify_id, s.title, s.removed_from_playlist_at, s.popularity, s.spotify_url, al.name
-      ORDER BY s.removed_from_playlist_at DESC
-      LIMIT 50
-    `);
-    
-    res.json({
-      success: true,
-      removedSongs: result.rows,
-      pagination: {
-        page: 1,
-        limit: 50,
-        total: result.rows.length,
-        pages: 1
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Test endpoint to verify routes are loading
-router.get('/test-sync', async (req, res) => {
-  res.json({ message: 'Sync routes are working!' });
-});
-
-// Setup discography review columns
-router.post('/setup-discography-tracking', async (req, res) => {
-  try {
-    console.log('Setting up discography tracking columns...');
-    
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      // Add discography review columns
-      await client.query(`
-        ALTER TABLE artists 
-        ADD COLUMN IF NOT EXISTS discography_reviewed BOOLEAN DEFAULT false
-      `);
-      
-      await client.query(`
-        ALTER TABLE artists 
-        ADD COLUMN IF NOT EXISTS discography_reviewed_date TIMESTAMP
-      `);
-      
-      await client.query(`
-        ALTER TABLE artists 
-        ADD COLUMN IF NOT EXISTS discography_review_notes TEXT
-      `);
-      
-      await client.query(`
-        ALTER TABLE artists 
-        ADD COLUMN IF NOT EXISTS data_source VARCHAR(50) DEFAULT 'spotify'
-      `);
-      
-      // Add indexes for performance
-      await client.query(`
-        CREATE INDEX IF NOT EXISTS idx_artists_discography_reviewed 
-        ON artists(discography_reviewed) 
-        WHERE discography_reviewed = true
-      `);
-      
-      await client.query('COMMIT');
-      
-      res.json({
-        success: true,
-        message: 'Discography tracking database schema has been set up successfully'
-      });
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-    
-  } catch (error) {
-    console.error('Error setting up discography tracking schema:', error);
-    res.status(500).json({ 
-      error: 'Failed to set up discography tracking schema', 
-      details: error.message 
-    });
-  }
-});
+// ==================== Artists ====================
 
 // Get all artists for admin management
 router.get('/all-artists', async (req, res) => {
@@ -2811,6 +2104,8 @@ router.get('/artists-stats', async (req, res) => {
   }
 });
 
+// ==================== Staging / lifecycle ====================
+
 // --- Publication staging (Session 1.2b — docs/PUBLICATION_STAGING_DESIGN.md) ---
 // status stays the curator's inclusion decision; published is the "ready to show"
 // dimension. Publishing is always an explicit curator action.
@@ -2920,6 +2215,19 @@ router.post('/staging/candidates', async (req, res) => {
   } catch (e) {
     console.error('candidates error:', e);
     res.status(500).json({ error: 'Failed to import candidates', details: e.message });
+  }
+});
+
+// Submissions → pending bridge (Session 2.2, curator-approved): adds an approved
+// community submission to the pending queue via the staging candidate intake.
+router.post('/submissions/:id/add-to-pending', async (req, res) => {
+  try {
+    const result = await staging.addSubmissionAsPending(pool, parseInt(req.params.id));
+    res.json({ success: true, ...result });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Submission not found' });
+    console.error('add-to-pending error:', e);
+    res.status(500).json({ error: 'Failed to add submission to pending queue', details: e.message });
   }
 });
 

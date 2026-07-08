@@ -25,18 +25,6 @@ export const spotifyService = {
     }
   },
 
-  // Get all artists
-  getArtists: async () => {
-    try {
-      const response = await fetch(`${API_BASE}/artists`);
-      if (!response.ok) throw new Error('Failed to fetch artists');
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching artists:', error);
-      throw error;
-    }
-  },
-
   // Advanced search songs with filters
   searchSongs: async (searchParams) => {
     try {

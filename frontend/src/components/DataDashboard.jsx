@@ -6,12 +6,11 @@ import {
   BarElement,
   LineElement,
   PointElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Bar, Line, Doughnut } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 
 // Register Chart.js components
 ChartJS.register(
@@ -20,7 +19,6 @@ ChartJS.register(
   BarElement,
   LineElement,
   PointElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -30,7 +28,6 @@ function DataDashboard() {
   const [summary, setSummary] = useState(null);
   const [yearData, setYearData] = useState([]);
   const [genreData, setGenreData] = useState([]);
-  const [audioFeatures, setAudioFeatures] = useState([]);
   const [veganThemes, setVeganThemes] = useState([]);
   const [filterOptions, setFilterOptions] = useState({});
   
@@ -41,10 +38,9 @@ function DataDashboard() {
     vegan_focus: '',
     advocacy_style: '',
     min_year: '',
-    max_year: '',
-    audio_feature: 'energy'
+    max_year: ''
   });
-  
+
   const [loading, setLoading] = useState(false);
 
   // Load dashboard data
@@ -55,29 +51,26 @@ function DataDashboard() {
       
       // Add non-empty filters to params
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && key !== 'audio_feature') {
+        if (value) {
           filterParams.append(key, value);
         }
       });
 
-      const [summaryRes, yearRes, genreRes, audioRes, themesRes] = await Promise.all([
+      const [summaryRes, yearRes, genreRes, themesRes] = await Promise.all([
         fetch('http://localhost:5000/api/analytics/summary'),
         fetch(`http://localhost:5000/api/analytics/year-distribution?${filterParams}`),
         fetch(`http://localhost:5000/api/analytics/genre-distribution?${filterParams}&limit=15`),
-        fetch(`http://localhost:5000/api/analytics/audio-features?${filterParams}&feature=${filters.audio_feature}`),
         fetch(`http://localhost:5000/api/analytics/vegan-themes?${filterParams}`)
       ]);
 
       const summaryData = await summaryRes.json();
       const yearDataRes = await yearRes.json();
       const genreDataRes = await genreRes.json();
-      const audioDataRes = await audioRes.json();
       const themesDataRes = await themesRes.json();
-      
+
       setSummary(summaryData.error ? null : summaryData);
       setYearData(yearDataRes.error ? [] : yearDataRes);
       setGenreData(genreDataRes.error ? [] : genreDataRes);
-      setAudioFeatures(audioDataRes.error ? [] : audioDataRes);
       setVeganThemes(themesDataRes.error ? [] : themesDataRes);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -147,22 +140,6 @@ function DataDashboard() {
     ]
   };
 
-  const audioFeaturesChartData = {
-    labels: (audioFeatures || []).map(item => item.feature_level),
-    datasets: [
-      {
-        data: (audioFeatures || []).map(item => parseInt(item.song_count)),
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.8)',
-          'rgba(255, 159, 64, 0.8)',
-          'rgba(255, 205, 86, 0.8)',
-          'rgba(75, 192, 192, 0.8)',
-          'rgba(153, 102, 255, 0.8)'
-        ],
-      }
-    ]
-  };
-
   const veganThemesChartData = {
     labels: (veganThemes || []).map(item => item.theme),
     datasets: [
@@ -193,15 +170,6 @@ function DataDashboard() {
     }
   };
 
-  const doughnutOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'right',
-      },
-    },
-  };
-
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
       ...prev,
@@ -216,8 +184,7 @@ function DataDashboard() {
       vegan_focus: '',
       advocacy_style: '',
       min_year: '',
-      max_year: '',
-      audio_feature: 'energy'
+      max_year: ''
     });
   };
 
@@ -328,18 +295,6 @@ function DataDashboard() {
           </div>
 
           <div className="filter-group">
-            <label>Audio Feature:</label>
-            <select 
-              value={filters.audio_feature} 
-              onChange={(e) => handleFilterChange('audio_feature', e.target.value)}
-            >
-              <option value="energy">Energy</option>
-              <option value="danceability">Danceability</option>
-              <option value="valence">Valence (Mood)</option>
-            </select>
-          </div>
-
-          <div className="filter-group">
             <button onClick={clearFilters} className="btn-secondary">
               Clear All Filters
             </button>
@@ -370,16 +325,6 @@ function DataDashboard() {
           <h2>Genre Distribution</h2>
           {genreData.length > 0 ? (
             <Bar data={genreChartData} options={chartOptions} />
-          ) : (
-            <div className="no-data">No data available for the selected filters</div>
-          )}
-        </div>
-
-        {/* Audio Features */}
-        <div className="chart-container">
-          <h2>{filters.audio_feature.charAt(0).toUpperCase() + filters.audio_feature.slice(1)} Distribution</h2>
-          {audioFeatures.length > 0 ? (
-            <Doughnut data={audioFeaturesChartData} options={doughnutOptions} />
           ) : (
             <div className="no-data">No data available for the selected filters</div>
           )}
