@@ -112,9 +112,14 @@ published lifecycle._
 **Exit criteria:** `App.jsx` decomposed into pages/components; dead scripts and duplicate
 routes pruned; clear frontend/backend structure and conventions documented.
 
-- ☐ **Session 2.1 — Frontend decomposition.** Extract inline pages (Home, Song Detail,
-  Artists, Playlists, About) from `App.jsx` into their own files; establish folder structure.
-  _Smoke test: every route loads and behaves as before._
+- ☑ **Session 2.1 — Frontend decomposition** _(done 2026-07-08)_. Extracted the five inline
+  pages from `App.jsx` (2,001 → 49 lines) into `src/pages/` (Home, Song Detail, Playlists,
+  Playlist Detail, About) and the shared inline components into `src/components/`
+  (NavigationMenu, SongCard, PaginationControls, AddToPlaylistModal); deleted the dead
+  `ArtistsPage` (~270 lines, Phase 0 drop) and unused `DescriptionSection`. _Smoke test ✅:
+  all 9 routes rendered headlessly against the live backend — pages, data, search
+  (`?q=vegan` → 198 hits), bad-song-id error state, admin login all behave as before;
+  build + lint clean._
 - ☐ **Session 2.2 — Backend consolidation.** Scoped by the 2026-07-08 admin audit
   ([`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md)): delete the 17 dead `admin.js` routes +
   `admin_simple.js`; convert the 2 remaining DDL-over-HTTP routes (`setup-lyrics`,

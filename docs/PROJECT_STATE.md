@@ -7,18 +7,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 1 — Data Foundation (Truth Source) **complete**. **Phase 0 complete
-  2026-07-07.** Next up: Phase 2 — Architecture Cleanup.
-- **Current session:** _between sessions (admin consolidation audit done 2026-07-08 —
-  scoped Sessions 2.2/2.2b, see [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md))_
-- **Next session:** Session 2.1 — Frontend decomposition (extract inline pages from `App.jsx`)
+- **Phase:** Phase 2 — Architecture Cleanup (Session 2.1 ☑). Phases 0–1 complete.
+- **Current session:** _between sessions (Session 2.1 frontend decomposition done and
+  merged to `main` 2026-07-08)_
+- **Next session:** Session 2.2 — Backend consolidation (scoped by
+  [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md))
 - **Last updated:** 2026-07-08
 
 ### Next Tasks (start here)
-1. **Session 2.1 — Frontend decomposition** (Phase 2, see `PROJECT_PLAN.md`): extract the
-   inline pages (Home, Song Detail, Artists, Playlists, About) out of the ~2,000-line
-   `App.jsx` into their own files; establish the folder structure. Smoke test: every route
-   loads and behaves as before.
+1. ✅ **Done — `session-2.1-frontend-decomposition` merged to `main`** 2026-07-08 (curator
+   go-ahead; the merged feature branch can be deleted at leisure).
 2. **Session 2.2 — Backend consolidation**, now precisely scoped by
    [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md): 17 dead admin routes + `admin_simple.js` to delete,
    2 DDL routes → migrations, 28 keepers grouped into six domains, submissions→pending
@@ -54,7 +52,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Schema check constraints matter for enrichment:** `artists`/`albums` require
   `data_source='spotify'` whenever `spotify_id` is set (so attaching an id flips
   `data_source`); `songs` may stay `manual` with a spotify_id (provenance preserved).
-- Frontend is a ~2,000-line `App.jsx` monolith with inline pages — Phase 2 target.
+- ~~Frontend is a ~2,000-line `App.jsx` monolith with inline pages~~ **Solved (2.1):**
+  `App.jsx` is a 49-line router shell; pages live in `src/pages/`, shared pieces in
+  `src/components/`. Dead `ArtistsPage` + `DescriptionSection` deleted.
 - Backend has duplicate route files (`admin.js` / `admin_simple.js`) and ~40 one-off scripts — Phase 2 target.
 - **Vegan-themes analysis is future work, not a bug:** `analytics/vegan-themes` reports 0
   because the thematic coding of songs hasn't been done yet. Plan it as its own workstream
@@ -85,6 +85,12 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-08 — Frontend folder convention (Session 2.1).** Route-level screens live in
+  `src/pages/` (one file per route); anything used by more than one page or section lives in
+  `src/components/`. Single-consumer helpers stay local to their page file (YAGNI — e.g.
+  `CreatePlaylistModal` inside `PlaylistsPage.jsx`, `AudioFeatureBar`/`CategoryBadges` inside
+  `SongDetailPage.jsx`). Extraction was verbatim (same behaviour); the only code removed was
+  dead: `ArtistsPage` (never routed, Phase 0 drop) and the unused `DescriptionSection`.
 - **2026-07-08 — Admin consolidation decisions (audit → [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md),
   curator-confirmed).** (1) **Sync moves into the Staging tab** — the Duplicate Manager Sync
   button and Staging's Add candidates do the same import-as-pending job on the same backend
@@ -201,6 +207,23 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-08 (Session 2.1)** — Frontend decomposition (opens Phase 2). On branch
+  `session-2.1-frontend-decomposition`: `App.jsx` 2,001 → 49 lines (router shell only).
+  Extracted verbatim to `src/pages/`: HomePage (with its Hero/Stats/Featured/Search
+  sections), SongDetailPage, PlaylistsPage (CreatePlaylistModal kept local), 
+  PlaylistDetailPage, AboutPage; to `src/components/`: NavigationMenu, SongCard,
+  PaginationControls, AddToPlaylistModal. Deleted dead code only: `ArtistsPage` (~270
+  lines, never routed — Phase 0 drop) and unused `DescriptionSection`; also removed two
+  dead-variable lint errors carried over (unused `section` param, unused `pagination`
+  state). Net −257 lines. Smoke test ✅ (headless Chrome against live backend + Vite dev
+  server): all 9 routes rendered with real data — home (stats 1342+/630+, featured cards,
+  browse grid), song/541 detail (artwork, meta, YouTube embed), playlists + playlist/1,
+  about, artists search, admin login; error path (`/song/999999` → "Song not found") and
+  URL search (`/?q=vegan` → 198 songs) behave as before; `npm run build` clean, eslint 0
+  errors on changed files (2 pre-existing deliberate hook warnings remain). Noticed live
+  totals are 1,342 (docs said 1,341) — one song appears newly published (curator was
+  exercising the staging UI 2026-07-08); flagged for the curator to confirm it was
+  intentional.
 - **2026-07-08 (Admin consolidation audit)** — Audit-only session (no code changed, smoke
   test n/a). Cross-referenced all 47 `admin.js` route definitions against every frontend
   fetch → [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md): **28 keep / 17 delete / 2 convert to
