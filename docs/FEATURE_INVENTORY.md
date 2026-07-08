@@ -67,6 +67,10 @@ body, **or query string** (`admin.js:49`) — query-string acceptance should go 
 
 ### `routes/admin.js` → `/api/admin` (password-protected, 42 route definitions ~3,100 lines)
 
+_Superseded 2026-07-08 for admin routes by [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md) — Sessions
+1.2–1.4 added staging/publish/sync endpoints after this inventory; the audit has the current
+per-route dispositions (28 keep / 17 delete / 2 → migrations)._
+
 | Endpoint group | Purpose | Decision |
 |---|---|---|
 | `all-songs`, `update-song/:id`, `manual-songs` CRUD, `categorization-options`, `songs/:id/categorize`, `bulk-upload`, `songs/:id` DELETE | Core curation | **keep** |

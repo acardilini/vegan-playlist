@@ -115,8 +115,20 @@ routes pruned; clear frontend/backend structure and conventions documented.
 - ☐ **Session 2.1 — Frontend decomposition.** Extract inline pages (Home, Song Detail,
   Artists, Playlists, About) from `App.jsx` into their own files; establish folder structure.
   _Smoke test: every route loads and behaves as before._
-- ☐ **Session 2.2 — Backend consolidation.** Resolve `admin.js` vs `admin_simple.js`; group
-  routes; retire experimental/test endpoints. _Smoke test: exercise admin + public endpoints._
+- ☐ **Session 2.2 — Backend consolidation.** Scoped by the 2026-07-08 admin audit
+  ([`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md)): delete the 17 dead `admin.js` routes +
+  `admin_simple.js`; convert the 2 remaining DDL-over-HTTP routes (`setup-lyrics`,
+  `setup-discography-tracking`) to catch-up migration files; group the 28 live routes into
+  six named domains; add the submissions→pending bridge endpoint (curator-approved); execute
+  the Phase 0 inventory's other backend drops (spotify.js debug routes + `GET /artists`,
+  unused youtube.js routes, lyrics.js file, submissions `GET /stats`, analytics
+  `GET /audio-features`). _Smoke test: exercise admin + public endpoints._
+- ☐ **Session 2.2b — Admin UI consolidation.** Per `ADMIN_AUDIT.md` §3 (curator decisions):
+  move Sync + mismatch report into the Staging tab (Duplicate Manager becomes data-quality
+  only); one shared categorisation form behind both entry points; Submissions approve gains
+  add-to-pending; decompose `AdminInterface.jsx` (inline Manage Songs/Playlists → components)
+  with a shared authed-fetch helper using relative `/api` URLs. _Smoke test: walk all admin
+  tabs; every curator workflow behaves as before._
 - ☐ **Session 2.3 — Script cleanup.** Archive/remove the ~40 one-off scripts; keep the few
   still needed (import, sync, migrations) in a documented location. _Smoke test: run a retained
   script against a safe target; confirm app unaffected._

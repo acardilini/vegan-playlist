@@ -9,7 +9,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 - **Phase:** Phase 1 — Data Foundation (Truth Source) **complete**. **Phase 0 complete
   2026-07-07.** Next up: Phase 2 — Architecture Cleanup.
-- **Current session:** _between sessions (Session 1.4 complete — Phase 1 done)_
+- **Current session:** _between sessions (admin consolidation audit done 2026-07-08 —
+  scoped Sessions 2.2/2.2b, see [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md))_
 - **Next session:** Session 2.1 — Frontend decomposition (extract inline pages from `App.jsx`)
 - **Last updated:** 2026-07-08
 
@@ -18,17 +19,22 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    inline pages (Home, Song Detail, Artists, Playlists, About) out of the ~2,000-line
    `App.jsx` into their own files; establish the folder structure. Smoke test: every route
    loads and behaves as before.
-2. ✅ **Done — `session-1.4-staging-queue` merged to `main`** 2026-07-08 (merge `032a126`,
+2. **Session 2.2 — Backend consolidation**, now precisely scoped by
+   [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md): 17 dead admin routes + `admin_simple.js` to delete,
+   2 DDL routes → migrations, 28 keepers grouped into six domains, submissions→pending
+   bridge. Then **2.2b — Admin UI consolidation** (sync → Staging, shared categorisation
+   form, AdminInterface decomposition).
+3. ✅ **Done — `session-1.4-staging-queue` merged to `main`** 2026-07-08 (merge `032a126`,
    pushed). The now-merged feature branch can be deleted at leisure.
-3. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
+4. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
    include → default to include, so the 18 reject/pending-but-included stay live, no change;
    the new CLEARxCUT dup 5804 was merged into 80). Remaining **optional** items in
    [`SESSION_1.3_CURATOR_DECISIONS.md`](./SESSION_1.3_CURATOR_DECISIONS.md): 6 clear attach
    typos to fix then re-run `enrichFromSpotify.js --attach --apply`; 3 unmatched rows; 2
    unclassified Processed values — enrichment only, not blocking.
-4. Optional curator to-do: **149 included songs are not on the Spotify playlist** — add by
+5. Optional curator to-do: **149 included songs are not on the Spotify playlist** — add by
    hand if desired (`GET /api/admin/spotify-playlist-mismatch` lists them).
-5. The two source spreadsheets at `docs/playlist/` are now fully imported and can retire after
+6. The two source spreadsheets at `docs/playlist/` are now fully imported and can retire after
    the curator spot-checks the site (keep as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
@@ -79,6 +85,20 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-08 — Admin consolidation decisions (audit → [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md),
+  curator-confirmed).** (1) **Sync moves into the Staging tab** — the Duplicate Manager Sync
+  button and Staging's Add candidates do the same import-as-pending job on the same backend
+  (`utils/playlistSync.js`); one intake surface, and Duplicate Manager becomes pure
+  data-quality. (2) **One shared categorisation form, both entry points kept** — the Manage
+  Songs modal and the Bulk Categorization workflow duplicate the same form against the same
+  endpoints; extract one component, lose no workflow. (3) **Submissions→pending bridge built
+  in 2.2** (curator chose build over defer): approving a community submission will add the
+  song to the pending queue via the existing staging candidate-intake service, instead of
+  being a status-only dead end. Audit also fixed the scope of 2.2: of `admin.js`'s 47 route
+  definitions only 28 are live; 17 are dead (6 test, 5 playlist endpoints unused because the
+  tab uses the public API — two of them duplicate definitions in the same file, 3 sync-era
+  reports on a column nothing writes since 1.2, 3 misc) and 2 are DDL-over-HTTP to convert
+  to migrations.
 - **2026-07-08 — Staging UI ships without lyrics paste / categorisation (Session 1.4).** The
   `PROJECT_PLAN.md` line for 1.4 mentioned lyrics paste + categorisation in the To-process
   view, but `PUBLICATION_STAGING_DESIGN.md` §4 rules categorisation explicitly *non-essential*
@@ -181,6 +201,17 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-08 (Admin consolidation audit)** — Audit-only session (no code changed, smoke
+  test n/a). Cross-referenced all 47 `admin.js` route definitions against every frontend
+  fetch → [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md): **28 keep / 17 delete / 2 convert to
+  migrations**, plus `admin_simple.js` (360 lines, unmounted) to delete. Key finds beyond
+  Phase 0's inventory: the admin playlist endpoints are *all* dead (the Manage Playlists tab
+  uses the public API); the three `removed-songs`/`discrepancies` reports can never show data
+  again (nothing writes `removed_from_playlist` since 1.2); song intake now exists in three
+  UIs; categorisation and YouTube-attach UIs each exist twice; submission approval never
+  creates a song. Curator confirmed three consolidation decisions (see Decision Log).
+  `PROJECT_PLAN.md` Session 2.2 rescoped precisely + new Session 2.2b (admin UI
+  consolidation) added.
 - **2026-07-08 (Session 1.4)** — Staging-queue admin UI (closes Phase 1). Built on branch
   `session-1.4-staging-queue`: `backend/services/staging.js` (queue listing +
   include/reject/play-link/attach-spotify/candidate-intake, `db`-first for testability),
