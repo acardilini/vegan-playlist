@@ -7,23 +7,24 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 2 — Architecture Cleanup (Session 2.1 ☑). Phases 0–1 complete.
-- **Current session:** _between sessions (Session 2.1 frontend decomposition done and
-  merged to `main` 2026-07-08)_
-- **Next session:** Session 2.2 — Backend consolidation (scoped by
-  [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md))
+- **Phase:** Phase 2 — Architecture Cleanup (Sessions 2.1 ☑, 2.2 ☑). Phases 0–1 complete.
+- **Current session:** _Session 2.2 backend consolidation done 2026-07-08 on branch
+  `session-2.2-backend-consolidation` — **awaiting curator go-ahead to merge to `main`**_
+- **Next session:** Session 2.2b — Admin UI consolidation (per
+  [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md) §3)
 - **Last updated:** 2026-07-08
 
 ### Next Tasks (start here)
-1. ✅ **Done — `session-2.1-frontend-decomposition` merged to `main`** 2026-07-08 (curator
-   go-ahead; the merged feature branch can be deleted at leisure).
-2. **Session 2.2 — Backend consolidation**, now precisely scoped by
-   [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md): 17 dead admin routes + `admin_simple.js` to delete,
-   2 DDL routes → migrations, 28 keepers grouped into six domains, submissions→pending
-   bridge. Then **2.2b — Admin UI consolidation** (sync → Staging, shared categorisation
-   form, AdminInterface decomposition).
-3. ✅ **Done — `session-1.4-staging-queue` merged to `main`** 2026-07-08 (merge `032a126`,
-   pushed). The now-merged feature branch can be deleted at leisure.
+1. **Merge `session-2.2-backend-consolidation` to `main`** after curator go-ahead
+   (smoke test 44/44 ✅; branch pushed).
+2. **Session 2.2b — Admin UI consolidation**: sync + mismatch report move into the Staging
+   tab; one shared categorisation form; Submissions approve gains the add-to-pending button
+   (backend bridge `POST /api/admin/submissions/:id/add-to-pending` shipped in 2.2 — the
+   button must send the `X-Admin-Password` header, see watch-out below); decompose
+   `AdminInterface.jsx` with a shared authed-fetch helper using relative `/api` URLs.
+3. ✅ **Done — `session-2.1-frontend-decomposition` merged to `main`** 2026-07-08.
+4. ✅ **Done — `session-1.4-staging-queue` merged to `main`** 2026-07-08 (merge `032a126`,
+   pushed).
 4. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
    include → default to include, so the 18 reject/pending-but-included stay live, no change;
    the new CLEARxCUT dup 5804 was merged into 80). Remaining **optional** items in
@@ -55,7 +56,18 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - ~~Frontend is a ~2,000-line `App.jsx` monolith with inline pages~~ **Solved (2.1):**
   `App.jsx` is a 49-line router shell; pages live in `src/pages/`, shared pieces in
   `src/components/`. Dead `ArtistsPage` + `DescriptionSection` deleted.
-- Backend has duplicate route files (`admin.js` / `admin_simple.js`) and ~40 one-off scripts — Phase 2 target.
+- ~~Backend has duplicate route files (`admin.js` / `admin_simple.js`)~~ **Solved (2.2):**
+  `admin_simple.js`, `lyrics.js`, 17 dead admin routes, 2 DDL-over-HTTP routes and ~14 other
+  dead endpoints deleted; `admin.js` reads as six named domains. The ~40 one-off scripts
+  remain — Session 2.3 target.
+- **`/api/submissions/admin*` endpoints have no auth** (found in 2.2): the whole submissions
+  router is mounted without the admin password middleware, and the Submissions tab calls it
+  without the header. The new 2.2 bridge endpoint deliberately lives in `admin.js` (authed);
+  wiring its button in 2.2b must send `X-Admin-Password`. Fold submissions-admin auth into
+  the Phase 4 real-auth work (local-only until then, same standing as the shared password).
+- **Staging queue counts drift as the curator works them** — smoke tests should treat the
+  totals as informational, not fixed expectations (2.2 observed 172 pending / 42 to-finalise /
+  1,342 live vs 1.4's 177/39/1,341).
 - **Vegan-themes analysis is future work, not a bug:** `analytics/vegan-themes` reports 0
   because the thematic coding of songs hasn't been done yet. Plan it as its own workstream
   once the truth source is in place.
@@ -85,6 +97,18 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-08 — Backend consolidation choices (Session 2.2).** (1) **`admin.js` stays one
+  file with six banner-named domain sections** rather than splitting into per-domain modules
+  — the audit allowed either; a single file with banners is the smallest change that makes
+  the file read as its domains (YAGNI; revisit if a domain grows). (2) **The
+  submissions→pending bridge matches Spotify conservatively first** (same normalised
+  title-AND-artist rule as 1.2's attach) and imports via the staging candidate intake for
+  full enrichment; with no confident match it creates a minimal `manual` pending song —
+  preserving the submitted YouTube link as the song's play link — and never guesses. Either
+  way the submission row's `existing_song_id` is pointed at the catalogue song, making the
+  bridge idempotent. (3) **Catch-up migrations document applied state, not the routes'
+  literal DDL** — `004` records `artists.data_source` as the live `VARCHAR(20)` (the
+  deleted route's `VARCHAR(50)` ADD COLUMN was always a no-op against the existing column).
 - **2026-07-08 — Frontend folder convention (Session 2.1).** Route-level screens live in
   `src/pages/` (one file per route); anything used by more than one page or section lives in
   `src/components/`. Single-consumer helpers stay local to their page file (YAGNI — e.g.
@@ -207,6 +231,30 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-08 (Session 2.2)** — Backend consolidation (executes the admin audit). On branch
+  `session-2.2-backend-consolidation`: deleted the 17 dead `admin.js` routes,
+  `admin_simple.js` (390 lines, never mounted), and the Phase 0 inventory's other drops —
+  9 `spotify.js` debug/dead routes (incl. `GET /artists` + the unused
+  `spotifyService.getArtists`), 3 `youtube.js` routes (PUT/DELETE `/videos/:id`,
+  `extract-id`), the whole `lyrics.js` router (unmounted from `server.js`), submissions
+  `GET /stats`, analytics `GET /audio-features` (+ its Dashboard doughnut chart and
+  audio-feature filter). Converted the 2 DDL-over-HTTP routes to catch-up migrations
+  `003_lyrics_links.sql` + `004_discography_tracking.sql` (schema objects verified live
+  first) and removed their UI callers (Lyrics Manager setup button; ArtistsManager ran the
+  DDL on every mount). Regrouped `admin.js` (2,926 → 2,237 lines) into six banner-named
+  domains; `server.js` mounts cleaned. Built the **submissions→pending bridge**:
+  `staging.addSubmissionAsPending` + authed `POST /api/admin/submissions/:id/add-to-pending`
+  (conservative Spotify match → candidate intake; else minimal manual pending song keeping
+  the submitted YouTube link; idempotent via `existing_song_id`); +4 node:test cases
+  (17/17 green). Net **−1,779 lines**; zero dead routes; zero DDL-over-HTTP. Found along the
+  way: `/api/submissions/admin*` has no auth (recorded as a Phase 4 watch-out). Smoke test ✅
+  44/44: public API intact (db-stats 1342, search `vegan` 198, song 541 detail/similar,
+  analytics, playlists, youtube primary), every deleted route 404s, all 28+1 admin routes
+  exercised (incl. live Spotify mismatch report: 149 included-not-on-playlist, unchanged),
+  401 without password, Vite loads, `npm run build` + eslint clean (0 errors; the 3
+  pre-existing hook warnings remain). Queue totals observed: 172 pending / 42 to-finalise /
+  1,342 live (curator has been working the queues since 1.4). Branch pushed, awaiting merge
+  go-ahead.
 - **2026-07-08 (Session 2.1)** — Frontend decomposition (opens Phase 2). On branch
   `session-2.1-frontend-decomposition`: `App.jsx` 2,001 → 49 lines (router shell only).
   Extracted verbatim to `src/pages/`: HomePage (with its Hero/Stats/Featured/Search

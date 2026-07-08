@@ -194,7 +194,83 @@ async function attachSpotifyToSong(db, id) {
   return { matched: true, spotify_id: track.spotify_id };
 }
 
+// Submissions → pending bridge (Session 2.2, ADMIN_AUDIT.md §3.3): add an approved
+// community submission to the pending queue. Conservative Spotify match first (same
+// rule as attachSpotifyToSong: normalised title AND artist must both match) for full
+// enrichment via the candidate intake; otherwise a minimal manual pending song.
+// Never touches an existing catalogue song.
+async function addSubmissionAsPending(db, submissionId) {
+  const sub = (await db.query('SELECT * FROM song_submissions WHERE id=$1', [submissionId])).rows[0];
+  if (!sub) { const e = new Error('submission not found'); e.code = 'NOT_FOUND'; throw e; }
+  if (sub.existing_song_id) {
+    return { added: 0, skippedExisting: 1, song_id: sub.existing_song_id, matchedSpotify: false };
+  }
+
+  let track = null;
+  try {
+    const api = await getSpotifyClient();
+    const res = await withRetry(() => api.searchTracks(`track:${sub.song_title} artist:${sub.artist_name}`, { limit: 10 }));
+    const nt = normalizeName(sub.song_title), na = normalizeName(sub.artist_name);
+    const hit = (res.body.tracks.items || []).find(t =>
+      normalizeName(t.name) === nt && t.artists.some(a => normalizeName(a.name) === na));
+    if (hit) track = mapTrack(hit);
+  } catch (e) {
+    console.warn('submission bridge: Spotify lookup failed, adding as manual:', e.message);
+  }
+
+  let songId = null, added = 0, skippedExisting = 0;
+  if (track) {
+    ({ added, skippedExisting } = await insertCandidates(db, [track]));
+    const r = await db.query('SELECT id FROM songs WHERE spotify_id=$1', [track.spotify_id]);
+    songId = r.rows.length ? r.rows[0].id : null;
+  } else {
+    // No confident Spotify match — dedupe by normalised title|artist like insertCandidates.
+    const ta = normalizeName(sub.song_title) + '|' + normalizeName(sub.artist_name);
+    const existing = (await db.query(`
+      SELECT s.id, s.title, COALESCE(string_agg(a.name, ', '), '') AS artists
+      FROM songs s
+      LEFT JOIN song_artists sa ON sa.song_id = s.id
+      LEFT JOIN artists a ON a.id = sa.artist_id
+      GROUP BY s.id`)).rows;
+    const dupe = existing.find(e => normalizeName(e.title) + '|' + normalizeName(e.artists) === ta);
+    if (dupe) {
+      skippedExisting = 1;
+      songId = dupe.id;
+    } else {
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+        const song = await client.query(`
+          INSERT INTO songs (title, data_source, status, status_notes)
+          VALUES ($1, 'manual', 'pending', $2) RETURNING id`,
+          [sub.song_title, `community submission #${sub.id}` +
+            (sub.submitter_name ? ` from ${sub.submitter_name}` : '') + ' — added to pending queue']);
+        songId = song.rows[0].id;
+        const byName = await client.query('SELECT id FROM artists WHERE LOWER(name) = LOWER($1) LIMIT 1', [sub.artist_name]);
+        const artistId = byName.rows.length ? byName.rows[0].id
+          : (await client.query(`INSERT INTO artists (name, data_source) VALUES ($1, 'manual') RETURNING id`, [sub.artist_name])).rows[0].id;
+        await client.query('INSERT INTO song_artists (song_id, artist_id) VALUES ($1,$2) ON CONFLICT (song_id, artist_id) DO NOTHING', [songId, artistId]);
+        // Keep the submitted YouTube link — it becomes the song's play link.
+        const yt = sub.youtube_url && String(sub.youtube_url).match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+        if (yt) {
+          await client.query(`
+            INSERT INTO youtube_videos (song_id, youtube_id, thumbnail_url, video_type, is_primary, created_at)
+            VALUES ($1, $2, $3, 'official', true, CURRENT_TIMESTAMP)`,
+            [songId, yt[1], `https://img.youtube.com/vi/${yt[1]}/mqdefault.jpg`]);
+        }
+        await client.query('COMMIT');
+        added = 1;
+      } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+    }
+  }
+
+  if (songId) {
+    await db.query('UPDATE song_submissions SET existing_song_id=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1', [submissionId, songId]);
+  }
+  return { added, skippedExisting, song_id: songId, matchedSpotify: !!track };
+}
+
 module.exports = {
   normalizeName, listQueue, includeSong, rejectSong, setPlayLink, insertCandidates,
-  resolveSpotifyUrls, attachSpotifyToSong, parseSpotifyRef,
+  resolveSpotifyUrls, attachSpotifyToSong, parseSpotifyRef, addSubmissionAsPending,
 };

@@ -280,28 +280,4 @@ router.delete('/admin/:id', async (req, res) => {
   }
 });
 
-// Get public submission statistics (no authentication needed)
-router.get('/stats', async (req, res) => {
-  try {
-    const query = `
-      SELECT 
-        COUNT(*) as total_submissions,
-        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count,
-        COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved_count
-      FROM song_submissions
-    `;
-
-    const result = await pool.query(query);
-    
-    res.json({
-      public_stats: result.rows[0],
-      message: 'Thank you for helping us grow the vegan music community!'
-    });
-
-  } catch (error) {
-    console.error('Error fetching submission stats:', error);
-    res.status(500).json({ error: 'Failed to fetch submission stats' });
-  }
-});
-
 module.exports = router;

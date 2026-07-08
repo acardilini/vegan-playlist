@@ -120,14 +120,20 @@ routes pruned; clear frontend/backend structure and conventions documented.
   all 9 routes rendered headlessly against the live backend — pages, data, search
   (`?q=vegan` → 198 hits), bad-song-id error state, admin login all behave as before;
   build + lint clean._
-- ☐ **Session 2.2 — Backend consolidation.** Scoped by the 2026-07-08 admin audit
-  ([`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md)): delete the 17 dead `admin.js` routes +
-  `admin_simple.js`; convert the 2 remaining DDL-over-HTTP routes (`setup-lyrics`,
-  `setup-discography-tracking`) to catch-up migration files; group the 28 live routes into
-  six named domains; add the submissions→pending bridge endpoint (curator-approved); execute
-  the Phase 0 inventory's other backend drops (spotify.js debug routes + `GET /artists`,
-  unused youtube.js routes, lyrics.js file, submissions `GET /stats`, analytics
-  `GET /audio-features`). _Smoke test: exercise admin + public endpoints._
+- ☑ **Session 2.2 — Backend consolidation** _(done 2026-07-08)_. Executed the admin audit
+  ([`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md)): deleted the 17 dead `admin.js` routes +
+  `admin_simple.js`; converted the 2 DDL-over-HTTP routes to catch-up migrations
+  (`003_lyrics_links.sql`, `004_discography_tracking.sql`) and removed their UI callers;
+  grouped the 28 live routes into six banner-named domains in `admin.js` (2,926 → 2,237
+  lines); added the submissions→pending bridge `POST /api/admin/submissions/:id/add-to-pending`
+  (`staging.addSubmissionAsPending`, +4 node:test cases, 17/17 green); executed the Phase 0
+  inventory's other drops (9 spotify.js debug/dead routes incl. `GET /artists`, 3 youtube.js
+  routes, the lyrics.js router file, submissions `GET /stats`, analytics
+  `GET /audio-features` + its Dashboard chart/filter). Net −1,779 lines. _Smoke test ✅:
+  44/44 HTTP checks — public API intact (db-stats 1342, search 198 for `vegan`,
+  song detail/similar, analytics, playlists, youtube), every deleted route 404s, all 28+1
+  admin routes exercised incl. the live Spotify mismatch report, auth 401s without the
+  password; frontend build + lint clean._
 - ☐ **Session 2.2b — Admin UI consolidation.** Per `ADMIN_AUDIT.md` §3 (curator decisions):
   move Sync + mismatch report into the Staging tab (Duplicate Manager becomes data-quality
   only); one shared categorisation form behind both entry points; Submissions approve gains

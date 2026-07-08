@@ -21,7 +21,16 @@ async function mkSong({ title, status = 'pending', published = false, spotify_ur
   return s.id;
 }
 
+async function mkSubmission({ song_title, artist_name, youtube_url = null, existing_song_id = null }) {
+  return (await pool.query(
+    `INSERT INTO song_submissions (song_title, artist_name, youtube_url, existing_song_id)
+     VALUES ($1,$2,$3,$4) RETURNING id`,
+    [song_title, artist_name, youtube_url, existing_song_id])).rows[0].id;
+}
+
 after(async () => {
+  await pool.query(`DELETE FROM song_submissions WHERE song_title LIKE 'ZZZTEST%'`);
+  await pool.query(`DELETE FROM youtube_videos WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZTEST%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZTEST%'`);
   await pool.query(`DELETE FROM artists WHERE name LIKE 'ZZZTEST%'`);
   await pool.query(`DELETE FROM albums WHERE name = 'ZZZTEST Album'`);
@@ -131,4 +140,53 @@ test('insertCandidates adds new, skips existing spotify_id and title+artist dupe
 
   const check = await pool.query(`SELECT status FROM songs WHERE spotify_id = 'ZZZTESTSPOTIFYID000003'`);
   assert.equal(check.rows[0].status, 'pending');
+});
+
+// --- submissions → pending bridge (Session 2.2) ---
+
+test('addSubmissionAsPending on missing id throws NOT_FOUND', async () => {
+  await assert.rejects(() => staging.addSubmissionAsPending(pool, 999999999), (e) => e.code === 'NOT_FOUND');
+});
+
+test('addSubmissionAsPending with existing_song_id set is a no-op pointing at the song', async () => {
+  const songId = await mkSong({ title: 'ZZZTEST Bridge Already Linked', status: 'included' });
+  const subId = await mkSubmission({ song_title: 'ZZZTEST Bridge Already Linked', artist_name: 'ZZZTEST Artist', existing_song_id: songId });
+  const r = await staging.addSubmissionAsPending(pool, subId);
+  assert.equal(r.added, 0);
+  assert.equal(r.skippedExisting, 1);
+  assert.equal(r.song_id, songId);
+});
+
+test('addSubmissionAsPending dedupes by title+artist against the catalogue', async () => {
+  const songId = await mkSong({ title: 'ZZZTEST Bridge Dup Song', status: 'included', artist: 'ZZZTEST BridgeDupArtist' });
+  const subId = await mkSubmission({ song_title: 'ZZZTEST Bridge Dup Song', artist_name: 'ZZZTEST BridgeDupArtist' });
+  const r = await staging.addSubmissionAsPending(pool, subId);
+  assert.equal(r.added, 0);
+  assert.equal(r.skippedExisting, 1);
+  assert.equal(r.song_id, songId);
+  // and the submission row now points at the catalogue song
+  const sub = await pool.query('SELECT existing_song_id FROM song_submissions WHERE id=$1', [subId]);
+  assert.equal(sub.rows[0].existing_song_id, songId);
+});
+
+test('addSubmissionAsPending with no Spotify match creates a manual pending song + youtube link', async () => {
+  const subId = await mkSubmission({
+    song_title: 'ZZZTEST Bridge Manual Song',
+    artist_name: 'ZZZTEST BridgeNewArtist',
+    youtube_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  });
+  const r = await staging.addSubmissionAsPending(pool, subId);
+  assert.equal(r.added, 1);
+  assert.ok(r.song_id, 'created song id returned');
+  const song = (await pool.query('SELECT title, status, data_source FROM songs WHERE id=$1', [r.song_id])).rows[0];
+  assert.equal(song.status, 'pending');
+  assert.equal(song.data_source, 'manual');
+  const yt = await pool.query('SELECT youtube_id, is_primary FROM youtube_videos WHERE song_id=$1', [r.song_id]);
+  assert.equal(yt.rows[0].youtube_id, 'dQw4w9WgXcQ');
+  assert.equal(yt.rows[0].is_primary, true);
+  // song appears in the pending staging queue
+  const { rows } = await staging.listQueue(pool, { queue: 'pending' });
+  const row = rows.find(x => x.id === r.song_id);
+  assert.ok(row, 'bridged song is in the pending queue');
+  assert.ok(row.play_link_kinds.includes('youtube'), 'youtube counts as its play link');
 });

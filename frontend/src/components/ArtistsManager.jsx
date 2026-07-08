@@ -20,9 +20,7 @@ function ArtistsManager() {
     pages: 0
   });
 
-  // Initial setup - ensure database columns exist
   useEffect(() => {
-    setupDatabase();
     fetchStats();
   }, []);
 
@@ -30,24 +28,6 @@ function ArtistsManager() {
   useEffect(() => {
     fetchArtists();
   }, [searchTerm, reviewedFilter, sortBy, sortOrder, pagination.page]);
-
-  const setupDatabase = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/setup-discography-tracking`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Admin-Password': ADMIN_PASSWORD
-        }
-      });
-      
-      if (!response.ok) {
-        console.warn('Database setup may have failed, continuing anyway...');
-      }
-    } catch (error) {
-      console.warn('Database setup error:', error);
-    }
-  };
 
   const fetchStats = async () => {
     try {

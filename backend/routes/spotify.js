@@ -22,16 +22,6 @@ const getAccessToken = async () => {
   }
 };
 
-// Test Spotify connection
-router.get('/test', async (req, res) => {
-  try {
-    await getAccessToken();
-    res.json({ message: 'Spotify API connected successfully!' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to connect to Spotify API' });
-  }
-});
-
 // Get playlist tracks
 router.get('/playlist/:playlistId', async (req, res) => {
   try {
@@ -99,35 +89,7 @@ router.get('/playlist/:playlistId', async (req, res) => {
   }
 });
 
-// Get additional track features
-router.get('/features/:trackIds', async (req, res) => {
-  try {
-    await getAccessToken();
-    const trackIds = req.params.trackIds.split(',');
-    
-    const features = await spotifyApi.getAudioFeaturesForTracks(trackIds);
-    res.json(features.body);
-  } catch (error) {
-    console.error('Error fetching audio features:', error);
-    res.status(500).json({ error: 'Failed to fetch audio features' });
-  }
-});
-
-// Get artist details
-router.get('/artist/:artistId', async (req, res) => {
-  try {
-    await getAccessToken();
-    const { artistId } = req.params;
-    
-    const artistData = await spotifyApi.getArtist(artistId);
-    res.json(artistData.body);
-  } catch (error) {
-    console.error('Error fetching artist:', error);
-    res.status(500).json({ error: 'Failed to fetch artist data' });
-  }
-});
-
-// Database test routes
+// Live site stats (homepage)
 router.get('/db-stats', async (req, res) => {
   try {
     const songCount = await pool.query(`SELECT COUNT(*) FROM songs WHERE status = 'included' AND published = true`);
@@ -148,100 +110,6 @@ router.get('/db-stats', async (req, res) => {
   } catch (error) {
     console.error('Database stats error:', error);
     res.status(500).json({ error: 'Database error' });
-  }
-});
-
-router.get('/db-songs', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT s.id, s.title, a.name as artist, al.name as album, 
-             s.duration_ms, s.popularity, s.spotify_url
-      FROM songs s
-      JOIN song_artists sa ON s.id = sa.song_id
-      JOIN artists a ON sa.artist_id = a.id
-      JOIN albums al ON s.album_id = al.id
-      WHERE s.status = 'included' AND s.published = true
-      ORDER BY s.title
-      LIMIT 20
-    `);
-    
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Database songs error:', error);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// Get all songs with pagination
-router.get('/songs', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const offset = (page - 1) * limit;
-    
-    const result = await pool.query(`
-      SELECT 
-        s.id,
-        s.spotify_id,
-        s.title,
-        s.duration_ms,
-        s.popularity,
-        s.spotify_url,
-        s.preview_url,
-        al.name as album_name,
-        al.release_date,
-        al.images as album_images,
-        ARRAY_AGG(DISTINCT a.name) as artists,
-        ARRAY_AGG(DISTINCT a.spotify_id) as artist_ids
-      FROM songs s
-      LEFT JOIN albums al ON s.album_id = al.id
-      JOIN song_artists sa ON s.id = sa.song_id
-      JOIN artists a ON sa.artist_id = a.id
-      WHERE s.status = 'included' AND s.published = true
-      GROUP BY s.id, al.id
-      ORDER BY s.title
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
-
-    // Get total count for pagination
-    const countResult = await pool.query(`SELECT COUNT(*) FROM songs WHERE status = 'included' AND published = true`);
-    const totalSongs = parseInt(countResult.rows[0].count);
-    
-    res.json({
-      songs: result.rows,
-      pagination: {
-        page,
-        limit,
-        total: totalSongs,
-        pages: Math.ceil(totalSongs / limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching songs:', error);
-    res.status(500).json({ error: 'Failed to fetch songs' });
-  }
-});
-
-// TEST: Simple featured songs endpoint
-router.get('/songs/featured-simple', async (req, res) => {
-  try {
-    // Just get featured songs, no complex joins
-    const result = await pool.query(`
-      SELECT s.id, s.title, s.featured
-      FROM songs s
-      WHERE s.featured = true AND s.status = 'included' AND s.published = true
-      ORDER BY s.id
-      LIMIT 4
-    `);
-    
-    res.json({
-      message: 'Simple featured endpoint',
-      count: result.rows.length,
-      songs: result.rows
-    });
-  } catch (error) {
-    console.error('Simple featured error:', error);
-    res.status(500).json({ error: 'Simple test failed' });
   }
 });
 
@@ -393,83 +261,6 @@ router.get('/songs/:id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching song:', error);
     res.status(500).json({ error: 'Failed to fetch song' });
-  }
-});
-
-// Get all artists with pagination
-router.get('/artists', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const offset = (page - 1) * limit;
-    const search = req.query.search || '';
-    const sortBy = req.query.sort_by || 'song_count';
-    
-    // Build search filter
-    let whereClause = '';
-    let queryParams = [];
-    
-    if (search) {
-      whereClause = 'WHERE LOWER(a.name) LIKE LOWER($1)';
-      queryParams.push(`%${search}%`);
-    }
-    
-    // Build sort clause
-    let orderClause = 'ORDER BY song_count DESC, a.name';
-    if (sortBy === 'name') {
-      orderClause = 'ORDER BY a.name ASC';
-    } else if (sortBy === 'song_count') {
-      orderClause = 'ORDER BY song_count DESC, a.name';
-    }
-    
-    // Get total count for pagination
-    const countQuery = `
-      SELECT COUNT(DISTINCT a.id) as total
-      FROM artists a
-      JOIN song_artists sa ON a.id = sa.artist_id
-      JOIN songs s ON sa.song_id = s.id AND s.status = 'included' AND s.published = true
-      ${whereClause}
-    `;
-
-    const countResult = await pool.query(countQuery, queryParams);
-    const totalArtists = parseInt(countResult.rows[0].total);
-    const totalPages = Math.ceil(totalArtists / limit);
-    
-    // Get paginated artists  
-    const artistsQuery = `
-      SELECT 
-        a.id,
-        a.name,
-        a.spotify_id,
-        a.spotify_url,
-        a.data_source,
-        a.created_at,
-        COUNT(DISTINCT s.id) as song_count
-      FROM artists a
-      JOIN song_artists sa ON a.id = sa.artist_id
-      JOIN songs s ON sa.song_id = s.id AND s.status = 'included' AND s.published = true
-      ${whereClause}
-      GROUP BY a.id, a.name, a.spotify_id, a.spotify_url, a.data_source, a.created_at
-      ${orderClause}
-      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
-    `;
-    
-    const artistsResult = await pool.query(artistsQuery, [...queryParams, limit, offset]);
-    
-    res.json({
-      artists: artistsResult.rows,
-      pagination: {
-        page,
-        limit,
-        total: totalArtists,
-        pages: totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching artists:', error);
-    res.status(500).json({ error: 'Failed to fetch artists' });
   }
 });
 
@@ -925,93 +716,6 @@ router.get('/artist-filter-options', async (req, res) => {
     console.error('Error fetching artist filter options:', error);
     console.error('Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to fetch artist filter options', details: error.message });
-  }
-});
-
-// Check database contents
-router.get('/database-check', async (req, res) => {
-  try {
-    // Count totals
-    const songCount = await pool.query(`SELECT COUNT(*) FROM songs WHERE status = 'included' AND published = true`);
-    const artistCount = await pool.query('SELECT COUNT(*) FROM artists');
-    const albumCount = await pool.query('SELECT COUNT(*) FROM albums');
-
-    // Sample data
-    const sampleData = await pool.query(`
-      SELECT
-        s.title,
-        s.spotify_id,
-        s.date_added,
-        s.vegan_focus,
-        s.animal_category,
-        array_agg(a.name) as artists
-      FROM songs s
-      JOIN song_artists sa ON s.id = sa.song_id
-      JOIN artists a ON sa.artist_id = a.id
-      WHERE s.status = 'included' AND s.published = true
-      GROUP BY s.id, s.title, s.spotify_id, s.date_added, s.vegan_focus, s.animal_category
-      LIMIT 5
-    `);
-    
-    const schemaCheck = await pool.query(`
-      SELECT column_name, data_type, is_nullable 
-      FROM information_schema.columns 
-      WHERE table_name = 'songs' 
-      ORDER BY ordinal_position
-    `);
-    
-    res.json({
-      totals: {
-        songs: parseInt(songCount.rows[0].count),
-        artists: parseInt(artistCount.rows[0].count),
-        albums: parseInt(albumCount.rows[0].count)
-      },
-      sampleData: sampleData.rows,
-      songsSchema: schemaCheck.rows
-    });
-  } catch (error) {
-    console.error('Database check error:', error);
-    res.status(500).json({ error: 'Database check failed' });
-  }
-});
-
-// Debug endpoint to check audio features
-router.get('/debug/audio-features', async (req, res) => {
-  try {
-    // Check if any songs have audio features
-    const withFeatures = await pool.query(`
-      SELECT COUNT(*) as count
-      FROM songs
-      WHERE (energy IS NOT NULL OR danceability IS NOT NULL) AND status = 'included' AND published = true
-    `);
-
-    // Get a sample of songs with and without features
-    const sampleWithFeatures = await pool.query(`
-      SELECT title, energy, danceability, valence, tempo
-      FROM songs
-      WHERE energy IS NOT NULL AND status = 'included' AND published = true
-      LIMIT 5
-    `);
-
-    const sampleWithoutFeatures = await pool.query(`
-      SELECT title, spotify_id, energy, danceability, valence, tempo
-      FROM songs
-      WHERE energy IS NULL AND status = 'included' AND published = true
-      LIMIT 5
-    `);
-
-    res.json({
-      summary: {
-        songs_with_features: parseInt(withFeatures.rows[0].count),
-        total_songs: await pool.query(`SELECT COUNT(*) FROM songs WHERE status = 'included' AND published = true`).then(r => parseInt(r.rows[0].count))
-      },
-      samples: {
-        with_features: sampleWithFeatures.rows,
-        without_features: sampleWithoutFeatures.rows
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 });
 
