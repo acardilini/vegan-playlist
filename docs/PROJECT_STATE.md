@@ -13,14 +13,15 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   `session-2.2b-admin-ui-consolidation` — **awaiting curator click-through at `/admin`,
   then merge to `main`**_
 - **Next session:** Session 2.3 — Script cleanup (~39 one-off scripts in `backend/scripts/`)
-- **Last updated:** 2026-07-09
+- **Last updated:** 2026-07-09 _(end of 2.2b session; click-through feedback recorded)_
 
 ### Next Tasks (start here)
-1. **Curator click-through of the reworked admin UI**, then merge
-   `session-2.2b-admin-ui-consolidation` to `main` (smoke test 28/28 ✅; branch pushed).
-   Things to eyeball: Staging → Add candidates now hosts Sync + the mismatch report;
-   Submissions approve now queues the song; categorisation is toggle-buttons in both
-   Manage Songs and the Categories workflow.
+1. **Finish the curator click-through, then merge `session-2.2b-admin-ui-consolidation`
+   to `main`** (smoke test 28/28 ✅; branch pushed). Click-through started 2026-07-09:
+   the reworked UI "seems to work", but the curator **couldn't find the Sync button** —
+   it sits below the paste-URLs box in Staging → Add candidates. Confirm a hard refresh
+   fixes it; if it's genuinely easy to miss, move the sync section above the URL box (or
+   give it its own sub-view) as a small follow-up before or after merge.
 2. **21 playlist tracks are not in the catalogue** (mismatch report, live 2026-07-09 —
    the Spotify playlist grew since 2.2). One click of the new **Staging → Add candidates →
    "Sync from playlist"** button imports them as pending.
