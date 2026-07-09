@@ -9,24 +9,19 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 - **Phase:** Phase 2 — Architecture Cleanup (Sessions 2.1 ☑, 2.2 ☑, 2.2b ☑). Phases 0–1
   complete.
-- **Current session:** _Session 2.2b admin UI consolidation done 2026-07-09 on branch
-  `session-2.2b-admin-ui-consolidation` — **awaiting curator click-through at `/admin`,
-  then merge to `main`**_
+- **Current session:** _Session 2.2b done — curator click-through confirmed 2026-07-09
+  (Sync button located after a refresh) and **merged to `main`** (`6cfc6fd`, pushed)_
 - **Next session:** Session 2.3 — Script cleanup (~39 one-off scripts in `backend/scripts/`)
-- **Last updated:** 2026-07-09 _(end of 2.2b session; click-through feedback recorded)_
+- **Last updated:** 2026-07-09 _(2.2b merged)_
 
 ### Next Tasks (start here)
-1. **Finish the curator click-through, then merge `session-2.2b-admin-ui-consolidation`
-   to `main`** (smoke test 28/28 ✅; branch pushed). Click-through started 2026-07-09:
-   the reworked UI "seems to work", but the curator **couldn't find the Sync button** —
-   it sits below the paste-URLs box in Staging → Add candidates. Confirm a hard refresh
-   fixes it; if it's genuinely easy to miss, move the sync section above the URL box (or
-   give it its own sub-view) as a small follow-up before or after merge.
-2. **21 playlist tracks are not in the catalogue** (mismatch report, live 2026-07-09 —
-   the Spotify playlist grew since 2.2). One click of the new **Staging → Add candidates →
-   "Sync from playlist"** button imports them as pending.
-3. **Session 2.3 — Script cleanup**: archive/remove the ~39 one-off scripts; keep the few
+1. **Session 2.3 — Script cleanup**: archive/remove the ~39 one-off scripts; keep the few
    still needed (import, sync, migrations) in a documented location.
+2. Curator to-do (deferred, curator will pick a time): **21 playlist tracks are not in the
+   catalogue** (mismatch report, live 2026-07-09 — the Spotify playlist grew since 2.2).
+   One click of **Staging → Add candidates → "Sync from playlist"** imports them as pending.
+3. ✅ **Done — `session-2.2b-admin-ui-consolidation` merged to `main`** 2026-07-09
+   (click-through confirmed; Sync button located after a refresh).
 4. ✅ **Done — `session-2.2-backend-consolidation` merged to `main`** 2026-07-09.
 5. ✅ **Done — `session-2.1-frontend-decomposition` merged to `main`** 2026-07-08.
 4. ✅ **Done — `session-1.4-staging-queue` merged to `main`** 2026-07-08 (merge `032a126`,
