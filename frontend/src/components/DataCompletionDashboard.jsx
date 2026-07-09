@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-
-const API_BASE = 'http://localhost:5000/api';
+import { adminFetch } from '../api/adminApi';
 
 function DataCompletionDashboard() {
   const [completionStats, setCompletionStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [prioritySongs, setPrioritySongs] = useState([]);
 
   useEffect(() => {
     loadCompletionStats();
@@ -18,11 +16,7 @@ function DataCompletionDashboard() {
       setError(null);
 
       // Fetch completion statistics from our audit script
-      const response = await fetch(`${API_BASE}/admin/completion-stats`, {
-        headers: {
-          'X-Admin-Password': import.meta.env.VITE_ADMIN_PASSWORD
-        }
-      });
+      const response = await adminFetch('/api/admin/completion-stats');
 
       if (!response.ok) {
         throw new Error('Failed to load completion stats');

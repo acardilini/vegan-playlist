@@ -7,22 +7,27 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 2 — Architecture Cleanup (Sessions 2.1 ☑, 2.2 ☑). Phases 0–1 complete.
-- **Current session:** _Session 2.2 backend consolidation done 2026-07-08 on branch
-  `session-2.2-backend-consolidation` — **awaiting curator go-ahead to merge to `main`**_
-- **Next session:** Session 2.2b — Admin UI consolidation (per
-  [`ADMIN_AUDIT.md`](./ADMIN_AUDIT.md) §3)
-- **Last updated:** 2026-07-08
+- **Phase:** Phase 2 — Architecture Cleanup (Sessions 2.1 ☑, 2.2 ☑, 2.2b ☑). Phases 0–1
+  complete.
+- **Current session:** _Session 2.2b admin UI consolidation done 2026-07-09 on branch
+  `session-2.2b-admin-ui-consolidation` — **awaiting curator click-through at `/admin`,
+  then merge to `main`**_
+- **Next session:** Session 2.3 — Script cleanup (~39 one-off scripts in `backend/scripts/`)
+- **Last updated:** 2026-07-09
 
 ### Next Tasks (start here)
-1. **Merge `session-2.2-backend-consolidation` to `main`** after curator go-ahead
-   (smoke test 44/44 ✅; branch pushed).
-2. **Session 2.2b — Admin UI consolidation**: sync + mismatch report move into the Staging
-   tab; one shared categorisation form; Submissions approve gains the add-to-pending button
-   (backend bridge `POST /api/admin/submissions/:id/add-to-pending` shipped in 2.2 — the
-   button must send the `X-Admin-Password` header, see watch-out below); decompose
-   `AdminInterface.jsx` with a shared authed-fetch helper using relative `/api` URLs.
-3. ✅ **Done — `session-2.1-frontend-decomposition` merged to `main`** 2026-07-08.
+1. **Curator click-through of the reworked admin UI**, then merge
+   `session-2.2b-admin-ui-consolidation` to `main` (smoke test 28/28 ✅; branch pushed).
+   Things to eyeball: Staging → Add candidates now hosts Sync + the mismatch report;
+   Submissions approve now queues the song; categorisation is toggle-buttons in both
+   Manage Songs and the Categories workflow.
+2. **21 playlist tracks are not in the catalogue** (mismatch report, live 2026-07-09 —
+   the Spotify playlist grew since 2.2). One click of the new **Staging → Add candidates →
+   "Sync from playlist"** button imports them as pending.
+3. **Session 2.3 — Script cleanup**: archive/remove the ~39 one-off scripts; keep the few
+   still needed (import, sync, migrations) in a documented location.
+4. ✅ **Done — `session-2.2-backend-consolidation` merged to `main`** 2026-07-09.
+5. ✅ **Done — `session-2.1-frontend-decomposition` merged to `main`** 2026-07-08.
 4. ✅ **Done — `session-1.4-staging-queue` merged to `main`** 2026-07-08 (merge `032a126`,
    pushed).
 4. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
@@ -61,10 +66,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   dead endpoints deleted; `admin.js` reads as six named domains. The ~40 one-off scripts
   remain — Session 2.3 target.
 - **`/api/submissions/admin*` endpoints have no auth** (found in 2.2): the whole submissions
-  router is mounted without the admin password middleware, and the Submissions tab calls it
-  without the header. The new 2.2 bridge endpoint deliberately lives in `admin.js` (authed);
-  wiring its button in 2.2b must send `X-Admin-Password`. Fold submissions-admin auth into
-  the Phase 4 real-auth work (local-only until then, same standing as the shared password).
+  router is mounted without the admin password middleware. Since 2.2b the frontend sends
+  `X-Admin-Password` on every admin call (including submissions, via the shared
+  `adminFetch` helper), so the backend can start enforcing it without frontend changes —
+  fold submissions-admin auth into the Phase 4 real-auth work (local-only until then).
 - **Staging queue counts drift as the curator works them** — smoke tests should treat the
   totals as informational, not fixed expectations (2.2 observed 172 pending / 42 to-finalise /
   1,342 live vs 1.4's 177/39/1,341).
@@ -97,7 +102,23 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
-- **2026-07-08 — Backend consolidation choices (Session 2.2).** (1) **`admin.js` stays one
+- **2026-07-09 — Admin UI consolidation choices (Session 2.2b).** (1) **Approve = approve +
+  queue**: the Submissions "Approve" button became "Approve & add to pending" — one action
+  that sets the status and calls the authed 2.2 bridge (per the audit decision that approval
+  must stop being a status-only dead end); a separate "Add to pending queue" button covers
+  submissions approved before the bridge existed (the bridge is idempotent, so double-clicks
+  are safe). (2) **The shared categorisation form uses toggle buttons** (the Bulk workflow's
+  interaction), replacing the Manage Songs modal's ctrl-click multi-selects — same five
+  fields, same endpoints, one component (`CategorizationFields.jsx`); the workflow also
+  stops rendering genre lists as category buttons (it used to render *every* key of
+  `categorization-options`, including the 149 subgenres). (3) **`adminFetch` sends the
+  password header everywhere, including unauthenticated `/api/submissions/admin*`** —
+  harmless today, and it means Phase 4 can turn auth on server-side without touching the
+  frontend. (4) **Audio-features form fields kept** in the two song-edit forms (only the
+  analytics endpoint + dashboard chart were in the Phase 0 drop; removing form fields is a
+  curator call for later). (5) **Fixed rather than preserved:** the genre/parent-genre
+  selects in both song forms were broken no-ops (a multi-select whose onChange never fired) —
+  rebuilt as real single selects, and the modal now actually submits `genre`/`parent_genre`. (1) **`admin.js` stays one
   file with six banner-named domain sections** rather than splitting into per-domain modules
   — the audit allowed either; a single file with banners is the smallest change that makes
   the file read as its domains (YAGNI; revisit if a domain grows). (2) **The
@@ -231,6 +252,37 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-09 (Session 2.2b)** — Admin UI consolidation (executes `ADMIN_AUDIT.md` §3;
+  frontend only, backend untouched). First merged 2.2 to `main` (curator go-ahead), then on
+  branch `session-2.2b-admin-ui-consolidation`: **(1)** new `src/api/adminApi.js` —
+  `adminFetch` helper (relative `/api` URLs through the Vite proxy + `X-Admin-Password` on
+  every call); all 11 admin components converted; zero hardcoded `localhost:5000` left in
+  admin code (public pages still hardcode it — Phase 4). **(2)** `AdminInterface.jsx`
+  2,327 → 176 lines: login + tab nav shell; Manage Songs (list, manual-song form,
+  edit modal) → `ManageSongsTab.jsx`; Manage Playlists → `ManagePlaylistsTab.jsx`.
+  **(3)** One shared `CategorizationFields.jsx` (five category arrays + rating, toggle
+  buttons) behind the manual-song form, the edit modal, and the Bulk Categorization
+  workflow; fixed the broken genre/parent-genre selects while extracting (see Decision
+  Log). **(4)** Sync moved into **Staging → Add candidates**: "Sync from playlist"
+  (import-only POST) + "Check playlist mismatch" (read-only report) — note both old sync
+  functions in AdminInterface/DuplicateManager were dead code no button ever called, so
+  this is the sync's first working UI since the 1.2 rebuild. **(5)** Duplicate Manager is
+  pure data-quality: dead "Removed from Playlist" sub-tab deleted (read
+  `removed_from_playlist`, unwritten since 1.2; its help text pointed at scripts deleted in
+  Phase 0/2.2). **(6)** Submissions: "Approve & add to pending" calls the authed 2.2 bridge;
+  catch-up "Add to pending queue" button for approved-unbridged; result messages surfaced.
+  Also deleted dead code found en route (unused `searchResults` state, unreachable batch-
+  categorise stub whose `b` shortcut called an undefined function). Net **≈ −975 lines**.
+  Lint: 0 errors in every touched file (5 pre-existing errors remain in untouched public
+  `SearchAndFilter`/`ArtistSearchResults`). Smoke test ✅ **28/28** (headless Chrome walk:
+  login, all 10 tabs render, staging sub-views + sync panel, live mismatch report
+  149/21, Cleanup tab shows no removed-songs view) **plus a live end-to-end bridge test**:
+  public submission → "Approve & add to pending" click → verified in DB (manual pending
+  song, submitted YouTube link kept as primary play link, `existing_song_id` set) → all
+  test rows cleaned up, `db-stats` unchanged at 1,342; backend node:test 17/17. Found for
+  the curator: the mismatch report now shows **21 playlist tracks not in the catalogue**
+  (playlist grew since 2.2) — the new Sync button imports them when ready. Branch pushed,
+  awaiting curator click-through + merge.
 - **2026-07-08 (Session 2.2)** — Backend consolidation (executes the admin audit). On branch
   `session-2.2-backend-consolidation`: deleted the 17 dead `admin.js` routes,
   `admin_simple.js` (390 lines, never mounted), and the Phase 0 inventory's other drops —

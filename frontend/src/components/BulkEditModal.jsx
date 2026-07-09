@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { adminFetch, ADMIN_PASSWORD } from '../api/adminApi';
 
 function BulkEditModal({ isOpen, onClose }) {
   const [uploading, setUploading] = useState(false);
@@ -12,11 +13,7 @@ function BulkEditModal({ isOpen, onClose }) {
     setMessage('');
     
     try {
-      const response = await fetch('/api/admin/all-songs?limit=1000', {
-        headers: {
-          'X-Admin-Password': import.meta.env.VITE_ADMIN_PASSWORD
-        }
-      }); // Get all songs
+      const response = await adminFetch('/api/admin/all-songs?limit=1000'); // Get all songs
       const data = await response.json();
       
       if (!data.songs) {
@@ -144,10 +141,11 @@ function BulkEditModal({ isOpen, onClose }) {
       const formData = new FormData();
       formData.append('csv', file);
 
+      // Multipart upload — plain fetch so the browser sets the form boundary itself
       const response = await fetch('/api/admin/bulk-upload', {
         method: 'POST',
         headers: {
-          'X-Admin-Password': import.meta.env.VITE_ADMIN_PASSWORD
+          'X-Admin-Password': ADMIN_PASSWORD
         },
         body: formData
       });

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { adminFetch } from '../api/adminApi';
 
 function SubmissionsManager() {
   const [submissions, setSubmissions] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const [filter, setFilter] = useState('all');
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -12,7 +14,7 @@ function SubmissionsManager() {
   const loadSubmissions = async (status = 'all') => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/submissions/admin?status=${status}&limit=50`);
+      const response = await adminFetch(`/api/submissions/admin?status=${status}&limit=50`);
       const data = await response.json();
       
       setSubmissions(data.submissions || []);
@@ -32,16 +34,13 @@ function SubmissionsManager() {
   // Update submission status
   const updateSubmissionStatus = async (submissionId, newStatus, adminNotes = '') => {
     try {
-      const response = await fetch(`http://localhost:5000/api/submissions/admin/${submissionId}/status`, {
+      const response = await adminFetch(`/api/submissions/admin/${submissionId}/status`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+        body: {
           status: newStatus,
           admin_notes: adminNotes,
           resolved_by: 'Admin' // In a real app, this would be the logged-in admin's name
-        }),
+        },
       });
 
       if (response.ok) {
@@ -51,11 +50,50 @@ function SubmissionsManager() {
           setSelectedSubmission(null);
           setShowModal(false);
         }
+        return true;
       } else {
         console.error('Failed to update submission status');
+        setMessage('Failed to update submission status');
+        return false;
       }
     } catch (error) {
       console.error('Error updating submission:', error);
+      setMessage('Error updating submission');
+      return false;
+    }
+  };
+
+  // Add an approved submission's song to the staging pending queue via the
+  // authed 2.2 bridge (conservative Spotify match, else minimal manual song;
+  // idempotent — the submission's existing_song_id records the catalogue song).
+  const addToPending = async (submissionId) => {
+    try {
+      const response = await adminFetch(`/api/admin/submissions/${submissionId}/add-to-pending`, {
+        method: 'POST'
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        setMessage(`Could not add to pending queue: ${result.error || 'request failed'}`);
+        return;
+      }
+      if (result.added > 0) {
+        setMessage(`Added to the pending queue (song #${result.song_id}${result.matchedSpotify ? ', matched on Spotify' : ', manual entry'}) — see the Staging tab.`);
+      } else {
+        setMessage(`Already in the catalogue as song #${result.song_id} — nothing added.`);
+      }
+      loadSubmissions(filter);
+    } catch (error) {
+      console.error('Error adding submission to pending queue:', error);
+      setMessage('Error adding submission to pending queue');
+    }
+  };
+
+  // Approving a submission also feeds the staging pending queue
+  // (curator decision 2026-07-08 — approval is no longer a status-only dead end).
+  const approveAndQueue = async (submissionId) => {
+    const ok = await updateSubmissionStatus(submissionId, 'approved');
+    if (ok) {
+      await addToPending(submissionId);
     }
   };
 
@@ -64,7 +102,7 @@ function SubmissionsManager() {
     if (!confirm('Are you sure you want to delete this submission?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/submissions/admin/${submissionId}`, {
+      const response = await adminFetch(`/api/submissions/admin/${submissionId}`, {
         method: 'DELETE',
       });
 
@@ -85,7 +123,7 @@ function SubmissionsManager() {
   // Open submission details modal
   const viewSubmissionDetails = async (submission) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/submissions/admin/${submission.id}`);
+      const response = await adminFetch(`/api/submissions/admin/${submission.id}`);
       const detailedSubmission = await response.json();
       
       setSelectedSubmission(detailedSubmission);
@@ -143,6 +181,13 @@ function SubmissionsManager() {
           </div>
         )}
       </div>
+
+      {message && (
+        <div className="admin-message success" style={{ marginBottom: 12 }}>
+          {message}
+          <button style={{ marginLeft: 10 }} onClick={() => setMessage('')}>×</button>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="submissions-filters">
@@ -211,9 +256,9 @@ function SubmissionsManager() {
                   <>
                     <button
                       className="btn-success"
-                      onClick={() => updateSubmissionStatus(submission.id, 'approved')}
+                      onClick={() => approveAndQueue(submission.id)}
                     >
-                      Approve
+                      Approve &amp; add to pending
                     </button>
                     <button
                       className="btn-danger"
@@ -232,6 +277,15 @@ function SubmissionsManager() {
                   </>
                 )}
                 
+                {submission.status === 'approved' && !submission.existing_song_id && (
+                  <button
+                    className="btn-success"
+                    onClick={() => addToPending(submission.id)}
+                  >
+                    Add to pending queue
+                  </button>
+                )}
+
                 {(submission.status === 'approved' || submission.status === 'rejected') && (
                   <button
                     className="btn-primary"
@@ -240,7 +294,7 @@ function SubmissionsManager() {
                     Mark as Resolved
                   </button>
                 )}
-                
+
                 <button
                   className="btn-danger-outline"
                   onClick={() => deleteSubmission(submission.id)}
@@ -379,9 +433,9 @@ function SubmissionsManager() {
                 <>
                   <button
                     className="btn-success"
-                    onClick={() => updateSubmissionStatus(selectedSubmission.id, 'approved')}
+                    onClick={() => approveAndQueue(selectedSubmission.id)}
                   >
-                    Approve
+                    Approve &amp; add to pending
                   </button>
                   <button
                     className="btn-danger"
@@ -400,6 +454,15 @@ function SubmissionsManager() {
                 </>
               )}
               
+              {selectedSubmission.status === 'approved' && !selectedSubmission.existing_song_id && (
+                <button
+                  className="btn-success"
+                  onClick={() => addToPending(selectedSubmission.id)}
+                >
+                  Add to pending queue
+                </button>
+              )}
+
               {(selectedSubmission.status === 'approved' || selectedSubmission.status === 'rejected') && (
                 <button
                   className="btn-primary"

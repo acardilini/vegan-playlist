@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-const API_BASE = 'http://localhost:5000/api';
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+import { adminFetch } from '../api/adminApi';
 
 function LyricsLookupManager() {
   const [songsNeedingLyrics, setSongsNeedingLyrics] = useState([]);
@@ -25,13 +23,8 @@ function LyricsLookupManager() {
   const loadSongsNeedingLyrics = async () => {
     try {
       setLoading(true);
-      // We'll need to create this endpoint - for now, simulate
-      const response = await fetch(`${API_BASE}/admin/songs-missing-lyrics?page=${currentPage}&limit=20`, {
-        headers: {
-          'X-Admin-Password': ADMIN_PASSWORD
-        }
-      });
-      
+      const response = await adminFetch(`/api/admin/songs-missing-lyrics?page=${currentPage}&limit=20`);
+
       if (response.ok) {
         const data = await response.json();
         setSongsNeedingLyrics(data.songs || []);
@@ -41,11 +34,7 @@ function LyricsLookupManager() {
         }
       } else {
         // Fallback - use regular songs endpoint for now
-        const fallbackResponse = await fetch(`${API_BASE}/admin/all-songs?limit=20`, {
-          headers: {
-            'X-Admin-Password': ADMIN_PASSWORD
-          }
-        });
+        const fallbackResponse = await adminFetch('/api/admin/all-songs?limit=20');
         const fallbackData = await fallbackResponse.json();
         setSongsNeedingLyrics(fallbackData.songs || []);
         setPagination({ page: 1, pages: 5, total: fallbackData.songs?.length || 0 });
@@ -83,19 +72,15 @@ function LyricsLookupManager() {
       setProcessingLyrics(true);
       setMessage('Saving lyrics link...');
 
-      const response = await fetch(`${API_BASE}/admin/save-lyrics-link`, {
+      const response = await adminFetch('/api/admin/save-lyrics-link', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Password': ADMIN_PASSWORD
-        },
-        body: JSON.stringify({
+        body: {
           song_id: song.id,
           lyrics_url: lyricsUrl.trim(),
           lyrics_source: source,
           lyrics_highlights: lyricsHighlights.trim(),
           link_type: 'external' // We only store links, never content
-        })
+        }
       });
 
       const result = await response.json();
@@ -158,18 +143,14 @@ function LyricsLookupManager() {
       else if (url.includes('bandcamp.com')) detectedSource = 'bandcamp';
       
       try {
-        const response = await fetch(`${API_BASE}/admin/save-lyrics-link`, {
+        const response = await adminFetch('/api/admin/save-lyrics-link', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Admin-Password': ADMIN_PASSWORD
-          },
-          body: JSON.stringify({
+          body: {
             song_id: song.id,
             lyrics_url: url,
             lyrics_source: detectedSource,
             link_type: 'external'
-          })
+          }
         });
 
         const result = await response.json();

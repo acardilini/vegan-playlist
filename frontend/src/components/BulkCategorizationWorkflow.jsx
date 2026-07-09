@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-
-const API_BASE = 'http://localhost:5000/api';
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+import { useState, useEffect, useRef } from 'react';
+import CategorizationFields from './CategorizationFields';
+import { adminFetch } from '../api/adminApi';
 
 function BulkCategorizationWorkflow() {
   const [songs, setSongs] = useState([]);
@@ -11,14 +10,7 @@ function BulkCategorizationWorkflow() {
   const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const [categoryOptions, setCategoryOptions] = useState({});
   const [workflowMode, setWorkflowMode] = useState('uncategorized'); // 'uncategorized', 'all', 'filtered'
-  const [filters, setFilters] = useState({});
-  const [batchCategories, setBatchCategories] = useState({
-    vegan_focus: [],
-    animal_category: [],
-    advocacy_style: [],
-    advocacy_issues: [],
-    lyrical_explicitness: []
-  });
+  const [filters] = useState({});
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   
@@ -40,9 +32,7 @@ function BulkCategorizationWorkflow() {
     'd': () => quickCategory('advocacy_style', 'direct'),
     's': () => quickCategory('advocacy_style', 'subtle'),
     'n': () => quickCategory('advocacy_style', 'educational'),
-    
-    // Batch operations
-    'b': () => openBatchCategoryModal(),
+
     'Enter': () => saveCurrentSong(),
     'Escape': () => clearCurrentCategories(),
   };
@@ -70,9 +60,7 @@ function BulkCategorizationWorkflow() {
 
   const loadCategorizationOptions = async () => {
     try {
-      const response = await fetch(`${API_BASE}/admin/categorization-options`, {
-        headers: { 'X-Admin-Password': ADMIN_PASSWORD }
-      });
+      const response = await adminFetch('/api/admin/categorization-options');
       if (response.ok) {
         const options = await response.json();
         setCategoryOptions(options);
@@ -85,7 +73,7 @@ function BulkCategorizationWorkflow() {
   const loadSongsForCategorization = async () => {
     try {
       setLoading(true);
-      let endpoint = `${API_BASE}/admin/all-songs?limit=50`;
+      let endpoint = '/api/admin/all-songs?limit=50';
       
       // Modify endpoint based on workflow mode
       if (workflowMode === 'uncategorized') {
@@ -99,10 +87,8 @@ function BulkCategorizationWorkflow() {
         });
       }
 
-      const response = await fetch(endpoint, {
-        headers: { 'X-Admin-Password': ADMIN_PASSWORD }
-      });
-      
+      const response = await adminFetch(endpoint);
+
       if (response.ok) {
         const data = await response.json();
         setSongs(data.songs || []);
@@ -162,13 +148,9 @@ function BulkCategorizationWorkflow() {
     if (!currentSong || !currentSong.categories) return;
 
     try {
-      const response = await fetch(`${API_BASE}/admin/songs/${currentSong.id}/categorize`, {
+      const response = await adminFetch(`/api/admin/songs/${currentSong.id}/categorize`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Password': ADMIN_PASSWORD
-        },
-        body: JSON.stringify(currentSong.categories)
+        body: currentSong.categories
       });
 
       if (response.ok) {
@@ -194,31 +176,6 @@ function BulkCategorizationWorkflow() {
       song.categories = {};
       setSongs(updatedSongs);
     }
-  };
-
-  const applyBatchCategories = () => {
-    // Apply batch categories to all selected songs
-    const updatedSongs = songs.map(song => {
-      if (song.selected) {
-        if (!song.categories) song.categories = {};
-        Object.entries(batchCategories).forEach(([field, values]) => {
-          if (values.length > 0) {
-            song.categories[field] = [...(song.categories[field] || []), ...values];
-            // Remove duplicates
-            song.categories[field] = [...new Set(song.categories[field])];
-          }
-        });
-      }
-      return song;
-    });
-    setSongs(updatedSongs);
-    setBatchCategories({
-      vegan_focus: [],
-      animal_category: [],
-      advocacy_style: [],
-      advocacy_issues: [],
-      lyrical_explicitness: []
-    });
   };
 
   const toggleCurrentSong = () => {
@@ -323,28 +280,13 @@ function BulkCategorizationWorkflow() {
             </div>
           </div>
 
-          {/* Categorization Interface */}
+          {/* Categorization Interface — shared form, same component as Manage Songs */}
           <div className="categorization-interface">
-            {Object.entries(categoryOptions).map(([field, options]) => (
-              <div key={field} className="category-section">
-                <h4 className="category-title">
-                  {field.replace('_', ' ').toUpperCase()}
-                </h4>
-                <div className="category-options">
-                  {options.map(option => (
-                    <button
-                      key={option}
-                      className={`category-button ${
-                        currentSong.categories?.[field]?.includes(option) ? 'active' : ''
-                      }`}
-                      onClick={() => quickCategory(field, option)}
-                    >
-                      {option.replace('_', ' ')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+            <CategorizationFields
+              options={categoryOptions}
+              values={currentSong.categories || {}}
+              onToggle={quickCategory}
+            />
           </div>
 
           {/* Action Buttons */}
