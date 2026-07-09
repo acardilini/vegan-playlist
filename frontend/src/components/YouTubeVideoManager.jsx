@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-const API_BASE = 'http://localhost:5000/api';
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+import { adminFetch } from '../api/adminApi';
 
 function YouTubeVideoManager() {
   const [songsNeedingVideos, setSongsNeedingVideos] = useState([]);
@@ -9,7 +7,6 @@ function YouTubeVideoManager() {
   const [pagination, setPagination] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedSong, setSelectedSong] = useState(null);
-  const [searchResults, setSearchResults] = useState([]);
   const [manualUrl, setManualUrl] = useState('');
   const [message, setMessage] = useState('');
   const [processingVideo, setProcessingVideo] = useState(false);
@@ -24,7 +21,7 @@ function YouTubeVideoManager() {
   const loadSongsNeedingVideos = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/youtube/songs/missing-videos?page=${currentPage}&limit=20`);
+      const response = await fetch(`/api/youtube/songs/missing-videos?page=${currentPage}&limit=20`);
       const data = await response.json();
       
       if (data.success) {
@@ -46,7 +43,7 @@ function YouTubeVideoManager() {
       setSelectedSong(song);
       setMessage(`Preparing search for "${song.artists} - ${song.title}"...`);
       
-      const response = await fetch(`${API_BASE}/youtube/search`, {
+      const response = await fetch('/api/youtube/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ songId: song.id })
@@ -54,7 +51,6 @@ function YouTubeVideoManager() {
       
       const data = await response.json();
       if (data.success) {
-        setSearchResults(data.results);
         setMessage(data.message);
       } else {
         setMessage('Search failed: ' + data.error);
@@ -75,16 +71,12 @@ function YouTubeVideoManager() {
       setProcessingVideo(true);
       setMessage('Adding video...');
 
-      const response = await fetch(`${API_BASE}/admin/save-youtube-video`, {
+      const response = await adminFetch('/api/admin/save-youtube-video', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Password': ADMIN_PASSWORD
-        },
-        body: JSON.stringify({
+        body: {
           song_id: song.id,
           youtube_url: youtubeUrl.trim()
-        })
+        }
       });
 
       const result = await response.json();
@@ -93,8 +85,7 @@ function YouTubeVideoManager() {
         setMessage(`✅ Video added successfully for "${song.title}"!`);
         setManualUrl('');
         setSelectedSong(null);
-        setSearchResults([]);
-        
+
         // Reload the list to remove this song
         loadSongsNeedingVideos();
       } else {
@@ -148,16 +139,12 @@ function YouTubeVideoManager() {
       const url = urls[i].trim();
       
       try {
-        const response = await fetch(`${API_BASE}/admin/save-youtube-video`, {
+        const response = await adminFetch('/api/admin/save-youtube-video', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Admin-Password': ADMIN_PASSWORD
-          },
-          body: JSON.stringify({
+          body: {
             song_id: song.id,
             youtube_url: url
-          })
+          }
         });
 
         const result = await response.json();
@@ -167,7 +154,7 @@ function YouTubeVideoManager() {
         } else {
           errors.push(`${song.title}: ${result.error}`);
         }
-      } catch (error) {
+      } catch {
         errors.push(`${song.title}: Network error`);
       }
     }
@@ -246,9 +233,9 @@ function YouTubeVideoManager() {
           <div className="modal-content">
             <div className="modal-header">
               <h3>🔍 Find Video: {selectedSong.title} by {selectedSong.artists}</h3>
-              <button 
-                className="close-button" 
-                onClick={() => {setSelectedSong(null); setSearchResults([]); setManualUrl('');}}
+              <button
+                className="close-button"
+                onClick={() => {setSelectedSong(null); setManualUrl('');}}
               >
                 ✕
               </button>

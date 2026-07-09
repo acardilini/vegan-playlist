@@ -134,12 +134,16 @@ routes pruned; clear frontend/backend structure and conventions documented.
   song detail/similar, analytics, playlists, youtube), every deleted route 404s, all 28+1
   admin routes exercised incl. the live Spotify mismatch report, auth 401s without the
   password; frontend build + lint clean._
-- ☐ **Session 2.2b — Admin UI consolidation.** Per `ADMIN_AUDIT.md` §3 (curator decisions):
-  move Sync + mismatch report into the Staging tab (Duplicate Manager becomes data-quality
-  only); one shared categorisation form behind both entry points; Submissions approve gains
-  add-to-pending; decompose `AdminInterface.jsx` (inline Manage Songs/Playlists → components)
-  with a shared authed-fetch helper using relative `/api` URLs. _Smoke test: walk all admin
-  tabs; every curator workflow behaves as before._
+- ☑ **Session 2.2b — Admin UI consolidation** _(done 2026-07-09)_. Per `ADMIN_AUDIT.md` §3:
+  shared `adminFetch` helper (`src/api/adminApi.js`, relative `/api` URLs + password header,
+  all 11 admin components); `AdminInterface.jsx` 2,327 → 176 lines (Manage Songs/Playlists →
+  `ManageSongsTab.jsx`/`ManagePlaylistsTab.jsx`); one shared `CategorizationFields.jsx`
+  behind the manual-song form, edit modal, and Bulk Categorization; Sync + mismatch report
+  moved into Staging → Add candidates (first *working* sync UI — the old buttons' functions
+  were dead code); Duplicate Manager pure data-quality (dead removed-songs view deleted);
+  Submissions "Approve & add to pending" wired to the authed 2.2 bridge. Net ≈ −975 lines.
+  _Smoke test ✅ 28/28: headless walk of all 10 tabs + live mismatch report + end-to-end
+  submission→pending bridge run, verified in DB and cleaned up; node:test 17/17._
 - ☐ **Session 2.3 — Script cleanup.** Archive/remove the ~40 one-off scripts; keep the few
   still needed (import, sync, migrations) in a documented location. _Smoke test: run a retained
   script against a safe target; confirm app unaffected._

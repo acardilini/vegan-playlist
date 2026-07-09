@@ -1,9 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
+import { adminFetch } from '../api/adminApi';
 
-const API_BASE = 'http://localhost:5000/api/admin';
-const PW = import.meta.env.VITE_ADMIN_PASSWORD;
-const auth = { 'X-Admin-Password': PW };
-const authJson = { ...auth, 'Content-Type': 'application/json' };
+const API_BASE = '/api/admin';
 
 const SUBVIEWS = [
   ['to-process', 'To process'],
@@ -28,10 +26,10 @@ export default function StagingQueue() {
     setLoading(true);
     try {
       const qs = queue === 'live' ? `&q=${encodeURIComponent(liveQ.trim())}` : '';
-      const r = await fetch(`${API_BASE}/staging?queue=${queue}${qs}`, { headers: auth });
+      const r = await adminFetch(`${API_BASE}/staging?queue=${queue}${qs}`);
       const data = await r.json();
       setRows(data.rows || []); setTotal(data.total || 0);
-    } catch (e) { setMsg('Error loading queue'); setRows([]); } finally { setLoading(false); }
+    } catch { setMsg('Error loading queue'); setRows([]); } finally { setLoading(false); }
   }, [view, liveQ]);
 
   useEffect(() => { load(); }, [load]);
@@ -39,13 +37,13 @@ export default function StagingQueue() {
   async function act(url, body) {
     setMsg('');
     try {
-      const r = await fetch(url, { method: 'POST', headers: authJson, body: body ? JSON.stringify(body) : undefined });
+      const r = await adminFetch(url, { method: 'POST', body });
       const data = await r.json();
       if (!r.ok) { setMsg(data.error || 'Action failed'); return null; }
       setMsg(data.message || 'Done');
       await load();
       return data;
-    } catch (e) { setMsg('Request failed'); return null; }
+    } catch { setMsg('Request failed'); return null; }
   }
 
   const include = (id, publish) => act(`${API_BASE}/songs/${id}/include`, { publish: !!publish });
@@ -129,12 +127,12 @@ function AddCandidates({ onDone }) {
     if (urls.length === 0) return;
     setBusy(true); setResult(null);
     try {
-      const r = await fetch(`${API_BASE}/staging/candidates`, { method: 'POST', headers: authJson, body: JSON.stringify({ urls }) });
+      const r = await adminFetch(`${API_BASE}/staging/candidates`, { method: 'POST', body: { urls } });
       const data = await r.json();
       if (!r.ok) { onDone(data.error || 'Import failed'); return; }
       setResult(data);
       onDone(`Imported ${data.added} new, skipped ${data.skippedExisting} existing.`);
-    } catch (e) { onDone('Import failed'); } finally { setBusy(false); }
+    } catch { onDone('Import failed'); } finally { setBusy(false); }
   }
 
   return (
@@ -146,6 +144,107 @@ function AddCandidates({ onDone }) {
         <button onClick={submit} disabled={busy}>{busy ? 'Importing…' : 'Import'}</button>
       </div>
       {result && <pre style={{ marginTop: 10 }}>{JSON.stringify(result, null, 2)}</pre>}
+
+      <SyncPanel />
+    </div>
+  );
+}
+
+// Import-only sync + read-only mismatch report against the default Spotify
+// playlist ("Animal Lib & Vegan Songs"). Same backend as the URL intake above
+// (utils/playlistSync.js) — moved here from Duplicate Manager per the 2026-07-08
+// admin audit so all song intake lives in the Staging tab.
+function SyncPanel() {
+  const [busy, setBusy] = useState('');
+  const [sync, setSync] = useState(null);
+  const [report, setReport] = useState(null);
+  const [error, setError] = useState('');
+
+  async function runSync() {
+    if (!confirm('Import-only sync: any playlist tracks missing from the catalogue are added as pending. Nothing is ever changed or removed. Continue?')) return;
+    setBusy('sync'); setError(''); setSync(null);
+    try {
+      const r = await adminFetch(`${API_BASE}/sync-spotify-playlist`, { method: 'POST', body: {} });
+      const data = await r.json();
+      if (!r.ok || !data.success) { setError(data.error || 'Sync failed'); return; }
+      setSync(data);
+    } catch { setError('Sync failed'); } finally { setBusy(''); }
+  }
+
+  async function runReport() {
+    setBusy('report'); setError(''); setReport(null);
+    try {
+      const r = await adminFetch(`${API_BASE}/spotify-playlist-mismatch`);
+      const data = await r.json();
+      if (!r.ok || !data.success) { setError(data.error || 'Report failed'); return; }
+      setReport(data);
+    } catch { setError('Report failed'); } finally { setBusy(''); }
+  }
+
+  const songLine = (s, i) => (
+    <li key={s.spotify_id || s.id || i}>
+      <strong>{s.title}</strong> — {s.artists}
+    </li>
+  );
+
+  return (
+    <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #ddd' }}>
+      <h3 style={{ margin: '0 0 4px' }}>Spotify playlist sync</h3>
+      <p style={{ color: '#555', marginTop: 0 }}>
+        Runs against the curated playlist (Animal Lib &amp; Vegan Songs). <strong>Import-only:</strong> new
+        playlist tracks land in <em>To process</em> as pending; the mismatch report is read-only.
+      </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={runSync} disabled={!!busy}>
+          {busy === 'sync' ? 'Syncing…' : 'Sync from playlist'}
+        </button>
+        <button onClick={runReport} disabled={!!busy}>
+          {busy === 'report' ? 'Checking…' : 'Check playlist mismatch'}
+        </button>
+      </div>
+      {error && <div style={{ marginTop: 10, color: '#b00' }}>{error}</div>}
+
+      {sync && (
+        <div style={{ marginTop: 12, padding: 10, background: '#f0f6ff', border: '1px solid #cfe0ff', borderRadius: 6 }}>
+          <div>{sync.message}</div>
+          <div style={{ marginTop: 6, fontSize: 13, color: '#555' }}>
+            Playlist tracks: {sync.summary.playlistTracks} · Added as pending: {sync.summary.addedAsPending} ·
+            Included not on playlist: {sync.summary.includedNotOnPlaylist}
+          </div>
+          {sync.addedSongs && sync.addedSongs.length > 0 && (
+            <>
+              <div style={{ marginTop: 8, fontWeight: 600 }}>Added (first {sync.addedSongs.length}):</div>
+              <ul style={{ margin: '4px 0 0 18px' }}>{sync.addedSongs.map(songLine)}</ul>
+            </>
+          )}
+        </div>
+      )}
+
+      {report && (
+        <div style={{ marginTop: 12, padding: 10, background: '#fffdf0', border: '1px solid #eee0a0', borderRadius: 6 }}>
+          <div>{report.message}</div>
+          {report.mismatchSongs.length > 0 && (
+            <>
+              <div style={{ marginTop: 8, fontWeight: 600 }}>
+                Included songs not on the Spotify playlist ({report.mismatchSongs.length}) — add to Spotify by hand if desired:
+              </div>
+              <ul style={{ margin: '4px 0 0 18px', maxHeight: 260, overflowY: 'auto' }}>
+                {report.mismatchSongs.map(songLine)}
+              </ul>
+            </>
+          )}
+          {report.playlistTracksNotInCatalogue.length > 0 && (
+            <>
+              <div style={{ marginTop: 8, fontWeight: 600 }}>
+                Playlist tracks not in the catalogue ({report.playlistTracksNotInCatalogue.length}) — run the sync to add as pending:
+              </div>
+              <ul style={{ margin: '4px 0 0 18px', maxHeight: 260, overflowY: 'auto' }}>
+                {report.playlistTracksNotInCatalogue.map(songLine)}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

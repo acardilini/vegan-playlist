@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE = 'http://localhost:5000/api/admin';
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+import { adminFetch } from '../api/adminApi';
 
 function ArtistsManager() {
   const [artists, setArtists] = useState([]);
@@ -31,11 +29,7 @@ function ArtistsManager() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API_BASE}/artists-stats`, {
-        headers: { 
-          'X-Admin-Password': ADMIN_PASSWORD
-        }
-      });
+      const response = await adminFetch('/api/admin/artists-stats');
       const data = await response.json();
       
       if (data.success) {
@@ -58,11 +52,7 @@ function ArtistsManager() {
         ...(reviewedFilter && { reviewed: reviewedFilter })
       });
 
-      const response = await fetch(`${API_BASE}/all-artists?${params}`, {
-        headers: { 
-          'X-Admin-Password': ADMIN_PASSWORD
-        }
-      });
+      const response = await adminFetch(`/api/admin/all-artists?${params}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -85,13 +75,9 @@ function ArtistsManager() {
   const handleUpdateArtist = async (artistId, updates) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/artists/${artistId}`, {
+      const response = await adminFetch(`/api/admin/artists/${artistId}`, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-Admin-Password': ADMIN_PASSWORD
-        },
-        body: JSON.stringify(updates)
+        body: updates
       });
       
       const data = await response.json();
