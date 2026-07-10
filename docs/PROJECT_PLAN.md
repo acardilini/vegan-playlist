@@ -160,9 +160,15 @@ routes pruned; clear frontend/backend structure and conventions documented.
 **Exit criteria:** Design system in place; all pages restyled to brand; responsive and
 accessible.
 
-- ☐ **Session 3.1 — Design system foundation.** Tokens (colour, type, spacing), global
-  styles, and core reusable components from the brand kit. _Smoke test: component gallery /
-  key pages render with brand styling._
+- ☑ **Session 3.1 — Design system foundation.** _Done 2026-07-10 on branch
+  `session-3.1-design-system` (pushed, awaiting merge)._ Brand-kit tokens →
+  `frontend/src/styles/tokens/` + `base.css` + `components.css` (imported after App.css
+  to win the cascade); legacy `:root` bridged to tokens so every page re-brands at once;
+  Spotify greens + gradients swept; SongCard/MoodBadge de-emoji'd, striped artwork
+  placeholder. Bonus: found + fixed the CSS bug (orphaned media query hiding
+  `.song-artwork` globally) that had hidden all album covers — the "broken cover API"
+  myth. _Smoke test ✅: home (desktop+mobile), song detail, artists, playlists render
+  with brand styling; build + lint clean._
 - ☐ **Session 3.2 — Public pages restyle.** Home, Browse/Search, Song Detail, Artists.
   _Smoke test: walk each page on desktop + mobile widths._
 - ☐ **Session 3.3 — Remaining pages & polish.** Playlists, Submit, Dashboard, About, Admin.

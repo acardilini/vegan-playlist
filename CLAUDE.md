@@ -91,6 +91,14 @@ Run before ending every working session:
 - **src/api/**: `spotifyService.js`, `playlistService.js`, and `adminApi.js` —
   admin code must fetch via `adminFetch` (relative `/api` URLs through the Vite proxy +
   `X-Admin-Password` header), never hardcode `localhost:5000` or the header
+- **src/styles/**: the design system (Session 3.1, from the brand kit) —
+  `tokens/{colors,typography,spacing}.css` (oklch warm-dark palette, Ember/Moss accents,
+  Manrope/Public Sans), `base.css` (global element styles), `components.css` (core
+  component classes; imported **after** `App.css` in `App.jsx` so it wins the cascade).
+  New/updated styling must use the `--bg-*`/`--text-*`/`--accent-*`/`--space-*` tokens,
+  never raw colors. `App.css` is the legacy monolith: its `:root` is a bridge re-pointing
+  old variable names at the tokens; its page blocks are deleted (with their bridge
+  entries) as Sessions 3.2/3.3 restyle each page
 - See [`docs/FEATURE_INVENTORY.md`](docs/FEATURE_INVENTORY.md) for the full screen/endpoint
   audit with keep/rebuild/drop/defer decisions
 

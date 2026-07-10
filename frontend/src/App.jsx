@@ -1,4 +1,5 @@
 import './App.css'
+import './styles/components.css' // design system — must come after App.css to win the cascade
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import NavigationMenu from './components/NavigationMenu';
 import HomePage from './pages/HomePage';

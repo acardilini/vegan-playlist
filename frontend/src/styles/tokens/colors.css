@@ -1,0 +1,42 @@
+/* The Vegan Playlist — Color Tokens (brand kit: "Website brand kit development")
+   Dark-mode-primary palette. Warm-neutral base (never pure black/white).
+   Two accent hues share the same lightness + chroma, per system convention:
+   Ember (coral, ~40°) for primary actions/highlights, Moss (~145°) for
+   plant-based/verified signals and secondary emphasis. */
+
+:root {
+  /* Base neutrals — warm-tinted dark scale */
+  --bg-canvas: oklch(0.16 0.012 60);      /* page background */
+  --bg-surface: oklch(0.205 0.013 60);    /* cards, panels */
+  --bg-surface-raised: oklch(0.255 0.014 60); /* hover/raised surfaces, inputs */
+  --bg-overlay: oklch(0.12 0.012 60 / 0.72);  /* modal scrims */
+
+  --border-hairline: oklch(0.34 0.014 60 / 0.7);
+  --border-strong: oklch(0.42 0.016 60);
+
+  --text-primary: oklch(0.96 0.006 60);   /* headings, high-emphasis */
+  --text-secondary: oklch(0.76 0.012 60); /* body copy */
+  --text-muted: oklch(0.55 0.014 60);     /* metadata, timestamps */
+  --text-on-accent: oklch(0.17 0.02 40);  /* text on filled accent buttons */
+
+  /* Accent — Ember (coral) : primary actions, links, active states */
+  --accent-ember-40: oklch(0.30 0.09 40);
+  --accent-ember-50: oklch(0.50 0.14 40);
+  --accent-ember-60: oklch(0.72 0.15 40);  /* primary accent */
+  --accent-ember-80: oklch(0.88 0.09 40);
+
+  /* Accent — Moss (green) : plant-based / verified / positive signals */
+  --accent-moss-40: oklch(0.30 0.09 145);
+  --accent-moss-50: oklch(0.50 0.14 145);
+  --accent-moss-60: oklch(0.72 0.15 145); /* secondary accent */
+  --accent-moss-80: oklch(0.88 0.09 145);
+
+  /* Semantic */
+  --color-danger: oklch(0.68 0.16 25);
+  --color-warning: oklch(0.80 0.14 85);
+  --color-success: var(--accent-moss-60);
+  --color-link: var(--accent-ember-60);
+
+  /* Focus ring */
+  --focus-ring: oklch(0.72 0.15 40 / 0.55);
+}
