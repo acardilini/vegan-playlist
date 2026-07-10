@@ -7,20 +7,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 3 — Brand & UI Rebuild (Session 3.1 ☑ on branch, awaiting merge).
+- **Phase:** Phase 3 — Brand & UI Rebuild (Session 3.1 ☑ merged to `main` 2026-07-10).
   Phases 0–2 complete.
-- **Current session:** _Session 3.1 done on branch `session-3.1-design-system`
-  2026-07-10 (pushed), awaiting curator click-through + merge_
-- **Next session:** Session 3.2 — Public pages restyle (Home, Browse/Search, Song
-  Detail, Artists)
-- **Last updated:** 2026-07-10 _(3.1 built; site-wide album-cover CSS bug found+fixed)_
+- **Current session:** Session 3.2 — Public pages restyle (in progress 2026-07-10)
+- **Next session:** Session 3.3 — Remaining pages & polish (Playlists, Submit,
+  Dashboard, About, Admin; responsive + accessibility pass)
+- **Last updated:** 2026-07-10 _(3.1 curator click-through ✅, merged to main; 3.2 started)_
 
 ### Next Tasks (start here)
-1. **Curator: click through branch `session-3.1-design-system`** (start both servers,
-   browse home/artists/playlists/song detail) and give the merge go-ahead. Biggest
-   visible changes: warm-dark brand palette everywhere (Ember coral primary, Moss green
-   for genre/plant signals), Manrope/Public Sans type, **album covers now show on song
-   cards** (see Decision Log — they were hidden by a CSS bug, not a broken API).
+1. ✅ **Done — `session-3.1-design-system` merged to `main`** 2026-07-10 (curator
+   click-through confirmed).
 2. **Session 3.2 — Public pages restyle**: Home, Browse/Search, Song Detail, Artists —
    apply the `ui_kits/website/*.html` mockups from the brand kit (project
    `4d59f679-dccb-4902-9e88-a249ba6ee659` via DesignSync); replace each page's legacy
