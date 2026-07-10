@@ -7,44 +7,27 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 3 — Brand & UI Rebuild (3.1 ☑ merged; 3.2 ☑ on branch, awaiting
-  merge). Phases 0–2 complete.
-- **Current session:** _Session 3.2 done on branch `session-3.2-public-pages`
-  2026-07-11 (pushed), awaiting curator click-through + merge_
-- **Next session:** Session 3.3 — Remaining pages & polish (Playlists, Submit,
-  Dashboard, About, Admin; responsive + accessibility pass)
-- **Last updated:** 2026-07-11 _(3.2 built: Home/Browse/Song Detail/Artists restyled;
-  advocacy section renamed + hidden-when-empty)_
+- **Phase:** Phase 3 — Brand & UI Rebuild (3.1 ☑ merged; 3.2 ☑ merged 2026-07-11).
+  Phases 0–2 complete.
+- **Current session:** _Session 3.3 — Remaining pages & polish, on branch
+  `session-3.3-remaining-pages`_
+- **Next session:** Phase 4 — Deployment Hardening (after 3.3 closes Phase 3)
+- **Last updated:** 2026-07-11 _(3.2 merged to `main` — curator confirmed the
+  click-through; Session 3.3 begins)_
 
 ### Next Tasks (start here)
-1. **Curator: click through branch `session-3.2-public-pages`** (start both servers;
-   browse home, search/filters, a song page e.g. `/song/541`, `/artists`, an artist
-   page) and give the merge go-ahead. Biggest visible changes: kit hero with rounded
-   stat badges + new copy ("A searchable database of vegan & animal-liberation songs",
-   "1,300+ songs, tagged by theme, genre, artist, and date"); song page rebuilt as the
-   kit's 16:9 cover hero (title/artist/album + Year/Duration/Popularity + actions in a
-   scrim over the artwork); artist page rebuilt as the kit's photo hero (genre tags +
-   stat boxes in the scrim) over a numbered song list with moss popularity bars;
-   artists grid now kit cards (circular photo, meta row, genre pills); filter chips are
-   ember pills; all emoji gone from public pages.
-   **Same-day follow-up (curator-requested):** popularity removed from all public song
-   and artist surfaces; followers removed from artist cards (kept on the artist page as
-   "Spotify followers"); artist-page songs now **grouped by album, newest first** (cover
-   + year · count header, per-album numbering); new **Bandcamp/Website button** on the
-   artist page — populate it per artist via the admin **Artists tab → Edit → "Website /
-   Bandcamp URL"** (new `artists.website_url` column, migration `005` applied;
-   currently empty for all artists so no button shows yet). _Curator approved all
-   three follow-ups in-session (2026-07-11) from screenshots — the remaining step is
-   the in-browser click-through + merge go-ahead._
-2. **Session 3.3 — Remaining pages & polish**: Playlists (+ detail), Submit, Dashboard,
+1. **Session 3.3 — Remaining pages & polish**: Playlists (+ detail), Submit, Dashboard,
    About, Admin; responsive + accessibility pass. Known responsive item: **every page
    still overflows horizontally at 390px** (pre-existing shell issue — verified on the
    untouched About page too; the nav now wraps but something page-level still forces
    width). Also from 3.2: playlist-detail rows inherit the artist-page `.song-item` row
    styling from components.css (40px thumbs) — fold into the Playlists restyle.
-3. Bridge cleanup continues: App.css is down to ~6,100 lines (from ~8,800); delete
+2. Bridge cleanup continues: App.css is down to ~6,100 lines (from ~8,800); delete
    remaining legacy page blocks + emptied bridge `:root` entries as 3.3 restyles each
    page.
+3. Optional curator to-do: the **Bandcamp/Website artist button** ships empty — populate
+   `artists.website_url` per artist via the admin **Artists tab → Edit → "Website /
+   Bandcamp URL"** whenever ready.
 2. ✅ Looks **done — curator appears to have run the playlist sync**: the DB held 1,821
    songs on 2026-07-10 (= 1,800 + the 21 mismatch-report tracks from 2026-07-09).
    Curator to confirm it was intentional; the new tracks are in the To-process queue.

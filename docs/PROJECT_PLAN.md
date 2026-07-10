@@ -169,8 +169,8 @@ accessible.
   `.song-artwork` globally) that had hidden all album covers — the "broken cover API"
   myth. _Smoke test ✅: home (desktop+mobile), song detail, artists, playlists render
   with brand styling; build + lint clean._
-- ☑ **Session 3.2 — Public pages restyle.** _Done 2026-07-11 on branch
-  `session-3.2-public-pages` (pushed, awaiting merge)._ Home (kit hero + stat badges +
+- ☑ **Session 3.2 — Public pages restyle.** _Done 2026-07-11; merged to `main`
+  2026-07-11 after curator click-through._ Home (kit hero + stat badges +
   new copy), Browse/Search (token restyle of the filter suite), Song Detail (kit 16:9
   scrim hero; "Animal advocacy analysis" renamed + hidden when uncoded — curator
   request; dead audio-features panel removed), Artists (kit cards + photo-hero profile
