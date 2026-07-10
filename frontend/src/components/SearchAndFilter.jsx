@@ -31,9 +31,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     const loadFilterOptions = async () => {
       try {
         const options = await spotifyService.getFilterOptions();
-        console.log('Loaded filter options:', options);
-        console.log('Number of genres:', options.genres?.length);
-        
+
         // Add hierarchical genre data with FIXED counts (parent = sum of subgenres)
         if (!options.parent_genres || !options.subgenres) {
           options.parent_genres = [
@@ -80,20 +78,9 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     }
   }, [onResults, onLoading, onError]);
 
-  // Debounce search
+  // Debounce search. Always performs a search — even with no query/filters —
+  // so the page can browse all songs with the chosen sort order.
   useEffect(() => {
-    // Always allow searching - even with just sort parameters
-    // This enables browsing all songs with different sort orders
-    const hasQuery = searchQuery.trim().length > 0;
-    const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
-      if (key === 'sort_by') return false; // Don't count sort_by as an active filter
-      if (Array.isArray(value)) return value.length > 0;
-      return value !== '' && value !== null && value !== undefined;
-    });
-
-    // Always perform search - this allows browsing all songs when no query/filters are set
-    // The backend will return all songs with the specified sort order
-
     const searchParams = {
       q: searchQuery,
       ...filters,
@@ -374,9 +361,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             const parentGenre = parentOption.value;
             const subgenres = GENRE_HIERARCHY[parentGenre] || [];
             const isExpanded = expandedParents.has(parentGenre);
-            const hasMatchingSubgenres = searchTerm ? 
-              subgenres.some(sub => sub.toLowerCase().includes(searchTerm.toLowerCase())) :
-              true;
 
             // Filter subgenres based on search
             const filteredSubgenres = searchTerm ?
@@ -440,12 +424,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
 
   const FilterSection = ({ title, filterKey, options, type = 'checkbox', searchable = false }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    
-    if (title === 'Genres') {
-      console.log('Genres FilterSection - options length:', options?.length);
-      console.log('First 5 genres:', options?.slice(0, 5));
-    }
-    
+
     if (!options || options.length === 0) return null;
 
     const filteredOptions = searchable && searchTerm
@@ -525,7 +504,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         <input
           type="text"
           className="search-input"
-          placeholder="Search songs, artists, albums, or reviews..."
+          placeholder="Search songs, artists, albums..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -539,7 +518,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         </button>
         {getActiveFilterCount() > 0 && (
           <button className="clear-filters" onClick={clearAllFilters}>
-            Clear All
+            Clear all
           </button>
         )}
       </div>
@@ -576,9 +555,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
           <option value="title">Title</option>
           <option value="artist">Artist</option>
           <option value="year">Year</option>
-          <option value="energy">Energy</option>
-          <option value="danceability">Danceability</option>
-          <option value="valence">Positivity</option>
         </select>
       </div>
 
@@ -644,28 +620,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
                 </div>
               </div>
             )}
-
-            {/* Audio Features */}
-            <FilterSection
-              title="Energy Level"
-              filterKey="energy"
-              options={[]}
-              type="range"
-            />
-            
-            <FilterSection
-              title="Danceability"
-              filterKey="danceability"
-              options={[]}
-              type="range"
-            />
-            
-            <FilterSection
-              title="Positivity (Valence)"
-              filterKey="valence"
-              options={[]}
-              type="range"
-            />
           </div>
         </div>
       )}
