@@ -168,49 +168,23 @@ Run the SQL files in this order against your PostgreSQL database:
 | `rating` | Integer 1–5 |
 | `your_review` | Personal review text |
 | `lyrics_url` | External link to lyrics (Genius, Bandcamp etc.) |
-| `removed_from_playlist` | Flag set when song leaves the Spotify playlist |
 
 ---
 
 ## Updating the Database from Spotify
 
-The Spotify playlist is the source of truth. When it changes, sync it to the database.
+**The database is the source of truth** (a song is in the catalogue because the curator says so — see `docs/TRUTH_SOURCE_DESIGN.md`). Spotify is optional enrichment and the sync is **import-only**: playlist tracks missing from the catalogue are added as `pending` for curator review; nothing is ever auto-removed or overwritten.
 
-### Sync new/updated songs
+Two ways to sync:
 
-```bash
-cd backend
-node scripts/simpleSyncSpotify.js
-```
-
-This fetches all tracks from the playlist (paginated, handles 1000+ songs), inserts new ones, and skips existing songs. Safe to run repeatedly — it uses `ON CONFLICT DO NOTHING`.
-
-### Full duplicate management workflow
-
-Use this when you've removed duplicate songs from the Spotify playlist and want to clean them out of the database:
-
-1. **Find duplicates** — Admin > Cleanup > "Find Duplicates"
-2. **Remove from Spotify** — delete the unwanted duplicates from the Spotify playlist manually
-3. **Sync the playlist** — pulls the updated playlist into the database:
-   ```bash
-   node scripts/simpleSyncSpotify.js
-   ```
-4. **Flag removed songs** — marks any songs no longer in the playlist:
-   ```bash
-   node scripts/flagRemovedSongs.js
-   ```
-5. **Preview what will be deleted** (optional):
-   ```bash
-   node scripts/showRemovedSongs.js
-   ```
-6. **Delete from database** — Admin > Cleanup > "Removed from Playlist"
-7. **Verify** — Admin > Cleanup > "Find Duplicates" to confirm clean state
+- **Admin UI (usual way):** Admin > Staging > Add candidates > "Sync from playlist" (or "Check playlist mismatch" for a read-only report first). New tracks land in the To-process queue.
+- **Script (bulk enrichment):** `cd backend && node scripts/enrichFromSpotify.js` — dry-run by default; add `--apply` to write. Also backfills album art, artist genres, and Spotify attachments for manual songs. See `backend/scripts/README.md`.
 
 ### Important notes
 
-- **Run these in a bash shell, not PowerShell.** PowerShell does not support `&&`. Either run the commands separately, or use Claude Code's terminal which runs bash.
-- The sync script requires `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` in `backend/.env`.
-- Songs with `data_source = 'spotify'` must have a `spotify_id` — this is enforced by a database constraint. The sync script handles this automatically.
+- Both paths require `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` in `backend/.env`.
+- Songs with `data_source = 'spotify'` must have a `spotify_id` — enforced by a database constraint; the sync handles this automatically.
+- Duplicates are handled in Admin > Cleanup > "Find Duplicates" (data-quality only — no playlist-removal workflow; the old flag-removed scripts are gone).
 
 ---
 
@@ -224,54 +198,25 @@ Navigate to `/admin` in the running app. Key sections:
 | **Categorization** | Step through uncategorized songs and assign vegan focus, advocacy style etc. |
 | **YouTube Videos** | Add/edit YouTube video links per song |
 | **Lyrics** | Add external lyrics URLs (Genius, Bandcamp etc.) |
-| **Submissions** | Review public song submissions — approve, reject, or mark resolved |
+| **Submissions** | Review public song submissions — approve & add to the pending queue, reject, or mark resolved |
+| **Staging** | Work the publication queues (To process / To finalise / Live) and import new songs (Add candidates / Sync from playlist) |
 | **Cleanup > Find Duplicates** | Identify duplicate songs by title/artist |
-| **Cleanup > Removed from Playlist** | View and permanently delete songs flagged as removed |
 | **Data Dashboard** | See completion stats — how many songs have categorization, lyrics, YouTube videos |
 
 ---
 
 ## Backend Scripts Reference
 
-All scripts are in `backend/scripts/`. Run with `node scripts/<filename>.js` from the `backend/` directory.
-
-### Database sync
+Four maintenance scripts live in `backend/scripts/` — see [`backend/scripts/README.md`](backend/scripts/README.md) for full usage. Run with `node scripts/<filename>.js` from the `backend/` directory.
 
 | Script | Purpose |
 |--------|---------|
-| `simpleSyncSpotify.js` | **Primary sync script.** Fetches full playlist from Spotify, adds new songs. Safe to re-run. |
-| `flagRemovedSongs.js` | Compares database against live Spotify playlist, flags songs no longer present. |
-| `showRemovedSongs.js` | Prints songs currently flagged as removed — preview before deleting. |
+| `consolidateSpreadsheets.js` | Truth-source import from the curator's spreadsheets (idempotent, dry-run by default) |
+| `enrichFromSpotify.js` | Spotify enrichment pipeline + import-only playlist diff (dry-run by default) |
+| `auditDatabase.js` | Read-only field-completion audit |
+| `exportAllSongsData.js` | Read-only CSV export of the full song dataset |
 
-### Database inspection
-
-| Script | Purpose |
-|--------|---------|
-| `auditDatabase.js` | Full audit — counts, missing data, inconsistencies |
-| `checkSchema.js` | Verifies expected columns and constraints exist |
-| `checkMissingSongs.js` | Finds songs in DB missing key metadata |
-| `exportAllSongsData.js` | Exports full song dataset to JSON/CSV |
-| `createDataSummary.js` | Generates a human-readable data summary |
-
-### Genre / categorization
-
-| Script | Purpose |
-|--------|---------|
-| `migrateGenres.js` | Migrates old genre data to current schema |
-| `checkGenreMappings.js` | Audits genre mapping completeness |
-| `fixGenreMappings.js` | Fixes known bad genre mappings |
-| `addCustomMoodData.js` | Adds mood/vibe categorization data |
-
-### Setup / migrations
-
-| Script | Purpose |
-|--------|---------|
-| `addFeaturedField.js` | Adds `featured` boolean to songs table |
-| `addLyricsFields.js` | Adds lyrics URL columns (covered by `lyrics_schema_update.sql`) |
-| `setupLyrics.js` | Initialises lyrics data |
-| `setupSubmissions.js` | Initialises submissions table |
-| `createYouTubeTable.js` | Creates YouTube videos table (covered by `youtube_videos_schema.sql`) |
-| `runMigration.js` | Generic migration runner |
+Schema changes are SQL files in `backend/database/migrations/`, applied with psql. The ~37 one-off setup/debug/test scripts that used to live here were removed in Session 2.3 (git history preserves them).
 
 ---
 
@@ -283,9 +228,6 @@ Quick checklist to get back up to speed:
 - [ ] Start backend: `cd backend && npm run dev`
 - [ ] Start frontend: `cd frontend && npm run dev`
 - [ ] Check current DB stats by visiting `/dashboard` in the app
-- [ ] Sync from Spotify to pick up any new playlist additions:
-  ```bash
-  cd backend && node scripts/simpleSyncSpotify.js
-  ```
+- [ ] Pick up any new playlist additions: Admin > Staging > Add candidates > "Sync from playlist" (import-only — new tracks land in the To-process queue)
 - [ ] Review any pending song submissions at `/admin` > Submissions
 - [ ] Check data completion at `/dashboard` — how many songs still need categorization, lyrics, YouTube videos

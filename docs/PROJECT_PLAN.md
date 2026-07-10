@@ -144,9 +144,16 @@ routes pruned; clear frontend/backend structure and conventions documented.
   Submissions "Approve & add to pending" wired to the authed 2.2 bridge. Net ≈ −975 lines.
   _Smoke test ✅ 28/28: headless walk of all 10 tabs + live mismatch report + end-to-end
   submission→pending bridge run, verified in DB and cleaned up; node:test 17/17._
-- ☐ **Session 2.3 — Script cleanup.** Archive/remove the ~40 one-off scripts; keep the few
-  still needed (import, sync, migrations) in a documented location. _Smoke test: run a retained
-  script against a safe target; confirm app unaffected._
+- ☑ **Session 2.3 — Script cleanup** _(done 2026-07-10)_. Deleted 37 of the 41 one-off
+  scripts (git history preserves them); kept 4 documented in a new
+  `backend/scripts/README.md`: `consolidateSpreadsheets.js`, `enrichFromSpotify.js`,
+  `auditDatabase.js`, `exportAllSongsData.js` (+ `database/migrations/` as the schema
+  channel). Deviation from the Phase 0 inventory keep-list recorded in the Decision Log
+  (`importSpotifyDataEnhanced.js`/`syncSpotifyPlaylist.js` superseded by the 1.2 pipeline;
+  `runMigration.js` was hardcoded one-off DDL, not a runner). Stale sync docs in
+  `README.md`/`CLAUDE.md` rewritten to the truth-source model. _Smoke test ✅: retained
+  `auditDatabase.js` ran clean (read-only); backend started, public featured + search
+  routes serve real data (search `vegan` = 198, unchanged)._
 
 ## Phase 3 — Brand & UI Rebuild
 **Goal:** Apply the brand kit onto the now-clean frontend.

@@ -7,19 +7,27 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 2 — Architecture Cleanup (Sessions 2.1 ☑, 2.2 ☑, 2.2b ☑). Phases 0–1
-  complete.
-- **Current session:** _Session 2.2b done — curator click-through confirmed 2026-07-09
-  (Sync button located after a refresh) and **merged to `main`** (`6cfc6fd`, pushed)_
-- **Next session:** Session 2.3 — Script cleanup (~39 one-off scripts in `backend/scripts/`)
-- **Last updated:** 2026-07-09 _(2.2b merged)_
+- **Phase:** Phase 2 — Architecture Cleanup (Sessions 2.1 ☑, 2.2 ☑, 2.2b ☑, 2.3 ☑) —
+  **Phase 2 complete.** Phases 0–1 complete.
+- **Current session:** _Session 2.3 done 2026-07-10 — on branch
+  `session-2.3-script-cleanup`, awaiting merge_
+- **Next session:** Session 3.1 — Design system foundation (opens Phase 3, Brand & UI
+  Rebuild — needs the brand kit from the curator)
+- **Last updated:** 2026-07-10 _(2.3 done)_
 
 ### Next Tasks (start here)
-1. **Session 2.3 — Script cleanup**: archive/remove the ~39 one-off scripts; keep the few
-   still needed (import, sync, migrations) in a documented location.
-2. Curator to-do (deferred, curator will pick a time): **21 playlist tracks are not in the
-   catalogue** (mismatch report, live 2026-07-09 — the Spotify playlist grew since 2.2).
-   One click of **Staging → Add candidates → "Sync from playlist"** imports them as pending.
+1. **Merge `session-2.3-script-cleanup` to `main`** once the curator gives the go-ahead.
+2. **Session 3.1 — Design system foundation**: tokens (colour, type, spacing), global
+   styles, core reusable components from the brand kit. **Unblocked 2026-07-10** — the
+   brand kit is the curator's Claude Design project "Website brand kit development"
+   (`4d59f679-dccb-4902-9e88-a249ba6ee659`, readable via the DesignSync tool; go by ID —
+   it doesn't appear in `list_projects`). Contains oklch colour/type/spacing tokens,
+   styles.css, guideline specimens, 8 React components, and full-page mockups for every
+   route. Note: built from an old prototype screenshot — its "cover API broken" and
+   "1,400+ songs" claims are stale; verify against the live DB when applying.
+3. ✅ Looks **done — curator appears to have run the playlist sync**: the DB held 1,821
+   songs on 2026-07-10 (= 1,800 + the 21 mismatch-report tracks from 2026-07-09).
+   Curator to confirm it was intentional; the new tracks are in the To-process queue.
 3. ✅ **Done — `session-2.2b-admin-ui-consolidation` merged to `main`** 2026-07-09
    (click-through confirmed; Sync button located after a refresh).
 4. ✅ **Done — `session-2.2-backend-consolidation` merged to `main`** 2026-07-09.
@@ -98,6 +106,20 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-10 — Script keep-list revised at execution time (Session 2.3).** The Phase 0
+  inventory's keep-list was written before Phase 1 existed; by 2.3 two of its five keeps
+  were superseded and one was misnamed. **Kept 4:** `consolidateSpreadsheets.js` +
+  `enrichFromSpotify.js` (the Phase 1 truth-source/enrichment pipeline, both dry-run by
+  default), `auditDatabase.js` + `exportAllSongsData.js` (read-only utilities). **Dropped
+  from the keep-list:** `importSpotifyDataEnhanced.js` and `syncSpotifyPlaylist.js`
+  (enrichFromSpotify.js is explicitly the "single replacement for the three legacy import
+  paths"; the inventory kept sync only "until the Phase 1 pipeline replaces it") and
+  `runMigration.js` (despite the name it was hardcoded one-off ALTER TABLEs — half of them
+  the dropped audio-features columns — not a migration runner; schema changes are SQL
+  files in `database/migrations/` applied via psql). Deleted rather than archived (user
+  choice; git history preserves all 37 — `git log --diff-filter=D -- backend/scripts`).
+  Verified before deleting: no script is referenced by package.json, server code, the
+  launcher .bat files, or another script.
 - **2026-07-09 — Admin UI consolidation choices (Session 2.2b).** (1) **Approve = approve +
   queue**: the Submissions "Approve" button became "Approve & add to pending" — one action
   that sets the status and calls the authed 2.2 bridge (per the audit decision that approval
@@ -248,6 +270,27 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-10 (Session 2.3)** — Script cleanup (closes Phase 2). On branch
+  `session-2.3-script-cleanup`: **deleted 37 of the 41 files in `backend/scripts/`**
+  (all `test*`/`check*`/`debug*`/`diagnose*` one-offs, the `add*`/`create*`/`setup*`
+  one-off DDL, genre-migration scripts, the three legacy import/sync paths
+  superseded by 1.2, the dead `removed_from_playlist` pair, `restartServer.js`,
+  `youtubeApiServer.js`, and `runMigration.js` — see Decision Log for the keep-list
+  deviations). **Kept 4** documented in a new `backend/scripts/README.md`:
+  `consolidateSpreadsheets.js`, `enrichFromSpotify.js`, `auditDatabase.js`,
+  `exportAllSongsData.js`. Verified first that nothing references any script (no
+  package.json entries, no requires from server code, no .bat callers, no
+  cross-requires). Rewrote the stale sync documentation: `README.md`'s "Spotify playlist
+  is the source of truth" section replaced with the truth-source model (import-only sync
+  via Staging tab or `enrichFromSpotify.js`), scripts-reference table cut to the 4 keeps,
+  admin-workflow table updated (Staging row added, dead removed-from-playlist row gone);
+  `CLAUDE.md` import/scripts lines corrected (had pointed at a nonexistent
+  `importSpotifyData.js`). Net **≈ −4,900 lines**. Smoke test ✅: retained
+  `auditDatabase.js` ran clean (read-only), backend started and public routes serve real
+  data (featured song OK, search `vegan` = 198, unchanged from 2.1/2.2). **Observed:**
+  DB now holds 1,821 songs = 1,800 + the 21 mismatch tracks — the curator appears to
+  have used the new Sync button (2.2b's first working sync UI) between sessions;
+  flagged in Next Tasks for the curator to confirm.
 - **2026-07-09 (Session 2.2b)** — Admin UI consolidation (executes `ADMIN_AUDIT.md` §3;
   frontend only, backend untouched). First merged 2.2 to `main` (curator go-ahead), then on
   branch `session-2.2b-admin-ui-consolidation`: **(1)** new `src/api/adminApi.js` —

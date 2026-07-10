@@ -52,8 +52,8 @@ Run before ending every working session:
 - **Install dependencies**: `cd frontend && npm install`
 
 ### Database
-- **Create tables**: Run `backend/database/schema.sql` against PostgreSQL database
-- **Import data**: Use `backend/scripts/importSpotifyData.js` for Spotify playlist import
+- **Create tables**: Run `backend/database/schema.sql` against PostgreSQL database, then the migrations in `backend/database/migrations/` (psql, in order)
+- **Import/enrich data**: `backend/scripts/enrichFromSpotify.js` (dry-run by default) or the admin Staging tab's Sync — both import-only
 
 ## Architecture
 
@@ -69,7 +69,8 @@ Run before ending every working session:
 - **services/staging.js**: staging-queue service (queues, include/reject/publish, candidate
   intake, submissions→pending bridge); tests in `test/staging.test.js` (node:test)
 - **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
-- **scripts/**: 39 one-off/import scripts (cleanup scheduled in Phase 2.3)
+- **scripts/**: 4 documented maintenance scripts (see `backend/scripts/README.md`);
+  the ~37 one-off scripts were deleted in Session 2.3 (git history preserves them)
 - **utils/genreMapping.js**: parent-genre mapping used by admin + search
 - **utils/playlistSync.js**: truth-source-safe Spotify helpers (import-only playlist diff,
   add-as-pending, album/artist upserts) shared by `scripts/enrichFromSpotify.js` and the
