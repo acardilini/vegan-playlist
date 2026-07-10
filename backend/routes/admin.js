@@ -1921,6 +1921,7 @@ router.get('/all-artists', async (req, res) => {
         a.popularity,
         a.bio,
         a.vegan_advocacy_notes,
+        a.website_url,
         a.discography_reviewed,
         a.discography_reviewed_date,
         a.discography_review_notes,
@@ -1933,9 +1934,9 @@ router.get('/all-artists', async (req, res) => {
       LEFT JOIN song_artists sa ON a.id = sa.artist_id
       LEFT JOIN songs s ON sa.song_id = s.id
       ${whereClause}
-      GROUP BY a.id, a.spotify_id, a.name, a.spotify_url, a.genres, a.images, 
-               a.followers, a.popularity, a.bio, a.vegan_advocacy_notes, 
-               a.discography_reviewed, a.discography_reviewed_date, 
+      GROUP BY a.id, a.spotify_id, a.name, a.spotify_url, a.genres, a.images,
+               a.followers, a.popularity, a.bio, a.vegan_advocacy_notes, a.website_url,
+               a.discography_reviewed, a.discography_reviewed_date,
                a.discography_review_notes, a.data_source, a.created_at, a.updated_at
       ${orderByClause}
       LIMIT $1 OFFSET $2
@@ -1975,6 +1976,7 @@ router.put('/artists/:id', async (req, res) => {
       name,
       bio,
       vegan_advocacy_notes,
+      website_url,
       discography_reviewed,
       discography_review_notes,
       genres
@@ -2007,6 +2009,12 @@ router.put('/artists/:id', async (req, res) => {
       if (vegan_advocacy_notes !== undefined) {
         updateFields.push(`vegan_advocacy_notes = $${paramIndex}`);
         params.push(vegan_advocacy_notes);
+        paramIndex++;
+      }
+
+      if (website_url !== undefined) {
+        updateFields.push(`website_url = $${paramIndex}`);
+        params.push(website_url || null);
         paramIndex++;
       }
       

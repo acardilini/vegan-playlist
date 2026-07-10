@@ -546,10 +546,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
                           <input
                             type="checkbox"
                             checked={isSubgenreSelected(subgenre)}
-                            onChange={(e) => {
-                              console.log('Subgenre checkbox clicked:', subgenre, e.target.checked);
-                              handleSubgenreChange(subgenre, e.target.checked);
-                            }}
+                            onChange={(e) => handleSubgenreChange(subgenre, e.target.checked)}
                           />
                           <span className="filter-label">
                             {subgenre}
@@ -657,7 +654,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
         </button>
         {activeFilterCount > 0 && (
           <button className="clear-filters" onClick={clearAllFilters}>
-            Clear All
+            Clear all
           </button>
         )}
       </div>

@@ -397,6 +397,7 @@ function ArtistEditModal({ artist, onSave, onClose }) {
     name: artist.name || '',
     bio: artist.bio || '',
     vegan_advocacy_notes: artist.vegan_advocacy_notes || '',
+    website_url: artist.website_url || '',
     discography_reviewed: artist.discography_reviewed || false,
     discography_review_notes: artist.discography_review_notes || '',
     genres: artist.genres || []
@@ -446,6 +447,16 @@ function ArtistEditModal({ artist, onSave, onClose }) {
               onChange={(e) => setFormData({ ...formData, vegan_advocacy_notes: e.target.value })}
               rows={3}
               placeholder="Notes about artist's vegan advocacy, animal rights involvement, etc."
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Website / Bandcamp URL:</label>
+            <input
+              type="url"
+              value={formData.website_url}
+              onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+              placeholder="https://artist.bandcamp.com or https://artistsite.com"
             />
           </div>
 

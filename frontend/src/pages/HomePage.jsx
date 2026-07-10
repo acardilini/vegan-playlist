@@ -6,63 +6,45 @@ import SongCard from '../components/SongCard';
 import PaginationControls from '../components/PaginationControls';
 import AddToPlaylistModal from '../components/AddToPlaylistModal';
 
-function StatsSection() {
-  const [stats, setStats] = useState({ songs: 0, artists: 0, albums: 0 });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const fetchedStats = await spotifyService.getStats();
-        setStats(fetchedStats);
-      } catch (err) {
-        console.error('Error loading stats:', err);
-        // Keep default stats if API fails
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  const handleStatClick = (statType) => {
-    console.log('Stat clicked:', statType);
-    alert(`Show all ${statType.toLowerCase()} (functionality coming soon!)`);
-  };
-
-  return (
-    <section className="stats-section">
-      <div className="stats-container">
-        <div className="stat-item" onClick={() => handleStatClick('Songs')}>
-          <div className="stat-number">{loading ? '...' : `${stats.songs}+`}</div>
-          <div className="stat-label">Songs</div>
-        </div>
-        <div className="stat-item" onClick={() => handleStatClick('Artists')}>
-          <div className="stat-number">{loading ? '...' : `${stats.artists}+`}</div>
-          <div className="stat-label">Artists</div>
-        </div>
-        <div className="stat-item" onClick={() => handleStatClick('Hours')}>
-          <div className="stat-number">40+</div>
-          <div className="stat-label">Hours</div>
-        </div>
-      </div>
-    </section>
-  );
+// Round a live count down to the nearest hundred for display ("1,342" → "1,300+")
+function roundedStat(value) {
+  if (!value) return '…';
+  return `${(Math.floor(value / 100) * 100).toLocaleString()}+`;
 }
 
 function HeroArea() {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    spotifyService.getStats()
+      .then(setStats)
+      .catch((err) => console.error('Error loading stats:', err));
+  }, []);
+
   return (
-    <div className="hero-area">
-      <div className="hero-content">
-        <div className="welcome-and-stats">
-          <div className="welcome-text">
-            Welcome to a searchable database of vegan, animal rights, and animal liberation songs.
-          </div>
-          <StatsSection />
+    <section className="hero">
+      <div className="hero-copy">
+        <h1>A searchable database of vegan &amp; animal-liberation songs</h1>
+        <p>
+          {stats ? `${roundedStat(stats.songs)} songs` : 'Songs'}, tagged by
+          theme, genre, artist, and date.
+        </p>
+      </div>
+      <div className="hero-stats">
+        <div className="stat-badge">
+          <span className="stat-value">{roundedStat(stats?.songs)}</span>
+          <span className="stat-label">Songs</span>
+        </div>
+        <div className="stat-badge">
+          <span className="stat-value">{roundedStat(stats?.artists)}</span>
+          <span className="stat-label">Artists</span>
+        </div>
+        <div className="stat-badge">
+          <span className="stat-value">40+</span>
+          <span className="stat-label">Hours</span>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -109,11 +91,10 @@ function FeaturedSongs() {
     return (
       <section className="featured-songs">
         <div className="section-header">
-          <h2>Featured Songs</h2>
-          <p>Loading your vegan-themed music...</p>
+          <h2>Featured songs</h2>
         </div>
         <div className="loading-placeholder">
-          <p>🎵 Loading songs...</p>
+          <p>Loading songs…</p>
         </div>
       </section>
     );
@@ -123,11 +104,10 @@ function FeaturedSongs() {
     return (
       <section className="featured-songs">
         <div className="section-header">
-          <h2>Featured Songs</h2>
-          <p>Discover powerful vegan-themed music</p>
+          <h2>Featured songs</h2>
         </div>
         <div className="error-message">
-          <p>❌ {error}</p>
+          <p>{error}</p>
         </div>
       </section>
     );
@@ -136,9 +116,9 @@ function FeaturedSongs() {
   return (
     <section className="featured-songs">
       <div className="section-header">
-        <h2>Featured Songs</h2>
+        <h2>Featured songs</h2>
         {message && (
-          <div className="success-message">✅ {message}</div>
+          <div className="success-message">{message}</div>
         )}
       </div>
       <div className="songs-grid">
@@ -161,6 +141,15 @@ function FeaturedSongs() {
       )}
     </section>
   );
+}
+
+// True only when a filter value is genuinely active (empty arrays, empty
+// strings, default sort, and blank year_range objects don't count)
+function isActiveFilterValue(value) {
+  if (!value || value === 'popularity') return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.values(value).some(Boolean);
+  return true;
 }
 
 function SearchSection({ initialSearchQuery = '' }) {
@@ -227,11 +216,13 @@ function SearchSection({ initialSearchQuery = '' }) {
   return (
     <section className="search-section">
       <div className="search-section-content">
-        <h2>Browse Our Vegan Music Collection</h2>
-        <p>Explore our curated collection of vegan-themed songs, or use search and filters to find exactly what you're looking for.</p>
+        <div className="section-header centered">
+          <h2>Browse the collection</h2>
+          <p>Search by title, artist, or use filters to narrow by genre and theme.</p>
+        </div>
 
         {message && (
-          <div className="success-message">✅ {message}</div>
+          <div className="success-message">{message}</div>
         )}
 
         <SearchAndFilter
@@ -246,8 +237,8 @@ function SearchSection({ initialSearchQuery = '' }) {
         {/* Song Results */}
         {hasSearched && (
           <div className="home-search-results">
-            {loading && <div className="loading">🎵 Loading songs...</div>}
-            {error && <div className="error-message">❌ {error}</div>}
+            {loading && <div className="loading">Loading songs…</div>}
+            {error && <div className="error-message">{error}</div>}
             {!loading && !error && (!searchResults || searchResults.songs?.length === 0) && (
               <div className="no-results">No songs found. Try different filters or search terms.</div>
             )}
@@ -255,9 +246,7 @@ function SearchSection({ initialSearchQuery = '' }) {
               <div className="search-results-container">
                 <h3>
                   {searchResults.filters_applied?.query ||
-                   Object.values(searchResults.filters_applied || {}).some(filter =>
-                     filter && (Array.isArray(filter) ? filter.length > 0 : filter !== 'popularity')
-                   ) ? (
+                   Object.values(searchResults.filters_applied || {}).some(isActiveFilterValue) ? (
                     <>
                       {searchResults.pagination.total} songs found
                       {searchResults.filters_applied?.query && (
@@ -270,9 +259,7 @@ function SearchSection({ initialSearchQuery = '' }) {
                 </h3>
 
                 {/* Applied filters summary */}
-                {Object.values(searchResults.filters_applied || {}).some(filter =>
-                  filter && (Array.isArray(filter) ? filter.length > 0 : filter !== 'popularity')
-                ) && (
+                {Object.values(searchResults.filters_applied || {}).some(isActiveFilterValue) && (
                   <div className="applied-filters">
                     <span>Filters applied:</span>
                     {searchResults.filters_applied.vegan_focus && searchResults.filters_applied.vegan_focus.length > 0 && (

@@ -7,33 +7,44 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 3 — Brand & UI Rebuild (Session 3.1 ☑ merged to `main` 2026-07-10).
-  Phases 0–2 complete.
-- **Current session:** Session 3.2 — Public pages restyle (in progress 2026-07-10)
+- **Phase:** Phase 3 — Brand & UI Rebuild (3.1 ☑ merged; 3.2 ☑ on branch, awaiting
+  merge). Phases 0–2 complete.
+- **Current session:** _Session 3.2 done on branch `session-3.2-public-pages`
+  2026-07-11 (pushed), awaiting curator click-through + merge_
 - **Next session:** Session 3.3 — Remaining pages & polish (Playlists, Submit,
   Dashboard, About, Admin; responsive + accessibility pass)
-- **Last updated:** 2026-07-10 _(3.1 curator click-through ✅, merged to main; 3.2 started)_
+- **Last updated:** 2026-07-11 _(3.2 built: Home/Browse/Song Detail/Artists restyled;
+  advocacy section renamed + hidden-when-empty)_
 
 ### Next Tasks (start here)
-1. ✅ **Done — `session-3.1-design-system` merged to `main`** 2026-07-10 (curator
-   click-through confirmed).
-2. **Session 3.2 — Public pages restyle**: Home, Browse/Search, Song Detail, Artists —
-   apply the `ui_kits/website/*.html` mockups from the brand kit (project
-   `4d59f679-dccb-4902-9e88-a249ba6ee659` via DesignSync); replace each page's legacy
-   App.css blocks with token-based styles (delete the corresponding bridge entries as
-   they empty). Update hero copy to real stats wording per kit voice ("Search 1,300+
-   songs…", sentence case, no emoji).
-   **Curator request (2026-07-10), do in the Song Detail restyle:** the
-   "Vegan Advocacy Analysis" section (`SongDetailPage.jsx:285`, five CategoryBadges over
-   `vegan_focus`/`animal_category`/`advocacy_style`/`advocacy_issues`/
-   `lyrical_explicitness`) must be renamed **"Animal Advocacy Analysis"** and must be
-   **hidden entirely when the song has no analysis data** (all five arrays empty/null) —
-   only show it when the analysis has been done and there is something to view. Note the
-   DB currently holds no categorisation data for any song (thematic coding is a future
-   workstream), so as of today the section would show for no songs.
-3. Mobile/responsive issues spotted in 3.1 (hero stat badges overflow at 390px; song
-   cards clipped) — in scope for **Session 3.3's responsive pass**, noted here so they
-   aren't lost.
+1. **Curator: click through branch `session-3.2-public-pages`** (start both servers;
+   browse home, search/filters, a song page e.g. `/song/541`, `/artists`, an artist
+   page) and give the merge go-ahead. Biggest visible changes: kit hero with rounded
+   stat badges + new copy ("A searchable database of vegan & animal-liberation songs",
+   "1,300+ songs, tagged by theme, genre, artist, and date"); song page rebuilt as the
+   kit's 16:9 cover hero (title/artist/album + Year/Duration/Popularity + actions in a
+   scrim over the artwork); artist page rebuilt as the kit's photo hero (genre tags +
+   stat boxes in the scrim) over a numbered song list with moss popularity bars;
+   artists grid now kit cards (circular photo, meta row, genre pills); filter chips are
+   ember pills; all emoji gone from public pages.
+   **Same-day follow-up (curator-requested):** popularity removed from all public song
+   and artist surfaces; followers removed from artist cards (kept on the artist page as
+   "Spotify followers"); artist-page songs now **grouped by album, newest first** (cover
+   + year · count header, per-album numbering); new **Bandcamp/Website button** on the
+   artist page — populate it per artist via the admin **Artists tab → Edit → "Website /
+   Bandcamp URL"** (new `artists.website_url` column, migration `005` applied;
+   currently empty for all artists so no button shows yet). _Curator approved all
+   three follow-ups in-session (2026-07-11) from screenshots — the remaining step is
+   the in-browser click-through + merge go-ahead._
+2. **Session 3.3 — Remaining pages & polish**: Playlists (+ detail), Submit, Dashboard,
+   About, Admin; responsive + accessibility pass. Known responsive item: **every page
+   still overflows horizontally at 390px** (pre-existing shell issue — verified on the
+   untouched About page too; the nav now wraps but something page-level still forces
+   width). Also from 3.2: playlist-detail rows inherit the artist-page `.song-item` row
+   styling from components.css (40px thumbs) — fold into the Playlists restyle.
+3. Bridge cleanup continues: App.css is down to ~6,100 lines (from ~8,800); delete
+   remaining legacy page blocks + emptied bridge `:root` entries as 3.3 restyles each
+   page.
 2. ✅ Looks **done — curator appears to have run the playlist sync**: the DB held 1,821
    songs on 2026-07-10 (= 1,800 + the 21 mismatch-report tracks from 2026-07-09).
    Curator to confirm it was intentional; the new tracks are in the To-process queue.
@@ -115,6 +126,41 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-11 — Public-page restyle choices (Session 3.2).** (1) **Restyle preserved
+  behaviour; only the two detail pages changed structure** — Song Detail and Artist
+  Detail were rebuilt to the kit's scrim-hero layouts (`ui_kits/website/song.html` /
+  `artist.html`); Home/Browse/Artists kept their component structure and got token CSS
+  (the kit's browse-filters sidebar mockup was *not* adopted — the existing toggle
+  filter panel keeps the hierarchical genre tree, which the flat mockup can't express).
+  (2) **Advocacy section renamed and gated (curator request):** "Vegan Advocacy
+  Analysis" → **"Animal advocacy analysis"** (kit sentence case), rendered only when at
+  least one of the five categorisation arrays is non-empty — today that's no songs, by
+  design. (3) **Dead code removed with the restyle:** song-page audio-features panel +
+  technical details (fields NULL for all songs; Phase 0 drop), preview-play buttons
+  (`preview_url` dead), energy/danceability/valence sort options, the artists-grid
+  "View Artist" hover overlay, all `via.placeholder.com` fallbacks (striped placeholder
+  instead), and dead CSS (`.song-tags`, `.view-all-results`, `.coming-soon`,
+  audio-feature badge variants). (4) **Generic vocabulary lives once in
+  components.css** — `.songs-grid`, `.section-header`, messages/empty states,
+  `.page-container`/`.page-header`, search+filter suite — so Playlists/Submit/About and
+  admin inherit the brand look before their 3.3 restyle. (5) **Flexbox gotcha fixed and
+  documented:** page containers are flex items of the column-flex `.app-container`, and
+  `margin: 0 auto` disables flex stretch (container collapses to content width) — every
+  centered page container now sets `width: 100%` explicitly. (6) Two "Filters applied"
+  guards fixed (empty `year_range` object / default `min_songs: 1` made the empty label
+  render).
+- **2026-07-11 — Popularity metrics off the public site; artist website link added
+  (Session 3.2 follow-up, curator-requested).** Popularity "sets up a comparison we're
+  not interested in": removed from song cards, the song-page hero, artist cards, artist
+  song rows, and the artist-page stat boxes (the letter of the request covered songs +
+  artist-card followers; popularity was removed from artist surfaces too under the same
+  rationale — easy to restore if wanted). Followers stay only on the artist page,
+  relabelled **"Spotify followers"**. Sorting by popularity still works (display-only
+  change). Artist-page songs are grouped by album (newest release first, "Other songs"
+  last; per-album numbering under a cover + year · count header). New curator-owned
+  `artists.website_url` (migration `005_artist_website.sql`) renders as a
+  "Bandcamp"/"Website" hero button (label by URL host); editable in the admin Artists
+  tab; never touched by sync/enrichment.
 - **2026-07-10 — Design-system layering: bridge + override, not a rewrite (Session 3.1).**
   (1) Brand tokens live in new `frontend/src/styles/tokens/` (kit's colors/typography/
   spacing verbatim; fonts via a Google Fonts `<link>` in `index.html` instead of the
@@ -306,6 +352,53 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-11 (Session 3.2)** — Public pages restyle. On branch
+  `session-3.2-public-pages` (3.1 merged to `main` first, curator-confirmed), from the
+  brand-kit mockups (`ui_kits/website/index|browse-filters|song|artists|artist.html`
+  via DesignSync): **(1) Home** — kit hero (display headline + "1,300+ songs, tagged by
+  theme, genre, artist, and date" + `.stat-badge` cards fed by live stats rounded down
+  to the hundred), "Featured songs" / "Browse the collection" sentence-case headers,
+  emoji stripped. **(2) Browse/Search** — token restyle of the whole SearchAndFilter
+  suite (pill search input, secondary Filters button with count chip, ember filter
+  chips, kit select, surface filters panel, moss parent-genre labels); dead audio
+  sort options + debug logs removed. Shared with the artists page's twin component.
+  **(3) Song Detail** — rebuilt to the kit layout: 760px column, ghost Back / secondary
+  Share, 16:9 cover hero with scrim (title, ember artist, italic album, Year/Duration/
+  Popularity stat cells, Open in Spotify + View lyrics buttons), "Music video",
+  "Key lyrics" ember-border quote card, **"Animal advocacy analysis"** (renamed per
+  curator request; whole section hidden unless one of the five categorisation arrays
+  has data — currently no songs), "You might also like" compact cards. Audio-features
+  panel + preview-play deleted (dead data). **(4) Artists** — kit cards (72px circular
+  photo, meta row, genre pills, moss advocacy label) and Artist Detail rebuilt to the
+  kit photo-hero (overlay Back/Spotify/Share buttons, genre tags + 4 translucent stat
+  boxes in the scrim) over numbered song rows with moss popularity bars. **(5) CSS** —
+  all styles token-based in `styles/components.css` (+~1,100 lines incl. shared
+  page-shell/messages/search vocabulary); legacy App.css blocks deleted (~2,700 lines:
+  hero/stats, featured/search sections, song-card leftovers, whole search+filter
+  region, both song-detail layouts, video-section width hacks + 🎥, artist pages ×2
+  regions, dead `.song-tags`/`.view-all-results`/`.coming-soon`). Bug fixes en route:
+  page containers collapsing to content width inside the column-flex app shell
+  (`width: 100%` + documented in Decision Log), two always-on "Filters applied" labels,
+  admin `.artist-info` row rule leaking into public artist cards, nav now wraps on
+  narrow viewports. Net ≈ **+1,600/−2,900 lines**. Smoke test ✅ (headless-Chrome walk,
+  desktop 1280 + mobile 390): home (hero copy + stat badges + covers), song/541
+  (scrim hero, video embed, no advocacy section — correct, no data), artists grid,
+  artist/83 (hero + popularity bars), playlists unchanged; `npm run build` clean
+  (2.1s); eslint **0 errors** on all six touched files (5 pre-existing errors in them
+  also fixed; 6 deliberate hook warnings remain). Known-remaining: site-wide 390px
+  horizontal overflow (pre-existing, verified on untouched About page) → 3.3
+  responsive pass. Branch pushed, awaiting curator click-through + merge.
+  **Same-day follow-up (curator-requested, same branch):** (1) popularity displays
+  removed site-wide (song cards, song hero, artist cards/rows/stat box — see Decision
+  Log) and artist-card followers removed; artist-page followers relabelled "Spotify
+  followers". (2) Artist-page songs grouped by album, newest first (56px cover +
+  "year · N songs" header, per-album row numbering, rows slimmed to title + duration).
+  (3) `artists.website_url` added (migration `005_artist_website.sql`, applied):
+  selected by the public artist route + admin all-artists, writable via
+  `PUT /api/admin/artists/:id`, new "Website / Bandcamp URL" field in the admin
+  Artists edit modal, rendered as a "Bandcamp"/"Website" hero button. Backend
+  restarted; verified end-to-end (set URL via admin API → button renders → reverted
+  to empty). Build clean; eslint 0 errors on touched files.
 - **2026-07-10 (Session 3.1)** — Design system foundation (opens Phase 3). On branch
   `session-3.1-design-system`, from the brand kit (Claude Design project "Website brand
   kit development", read via DesignSync): **(1)** new `frontend/src/styles/` —

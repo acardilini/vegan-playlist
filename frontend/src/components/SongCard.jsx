@@ -150,15 +150,6 @@ function SongCard({ song, songId, showAddToPlaylist = true, onAddToPlaylist }) {
           </div>
         )}
 
-        {/* Metadata */}
-        <div className="song-features">
-          {song.popularity > 20 && (
-            <span className="feature-badge popularity">
-              {song.popularity}% popular
-            </span>
-          )}
-        </div>
-
         <div className="song-meta">
           <span className="song-year">
             {song.release_date ? new Date(song.release_date).getFullYear() : 'Unknown'}

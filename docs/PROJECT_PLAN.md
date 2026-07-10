@@ -160,8 +160,8 @@ routes pruned; clear frontend/backend structure and conventions documented.
 **Exit criteria:** Design system in place; all pages restyled to brand; responsive and
 accessible.
 
-- ☑ **Session 3.1 — Design system foundation.** _Done 2026-07-10 on branch
-  `session-3.1-design-system` (pushed, awaiting merge)._ Brand-kit tokens →
+- ☑ **Session 3.1 — Design system foundation.** _Done 2026-07-10; merged to `main`
+  2026-07-10 after curator click-through._ Brand-kit tokens →
   `frontend/src/styles/tokens/` + `base.css` + `components.css` (imported after App.css
   to win the cascade); legacy `:root` bridged to tokens so every page re-brands at once;
   Spotify greens + gradients swept; SongCard/MoodBadge de-emoji'd, striped artwork
@@ -169,10 +169,17 @@ accessible.
   `.song-artwork` globally) that had hidden all album covers — the "broken cover API"
   myth. _Smoke test ✅: home (desktop+mobile), song detail, artists, playlists render
   with brand styling; build + lint clean._
-- ☐ **Session 3.2 — Public pages restyle.** Home, Browse/Search, Song Detail, Artists.
-  _Smoke test: walk each page on desktop + mobile widths._
+- ☑ **Session 3.2 — Public pages restyle.** _Done 2026-07-11 on branch
+  `session-3.2-public-pages` (pushed, awaiting merge)._ Home (kit hero + stat badges +
+  new copy), Browse/Search (token restyle of the filter suite), Song Detail (kit 16:9
+  scrim hero; "Animal advocacy analysis" renamed + hidden when uncoded — curator
+  request; dead audio-features panel removed), Artists (kit cards + photo-hero profile
+  with popularity bars). ~2,700 lines of legacy App.css deleted; shared page vocabulary
+  added to components.css. _Smoke test ✅: headless walk of all four pages at 1280 +
+  390; build + lint clean (0 errors)._
 - ☐ **Session 3.3 — Remaining pages & polish.** Playlists, Submit, Dashboard, About, Admin.
-  Accessibility and responsive pass. _Smoke test: full walkthrough of every route._
+  Accessibility and responsive pass — includes the site-wide 390px horizontal overflow
+  (pre-existing shell issue verified in 3.2). _Smoke test: full walkthrough of every route._
 
 ## Phase 4 — Deployment Hardening
 **Goal:** Ship it, cheaply, from GitHub.

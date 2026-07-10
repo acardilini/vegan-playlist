@@ -999,7 +999,8 @@ router.get('/artists/:id', async (req, res) => {
         a.followers,
         a.popularity,
         a.bio,
-        a.vegan_advocacy_notes
+        a.vegan_advocacy_notes,
+        a.website_url
       FROM artists a
       WHERE a.id = $1
     `, [artistId]);
