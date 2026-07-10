@@ -33,7 +33,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    + year · count header, per-album numbering); new **Bandcamp/Website button** on the
    artist page — populate it per artist via the admin **Artists tab → Edit → "Website /
    Bandcamp URL"** (new `artists.website_url` column, migration `005` applied;
-   currently empty for all artists so no button shows yet).
+   currently empty for all artists so no button shows yet). _Curator approved all
+   three follow-ups in-session (2026-07-11) from screenshots — the remaining step is
+   the in-browser click-through + merge go-ahead._
 2. **Session 3.3 — Remaining pages & polish**: Playlists (+ detail), Submit, Dashboard,
    About, Admin; responsive + accessibility pass. Known responsive item: **every page
    still overflows horizontally at 390px** (pre-existing shell issue — verified on the
