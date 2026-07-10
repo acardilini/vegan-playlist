@@ -27,6 +27,14 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    App.css blocks with token-based styles (delete the corresponding bridge entries as
    they empty). Update hero copy to real stats wording per kit voice ("Search 1,300+
    songs…", sentence case, no emoji).
+   **Curator request (2026-07-10), do in the Song Detail restyle:** the
+   "Vegan Advocacy Analysis" section (`SongDetailPage.jsx:285`, five CategoryBadges over
+   `vegan_focus`/`animal_category`/`advocacy_style`/`advocacy_issues`/
+   `lyrical_explicitness`) must be renamed **"Animal Advocacy Analysis"** and must be
+   **hidden entirely when the song has no analysis data** (all five arrays empty/null) —
+   only show it when the analysis has been done and there is something to view. Note the
+   DB currently holds no categorisation data for any song (thematic coding is a future
+   workstream), so as of today the section would show for no songs.
 3. Mobile/responsive issues spotted in 3.1 (hero stat badges overflow at 390px; song
    cards clipped) — in scope for **Session 3.3's responsive pass**, noted here so they
    aren't lost.
