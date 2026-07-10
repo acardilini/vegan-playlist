@@ -133,6 +133,7 @@ endpoint/chart will light up once songs are coded), not a bug.
 
 - **keep (documented location):** `importSpotifyDataEnhanced.js`, `syncSpotifyPlaylist.js` (until the Phase 1 pipeline replaces it), `auditDatabase.js`, `exportAllSongsData.js`, `runMigration.js` + `database/migrations/`.
 - **drop/archive (~34):** one-off `test*`, `check*`, `debug*`, `diagnose*`, `fix*`, `add*`, `setup*`, `create*`, `migrate*`, `compare*`, `flag*`, `show*`, `simpleSyncSpotify.js`, `restartServer.js`, `youtubeApiServer.js` — all served their purpose; git history preserves them.
+- **Executed in Session 2.3 (2026-07-10)** with an updated keep-list: the Phase 1 pipeline (`enrichFromSpotify.js`, Session 1.2) superseded both legacy import scripts, and `runMigration.js` turned out to be hardcoded one-off DDL, not a migration runner. Final: **4 kept** (`consolidateSpreadsheets.js`, `enrichFromSpotify.js`, `auditDatabase.js`, `exportAllSongsData.js` — see `backend/scripts/README.md`), **37 deleted**.
 
 ## 5. Cross-cutting observations (feed later sessions)
 
