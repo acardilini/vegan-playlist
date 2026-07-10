@@ -47,13 +47,13 @@ function SongCard({ song, songId, showAddToPlaylist = true, onAddToPlaylist }) {
     }
   };
 
-  // Get album artwork
+  // Get album artwork (null → striped placeholder, never a blank box)
   const getArtwork = () => {
     if (song.album_images && song.album_images.length > 0) {
       const mediumImage = song.album_images.find(img => img.width === 300);
       return mediumImage ? mediumImage.url : song.album_images[0].url;
     }
-    return "https://via.placeholder.com/150x150/1DB954/000000?text=♪";
+    return null;
   };
 
   // Get primary genre for display
@@ -115,10 +115,16 @@ function SongCard({ song, songId, showAddToPlaylist = true, onAddToPlaylist }) {
             </div>
           )}
         </div>
-        <img
-          src={getArtwork()}
-          alt={`${song.title} artwork`}
-        />
+        {getArtwork() ? (
+          <img
+            src={getArtwork()}
+            alt={`${song.title} artwork`}
+          />
+        ) : (
+          <div className="artwork-placeholder">
+            <span>album cover</span>
+          </div>
+        )}
 
         {/* Mood badge overlay */}
         <div className="mood-badge-overlay">
@@ -148,7 +154,7 @@ function SongCard({ song, songId, showAddToPlaylist = true, onAddToPlaylist }) {
         <div className="song-features">
           {song.popularity > 20 && (
             <span className="feature-badge popularity">
-              🔥 {song.popularity}% popular
+              {song.popularity}% popular
             </span>
           )}
         </div>

@@ -7,22 +7,29 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 2 — Architecture Cleanup (Sessions 2.1 ☑, 2.2 ☑, 2.2b ☑, 2.3 ☑) —
-  **Phase 2 complete.** Phases 0–1 complete.
-- **Current session:** _Session 2.3 done and **merged to `main`** 2026-07-10 (pushed)_
-- **Next session:** Session 3.1 — Design system foundation (opens Phase 3, Brand & UI
-  Rebuild — brand kit located, see Next Tasks)
-- **Last updated:** 2026-07-10 _(2.3 merged; brand kit located)_
+- **Phase:** Phase 3 — Brand & UI Rebuild (Session 3.1 ☑ on branch, awaiting merge).
+  Phases 0–2 complete.
+- **Current session:** _Session 3.1 done on branch `session-3.1-design-system`
+  2026-07-10 (pushed), awaiting curator click-through + merge_
+- **Next session:** Session 3.2 — Public pages restyle (Home, Browse/Search, Song
+  Detail, Artists)
+- **Last updated:** 2026-07-10 _(3.1 built; site-wide album-cover CSS bug found+fixed)_
 
 ### Next Tasks (start here)
-1. **Session 3.1 — Design system foundation**: tokens (colour, type, spacing), global
-   styles, core reusable components from the brand kit. **Unblocked 2026-07-10** — the
-   brand kit is the curator's Claude Design project "Website brand kit development"
-   (`4d59f679-dccb-4902-9e88-a249ba6ee659`, readable via the DesignSync tool; go by ID —
-   it doesn't appear in `list_projects`). Contains oklch colour/type/spacing tokens,
-   styles.css, guideline specimens, 8 React components, and full-page mockups for every
-   route. Note: built from an old prototype screenshot — its "cover API broken" and
-   "1,400+ songs" claims are stale; verify against the live DB when applying.
+1. **Curator: click through branch `session-3.1-design-system`** (start both servers,
+   browse home/artists/playlists/song detail) and give the merge go-ahead. Biggest
+   visible changes: warm-dark brand palette everywhere (Ember coral primary, Moss green
+   for genre/plant signals), Manrope/Public Sans type, **album covers now show on song
+   cards** (see Decision Log — they were hidden by a CSS bug, not a broken API).
+2. **Session 3.2 — Public pages restyle**: Home, Browse/Search, Song Detail, Artists —
+   apply the `ui_kits/website/*.html` mockups from the brand kit (project
+   `4d59f679-dccb-4902-9e88-a249ba6ee659` via DesignSync); replace each page's legacy
+   App.css blocks with token-based styles (delete the corresponding bridge entries as
+   they empty). Update hero copy to real stats wording per kit voice ("Search 1,300+
+   songs…", sentence case, no emoji).
+3. Mobile/responsive issues spotted in 3.1 (hero stat badges overflow at 390px; song
+   cards clipped) — in scope for **Session 3.3's responsive pass**, noted here so they
+   aren't lost.
 2. ✅ Looks **done — curator appears to have run the playlist sync**: the DB held 1,821
    songs on 2026-07-10 (= 1,800 + the 21 mismatch-report tracks from 2026-07-09).
    Curator to confirm it was intentional; the new tracks are in the To-process queue.
@@ -104,6 +111,33 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-10 — Design-system layering: bridge + override, not a rewrite (Session 3.1).**
+  (1) Brand tokens live in new `frontend/src/styles/tokens/` (kit's colors/typography/
+  spacing verbatim; fonts via a Google Fonts `<link>` in `index.html` instead of the
+  kit's CSS `@import`); global element styles in `styles/base.css`; the core-component
+  classes in `styles/components.css`, imported **after** `App.css` so the design system
+  wins the cascade over the 7,900-line legacy monolith (whose bare-class duplicate
+  blocks otherwise "last-rule-wins" everything). (2) The monolith's legacy `:root`
+  variables were **re-pointed at the brand tokens** (a documented BRIDGE block) — every
+  page, admin included, picks up the palette at once without touching page CSS; the 56
+  hardcoded Spotify-green values and 4 gradients were swept to tokens/flat fills
+  (brand: flat, no gradients). 3.2/3.3 delete legacy blocks + bridge entries page by
+  page. (3) Also mapped five legacy variables that were used but **never defined**
+  (`--color-border`, `--color-surface`, `--color-primary`, `--color-vegan-primary/
+  secondary`) — borders silently fell back to `currentColor` before. (4) Brand-voice
+  rules applied to core components: no emoji (🔥 popularity, mood emojis removed),
+  mood badge became a neutral scrim pill (two intentional accent hues only), missing
+  covers render the kit's striped placeholder — the dead `via.placeholder.com` fallback
+  is gone.
+- **2026-07-10 — "Cover API broken" was a CSS bug, now fixed (Session 3.1).** The brand
+  kit (and the curator) believed the album-cover API was broken. Root cause found while
+  smoke-testing 3.1: an old cleanup in `App.css` deleted a `@media (max-width: 768px)`
+  opener but left its body, leaking mobile artist-page rules — including
+  `.song-artwork { display: none }` — into **global** scope. Song cards therefore never
+  showed covers on any viewport even though the DB has had them since Session 1.2. Fix:
+  restored the media-query wrapper and scoped the hide rule to `.song-item .song-artwork`
+  (artist-page rows only). Covers now render on desktop and mobile cards; the kit's
+  striped-placeholder guidance stays for the 39 manual-only songs.
 - **2026-07-10 — Script keep-list revised at execution time (Session 2.3).** The Phase 0
   inventory's keep-list was written before Phase 1 existed; by 2.3 two of its five keeps
   were superseded and one was misnamed. **Kept 4:** `consolidateSpreadsheets.js` +
@@ -268,6 +302,31 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-10 (Session 3.1)** — Design system foundation (opens Phase 3). On branch
+  `session-3.1-design-system`, from the brand kit (Claude Design project "Website brand
+  kit development", read via DesignSync): **(1)** new `frontend/src/styles/` —
+  `tokens/colors.css` (warm-dark oklch neutrals + Ember/Moss accents), `tokens/
+  typography.css` (Manrope display / Public Sans body scale), `tokens/spacing.css`
+  (4px scale, radii, shadows, motion), `base.css` (element defaults: canvas bg, display
+  headings, ember links, focus ring), `components.css` (app shell, song card, striped
+  artwork placeholder, pagination, mood badge, plus kit Button/Input/Select/Tag/Badge
+  classes as `.btn/.input/.select/.tag/.stat-badge` for 3.2/3.3); `index.css` now just
+  imports these; Google Fonts link + real `<title>` in `index.html`. **(2)** `App.css`:
+  legacy `:root` re-pointed at tokens (bridge), 13 hex + 43 rgba() Spotify greens and 4
+  gradients swept, 5 never-defined variables now defined. **(3)** JSX: `App.jsx` imports
+  components.css after App.css; `SongCard` lost the 🔥 emoji and the dead
+  `via.placeholder.com` fallback (striped placeholder instead); `MoodBadge` rewritten as
+  a token pill (no emoji, no per-mood ad hoc colors). **(4)** Two cascade bugs fixed in
+  legacy CSS: restored the deleted `@media` opener that had leaked
+  `.song-artwork{display:none}` globally (this — not a broken API — is why cards never
+  showed album covers; see Decision Log), and added `min-width:0` to cards so long
+  nowrap titles can't blow out grid columns. Net ≈ +900/−120 lines, all frontend.
+  Smoke test ✅: headless-Chrome walk of home (desktop 1280 + mobile 390), song/541,
+  artists, playlists — all render on-brand (warm dark canvas, ember nav/stats/actions,
+  moss genre labels, covers visible on cards for the first time); `npm run build` clean
+  (2.2s); eslint 0 errors on changed files. Known-remaining: mobile hero-stats overflow
+  (pre-existing, → 3.3 responsive pass); hero copy still old voice (→ 3.2). Branch
+  pushed, awaiting curator click-through + merge.
 - **2026-07-10 (Session 2.3)** — Script cleanup (closes Phase 2). On branch
   `session-2.3-script-cleanup`: **deleted 37 of the 41 files in `backend/scripts/`**
   (all `test*`/`check*`/`debug*`/`diagnose*` one-offs, the `add*`/`create*`/`setup*`

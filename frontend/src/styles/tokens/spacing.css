@@ -1,0 +1,33 @@
+/* The Vegan Playlist — Spacing, Radius, Shadow, Motion Tokens (brand kit) */
+
+:root {
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Shadow — subtle, warm, low-elevation (dark UI needs restraint) */
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.4), 0 8px 24px oklch(0 0 0 / 0.28);
+  --shadow-raised: 0 2px 4px oklch(0 0 0 / 0.5), 0 16px 40px oklch(0 0 0 / 0.35);
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+
+  /* Layout */
+  --content-max-width: 1200px;
+  --grid-gutter: var(--space-5);
+}

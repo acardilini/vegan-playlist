@@ -1,0 +1,530 @@
+/* The Vegan Playlist — core design-system components (brand kit).
+   Imported AFTER App.css (see App.jsx) so these rules win the cascade over
+   the legacy prototype styles, including the monolith's later duplicate
+   blocks. As Sessions 3.2/3.3 restyle each page, the corresponding legacy
+   App.css blocks are deleted and this file grows into the only stylesheet. */
+
+/* ---------------------------------------------------------------- */
+/* App shell: header, wordmark, nav, footer                          */
+/* ---------------------------------------------------------------- */
+
+.app-header {
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-hairline);
+  box-shadow: none;
+  padding: var(--space-4) 0;
+  text-align: left;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+/* Wordmark — brand mark is type-only (no logo file exists yet) */
+.app-header h1 {
+  margin: 0;
+  font: 800 1.375rem/1 var(--font-display);
+  letter-spacing: 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text-primary);
+}
+
+.navigation-menu ul {
+  gap: var(--space-6);
+}
+
+.nav-item a {
+  font: var(--text-body-sm);
+  color: var(--text-secondary);
+  padding: var(--space-2) 0;
+  border-radius: 0;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.nav-item a:hover {
+  color: var(--text-primary);
+  background: none;
+}
+
+.nav-item.active a {
+  color: var(--accent-ember-60);
+  background: none;
+}
+
+.nav-item.active a::after {
+  content: none;
+}
+
+.app-footer {
+  background: var(--bg-canvas);
+  border-top: 1px solid var(--border-hairline);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.app-footer p {
+  font: var(--text-meta);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------- */
+/* Song card                                                          */
+/* ---------------------------------------------------------------- */
+
+.song-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* let ellipsised titles shrink instead of widening grid columns */
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.song-card:hover {
+  background: var(--bg-surface-raised);
+  border-color: var(--border-hairline);
+  box-shadow: var(--shadow-card);
+  transform: none;
+}
+
+.song-card:active {
+  transform: none;
+}
+
+/* Scoped to .song-card: playlist rows / admin lists have their own
+   small .song-artwork thumbnails that must keep their fixed sizes */
+.song-card .song-artwork {
+  position: relative;
+  margin: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.song-card .song-artwork img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+/* Striped placeholder for songs without cover art (never a blank box) */
+.artwork-placeholder {
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-sm);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--bg-surface-raised),
+    var(--bg-surface-raised) 8px,
+    var(--bg-canvas) 8px,
+    var(--bg-canvas) 16px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.artwork-placeholder span {
+  font: 500 0.7rem/1.3 var(--font-mono);
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0 12px;
+}
+
+.song-card .song-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.song-card .song-title {
+  font: var(--text-display-sm);
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-card .song-artist {
+  font: var(--text-body-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.song-card .song-genre-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 0;
+}
+
+.song-card .song-parent-genre {
+  font: var(--text-meta);
+  color: var(--accent-moss-60);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.song-card .song-genre {
+  font: var(--text-meta);
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.song-card .song-features {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.song-card .feature-badge {
+  font: var(--text-meta);
+  color: var(--accent-ember-60);
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.song-card .song-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font: var(--text-meta);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Hover overlay actions on the artwork */
+.song-overlay-buttons {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: var(--space-2);
+  opacity: 0;
+  z-index: 2;
+  transition: opacity var(--duration-base) var(--ease-standard);
+}
+
+.song-card:hover .song-overlay-buttons {
+  opacity: 1;
+}
+
+.play-button {
+  background: var(--accent-ember-60);
+  color: var(--text-on-accent);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.play-button:hover {
+  background: var(--accent-ember-50);
+}
+
+.add-to-playlist-button {
+  background: var(--bg-surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-hairline);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: none;
+  transition: background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.add-to-playlist-button:hover {
+  background: var(--accent-ember-60);
+  color: var(--text-on-accent);
+  transform: none;
+}
+
+/* Mood badge — pill over artwork, scrim background (no emoji, no ad hoc hues) */
+.mood-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font: var(--text-meta);
+  letter-spacing: 0.02em;
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+  border: 1px solid var(--border-hairline);
+}
+
+.mood-badge.large {
+  padding: 5px 14px;
+  font: 500 0.8125rem/1.3 var(--font-body);
+}
+
+/* ---------------------------------------------------------------- */
+/* Pagination                                                         */
+/* ---------------------------------------------------------------- */
+
+.pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-6) 0 0;
+  padding: var(--space-4);
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.pagination-info {
+  font: var(--text-body-sm);
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  font: var(--text-label);
+  border: 1px solid var(--border-hairline);
+  background: var(--bg-surface-raised);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.pagination-btn:hover:not(:disabled):not(.ellipsis) {
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  transform: none;
+}
+
+.pagination-btn.active {
+  background: var(--accent-ember-60);
+  color: var(--text-on-accent);
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.pagination-btn.disabled,
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--bg-surface-raised);
+  transform: none;
+}
+
+.pagination-btn.ellipsis,
+.pagination-btn.ellipsis:hover {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* ---------------------------------------------------------------- */
+/* Design-system primitives (kit Button / Input / Select / Tag /      */
+/* Badge) — vocabulary for the 3.2/3.3 page restyles                 */
+/* ---------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 10px 18px;
+  font: var(--text-label);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: var(--accent-ember-60);
+  color: var(--text-on-accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-ember-50);
+}
+
+.btn-secondary {
+  background: var(--bg-surface-raised);
+  color: var(--text-primary);
+  border-color: var(--border-hairline);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-surface);
+}
+
+.input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  font: var(--text-body-md);
+  color: var(--text-primary);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input:focus,
+.input:focus-within {
+  border-color: var(--accent-ember-60);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+  outline: none;
+}
+
+.input-pill {
+  border-radius: var(--radius-pill);
+}
+
+.select {
+  appearance: none;
+  background-color: var(--bg-surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 8px 32px 8px 12px;
+  color: var(--text-primary);
+  font: var(--text-body-sm);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23bcb6ae' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+  font: var(--text-meta);
+  letter-spacing: 0.02em;
+  background: var(--bg-surface-raised);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-hairline);
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.tag-ember {
+  background: var(--accent-ember-40);
+  color: var(--accent-ember-80);
+  border-color: transparent;
+}
+
+.tag-moss {
+  background: var(--accent-moss-40);
+  color: var(--accent-moss-80);
+  border-color: transparent;
+}
+
+.tag-active {
+  outline: 1px solid var(--accent-ember-60);
+  outline-offset: 1px;
+}
+
+.stat-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+}
+
+.stat-badge .stat-value {
+  font: 800 1.5rem/1 var(--font-display);
+  color: var(--accent-ember-60);
+}
+
+.stat-badge .stat-label {
+  font: var(--text-meta);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

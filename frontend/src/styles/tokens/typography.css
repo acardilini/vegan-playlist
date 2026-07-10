@@ -1,0 +1,24 @@
+/* The Vegan Playlist — Typography Tokens (brand kit)
+   Display: Manrope (600–800) — confident, geometric, for headings/wordmark.
+   Body: Public Sans (400–600) — neutral, highly legible at small sizes
+   for dense song-listing UI. Loaded via <link> in index.html. */
+
+:root {
+  --font-display: "Manrope", "Segoe UI", sans-serif;
+  --font-body: "Public Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Type scale — 1.2 ratio, tuned for a dense dark-mode listing UI */
+  --text-display-xl: 700 3rem/1.1 var(--font-display);    /* hero headline */
+  --text-display-lg: 700 2.25rem/1.15 var(--font-display); /* page title */
+  --text-display-md: 700 1.5rem/1.25 var(--font-display);  /* section title */
+  --text-display-sm: 600 1.125rem/1.3 var(--font-display); /* card title */
+
+  --text-body-lg: 400 1.125rem/1.5 var(--font-body);
+  --text-body-md: 400 1rem/1.5 var(--font-body);
+  --text-body-sm: 400 0.875rem/1.45 var(--font-body);
+  --text-label: 600 0.8125rem/1.3 var(--font-body);   /* buttons, form labels */
+  --text-meta: 500 0.75rem/1.3 var(--font-body);       /* eyebrow/meta, letter-spaced */
+
+  --tracking-eyebrow: 0.08em;
+}

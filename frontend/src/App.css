@@ -1,31 +1,40 @@
-/* Modern CSS Variables for The Vegan Playlist */
+/* BRIDGE: legacy prototype variables re-pointed at the brand tokens
+   (src/styles/tokens/). The whole monolith consumes these, so every page
+   picks up the brand palette at once. Delete entries as App.css blocks are
+   replaced during Sessions 3.2/3.3. */
 :root {
-  --color-bg-primary: #121212;
-  --color-bg-secondary: #181818;
-  --color-bg-tertiary: #212121;
-  --color-accent-primary: #1DB954; /* Spotify-like green */
-  --color-accent-secondary: #1ED760;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: rgba(255, 255, 255, 0.7);
-  --color-text-tertiary: rgba(255, 255, 255, 0.5);
-  --border-radius-sm: 4px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-xxl: 48px;
+  --color-bg-primary: var(--bg-canvas);
+  --color-bg-secondary: var(--bg-surface);
+  --color-bg-tertiary: var(--bg-surface-raised);
+  --color-accent-primary: var(--accent-ember-60);
+  --color-accent-secondary: var(--accent-ember-50); /* hover shade */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-muted);
+  /* these three were used below but never defined before the bridge */
+  --color-border: var(--border-hairline);
+  --color-surface: var(--bg-surface);
+  --color-primary: var(--accent-ember-60);
+  --color-vegan-primary: var(--accent-moss-60);
+  --color-vegan-secondary: var(--accent-moss-50);
+  --border-radius-sm: var(--radius-sm);
+  --border-radius-md: var(--radius-md);
+  --border-radius-lg: var(--radius-md); /* kit: cards/inputs are 10px */
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-5);
+  --spacing-xl: var(--space-6);
+  --spacing-xxl: var(--space-7);
   --font-size-sm: 0.875rem;
   --font-size-xs: 0.75rem;
   --font-size-md: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.5rem;
   --font-size-xxl: 2.5rem;
-  --transition-standard: all 0.3s ease;
-  --box-shadow-standard: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --max-width: 1280px;
+  --transition-standard: all var(--duration-base) var(--ease-standard);
+  --box-shadow-standard: var(--shadow-card);
+  --max-width: var(--content-max-width);
 }
 
 /* Base Layout */
@@ -47,7 +56,7 @@
 
 /* Header Styles */
 .app-header {
-  background: linear-gradient(to bottom, #000000, var(--color-bg-primary));
+  background: var(--color-bg-primary);
   padding: var(--spacing-lg) 0;
   text-align: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
@@ -58,7 +67,7 @@
   font-size: var(--font-size-xxl);
   font-weight: 700;
   letter-spacing: -0.5px;
-  background: linear-gradient(to right, var(--color-accent-primary), var(--color-accent-secondary));
+  background: var(--color-accent-primary);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -110,7 +119,7 @@
 
 .nav-item.active a {
   color: var(--color-accent-primary);
-  background-color: rgba(29, 185, 84, 0.1);
+  background-color: oklch(0.72 0.15 40 / 0.1);
 }
 
 .nav-item.active a::after {
@@ -162,7 +171,7 @@ main {
 
 /* Hero Area - Container for Description and Stats */
 .hero-area {
-  background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-tertiary));
+  background: var(--color-bg-secondary);
   padding: var(--spacing-lg) var(--spacing-md); /* Reduced from xxl */
 }
 
@@ -209,12 +218,12 @@ main {
   padding: var(--spacing-sm); /* Reduced from md */
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: var(--border-radius-md);
-  border: 1px solid rgba(29, 185, 84, 0.2);
+  border: 1px solid oklch(0.72 0.15 40 / 0.2);
   transition: var(--transition-standard);
 }
 
 .stat-item:hover {
-  background-color: rgba(29, 185, 84, 0.1);
+  background-color: oklch(0.72 0.15 40 / 0.1);
   border-color: var(--color-accent-primary);
   transform: translateY(-2px);
 }
@@ -588,12 +597,12 @@ main {
 }
 
 .song-tag {
-  background-color: rgba(29, 185, 84, 0.2);
+  background-color: oklch(0.72 0.15 40 / 0.2);
   color: var(--color-accent-primary);
   font-size: var(--font-size-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
-  border: 1px solid rgba(29, 185, 84, 0.3);
+  border: 1px solid oklch(0.72 0.15 40 / 0.3);
 }
 
 /* Song Meta */
@@ -798,12 +807,12 @@ main {
 /* Old artist styles removed - using enhanced version below */
 
 .genre-tag {
-  background-color: rgba(29, 185, 84, 0.2);
+  background-color: oklch(0.72 0.15 40 / 0.2);
   color: var(--color-accent-primary);
   font-size: var(--font-size-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
-  border: 1px solid rgba(29, 185, 84, 0.3);
+  border: 1px solid oklch(0.72 0.15 40 / 0.3);
 }
 
 /* Playlists Page */
@@ -903,12 +912,12 @@ main {
 }
 
 .playlist-tag {
-  background-color: rgba(29, 185, 84, 0.2);
+  background-color: oklch(0.72 0.15 40 / 0.2);
   color: var(--color-accent-primary);
   font-size: var(--font-size-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
-  border: 1px solid rgba(29, 185, 84, 0.3);
+  border: 1px solid oklch(0.72 0.15 40 / 0.3);
 }
 
 /* About Page */
@@ -1756,7 +1765,7 @@ main {
 }
 
 .category-badge.vegan-focus {
-  background: rgba(29, 185, 84, 0.2);
+  background: oklch(0.72 0.15 40 / 0.2);
   color: var(--color-accent-primary);
 }
 
@@ -2063,12 +2072,12 @@ main {
 }
 
 .spotify-link {
-  background: #1DB954;
+  background: var(--color-accent-primary);
   color: black;
 }
 
 .spotify-link:hover {
-  background: #1ed760;
+  background: var(--color-accent-secondary);
   transform: translateY(-2px);
 }
 
@@ -2138,7 +2147,7 @@ main {
 }
 
 .category-badge.vegan-focus {
-  background: rgba(29, 185, 84, 0.2);
+  background: oklch(0.72 0.15 40 / 0.2);
   color: var(--color-accent-primary);
   border: 1px solid var(--color-accent-primary);
 }
@@ -2505,7 +2514,7 @@ main {
 }
 
 .similarity-tag.vegan-focus {
-  background: rgba(29, 185, 84, 0.2);
+  background: oklch(0.72 0.15 40 / 0.2);
   color: var(--color-accent-primary);
 }
 
@@ -2715,7 +2724,7 @@ main {
 .compact-textarea:focus {
   outline: none;
   border-color: var(--color-accent-primary);
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
+  box-shadow: 0 0 0 3px oklch(0.72 0.15 40 / 0.1);
 }
 
 .compact-select[multiple] {
@@ -2862,7 +2871,7 @@ main {
 }
 
 .source-badge.spotify {
-  background: rgba(29, 185, 84, 0.2);
+  background: oklch(0.72 0.15 40 / 0.2);
   color: var(--color-accent-primary);
 }
 
@@ -2946,7 +2955,7 @@ main {
 }
 
 .admin-message.success {
-  background: rgba(29, 185, 84, 0.1);
+  background: oklch(0.72 0.15 40 / 0.1);
   color: var(--color-accent-primary);
   border: 1px solid var(--color-accent-primary);
 }
@@ -3266,13 +3275,13 @@ main {
   text-decoration: none;
   font-size: var(--font-size-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
-  background: rgba(29, 185, 84, 0.1);
+  background: oklch(0.72 0.15 40 / 0.1);
   border-radius: var(--border-radius-sm);
   transition: var(--transition-standard);
 }
 
 .readonly-link:hover {
-  background: rgba(29, 185, 84, 0.2);
+  background: oklch(0.72 0.15 40 / 0.2);
   text-decoration: underline;
 }
 
@@ -3355,7 +3364,7 @@ main {
 .form-select:focus {
   outline: none;
   border-color: var(--color-accent-primary);
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
+  box-shadow: 0 0 0 3px oklch(0.72 0.15 40 / 0.1);
 }
 
 .modal-actions {
@@ -3653,7 +3662,7 @@ main {
 .advocacy-preview {
   margin-top: var(--spacing-sm);
   padding: var(--spacing-sm);
-  background: rgba(29, 185, 84, 0.1);
+  background: oklch(0.72 0.15 40 / 0.1);
   border-radius: var(--border-radius-sm);
   border-left: 3px solid var(--color-primary);
 }
@@ -4002,8 +4011,11 @@ main {
   }
 }
 
-/* Conflicting artist grid styles removed - using enhanced responsive styles at bottom of file */
-  
+/* Artist-page mobile styles. The @media opener below had been deleted at some
+   point (only its body survived), which leaked these rules global — including
+   `.song-artwork { display: none }`, the actual reason song cards never showed
+   album covers ("cover API broken" was a myth; the DB has covers). */
+@media (max-width: 768px) {
   .artist-hero {
     grid-template-columns: 1fr;
     gap: var(--spacing-lg);
@@ -4033,8 +4045,10 @@ main {
     grid-template-columns: 32px 1fr auto;
     gap: var(--spacing-sm);
   }
-  
-  .song-artwork {
+
+  /* scoped to artist-page song rows — bare .song-artwork would hide
+     song-card covers everywhere on mobile */
+  .song-item .song-artwork {
     display: none;
   }
 }
@@ -4128,9 +4142,9 @@ main {
 }
 
 .admin-message.success {
-  background: rgba(29, 185, 84, 0.1);
+  background: oklch(0.72 0.15 40 / 0.1);
   color: var(--color-primary);
-  border: 1px solid rgba(29, 185, 84, 0.3);
+  border: 1px solid oklch(0.72 0.15 40 / 0.3);
 }
 
 .admin-message.error {
@@ -4196,7 +4210,7 @@ main {
 .admin-form-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.1);
+  box-shadow: 0 0 0 2px oklch(0.72 0.15 40 / 0.1);
 }
 
 .admin-form-textarea {
@@ -4215,7 +4229,7 @@ main {
 .admin-form-textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.1);
+  box-shadow: 0 0 0 2px oklch(0.72 0.15 40 / 0.1);
 }
 
 .admin-form-row {
@@ -4478,7 +4492,7 @@ main {
 }
 
 .source-badge.spotify {
-  background-color: #1DB954;
+  background-color: var(--color-accent-primary);
   color: white;
 }
 
@@ -5046,12 +5060,12 @@ main {
 
 /* Success Message */
 .success-message {
-  background: rgba(29, 185, 84, 0.1);
+  background: oklch(0.72 0.15 40 / 0.1);
   color: var(--color-accent-primary);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-sm);
   margin-bottom: var(--spacing-md);
-  border: 1px solid rgba(29, 185, 84, 0.3);
+  border: 1px solid oklch(0.72 0.15 40 / 0.3);
   font-size: var(--font-size-sm);
 }
 
@@ -5315,7 +5329,7 @@ main {
 
 .youtube-embed-container:hover {
   border-color: var(--color-accent-primary);
-  box-shadow: 0 8px 32px rgba(29, 185, 84, 0.2);
+  box-shadow: 0 8px 32px oklch(0.72 0.15 40 / 0.2);
 }
 
 .youtube-embed-container.no-video {
@@ -5715,7 +5729,7 @@ main {
 .url-input:focus {
   outline: none;
   border-color: var(--color-accent-primary);
-  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.2);
+  box-shadow: 0 0 0 2px oklch(0.72 0.15 40 / 0.2);
 }
 
 .url-preview {
@@ -5853,7 +5867,7 @@ main {
 .lyrics-highlights-textarea:focus {
   outline: none;
   border-color: var(--color-accent-primary);
-  box-shadow: 0 0 0 2px rgba(29, 185, 84, 0.2);
+  box-shadow: 0 0 0 2px oklch(0.72 0.15 40 / 0.2);
 }
 
 .copyright-note {
@@ -5896,7 +5910,7 @@ main {
 }
 
 .message.success {
-  background: rgba(29, 185, 84, 0.1);
+  background: oklch(0.72 0.15 40 / 0.1);
   border: 1px solid var(--color-accent-primary);
   color: var(--color-accent-secondary);
 }
@@ -6034,7 +6048,7 @@ main {
 .url-input:focus {
   outline: none;
   border-color: var(--color-accent-primary);
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
+  box-shadow: 0 0 0 3px oklch(0.72 0.15 40 / 0.1);
 }
 
 .add-video-button {
@@ -6062,7 +6076,7 @@ main {
 
 .url-preview {
   padding: var(--spacing-sm) var(--spacing-md);
-  background: rgba(29, 185, 84, 0.1);
+  background: oklch(0.72 0.15 40 / 0.1);
   border: 1px solid var(--color-accent-primary);
   border-radius: var(--border-radius-sm);
   color: var(--color-accent-secondary);
@@ -6346,7 +6360,7 @@ main {
 .batch-urls-input:focus {
   outline: none;
   border-color: var(--color-accent-primary);
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
+  box-shadow: 0 0 0 3px oklch(0.72 0.15 40 / 0.1);
 }
 
 .batch-actions {
@@ -6370,7 +6384,7 @@ main {
 .process-batch-button:hover:not(:disabled) {
   background: var(--color-accent-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+  box-shadow: 0 4px 15px oklch(0.72 0.15 40 / 0.3);
 }
 
 .process-batch-button:disabled {
@@ -6433,7 +6447,7 @@ main {
 
 .song-card.selected {
   border-color: var(--color-accent-primary);
-  background: rgba(29, 185, 84, 0.05);
+  background: oklch(0.72 0.15 40 / 0.05);
   transform: translateY(-2px);
 }
 
@@ -6760,7 +6774,7 @@ main {
 .action-btn.primary:hover {
   background: var(--color-accent-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+  box-shadow: 0 4px 15px oklch(0.72 0.15 40 / 0.3);
 }
 
 .action-btn.secondary {
@@ -6962,12 +6976,12 @@ main {
 }
 
 .spotify-link-compact {
-  background: #1DB954;
+  background: var(--color-accent-primary);
   color: black;
 }
 
 .spotify-link-compact:hover {
-  background: #1ed760;
+  background: var(--color-accent-secondary);
   transform: translateY(-1px);
 }
 
@@ -7207,7 +7221,7 @@ main {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-vegan-primary), var(--color-accent-primary));
+  background: var(--color-vegan-primary);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -7615,7 +7629,7 @@ main {
 .form-group textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
+  box-shadow: 0 0 0 3px oklch(0.72 0.15 40 / 0.1);
 }
 
 .form-group input.error,
@@ -7644,7 +7658,7 @@ main {
 }
 
 .message.success {
-  background: rgba(29, 185, 84, 0.1);
+  background: oklch(0.72 0.15 40 / 0.1);
   border: 1px solid var(--color-accent-primary);
   color: var(--color-accent-primary);
 }
@@ -7737,7 +7751,7 @@ main {
 }
 
 .submission-stats {
-  background: rgba(29, 185, 84, 0.05);
+  background: oklch(0.72 0.15 40 / 0.05);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
   margin-top: var(--spacing-lg);
@@ -8407,7 +8421,7 @@ main {
 .search-input:focus {
   outline: none;
   border-color: var(--color-accent-primary);
-  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
+  box-shadow: 0 0 0 3px oklch(0.72 0.15 40 / 0.1);
 }
 
 .search-input::placeholder {
@@ -8461,7 +8475,7 @@ main {
 .artist-card:hover {
   border-color: var(--color-accent-primary);
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(29, 185, 84, 0.1);
+  box-shadow: 0 8px 24px oklch(0.72 0.15 40 / 0.1);
 }
 
 .artist-image {
@@ -8555,18 +8569,18 @@ main {
 }
 
 .spotify-link {
-  color: #1DB954;
+  color: var(--color-accent-primary);
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: 600;
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
-  border: 1px solid #1DB954;
+  border: 1px solid var(--color-accent-primary);
   transition: var(--transition-standard);
 }
 
 .spotify-link:hover {
-  background: #1DB954;
+  background: var(--color-accent-primary);
   color: white;
 }
 
@@ -8610,7 +8624,7 @@ main {
   border-color: var(--color-accent-primary);
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(29, 185, 84, 0.3);
+  box-shadow: 0 2px 8px oklch(0.72 0.15 40 / 0.3);
 }
 
 .pagination-btn:disabled {
@@ -8891,11 +8905,11 @@ main {
 }
 
 .artists-table tr:hover {
-  background: rgba(29, 185, 84, 0.05);
+  background: oklch(0.72 0.15 40 / 0.05);
 }
 
 .artists-table tr.reviewed {
-  background: rgba(29, 185, 84, 0.1);
+  background: oklch(0.72 0.15 40 / 0.1);
 }
 
 .artist-info {
@@ -9001,9 +9015,9 @@ main {
 
 .btn-spotify {
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid #1db954;
+  border: 1px solid var(--color-accent-primary);
   background: transparent;
-  color: #1db954;
+  color: var(--color-accent-primary);
   border-radius: var(--border-radius-sm);
   text-decoration: none;
   font-size: var(--font-size-xs);
@@ -9011,7 +9025,7 @@ main {
 }
 
 .btn-spotify:hover {
-  background: #1db954;
+  background: var(--color-accent-primary);
   color: white;
 }
 
