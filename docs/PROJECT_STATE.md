@@ -18,8 +18,13 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ### Next Tasks (start here)
 1. **Merge `session-2.3-script-cleanup` to `main`** once the curator gives the go-ahead.
 2. **Session 3.1 — Design system foundation**: tokens (colour, type, spacing), global
-   styles, core reusable components from the brand kit. **Blocked on: brand kit from the
-   curator** (colours, fonts, logo — ask before starting).
+   styles, core reusable components from the brand kit. **Unblocked 2026-07-10** — the
+   brand kit is the curator's Claude Design project "Website brand kit development"
+   (`4d59f679-dccb-4902-9e88-a249ba6ee659`, readable via the DesignSync tool; go by ID —
+   it doesn't appear in `list_projects`). Contains oklch colour/type/spacing tokens,
+   styles.css, guideline specimens, 8 React components, and full-page mockups for every
+   route. Note: built from an old prototype screenshot — its "cover API broken" and
+   "1,400+ songs" claims are stale; verify against the live DB when applying.
 3. ✅ Looks **done — curator appears to have run the playlist sync**: the DB held 1,821
    songs on 2026-07-10 (= 1,800 + the 21 mismatch-report tracks from 2026-07-09).
    Curator to confirm it was intentional; the new tracks are in the To-process queue.
