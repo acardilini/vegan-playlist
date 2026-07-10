@@ -63,16 +63,6 @@ function ArtistSearchResults() {
     return null;
   };
 
-  const formatFollowers = (followers) => {
-    if (!followers) return 'Unknown';
-    if (followers >= 1000000) {
-      return `${(followers / 1000000).toFixed(1)}M`;
-    } else if (followers >= 1000) {
-      return `${(followers / 1000).toFixed(1)}K`;
-    }
-    return followers.toString();
-  };
-
   return (
     <div className="page-container">
       <div className="page-header">
@@ -170,12 +160,6 @@ function ArtistSearchResults() {
                     
                     <div className="artist-stats">
                       <span className="song-count">{artist.song_count} songs</span>
-                      {artist.followers && (
-                        <span className="followers">{formatFollowers(artist.followers)} followers</span>
-                      )}
-                      {artist.popularity > 0 && (
-                        <span className="popularity">{artist.popularity}% popular</span>
-                      )}
                     </div>
 
                     {artist.genres && artist.genres.length > 0 && (

@@ -103,6 +103,28 @@ function ArtistDetailPage() {
 
   const { artist, songs, stats } = artistData;
 
+  // Group songs by album, newest release first; songs without an album
+  // collect under "Other songs" at the end.
+  const OTHER = 'Other songs';
+  const groupsByAlbum = new Map();
+  songs.forEach((song) => {
+    const key = song.album_name || OTHER;
+    if (!groupsByAlbum.has(key)) {
+      groupsByAlbum.set(key, { name: key, releaseDate: null, cover: null, songs: [] });
+    }
+    const group = groupsByAlbum.get(key);
+    group.songs.push(song);
+    if (!group.releaseDate && song.release_date) group.releaseDate = song.release_date;
+    if (!group.cover) group.cover = getSongArtwork(song);
+  });
+  const albumGroups = [...groupsByAlbum.values()].sort((a, b) => {
+    if (a.name === OTHER) return 1;
+    if (b.name === OTHER) return -1;
+    const aDate = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
+    const bDate = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
+    return bDate - aDate;
+  });
+
   return (
     <div className="artist-detail-container">
       {/* Photo hero: overlay controls up top, name/genres/stats in the scrim */}
@@ -124,6 +146,16 @@ function ArtistDetailPage() {
                 className="overlay-btn"
               >
                 Open in Spotify
+              </a>
+            )}
+            {artist.website_url && (
+              <a
+                href={artist.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="overlay-btn"
+              >
+                {artist.website_url.includes('bandcamp.com') ? 'Bandcamp' : 'Website'}
               </a>
             )}
             <button
@@ -157,14 +189,8 @@ function ArtistDetailPage() {
             </div>
             {artist.followers && (
               <div className="stat-box">
-                <span className="stat-box-label">Followers</span>
+                <span className="stat-box-label">Spotify followers</span>
                 <span className="stat-box-value">{formatNumber(artist.followers)}</span>
-              </div>
-            )}
-            {artist.popularity > 0 && (
-              <div className="stat-box" title="Spotify popularity score (0-100) based on recent play counts">
-                <span className="stat-box-label">Spotify popularity</span>
-                <span className="stat-box-value">{artist.popularity}%</span>
               </div>
             )}
           </div>
@@ -191,58 +217,51 @@ function ArtistDetailPage() {
 
       <section className="detail-section artist-songs">
         <h2>Songs ({songs.length})</h2>
-        <div className="songs-list">
-          {songs.map((song, index) => (
-            <div
-              key={song.id}
-              className="song-item"
-              onClick={() => handleSongClick(song.id)}
-            >
-              <span className="song-index">{index + 1}</span>
-
-              <div className="song-artwork">
-                {getSongArtwork(song) && (
-                  <img
-                    src={getSongArtwork(song)}
-                    alt={`${song.title} artwork`}
-                  />
+        {albumGroups.map((group) => (
+          <div key={group.name} className="album-group">
+            <div className="album-header">
+              <div className="album-cover">
+                {group.cover && (
+                  <img src={group.cover} alt={`${group.name} cover`} />
                 )}
               </div>
-
-              <div className="song-info">
-                <h4 className="song-title">{song.title}</h4>
-                <div className="song-meta">
-                  <span className="album-name">{song.album_name}</span>
-                  {song.release_date && (
-                    <span className="release-year">
-                      {' · '}{new Date(song.release_date).getFullYear()}
-                    </span>
+              <div className="album-header-info">
+                <span className="album-title">{group.name}</span>
+                <span className="album-meta">
+                  {group.releaseDate && (
+                    <>{new Date(group.releaseDate).getFullYear()} · </>
                   )}
-                </div>
-
-                <div className="song-categories">
-                  <CategoryBadges categories={song.vegan_focus} colorClass="vegan-focus" />
-                  <CategoryBadges categories={song.advocacy_style} colorClass="advocacy-style" />
-                </div>
-              </div>
-
-              <div className="song-stats">
-                <span className="duration">{formatDuration(song.duration_ms)}</span>
-                {song.popularity > 0 && (
-                  <div className="popularity-bar">
-                    <div className="popularity-track">
-                      <div
-                        className="popularity-fill"
-                        style={{ width: `${song.popularity}%` }}
-                      />
-                    </div>
-                    <span className="popularity-value">{song.popularity}%</span>
-                  </div>
-                )}
+                  {group.songs.length} song{group.songs.length === 1 ? '' : 's'}
+                </span>
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="songs-list">
+              {group.songs.map((song, index) => (
+                <div
+                  key={song.id}
+                  className="song-item"
+                  onClick={() => handleSongClick(song.id)}
+                >
+                  <span className="song-index">{index + 1}</span>
+
+                  <div className="song-info">
+                    <h4 className="song-title">{song.title}</h4>
+
+                    <div className="song-categories">
+                      <CategoryBadges categories={song.vegan_focus} colorClass="vegan-focus" />
+                      <CategoryBadges categories={song.advocacy_style} colorClass="advocacy-style" />
+                    </div>
+                  </div>
+
+                  <div className="song-stats">
+                    <span className="duration">{formatDuration(song.duration_ms)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
     </div>
   );

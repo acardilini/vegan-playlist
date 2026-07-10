@@ -163,12 +163,6 @@ function SongDetailPage() {
               <span className="stat-cell-label">Duration</span>
               <span className="stat-cell-value">{formatDuration(song.duration_ms)}</span>
             </div>
-            {song.popularity > 0 && (
-              <div className="stat-cell">
-                <span className="stat-cell-label">Popularity</span>
-                <span className="stat-cell-value">{song.popularity}%</span>
-              </div>
-            )}
           </div>
 
           {(song.spotify_url || song.lyrics_url) && (

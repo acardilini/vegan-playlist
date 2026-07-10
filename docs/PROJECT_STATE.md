@@ -27,6 +27,13 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    stat boxes in the scrim) over a numbered song list with moss popularity bars;
    artists grid now kit cards (circular photo, meta row, genre pills); filter chips are
    ember pills; all emoji gone from public pages.
+   **Same-day follow-up (curator-requested):** popularity removed from all public song
+   and artist surfaces; followers removed from artist cards (kept on the artist page as
+   "Spotify followers"); artist-page songs now **grouped by album, newest first** (cover
+   + year · count header, per-album numbering); new **Bandcamp/Website button** on the
+   artist page — populate it per artist via the admin **Artists tab → Edit → "Website /
+   Bandcamp URL"** (new `artists.website_url` column, migration `005` applied;
+   currently empty for all artists so no button shows yet).
 2. **Session 3.3 — Remaining pages & polish**: Playlists (+ detail), Submit, Dashboard,
    About, Admin; responsive + accessibility pass. Known responsive item: **every page
    still overflows horizontally at 390px** (pre-existing shell issue — verified on the
@@ -140,6 +147,18 @@ Newest first. Each entry: date · decision · why.
   centered page container now sets `width: 100%` explicitly. (6) Two "Filters applied"
   guards fixed (empty `year_range` object / default `min_songs: 1` made the empty label
   render).
+- **2026-07-11 — Popularity metrics off the public site; artist website link added
+  (Session 3.2 follow-up, curator-requested).** Popularity "sets up a comparison we're
+  not interested in": removed from song cards, the song-page hero, artist cards, artist
+  song rows, and the artist-page stat boxes (the letter of the request covered songs +
+  artist-card followers; popularity was removed from artist surfaces too under the same
+  rationale — easy to restore if wanted). Followers stay only on the artist page,
+  relabelled **"Spotify followers"**. Sorting by popularity still works (display-only
+  change). Artist-page songs are grouped by album (newest release first, "Other songs"
+  last; per-album numbering under a cover + year · count header). New curator-owned
+  `artists.website_url` (migration `005_artist_website.sql`) renders as a
+  "Bandcamp"/"Website" hero button (label by URL host); editable in the admin Artists
+  tab; never touched by sync/enrichment.
 - **2026-07-10 — Design-system layering: bridge + override, not a rewrite (Session 3.1).**
   (1) Brand tokens live in new `frontend/src/styles/tokens/` (kit's colors/typography/
   spacing verbatim; fonts via a Google Fonts `<link>` in `index.html` instead of the
@@ -367,6 +386,17 @@ Newest first. What actually happened each session.
   also fixed; 6 deliberate hook warnings remain). Known-remaining: site-wide 390px
   horizontal overflow (pre-existing, verified on untouched About page) → 3.3
   responsive pass. Branch pushed, awaiting curator click-through + merge.
+  **Same-day follow-up (curator-requested, same branch):** (1) popularity displays
+  removed site-wide (song cards, song hero, artist cards/rows/stat box — see Decision
+  Log) and artist-card followers removed; artist-page followers relabelled "Spotify
+  followers". (2) Artist-page songs grouped by album, newest first (56px cover +
+  "year · N songs" header, per-album row numbering, rows slimmed to title + duration).
+  (3) `artists.website_url` added (migration `005_artist_website.sql`, applied):
+  selected by the public artist route + admin all-artists, writable via
+  `PUT /api/admin/artists/:id`, new "Website / Bandcamp URL" field in the admin
+  Artists edit modal, rendered as a "Bandcamp"/"Website" hero button. Backend
+  restarted; verified end-to-end (set URL via admin API → button renders → reverted
+  to empty). Build clean; eslint 0 errors on touched files.
 - **2026-07-10 (Session 3.1)** — Design system foundation (opens Phase 3). On branch
   `session-3.1-design-system`, from the brand kit (Claude Design project "Website brand
   kit development", read via DesignSync): **(1)** new `frontend/src/styles/` —

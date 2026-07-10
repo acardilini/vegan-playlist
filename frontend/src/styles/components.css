@@ -196,21 +196,6 @@
   text-transform: capitalize;
 }
 
-.song-card .song-features {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.song-card .feature-badge {
-  font: var(--text-meta);
-  color: var(--accent-ember-60);
-  background: none;
-  border: none;
-  padding: 0;
-}
-
 .song-card .song-meta {
   display: flex;
   justify-content: space-between;
@@ -1570,10 +1555,6 @@
   color: var(--text-muted);
 }
 
-.artist-card .artist-stats .popularity {
-  color: var(--accent-ember-60);
-}
-
 .artist-card .artist-genres {
   display: flex;
   flex-wrap: wrap;
@@ -1842,28 +1823,68 @@
   color: var(--text-muted);
 }
 
-.popularity-bar {
-  width: 80px;
+/* Album groups on the artist page (songs grouped by album, newest first) */
+.album-group {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-2);
 }
 
-.popularity-track {
-  flex: 1;
-  height: 4px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-surface-raised);
+.album-group + .album-group {
+  margin-top: var(--space-4);
+}
+
+.album-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.album-cover {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
   overflow: hidden;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--bg-surface-raised),
+    var(--bg-surface-raised) 6px,
+    var(--bg-canvas) 6px,
+    var(--bg-canvas) 12px
+  );
 }
 
-.popularity-fill {
+.album-cover img {
+  width: 100%;
   height: 100%;
-  background: var(--accent-moss-60);
+  object-fit: cover;
+  display: block;
 }
 
-.popularity-value {
+.album-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.album-title {
+  font: var(--text-display-sm);
+  color: var(--text-primary);
+}
+
+.album-meta {
   font: var(--text-meta);
-  color: var(--accent-moss-60);
-  width: 30px;
+  color: var(--text-muted);
+}
+
+.album-group .songs-list {
+  margin-left: calc(56px + var(--space-3)); /* align rows under the album title */
+}
+
+@media (max-width: 600px) {
+  .album-group .songs-list {
+    margin-left: 0;
+  }
 }
