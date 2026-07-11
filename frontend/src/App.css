@@ -274,101 +274,13 @@ main {
 
 /* Artists page grid/cards/genre tags: restyled in styles/components.css (Session 3.2) */
 
-/* About Page */
-.about-content {
-  max-width: 800px;
-  margin: 0 auto;
-}
+/* About page: restyled in styles/components.css (Session 3.3) */
 
-.about-header {
-  text-align: center;
-  margin-bottom: var(--spacing-xxl);
-}
-
-.about-subtitle {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
-
-.about-section {
-  margin-bottom: var(--spacing-xl);
-}
-
-.about-section h2 {
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-md);
-  font-size: var(--font-size-xl);
-}
-
-.about-section p, .about-section li {
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-  margin-bottom: var(--spacing-md);
-}
-
-.about-section ul {
-  padding-left: var(--spacing-lg);
-}
-
-.about-section li {
-  margin-bottom: var(--spacing-sm);
-}
-
-.about-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-lg);
-  margin-top: var(--spacing-xxl);
-  padding: var(--spacing-xl);
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--border-radius-lg);
-}
-
-.stat-highlight {
-  text-align: center;
-}
-
-.stat-highlight .stat-number {
-  display: block;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-accent-primary);
-  margin-bottom: var(--spacing-xs);
-}
-
-.stat-highlight .stat-label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .artists-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .artist-card {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .artist-image img {
-    width: 100px;
-    height: 100px;
-    margin: 0 auto var(--spacing-md) auto;
-  }
-  
-  .playlists-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  }
-  
-  .about-stats {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-md);
-  }
-}
-
+/* Mobile Responsiveness: legacy rules for .artists-grid/.artist-card/
+   .artist-image img/.playlists-grid/.about-stats deleted (Session 3.3) —
+   all selectors belong to pages already restyled in components.css, whose
+   unconditional (or self-contained responsive) rules already win the
+   cascade at every width. */
 
 
 

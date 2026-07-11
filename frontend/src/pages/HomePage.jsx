@@ -4,12 +4,7 @@ import { spotifyService } from '../api/spotifyService';
 import SearchAndFilter from '../components/SearchAndFilter';
 import SongCard from '../components/SongCard';
 import PaginationControls from '../components/PaginationControls';
-
-// Round a live count down to the nearest hundred for display ("1,342" → "1,300+")
-function roundedStat(value) {
-  if (!value) return '…';
-  return `${(Math.floor(value / 100) * 100).toLocaleString()}+`;
-}
+import { roundedStat } from '../utils/stats';
 
 function HeroArea() {
   const [stats, setStats] = useState(null);

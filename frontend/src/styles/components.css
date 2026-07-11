@@ -2116,3 +2116,64 @@
   .dashboard-filter-grid { grid-template-columns: 1fr; }
   .charts-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   About page (Session 3.3)
+   ============================================================ */
+
+.about-container {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%; /* flex-item + margin:auto collapses without this (see 3.2 Decision Log) */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.about-subtitle {
+  font-style: italic;
+}
+
+.about-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.about-section h2 {
+  font: var(--text-display-md);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.about-section p,
+.about-section li {
+  font: var(--text-body-md);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.about-section ul {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.about-section li strong {
+  color: var(--text-primary);
+}
+
+.about-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .about-stats {
+    grid-template-columns: 1fr;
+  }
+}
