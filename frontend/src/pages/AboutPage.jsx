@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
-import { roundedStat } from '../utils/stats';
+
+// About shows exact counts (curator request) — the home hero keeps rounded ones
+const exactStat = (value) => (value ? value.toLocaleString() : '…');
 
 function AboutPage() {
   const [stats, setStats] = useState(null);
@@ -68,15 +70,15 @@ function AboutPage() {
 
         <div className="about-stats">
           <div className="stat-badge">
-            <span className="stat-value">{roundedStat(stats?.songs)}</span>
+            <span className="stat-value">{exactStat(stats?.songs)}</span>
             <span className="stat-label">Songs curated</span>
           </div>
           <div className="stat-badge">
-            <span className="stat-value">7</span>
-            <span className="stat-label">Years of research</span>
+            <span className="stat-value">2017</span>
+            <span className="stat-label">Playlist started</span>
           </div>
           <div className="stat-badge">
-            <span className="stat-value">{roundedStat(stats?.artists)}</span>
+            <span className="stat-value">{exactStat(stats?.artists)}</span>
             <span className="stat-label">Artists featured</span>
           </div>
         </div>
