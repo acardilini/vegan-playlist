@@ -3957,6 +3957,17 @@ main {
   margin-bottom: var(--spacing-lg);
 }
 
+/* Was ".dashboard-header p" in the now-deleted public "Data Dashboard Styles"
+   block (App.css). Higher specificity than .dashboard-subtitle, so it already
+   governed this admin subtitle's rendered size/spacing — kept here verbatim
+   so deleting the public block doesn't visually change the admin dashboard. */
+.dashboard-header p {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
 .refresh-button {
   background: var(--color-accent-primary);
   color: white;
@@ -3998,6 +4009,26 @@ main {
   border-color: var(--color-accent-primary);
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Were ".stat-card h3"/".stat-card p" in the now-deleted public "Data
+   Dashboard Styles" block (App.css). Higher specificity than .stat-value/
+   .stat-title below, so they already governed this admin StatCard's h3/p
+   (ArtistsManager's stat-card uses div.stat-number/div.stat-label, so it was
+   never affected) — kept here verbatim so deleting the public block doesn't
+   visually change the admin dashboard. */
+.stat-card h3 {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-accent-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.stat-card p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .stat-icon {
@@ -5108,225 +5139,6 @@ main {
   
   .detail-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-/* Data Dashboard Styles */
-.data-dashboard {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: var(--spacing-md);
-  min-height: calc(100vh - 120px);
-}
-
-.dashboard-header {
-  text-align: center;
-  margin-bottom: var(--spacing-xl);
-  background: var(--color-bg-secondary);
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-lg);
-}
-
-.dashboard-header h1 {
-  font-size: var(--font-size-xxl);
-  margin-bottom: var(--spacing-sm);
-  color: var(--color-text-primary);
-}
-
-.dashboard-header p {
-  font-size: var(--font-size-md);
-  color: var(--color-text-secondary);
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.dashboard-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-}
-
-.stat-card {
-  background: var(--color-bg-secondary);
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-lg);
-  text-align: center;
-  border: 1px solid var(--color-bg-tertiary);
-  transition: var(--transition-standard);
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card h3 {
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  color: var(--color-accent-primary);
-  margin-bottom: var(--spacing-xs);
-}
-
-.stat-card p {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.dashboard-filters {
-  background: var(--color-bg-secondary);
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-lg);
-  margin-bottom: var(--spacing-xl);
-  border: 1px solid var(--color-bg-tertiary);
-}
-
-.dashboard-filters h2 {
-  font-size: var(--font-size-lg);
-  margin-bottom: var(--spacing-md);
-  color: var(--color-text-primary);
-}
-
-.filter-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  align-items: end;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.filter-group label {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.filter-group select,
-.filter-group input {
-  padding: var(--spacing-sm);
-  border: 1px solid var(--color-bg-tertiary);
-  border-radius: var(--border-radius-sm);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  transition: var(--transition-standard);
-}
-
-.filter-group select:focus,
-.filter-group input:focus {
-  outline: none;
-  border-color: var(--color-accent-primary);
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-  gap: var(--spacing-xl);
-}
-
-.chart-container {
-  background: var(--color-bg-secondary);
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-lg);
-  border: 1px solid var(--color-bg-tertiary);
-  min-height: 400px;
-  position: relative;
-}
-
-.chart-container h2 {
-  font-size: var(--font-size-lg);
-  margin-bottom: var(--spacing-md);
-  color: var(--color-text-primary);
-  text-align: center;
-  border-bottom: 2px solid var(--color-accent-primary);
-  padding-bottom: var(--spacing-sm);
-}
-
-.no-data {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  color: var(--color-text-secondary);
-  font-style: italic;
-  text-align: center;
-}
-
-.dashboard-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 50vh;
-  gap: var(--spacing-md);
-}
-
-.dashboard-loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--border-radius-lg);
-  z-index: 10;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-bg-tertiary);
-  border-top: 4px solid var(--color-accent-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Responsive adjustments for dashboard */
-@media (max-width: 768px) {
-  .data-dashboard {
-    padding: var(--spacing-sm);
-  }
-  
-  .dashboard-summary {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
-  
-  .charts-grid {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
-  }
-  
-  .chart-container {
-    min-height: 350px;
-  }
-  
-  .filter-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .dashboard-header {
-    padding: var(--spacing-md);
-  }
-  
-  .dashboard-header h1 {
-    font-size: var(--font-size-xl);
   }
 }
 

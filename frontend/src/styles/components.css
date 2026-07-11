@@ -2070,3 +2070,49 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   Dashboard page (Session 3.3)
+   ============================================================ */
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.dashboard-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.chart-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  min-width: 0;
+}
+
+.chart-panel h2 {
+  font: var(--text-display-sm);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .dashboard-stats { grid-template-columns: repeat(2, 1fr); }
+  .dashboard-filter-grid { grid-template-columns: 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+}
