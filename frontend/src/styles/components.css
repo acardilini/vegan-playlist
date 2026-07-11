@@ -1898,3 +1898,175 @@
   color: var(--text-muted);
   margin-top: var(--space-2);
 }
+
+/* ============================================================
+   Forms & sidebar cards (Session 3.3 — Submit, Dashboard)
+   ============================================================ */
+
+.submit-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--grid-gutter);
+  align-items: start;
+}
+
+.submit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.form-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+}
+
+.form-card-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.form-card-title h3 {
+  font: var(--text-display-sm);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.form-tag-required {
+  font: var(--text-meta);
+  color: var(--accent-ember-60);
+}
+
+.form-tag-optional {
+  font: var(--text-meta);
+  color: var(--text-muted);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.field-label {
+  font: var(--text-label);
+  color: var(--text-primary);
+}
+
+.field-error {
+  font: var(--text-meta);
+  color: var(--accent-ember-60);
+}
+
+.form-note {
+  font: var(--text-body-sm);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.textarea {
+  min-height: 70px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font: var(--text-body-md);
+  font-family: var(--font-body);
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent-ember-60);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.input-error,
+.input-error:focus {
+  border-color: var(--accent-ember-60);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submit-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sidebar-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+}
+
+.sidebar-card h3 {
+  font: var(--text-display-sm);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sidebar-card ul {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sidebar-card li {
+  font: var(--text-body-sm);
+  color: var(--text-secondary);
+}
+
+.sidebar-card li strong {
+  color: var(--text-primary);
+}
+
+.sidebar-card-moss {
+  background: oklch(0.24 0.03 145);
+}
+
+.sidebar-card-moss h3,
+.sidebar-card-moss p {
+  color: var(--accent-moss-80);
+  margin: 0;
+}
+
+.sidebar-card-moss p {
+  font: var(--text-body-sm);
+}
+
+@media (max-width: 900px) {
+  .submit-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
