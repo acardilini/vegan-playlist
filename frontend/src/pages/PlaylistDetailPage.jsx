@@ -101,7 +101,7 @@ function PlaylistDetailPage() {
                   {Array.isArray(song.artists) ? song.artists.join(', ') : song.artists}
                 </div>
               </div>
-              <div className="song-duration">{formatDuration(song.duration_ms)}</div>
+              <div className="duration">{formatDuration(song.duration_ms)}</div>
             </div>
           ))}
         </div>

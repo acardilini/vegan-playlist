@@ -2696,8 +2696,6 @@ main {
   border-color: var(--color-accent-primary);
 }
 
-}
-
 /* Admin Login Styles */
 .admin-login {
   display: flex;
