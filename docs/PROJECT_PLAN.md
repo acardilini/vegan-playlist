@@ -158,8 +158,8 @@ routes pruned; clear frontend/backend structure and conventions documented.
 ## Phase 3 — Brand & UI Rebuild
 **Goal:** Apply the brand kit onto the now-clean frontend.
 **Exit criteria:** Design system in place; all pages restyled to brand; responsive and
-accessible. — _Met 2026-07-11 (Session 3.3), pending curator click-through of
-`session-3.3-remaining-pages` before merge: design system live since 3.1, every route
+accessible. — _Met — **Phase 3 complete** (3.3 merged to `main` 2026-07-12 on curator
+go-ahead): design system live since 3.1, every route
 restyled to brand across 3.1–3.3, full-route smoke test found zero horizontal overflow
 at 390px and zero console errors on all 11 routes, and Session 3.3's accessibility pass
 added keyboard access + aria-labels + one-h1-per-route + focus-visible rings site-wide._
@@ -181,8 +181,8 @@ added keyboard access + aria-labels + one-h1-per-route + focus-visible rings sit
   with popularity bars). ~2,700 lines of legacy App.css deleted; shared page vocabulary
   added to components.css. _Smoke test ✅: headless walk of all four pages at 1280 +
   390; build + lint clean (0 errors)._
-- ☑ **Session 3.3 — Remaining pages & polish.** _Done 2026-07-11 on branch
-  `session-3.3-remaining-pages`; awaiting curator click-through before merge._
+- ☑ **Session 3.3 — Remaining pages & polish.** _Done 2026-07-11; merged to `main`
+  2026-07-12 (merge `48a4529`) after curator go-ahead._
   Playlists made read-only (curator decision — create/remove controls deleted,
   `AddToPlaylistModal` removed; backend untouched), Playlist Detail restyled to
   artist-page row conventions (fixes the 3.2 40px-thumbnail clash), Submit (kit form +

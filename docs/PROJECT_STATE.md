@@ -7,24 +7,19 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 3 — Brand & UI Rebuild (3.1 ☑ merged; 3.2 ☑ merged 2026-07-11;
-  3.3 ☑ done on branch, awaiting curator click-through + merge). Phases 0–2 complete.
-  **Phase 3 exit criteria met pending click-through.**
-- **Current session:** _Session 3.3 — Remaining pages & polish — done on branch
-  `session-3.3-remaining-pages`, awaiting curator click-through + merge_
-- **Next session:** Phase 4 — Deployment Hardening, Session 4.1 (after 3.3 merges)
-- **Last updated:** 2026-07-11 _(Session 3.3 complete: all 9 code tasks + full smoke
-  test done on branch; Phase 3 closed pending curator click-through)_
+- **Phase:** **Phase 3 — Brand & UI Rebuild ✅ complete** (3.1, 3.2, 3.3 all merged;
+  3.3 merged 2026-07-12, merge `48a4529`). Phases 0–2 complete.
+- **Current session:** _between sessions — Session 3.3 merged to `main`_
+- **Next session:** Phase 4 — Deployment Hardening, Session 4.1
+- **Last updated:** 2026-07-12 _(3.3 merged to `main` on curator go-ahead; late
+  branch fix: About stats exact + "2017 / Playlist started" badge)_
 
 ### Next Tasks (start here)
-1. **Curator click-through of branch `session-3.3-remaining-pages`, then merge
-   go-ahead.** What to check: Playlists page + a playlist detail page (read-only —
-   no create/add/remove controls), Submit form, Dashboard charts (brand colors —
-   ember line, moss bars, no rainbow), About page copy, keyboard/tab focus on
-   clickable cards site-wide, Admin unaffected (all 10 tabs). Once confirmed, merge
-   to `main`.
-2. **Phase 4 Session 4.1 planning** — environment & security (externalise
-   config/secrets, input validation, admin access control) — starts once 3.3 merges.
+1. **Phase 4 Session 4.1 planning** — environment & security (externalise
+   config/secrets, input validation, admin access control). Known 4.x items already
+   recorded in Watch-outs: public pages hardcode `http://localhost:5000`
+   (deployment breaks them until proxied/env-based), submissions-admin auth,
+   real admin auth.
 3. Optional curator to-do: the **Bandcamp/Website artist button** ships empty — populate
    `artists.website_url` per artist via the admin **Artists tab → Edit → "Website /
    Bandcamp URL"** whenever ready.
