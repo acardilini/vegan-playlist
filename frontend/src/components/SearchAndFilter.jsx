@@ -536,7 +536,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
                 <button
                   className="filter-chip-remove"
                   onClick={() => removeFilter(filter)}
-                  title={`Remove ${filter.label}: ${filter.displayValue}`}
+                  title={`Remove filter ${filter.label}: ${filter.displayValue}`}
                   aria-label={`Remove filter ${filter.label}: ${filter.displayValue}`}
                 >
                   ×

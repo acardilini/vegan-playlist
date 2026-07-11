@@ -1750,6 +1750,12 @@
   text-overflow: ellipsis;
 }
 
+.song-item .song-artist {
+  font: var(--text-meta);
+  color: var(--text-muted);
+  margin: 0;
+}
+
 .song-item .song-meta {
   font: var(--text-meta);
   color: var(--text-muted);

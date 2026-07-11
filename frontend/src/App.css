@@ -2587,13 +2587,6 @@ main {
   color: var(--color-text-secondary);
 }
 
-.no-video-message .video-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: var(--spacing-md);
-  opacity: 0.5;
-}
-
 .no-video-message p {
   font-size: var(--font-size-lg);
   margin: var(--spacing-md) 0;
@@ -2607,12 +2600,6 @@ main {
 
 .video-error-message {
   color: #dc3545;
-}
-
-.video-error-message .error-icon {
-  font-size: 2rem;
-  display: block;
-  margin-bottom: var(--spacing-md);
 }
 
 .video-error-message p {
@@ -2716,10 +2703,6 @@ main {
 @media (max-width: 768px) {
   .youtube-embed-container {
     margin: 0;
-  }
-  
-  .no-video-message .video-icon {
-    font-size: 2rem;
   }
   
   .video-wrapper {

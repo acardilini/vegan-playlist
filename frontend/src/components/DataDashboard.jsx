@@ -224,8 +224,9 @@ function DataDashboard() {
         </div>
         <div className="dashboard-filter-grid">
           <div className="field">
-            <label className="field-label">Genre</label>
+            <label className="field-label" htmlFor="dash-genre">Genre</label>
             <select
+              id="dash-genre"
               className="select"
               value={filters.genre}
               onChange={(e) => handleFilterChange('genre', e.target.value)}
@@ -238,8 +239,9 @@ function DataDashboard() {
           </div>
 
           <div className="field">
-            <label className="field-label">Parent genre</label>
+            <label className="field-label" htmlFor="dash-parent-genre">Parent genre</label>
             <select
+              id="dash-parent-genre"
               className="select"
               value={filters.parent_genre}
               onChange={(e) => handleFilterChange('parent_genre', e.target.value)}
@@ -252,8 +254,9 @@ function DataDashboard() {
           </div>
 
           <div className="field">
-            <label className="field-label">Vegan theme</label>
+            <label className="field-label" htmlFor="dash-theme">Vegan theme</label>
             <select
+              id="dash-theme"
               className="select"
               value={filters.vegan_focus}
               onChange={(e) => handleFilterChange('vegan_focus', e.target.value)}
@@ -266,8 +269,9 @@ function DataDashboard() {
           </div>
 
           <div className="field">
-            <label className="field-label">Min year</label>
+            <label className="field-label" htmlFor="dash-min-year">Min year</label>
             <input
+              id="dash-min-year"
               type="number"
               className="input"
               value={filters.min_year}
@@ -279,8 +283,9 @@ function DataDashboard() {
           </div>
 
           <div className="field">
-            <label className="field-label">Max year</label>
+            <label className="field-label" htmlFor="dash-max-year">Max year</label>
             <input
+              id="dash-max-year"
               type="number"
               className="input"
               value={filters.max_year}

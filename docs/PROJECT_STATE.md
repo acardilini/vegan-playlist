@@ -102,6 +102,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   side).
 - The old DB password remains in public GitHub history (rotated 2026-07-06, so harmless for the DB) — **user to change it anywhere else it was reused**.
 - Admin auth is still a shared password shipped in the frontend bundle (env var now, but visible to any visitor once deployed) — real auth is a Phase 4 requirement before the admin routes go public.
+- **Known cosmetic debt for the Phase 4 admin pass** (found in the 3.3 final review, not
+  fixed — admin is out of scope until Phase 4): the admin loading spinner has a 3px
+  cascade shift, and 8 pre-existing undefined legacy vars are used in admin `App.css`
+  blocks (`--color-card-bg`, `--color-primary-dark`, `--shadow-sm/md/lg`,
+  `--border-radius-full`, `--color-bg-quaternary`, `--color-text-light`) — fold into the
+  Phase 4 admin restyle.
+- **`DataDashboard.jsx`, `spotifyService.js`, `playlistService.js` hardcode
+  `http://localhost:5000`** (2.2b only fixed admin code, per the changelog above) — Phase
+  4 deployment (Session 4.2) breaks every public page until these go through the Vite
+  proxy or an env-based base URL; name it explicitly for 4.1/4.2 planning.
 
 ---
 
