@@ -173,7 +173,7 @@ main {
 
 
 /* Song detail page: restyled in styles/components.css (Session 3.2).
-   .song-album kept — still used by playlist rows + admin bulk categorization. */
+   .song-album kept — admin bulk categorization only. */
 .song-album {
   color: var(--color-text-secondary);
   margin: 0 0 var(--spacing-lg) 0;
@@ -2610,183 +2610,6 @@ main {
   background: var(--color-accent-secondary);
 }
 
-/* Playlist Detail Page */
-.playlist-header {
-  margin-bottom: var(--spacing-xl);
-}
-
-.back-button {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--spacing-lg);
-  transition: var(--transition-standard);
-}
-
-.back-button:hover {
-  background: var(--color-bg-tertiary);
-}
-
-.playlist-info-header {
-  display: flex;
-  gap: var(--spacing-xl);
-  align-items: flex-start;
-}
-
-.playlist-image-large img {
-  width: 300px;
-  height: 300px;
-  object-fit: cover;
-  border-radius: var(--border-radius-lg);
-}
-
-.playlist-details h1 {
-  color: var(--color-text-primary);
-  font-size: var(--font-size-xxl);
-  margin: 0 0 var(--spacing-md) 0;
-}
-
-.playlist-details .playlist-description {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-lg);
-  line-height: 1.6;
-  margin: 0 0 var(--spacing-lg) 0;
-}
-
-.playlist-meta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.playlist-meta span {
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-sm);
-}
-
-.playlist-meta .playlist-song-count {
-  color: var(--color-accent-primary);
-  font-weight: 500;
-}
-
-/* Playlist Songs List */
-.playlist-songs h2 {
-  color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-lg) 0;
-  font-size: var(--font-size-xl);
-}
-
-.songs-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.song-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: var(--transition-standard);
-}
-
-.song-item:hover {
-  background: var(--color-bg-secondary);
-}
-
-.song-position {
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-sm);
-  width: 30px;
-  text-align: right;
-}
-
-.song-artwork img {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border-radius: var(--border-radius-sm);
-}
-
-.song-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.song-title {
-  color: var(--color-text-primary);
-  font-weight: 500;
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--spacing-xs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.song-artist {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  margin-bottom: var(--spacing-xs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.song-album {
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.song-duration {
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  min-width: 40px;
-  text-align: right;
-}
-
-/* Playlist date styling */
-.playlist-date {
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
-  margin-top: var(--spacing-xs);
-}
-
-/* Responsive design for playlist detail */
-@media (max-width: 768px) {
-  .playlist-info-header {
-    flex-direction: column;
-    gap: var(--spacing-lg);
-    text-align: center;
-  }
-  
-  .playlist-image-large img {
-    width: 200px;
-    height: 200px;
-  }
-  
-  .song-item {
-    gap: var(--spacing-sm);
-  }
-  
-  .song-position {
-    width: 20px;
-  }
-  
-  .song-artwork img {
-    width: 40px;
-    height: 40px;
-  }
-}
-
 /* Add to Playlist Button */
 .song-overlay-buttons {
   position: absolute;
@@ -2857,40 +2680,6 @@ main {
   font-size: var(--font-size-xs);
 }
 
-/* Success Message */
-.success-message {
-  background: oklch(0.72 0.15 40 / 0.1);
-  color: var(--color-accent-primary);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-sm);
-  margin-bottom: var(--spacing-md);
-  border: 1px solid oklch(0.72 0.15 40 / 0.3);
-  font-size: var(--font-size-sm);
-}
-
-/* No Playlists State */
-.no-playlists {
-  text-align: center;
-  padding: var(--spacing-lg);
-  color: var(--color-text-secondary);
-}
-
-.create-playlist-link {
-  background: var(--color-accent-primary);
-  color: white;
-  border: none;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  margin-top: var(--spacing-md);
-  transition: var(--transition-standard);
-}
-
-.create-playlist-link:hover {
-  background: var(--color-accent-secondary);
-}
-
 /* Select styling */
 .form-group select {
   width: 100%;
@@ -2907,31 +2696,6 @@ main {
   border-color: var(--color-accent-primary);
 }
 
-/* Remove Song Button */
-.remove-song-button {
-  background: rgba(220, 53, 69, 0.1);
-  color: #dc3545;
-  border: 1px solid rgba(220, 53, 69, 0.3);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-standard);
-  opacity: 0;
-}
-
-.song-item:hover .remove-song-button {
-  opacity: 1;
-}
-
-.remove-song-button:hover {
-  background: #dc3545;
-  color: white;
 }
 
 /* Admin Login Styles */
