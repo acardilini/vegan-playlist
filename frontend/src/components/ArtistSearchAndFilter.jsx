@@ -525,7 +525,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
                       aria-expanded={isExpanded}
                       aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${parentGenre} subgenres`}
                     >
-                      {isExpanded ? 'â–¼' : 'â–¶'}
+                      {isExpanded ? '▼' : '▶'}
                     </button>
                     
                     <label className="filter-option parent-genre">
@@ -675,7 +675,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
                   title={`Remove ${filter.label}: ${filter.displayValue}`}
                   aria-label={`Remove filter ${filter.label}: ${filter.displayValue}`}
                 >
-                  Ã—
+                  ×
                 </button>
               </div>
             ))}
