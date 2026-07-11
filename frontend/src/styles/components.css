@@ -27,8 +27,9 @@
   padding: 0 var(--space-5);
 }
 
-/* Wordmark — brand mark is type-only (no logo file exists yet) */
-.app-header h1 {
+/* Wordmark — brand mark is type-only (no logo file exists yet).
+   Rendered as a home link (.site-title) so pages keep exactly one h1. */
+.app-header .site-title {
   margin: 0;
   font: 800 1.375rem/1 var(--font-display);
   letter-spacing: 0;
@@ -103,6 +104,12 @@
   border-color: var(--border-hairline);
   box-shadow: var(--shadow-card);
   transform: none;
+}
+
+/* Resting box-shadow: none above outranks the base :focus-visible ring
+   (same specificity, later sheet) — restate the ring here. */
+.song-card:focus-visible {
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .song-card:active {
@@ -1235,7 +1242,7 @@
   gap: var(--space-4);
 }
 
-.category-group h4 {
+.category-group h3 {
   font: var(--text-label);
   color: var(--text-primary);
   margin: 0 0 var(--space-2);
@@ -1863,6 +1870,11 @@
   box-shadow: var(--shadow-card);
 }
 
+/* Keep the keyboard focus ring visible on top of the raised card shadow */
+.playlist-card:focus-visible {
+  box-shadow: var(--shadow-card), 0 0 0 3px var(--focus-ring);
+}
+
 .playlist-card .artwork-placeholder {
   aspect-ratio: 1 / 1;
   width: 100%;
@@ -1933,7 +1945,7 @@
   gap: var(--space-2);
 }
 
-.form-card-title h3 {
+.form-card-title h2 {
   font: var(--text-display-sm);
   color: var(--text-primary);
   margin: 0;

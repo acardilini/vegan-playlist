@@ -84,8 +84,14 @@ function PlaylistDetailPage() {
               className="song-item"
               role="button"
               tabIndex={0}
+              aria-label={`Open song ${song.title}`}
               onClick={() => openSong(song.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter') openSong(song.id); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openSong(song.id);
+                }
+              }}
             >
               <div className="song-index">{index + 1}</div>
               <div className="song-artwork">

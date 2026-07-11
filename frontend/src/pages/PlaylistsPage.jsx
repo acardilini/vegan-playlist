@@ -32,7 +32,7 @@ function PlaylistsPage() {
 
       {!loading && !error && playlists.length === 0 && (
         <div className="no-results">
-          <h3>No playlists yet</h3>
+          <h2>No playlists yet</h2>
           <p>Collections are on their way.</p>
         </div>
       )}
@@ -45,13 +45,19 @@ function PlaylistsPage() {
               className="playlist-card"
               role="button"
               tabIndex={0}
+              aria-label={`Open playlist ${playlist.name}`}
               onClick={() => openPlaylist(playlist.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter') openPlaylist(playlist.id); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openPlaylist(playlist.id);
+                }
+              }}
             >
               <div className="artwork-placeholder" aria-hidden="true">
                 <span>playlist</span>
               </div>
-              <h3 className="playlist-card-name">{playlist.name}</h3>
+              <h2 className="playlist-card-name">{playlist.name}</h2>
               <div className="playlist-card-meta">
                 <span>{playlist.song_count} songs</span>
                 <span>{playlist.creator}</span>

@@ -344,7 +344,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
 
     return (
       <div className="filter-section hierarchical-genre-filter">
-        <h4 className="filter-title">Genres</h4>
+        <h3 className="filter-title">Genres</h3>
         
         <div className="filter-search">
           <input
@@ -370,10 +370,12 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             return (
               <div key={parentGenre} className="genre-hierarchy-item">
                 <div className="parent-genre-row">
-                  <button 
+                  <button
                     className="expand-toggle"
                     onClick={() => toggleParentExpansion(parentGenre)}
                     type="button"
+                    aria-expanded={isExpanded}
+                    aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${parentGenre} subgenres`}
                   >
                     {isExpanded ? '▼' : '▶'}
                   </button>
@@ -435,7 +437,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
 
     return (
       <div className="filter-section">
-        <h4 className="filter-title">{title}</h4>
+        <h3 className="filter-title">{title}</h3>
         
         {searchable && options.length > 10 && (
           <div className="filter-search">
@@ -531,10 +533,11 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
               <div key={`${filter.key}-${filter.value}-${index}`} className="filter-chip">
                 <span className="filter-chip-label">{filter.label}:</span>
                 <span className="filter-chip-value">{filter.displayValue}</span>
-                <button 
+                <button
                   className="filter-chip-remove"
                   onClick={() => removeFilter(filter)}
                   title={`Remove ${filter.label}: ${filter.displayValue}`}
+                  aria-label={`Remove filter ${filter.label}: ${filter.displayValue}`}
                 >
                   ×
                 </button>
@@ -598,7 +601,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             {/* Year Range */}
             {filterOptions.year_range && (
               <div className="filter-section">
-                <h4 className="filter-title">Year Range</h4>
+                <h3 className="filter-title">Year Range</h3>
                 <div className="range-inputs">
                   <input
                     type="number"

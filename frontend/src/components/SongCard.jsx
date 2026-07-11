@@ -87,15 +87,27 @@ function SongCard({ song, songId }) {
   };
 
   return (
-    <div className="song-card" onClick={handleSongClick}>
+    <div
+      className="song-card"
+      role="button"
+      tabIndex={0}
+      aria-label={`Open song ${song.title}`}
+      onClick={handleSongClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleSongClick();
+        }
+      }}
+    >
       <div className="song-artwork">
         {getArtwork() ? (
           <img
             src={getArtwork()}
-            alt={`${song.title} artwork`}
+            alt=""
           />
         ) : (
-          <div className="artwork-placeholder">
+          <div className="artwork-placeholder" aria-hidden="true">
             <span>album cover</span>
           </div>
         )}

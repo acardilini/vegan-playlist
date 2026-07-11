@@ -222,7 +222,7 @@ function ArtistDetailPage() {
             <div className="album-header">
               <div className="album-cover">
                 {group.cover && (
-                  <img src={group.cover} alt={`${group.name} cover`} />
+                  <img src={group.cover} alt="" />
                 )}
               </div>
               <div className="album-header-info">
@@ -241,12 +241,21 @@ function ArtistDetailPage() {
                 <div
                   key={song.id}
                   className="song-item"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open song ${song.title}`}
                   onClick={() => handleSongClick(song.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSongClick(song.id);
+                    }
+                  }}
                 >
                   <span className="song-index">{index + 1}</span>
 
                   <div className="song-info">
-                    <h4 className="song-title">{song.title}</h4>
+                    <h3 className="song-title">{song.title}</h3>
 
                     <div className="song-categories">
                       <CategoryBadges categories={song.vegan_focus} colorClass="vegan-focus" />

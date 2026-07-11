@@ -217,7 +217,7 @@ function DataDashboard() {
       {/* Filters */}
       <div className="form-card">
         <div className="form-card-title">
-          <h3>Filters</h3>
+          <h2>Filters</h2>
           <button onClick={clearFilters} className="btn btn-ghost btn-sm">
             Clear all filters
           </button>

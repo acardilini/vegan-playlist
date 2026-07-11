@@ -132,7 +132,7 @@ function SongSubmissionForm() {
           {/* Required Fields Section */}
           <div className="form-card">
             <div className="form-card-title">
-              <h3>Song information</h3>
+              <h2>Song information</h2>
               <span className="form-tag-required">Required</span>
             </div>
 
@@ -205,7 +205,7 @@ function SongSubmissionForm() {
           {/* Optional Information Section */}
           <div className="form-card">
             <div className="form-card-title">
-              <h3>Additional information</h3>
+              <h2>Additional information</h2>
               <span className="form-tag-optional">Optional</span>
             </div>
 
@@ -256,7 +256,7 @@ function SongSubmissionForm() {
           {/* Contact Information Section */}
           <div className="form-card">
             <div className="form-card-title">
-              <h3>Your information</h3>
+              <h2>Your information</h2>
               <span className="form-tag-optional">Optional</span>
             </div>
             <p className="form-note">Leave your details if you'd like us to credit you or follow up on your submission.</p>

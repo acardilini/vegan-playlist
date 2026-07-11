@@ -1,6 +1,6 @@
 import './App.css'
 import './styles/components.css' // design system — must come after App.css to win the cascade
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import NavigationMenu from './components/NavigationMenu';
 import HomePage from './pages/HomePage';
 import SongDetailPage from './pages/SongDetailPage';
@@ -20,7 +20,7 @@ function App() {
       <div className="app-container">
         <header className="app-header">
           <div className="header-content">
-            <h1>The Vegan Playlist</h1>
+            <Link to="/" className="site-title">The Vegan Playlist</Link>
             <NavigationMenu />
           </div>
         </header>

@@ -492,7 +492,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
 
       return (
         <div className="filter-section hierarchical-genre-filter">
-          <h4 className="filter-title">Genres</h4>
+          <h2 className="filter-title">Genres</h2>
           
           <div className="filter-search">
             <input
@@ -518,12 +518,14 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
               return (
                 <div key={parentGenre} className="genre-hierarchy-item">
                   <div className="parent-genre-row">
-                    <button 
+                    <button
                       className="expand-toggle"
                       onClick={() => toggleParentExpansion(parentGenre)}
                       type="button"
+                      aria-expanded={isExpanded}
+                      aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${parentGenre} subgenres`}
                     >
-                      {isExpanded ? '▼' : '▶'}
+                      {isExpanded ? 'â–¼' : 'â–¶'}
                     </button>
                     
                     <label className="filter-option parent-genre">
@@ -572,7 +574,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
       console.error('Error in HierarchicalGenreFilter:', error);
       return (
         <div className="filter-section">
-          <h4 className="filter-title">Genres</h4>
+          <h2 className="filter-title">Genres</h2>
           <div className="no-filter-results" style={{color: 'red'}}>
             Error loading genres: {error.message}
           </div>
@@ -594,7 +596,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
 
     return (
       <div className="filter-section">
-        <h4 className="filter-title">{title}</h4>
+        <h2 className="filter-title">{title}</h2>
         
         {searchable && options.length > 10 && (
           <div className="filter-search">
@@ -667,12 +669,13 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
               <div key={`${filter.key}-${filter.value}-${index}`} className="filter-chip">
                 <span className="filter-chip-label">{filter.label}:</span>
                 <span className="filter-chip-value">{filter.displayValue}</span>
-                <button 
+                <button
                   className="filter-chip-remove"
                   onClick={() => removeFilter(filter)}
                   title={`Remove ${filter.label}: ${filter.displayValue}`}
+                  aria-label={`Remove filter ${filter.label}: ${filter.displayValue}`}
                 >
-                  ×
+                  Ã—
                 </button>
               </div>
             ))}
@@ -705,7 +708,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
 
             {/* Minimum Songs Filter */}
             <div className="filter-section">
-              <h4 className="filter-title">Min Songs</h4>
+              <h2 className="filter-title">Min Songs</h2>
               <div className="range-inputs">
                 <input
                   type="number"
@@ -720,7 +723,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
 
             {/* Followers Filter */}
             <div className="filter-section">
-              <h4 className="filter-title">Followers</h4>
+              <h2 className="filter-title">Followers</h2>
               <div className="range-inputs">
                 <input
                   type="number"
@@ -742,7 +745,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
 
             {/* Popularity Filter */}
             <div className="filter-section">
-              <h4 className="filter-title">Popularity</h4>
+              <h2 className="filter-title">Popularity</h2>
               <div className="range-inputs">
                 <input
                   type="number"
@@ -766,7 +769,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
 
             {/* Release Year Range Filter */}
             <div className="filter-section">
-              <h4 className="filter-title">Active Years</h4>
+              <h2 className="filter-title">Active Years</h2>
               <div className="range-inputs">
                 <input
                   type="number"
