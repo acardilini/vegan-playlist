@@ -1,73 +1,85 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { spotifyService } from '../api/spotifyService';
+
+// About shows exact counts (curator request) — the home hero keeps rounded ones
+const exactStat = (value) => (value ? value.toLocaleString() : '…');
+
 function AboutPage() {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    spotifyService.getStats()
+      .then(setStats)
+      .catch((err) => console.error('Error loading stats:', err));
+  }, []);
+
   return (
     <div className="page-container">
-      <div className="about-content">
-        <div className="about-header">
+      <div className="about-container">
+        <div className="page-header">
           <h1>About The Vegan Playlist</h1>
           <p className="about-subtitle">
-            7 years of curating music that advocates for animals, the environment, and compassionate living
+            7 years of curating music that speaks to animals, the environment,
+            and compassionate living.
           </p>
         </div>
 
-        <div className="about-sections">
-          <section className="about-section">
-            <h2>Our Mission</h2>
-            <p>
-              The Vegan Playlist is a comprehensive database of songs with vegan, animal rights,
-              and animal liberation themes. We believe music has the power to inspire change and
-              raise awareness about the treatment of animals and environmental issues.
-            </p>
-          </section>
+        <section className="about-section">
+          <h2>Our mission</h2>
+          <p>
+            The Vegan Playlist is a searchable database of songs with vegan,
+            animal-rights, animal-liberation, care, and appreciation themes. We
+            believe music can shift how people think about the treatment of
+            animals.
+          </p>
+        </section>
 
-          <section className="about-section">
-            <h2>What We Include</h2>
-            <p>
-              Our collection spans multiple genres and decades, featuring songs that:
-            </p>
-            <ul>
-              <li>Directly advocate for animal rights and liberation</li>
-              <li>Promote plant-based living and veganism</li>
-              <li>Address environmental issues related to animal agriculture</li>
-              <li>Share stories of compassion and empathy for animals</li>
-              <li>Critique factory farming and animal exploitation</li>
-            </ul>
-          </section>
+        <section className="about-section">
+          <h2>What we include</h2>
+          <ul>
+            <li>Songs that directly advocate for animal rights and liberation</li>
+            <li>Songs that promote plant-based living and veganism</li>
+            <li>Songs addressing environmental issues tied to animal agriculture</li>
+            <li>Songs of compassion and empathy for animals</li>
+            <li>Songs that critique animal exploitation</li>
+          </ul>
+        </section>
 
-          <section className="about-section">
-            <h2>Our Approach</h2>
-            <p>
-              Each song in our database is carefully analyzed and categorized by:
-            </p>
-            <ul>
-              <li><strong>Advocacy Style:</strong> Direct, educational, subtle, or storytelling</li>
-              <li><strong>Animal Focus:</strong> All animals, farm animals, or specific species</li>
-              <li><strong>Themes:</strong> Animal rights, environment, health, ethics</li>
-              <li><strong>Musical Genre:</strong> Rock, hip hop, punk, electronic, and more</li>
-            </ul>
-          </section>
+        <section className="about-section">
+          <h2>Our approach</h2>
+          <ul>
+            <li><strong>Advocacy style:</strong> direct, educational, subtle, or storytelling</li>
+            <li><strong>Animal focus:</strong> all animals, domain (e.g. factory farming), or specific species</li>
+            <li><strong>Themes:</strong> animal rights, health, ethics</li>
+            <li><strong>Musical genre:</strong> rock, hip-hop, punk, electronic, and more</li>
+          </ul>
+        </section>
 
-          <section className="about-section">
-            <h2>Get Involved</h2>
-            <p>
-              We welcome song suggestions from the community! If you know of a song with
-              vegan or animal rights themes that we haven't included, please let us know.
-              Together, we can build the most comprehensive collection of advocacy music.
-            </p>
-          </section>
+        <section className="about-section">
+          <h2>Get involved</h2>
+          <p>
+            Know a song with vegan, animal-rights/liberation, or animal-appreciation
+            themes we’re missing? Suggest it — together we can build the most
+            complete collection of animal advocacy music.
+          </p>
+          <div>
+            <Link to="/submit" className="btn btn-secondary">Submit a song</Link>
+          </div>
+        </section>
 
-          <div className="about-stats">
-            <div className="stat-highlight">
-              <span className="stat-number">650+</span>
-              <span className="stat-label">Songs Curated</span>
-            </div>
-            <div className="stat-highlight">
-              <span className="stat-number">7</span>
-              <span className="stat-label">Years of Research</span>
-            </div>
-            <div className="stat-highlight">
-              <span className="stat-number">200+</span>
-              <span className="stat-label">Artists Featured</span>
-            </div>
+        <div className="about-stats">
+          <div className="stat-badge">
+            <span className="stat-value">{exactStat(stats?.songs)}</span>
+            <span className="stat-label">Songs curated</span>
+          </div>
+          <div className="stat-badge">
+            <span className="stat-value">2017</span>
+            <span className="stat-label">Playlist started</span>
+          </div>
+          <div className="stat-badge">
+            <span className="stat-value">{exactStat(stats?.artists)}</span>
+            <span className="stat-label">Artists featured</span>
           </div>
         </div>
       </div>

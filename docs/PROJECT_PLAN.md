@@ -158,7 +158,11 @@ routes pruned; clear frontend/backend structure and conventions documented.
 ## Phase 3 — Brand & UI Rebuild
 **Goal:** Apply the brand kit onto the now-clean frontend.
 **Exit criteria:** Design system in place; all pages restyled to brand; responsive and
-accessible.
+accessible. — _Met 2026-07-11 (Session 3.3), pending curator click-through of
+`session-3.3-remaining-pages` before merge: design system live since 3.1, every route
+restyled to brand across 3.1–3.3, full-route smoke test found zero horizontal overflow
+at 390px and zero console errors on all 11 routes, and Session 3.3's accessibility pass
+added keyboard access + aria-labels + one-h1-per-route + focus-visible rings site-wide._
 
 - ☑ **Session 3.1 — Design system foundation.** _Done 2026-07-10; merged to `main`
   2026-07-10 after curator click-through._ Brand-kit tokens →
@@ -169,17 +173,31 @@ accessible.
   `.song-artwork` globally) that had hidden all album covers — the "broken cover API"
   myth. _Smoke test ✅: home (desktop+mobile), song detail, artists, playlists render
   with brand styling; build + lint clean._
-- ☑ **Session 3.2 — Public pages restyle.** _Done 2026-07-11 on branch
-  `session-3.2-public-pages` (pushed, awaiting merge)._ Home (kit hero + stat badges +
+- ☑ **Session 3.2 — Public pages restyle.** _Done 2026-07-11; merged to `main`
+  2026-07-11 after curator click-through._ Home (kit hero + stat badges +
   new copy), Browse/Search (token restyle of the filter suite), Song Detail (kit 16:9
   scrim hero; "Animal advocacy analysis" renamed + hidden when uncoded — curator
   request; dead audio-features panel removed), Artists (kit cards + photo-hero profile
   with popularity bars). ~2,700 lines of legacy App.css deleted; shared page vocabulary
   added to components.css. _Smoke test ✅: headless walk of all four pages at 1280 +
   390; build + lint clean (0 errors)._
-- ☐ **Session 3.3 — Remaining pages & polish.** Playlists, Submit, Dashboard, About, Admin.
-  Accessibility and responsive pass — includes the site-wide 390px horizontal overflow
-  (pre-existing shell issue verified in 3.2). _Smoke test: full walkthrough of every route._
+- ☑ **Session 3.3 — Remaining pages & polish.** _Done 2026-07-11 on branch
+  `session-3.3-remaining-pages`; awaiting curator click-through before merge._
+  Playlists made read-only (curator decision — create/remove controls deleted,
+  `AddToPlaylistModal` removed; backend untouched), Playlist Detail restyled to
+  artist-page row conventions (fixes the 3.2 40px-thumbnail clash), Submit (kit form +
+  guidelines sidebar), Dashboard (kit layout, brand-token Chart.js), About (kit
+  structure + curator's merged copy, live stat badges via new `utils/stats.js`).
+  Accessibility pass: keyboard access + aria-labels on all clickable cards, one `<h1>`
+  per route (app-shell heading became a `.site-title` link), focus-visible rings. Admin
+  light touch: 10-tab headless walk found zero breakage, no admin code changed.
+  App.css 6,287 → 5,187 lines; both pre-existing esbuild CSS warnings gone. The
+  3.2-era "site-wide 390px overflow" **did not reproduce** — verified fixed already by
+  3.2's own follow-up commit, so the planned shell-fix task was dropped (see Decision
+  Log). _Smoke test ✅: full walkthrough of every route (11 routes × 1280 + 390 = 22
+  checks) — no overflow, no console errors, no emoji in visible text; admin login + all
+  10 tabs clean (two pre-existing, admin-only, untouched-this-session issues noted for
+  the record, not regressions); `npm run build` clean; `npx eslint src/` → 0 errors._
 
 ## Phase 4 — Deployment Hardening
 **Goal:** Ship it, cheaply, from GitHub.
@@ -201,9 +219,11 @@ accessible.
 Items intentionally deferred until needed (from the PRD and the Session 0.1
 [Feature Inventory](./FEATURE_INVENTORY.md)). Nothing here is built until it earns its place.
 
-- **Public playlist creation/editing with accounts.** Today anyone can create playlists and
-  remove songs from any playlist, anonymously. Deferred until there is an auth/spam story
-  (Phase 4 at the earliest); curated playlists remain browsable.
+- **Public playlist creation/editing with accounts.** The public site is browse-only for
+  playlists (Session 3.3 deleted the anonymous create/remove UI — see Decision Log); the
+  backend routes still exist for the admin Manage Playlists tab. Public creation/editing
+  returns once there is an auth/spam story (Phase 4 at the earliest); curated playlists
+  remain browsable.
 - **Audio previews / embedded player.** Song-card play buttons currently show a "coming soon"
   alert.
 - **Clickable stat tiles** ("show all songs/artists" from the homepage stats).

@@ -72,7 +72,7 @@ function SongDetailPage() {
 
     return (
       <div className="category-group">
-        <h4>{title}</h4>
+        <h3>{title}</h3>
         <div className="category-badges">
           {categories.map((category, index) => (
             <span key={index} className={`category-badge ${colorClass}`}>
@@ -268,19 +268,28 @@ function SongDetailPage() {
               <div
                 key={similarSong.id}
                 className="similar-song-card"
+                role="button"
+                tabIndex={0}
+                aria-label={`Open song ${similarSong.title}`}
                 onClick={() => navigate(`/song/${similarSong.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(`/song/${similarSong.id}`);
+                  }
+                }}
               >
                 <div className="similar-artwork">
                   {similarSong.album_images?.[0]?.url && (
                     <img
                       src={similarSong.album_images[0].url}
-                      alt={`${similarSong.title} artwork`}
+                      alt=""
                     />
                   )}
                 </div>
 
                 <div className="similar-info">
-                  <h4 className="similar-title">{similarSong.title}</h4>
+                  <h3 className="similar-title">{similarSong.title}</h3>
                   <p className="similar-artist">
                     {Array.isArray(similarSong.artists)
                       ? similarSong.artists.join(', ')

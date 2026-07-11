@@ -1,23 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import MoodBadge from './MoodBadge';
 
-function SongCard({ song, songId, showAddToPlaylist = true, onAddToPlaylist }) {
+function SongCard({ song, songId }) {
   const navigate = useNavigate();
 
   const handleSongClick = () => {
     navigate(`/song/${songId}`);
-  };
-
-  const handlePlayClick = (e) => {
-    e.stopPropagation();
-    alert(`Playing "${song.title}" (functionality coming soon!)`);
-  };
-
-  const handleAddToPlaylistClick = (e) => {
-    e.stopPropagation();
-    if (onAddToPlaylist) {
-      onAddToPlaylist(song);
-    }
   };
 
   // Format duration from milliseconds
@@ -99,29 +87,27 @@ function SongCard({ song, songId, showAddToPlaylist = true, onAddToPlaylist }) {
   };
 
   return (
-    <div className="song-card" onClick={handleSongClick}>
+    <div
+      className="song-card"
+      role="button"
+      tabIndex={0}
+      aria-label={`Open song ${song.title}`}
+      onClick={handleSongClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleSongClick();
+        }
+      }}
+    >
       <div className="song-artwork">
-        <div className="song-overlay-buttons">
-          <div className="play-button" onClick={handlePlayClick}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          </div>
-          {showAddToPlaylist && onAddToPlaylist && (
-            <div className="add-to-playlist-button" onClick={handleAddToPlaylistClick} title="Add to Playlist">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M14,10H2V12H14V10M14,6H2V8H14V6M2,16H10V14H2V16M21.5,11.5L23,13L16,20L11.5,15.5L13,14L16,17L21.5,11.5Z"/>
-              </svg>
-            </div>
-          )}
-        </div>
         {getArtwork() ? (
           <img
             src={getArtwork()}
-            alt={`${song.title} artwork`}
+            alt=""
           />
         ) : (
-          <div className="artwork-placeholder">
+          <div className="artwork-placeholder" aria-hidden="true">
             <span>album cover</span>
           </div>
         )}

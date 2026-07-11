@@ -38,7 +38,6 @@ function YouTubeEmbed({
     return (
       <div className="youtube-embed-container no-video">
         <div className="no-video-message">
-          <span className="video-icon">🎥</span>
           <p>{fallbackMessage}</p>
           <small>Music videos help bring the advocacy message to life</small>
         </div>
@@ -69,7 +68,6 @@ function YouTubeEmbed({
     return (
       <div className="youtube-embed-container error">
         <div className="video-error-message">
-          <span className="error-icon">⚠️</span>
           <p>Unable to load video</p>
           <small>The video may be private or unavailable</small>
           <a 

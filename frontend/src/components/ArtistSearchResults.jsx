@@ -142,16 +142,25 @@ function ArtistSearchResults() {
                 <div
                   key={artist.id}
                   className="artist-card"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open artist ${artist.name}`}
                   onClick={() => handleArtistClick(artist.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleArtistClick(artist.id);
+                    }
+                  }}
                 >
                   <div className="artist-image">
                     {getArtistImage(artist) ? (
                       <img
                         src={getArtistImage(artist)}
-                        alt={`${artist.name} photo`}
+                        alt=""
                       />
                     ) : (
-                      <span className="artist-image-placeholder">photo</span>
+                      <span className="artist-image-placeholder" aria-hidden="true">photo</span>
                     )}
                   </div>
                   

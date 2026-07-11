@@ -25,24 +25,6 @@ export const playlistService = {
     }
   },
 
-  // Create new playlist
-  createPlaylist: async (playlistData) => {
-    try {
-      const response = await fetch(API_BASE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(playlistData)
-      });
-      if (!response.ok) throw new Error('Failed to create playlist');
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating playlist:', error);
-      throw error;
-    }
-  },
-
   // Update playlist
   updatePlaylist: async (id, playlistData) => {
     try {
@@ -71,38 +53,6 @@ export const playlistService = {
       return await response.json();
     } catch (error) {
       console.error('Error deleting playlist:', error);
-      throw error;
-    }
-  },
-
-  // Add song to playlist
-  addSongToPlaylist: async (playlistId, songId) => {
-    try {
-      const response = await fetch(`${API_BASE}/${playlistId}/songs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ song_id: songId })
-      });
-      if (!response.ok) throw new Error('Failed to add song to playlist');
-      return await response.json();
-    } catch (error) {
-      console.error('Error adding song to playlist:', error);
-      throw error;
-    }
-  },
-
-  // Remove song from playlist
-  removeSongFromPlaylist: async (playlistId, songId) => {
-    try {
-      const response = await fetch(`${API_BASE}/${playlistId}/songs/${songId}`, {
-        method: 'DELETE'
-      });
-      if (!response.ok) throw new Error('Failed to remove song from playlist');
-      return await response.json();
-    } catch (error) {
-      console.error('Error removing song from playlist:', error);
       throw error;
     }
   }

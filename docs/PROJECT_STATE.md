@@ -7,44 +7,27 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** Phase 3 — Brand & UI Rebuild (3.1 ☑ merged; 3.2 ☑ on branch, awaiting
-  merge). Phases 0–2 complete.
-- **Current session:** _Session 3.2 done on branch `session-3.2-public-pages`
-  2026-07-11 (pushed), awaiting curator click-through + merge_
-- **Next session:** Session 3.3 — Remaining pages & polish (Playlists, Submit,
-  Dashboard, About, Admin; responsive + accessibility pass)
-- **Last updated:** 2026-07-11 _(3.2 built: Home/Browse/Song Detail/Artists restyled;
-  advocacy section renamed + hidden-when-empty)_
+- **Phase:** Phase 3 — Brand & UI Rebuild (3.1 ☑ merged; 3.2 ☑ merged 2026-07-11;
+  3.3 ☑ done on branch, awaiting curator click-through + merge). Phases 0–2 complete.
+  **Phase 3 exit criteria met pending click-through.**
+- **Current session:** _Session 3.3 — Remaining pages & polish — done on branch
+  `session-3.3-remaining-pages`, awaiting curator click-through + merge_
+- **Next session:** Phase 4 — Deployment Hardening, Session 4.1 (after 3.3 merges)
+- **Last updated:** 2026-07-11 _(Session 3.3 complete: all 9 code tasks + full smoke
+  test done on branch; Phase 3 closed pending curator click-through)_
 
 ### Next Tasks (start here)
-1. **Curator: click through branch `session-3.2-public-pages`** (start both servers;
-   browse home, search/filters, a song page e.g. `/song/541`, `/artists`, an artist
-   page) and give the merge go-ahead. Biggest visible changes: kit hero with rounded
-   stat badges + new copy ("A searchable database of vegan & animal-liberation songs",
-   "1,300+ songs, tagged by theme, genre, artist, and date"); song page rebuilt as the
-   kit's 16:9 cover hero (title/artist/album + Year/Duration/Popularity + actions in a
-   scrim over the artwork); artist page rebuilt as the kit's photo hero (genre tags +
-   stat boxes in the scrim) over a numbered song list with moss popularity bars;
-   artists grid now kit cards (circular photo, meta row, genre pills); filter chips are
-   ember pills; all emoji gone from public pages.
-   **Same-day follow-up (curator-requested):** popularity removed from all public song
-   and artist surfaces; followers removed from artist cards (kept on the artist page as
-   "Spotify followers"); artist-page songs now **grouped by album, newest first** (cover
-   + year · count header, per-album numbering); new **Bandcamp/Website button** on the
-   artist page — populate it per artist via the admin **Artists tab → Edit → "Website /
-   Bandcamp URL"** (new `artists.website_url` column, migration `005` applied;
-   currently empty for all artists so no button shows yet). _Curator approved all
-   three follow-ups in-session (2026-07-11) from screenshots — the remaining step is
-   the in-browser click-through + merge go-ahead._
-2. **Session 3.3 — Remaining pages & polish**: Playlists (+ detail), Submit, Dashboard,
-   About, Admin; responsive + accessibility pass. Known responsive item: **every page
-   still overflows horizontally at 390px** (pre-existing shell issue — verified on the
-   untouched About page too; the nav now wraps but something page-level still forces
-   width). Also from 3.2: playlist-detail rows inherit the artist-page `.song-item` row
-   styling from components.css (40px thumbs) — fold into the Playlists restyle.
-3. Bridge cleanup continues: App.css is down to ~6,100 lines (from ~8,800); delete
-   remaining legacy page blocks + emptied bridge `:root` entries as 3.3 restyles each
-   page.
+1. **Curator click-through of branch `session-3.3-remaining-pages`, then merge
+   go-ahead.** What to check: Playlists page + a playlist detail page (read-only —
+   no create/add/remove controls), Submit form, Dashboard charts (brand colors —
+   ember line, moss bars, no rainbow), About page copy, keyboard/tab focus on
+   clickable cards site-wide, Admin unaffected (all 10 tabs). Once confirmed, merge
+   to `main`.
+2. **Phase 4 Session 4.1 planning** — environment & security (externalise
+   config/secrets, input validation, admin access control) — starts once 3.3 merges.
+3. Optional curator to-do: the **Bandcamp/Website artist button** ships empty — populate
+   `artists.website_url` per artist via the admin **Artists tab → Edit → "Website /
+   Bandcamp URL"** whenever ready.
 2. ✅ Looks **done — curator appears to have run the playlist sync**: the DB held 1,821
    songs on 2026-07-10 (= 1,800 + the 21 mismatch-report tracks from 2026-07-09).
    Curator to confirm it was intentional; the new tracks are in the To-process queue.
@@ -119,6 +102,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   side).
 - The old DB password remains in public GitHub history (rotated 2026-07-06, so harmless for the DB) — **user to change it anywhere else it was reused**.
 - Admin auth is still a shared password shipped in the frontend bundle (env var now, but visible to any visitor once deployed) — real auth is a Phase 4 requirement before the admin routes go public.
+- **Known cosmetic debt for the Phase 4 admin pass** (found in the 3.3 final review, not
+  fixed — admin is out of scope until Phase 4): the admin loading spinner has a 3px
+  cascade shift, and 8 pre-existing undefined legacy vars are used in admin `App.css`
+  blocks (`--color-card-bg`, `--color-primary-dark`, `--shadow-sm/md/lg`,
+  `--border-radius-full`, `--color-bg-quaternary`, `--color-text-light`) — fold into the
+  Phase 4 admin restyle.
+- **`DataDashboard.jsx`, `spotifyService.js`, `playlistService.js` hardcode
+  `http://localhost:5000`** (2.2b only fixed admin code, per the changelog above) — Phase
+  4 deployment (Session 4.2) breaks every public page until these go through the Vite
+  proxy or an env-based base URL; name it explicitly for 4.1/4.2 planning.
 
 ---
 
@@ -126,6 +119,37 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-11 — Public playlists made read-only (Session 3.3, curator decision at
+  design time).** Anyone-can-create/anyone-can-remove was never a real feature — it had
+  no auth story and no spam protection (see the Backlog entry). Rather than leave dead
+  or misleading controls in the restyled UI: the Create-playlist button/modal was
+  **deleted, not hidden** (`CreatePlaylistModal` and its trigger removed from
+  `PlaylistsPage.jsx`), `AddToPlaylistModal.jsx` was deleted outright (26 → 25
+  components), the remove-song control was removed from the playlist-detail row, and
+  the dead "coming soon" play-button alert was removed from `SongCard`. Backend
+  playlist routes (`playlists.js`) were **not touched** — the admin Manage Playlists
+  tab still consumes the same API. Playlist creation returns to the public site once
+  there's real auth (Phase 4+); browsing curated playlists is unaffected.
+- **2026-07-11 — The 3.2-era "site-wide 390px overflow" no longer reproduces (Session
+  3.3 planning).** Verified headlessly on all 11 routes with real data at planning time
+  (2026-07-11): no route overflowed at 390px. It's evidently fixed by 3.2's own
+  same-day follow-up (nav-wrap fix + `width: 100%` container fixes) — no dedicated
+  shell-fix task was needed, and the task planned for it in the 3.3 brief was dropped.
+  Re-confirmed in the Task 10 full-route smoke test (all 11 routes × 2 viewports, no
+  overflow).
+- **2026-07-11 — About-page copy: curator edits merged onto the kit structure
+  (Session 3.3, curator-approved "merge" option).** The curator had uncommitted
+  working-tree edits to `AboutPage.jsx` (care/appreciation framing, "critique animal
+  exploitation" wording, a revised animal-focus line, themes described without an
+  environment mention) that conflicted with the kit's About copy queued for this
+  session. Curator chose to merge: kit structure + curator's content, with typos fixed.
+  The curator's same-session Submit-page copy tweaks were committed as-is (`11a2760`,
+  curator-authored, care/connection framing).
+- **2026-07-11 — Admin light-touch scope confirmed by inspection, not rebuild (Session
+  3.3, Task 8).** A headless walk of all 10 admin tabs after the public restyle found
+  **no breakage**: `ManagePlaylistsTab` uses the namespaced `admin-playlist-card` class,
+  so it doesn't collide with the public `.playlist-card` restyle. Zero admin fixes were
+  needed — the task produced no diff and no code review.
 - **2026-07-11 — Public-page restyle choices (Session 3.2).** (1) **Restyle preserved
   behaviour; only the two detail pages changed structure** — Song Detail and Artist
   Detail were rebuilt to the kit's scrim-hero layouts (`ui_kits/website/song.html` /
@@ -352,6 +376,45 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-11 (Session 3.3)** — Remaining pages & polish (closes Phase 3). On branch
+  `session-3.3-remaining-pages` (base `4627464`, plan committed at `c272c1d`), 9 code
+  tasks + full smoke test, all review-approved: **(1) Playlists made read-only**
+  (curator decision — see Decision Log): kit playlist cards, Create-playlist button/
+  modal and `AddToPlaylistModal.jsx` deleted (26 → 25 components), remove-song control
+  gone from playlist detail, dead "coming soon" play button removed from `SongCard`;
+  backend playlist routes untouched (still serve the admin Manage Playlists tab).
+  **(2) Playlist Detail** restyled to artist-page row conventions, fixing the 3.2-era
+  40px-thumbnail clash. **(3) Submit** — kit form + guidelines sidebar. **(4) Dashboard**
+  — kit layout, Chart.js recolored to brand tokens (ember line, moss bars — rainbow
+  palette gone). **(5) About** — kit structure with the curator's merged copy (care/
+  appreciation framing, "critique animal exploitation" wording — see Decision Log),
+  live stat badges via new shared `frontend/src/utils/stats.js`. **(6) Accessibility
+  pass**: keyboard access (Enter + Space + `aria-label`) on every clickable card,
+  `aria-label`s on icon-only controls, an alt-text audit, exactly one `<h1>` per route
+  (the app-shell heading became `.site-title` — a home link — freeing each page to own
+  its `<h1>`), focus-visible rings on cards. **(7) Admin light touch**: headless walk of
+  all 10 tabs found zero breakage from the public restyle (no diff, no task review —
+  see Decision Log). **(8) App.css bridge cleanup**: legacy monolith **6,287 → 5,187
+  lines** this session (dead public blocks + unused bridge `:root` vars removed); both
+  pre-existing esbuild CSS warnings eliminated. **Incident:** a PowerShell 5.1
+  whole-file rewrite corrupted BOM-less UTF-8 into mojibake in
+  `ArtistSearchAndFilter.jsx` (Task 7) — repaired byte-identical in a follow-up commit
+  (`58393cb`); root cause + fix now a standing watch-out (per-hunk `Edit`, never a
+  whole-file PowerShell rewrite, for any file with non-ASCII glyphs like → or box-
+  drawing characters). **Smoke test ✅ (Task 10):** full headless walk of all 11 routes
+  at 1280 **and** 390 (22 checks) — real data renders, zero horizontal overflow, zero
+  console/page errors, zero emoji in visible public text (the only unicode hits are
+  intentional `←`/`→`/`↗` navigation glyphs); `grep via.placeholder frontend/src` = 1
+  match, but it's in admin-only `ArtistsManager.jsx`, untouched since before this
+  session (pre-existing, out of scope — flagged for a future admin pass). Admin login +
+  all 10 tabs walked at 1280: clean except two **pre-existing, admin-only, untouched-
+  this-session** issues surfaced for the record — a `net::ERR_CONNECTION_CLOSED` on the
+  Manage Artists tab's stray `via.placeholder.com` fallback image, and a `<style jsx>`
+  non-boolean-attribute React warning in `DataCompletionDashboard.jsx` (last touched in
+  3.2, not 3.3). `npm run build` clean (2.3s); `npx eslint src/` → **0 errors**
+  repo-wide (13 pre-existing `react-hooks/exhaustive-deps` warnings remain, none new).
+  Branch pushed; **not merged to `main`** — awaiting curator click-through. **Phase 3
+  exit criteria met pending that click-through.**
 - **2026-07-11 (Session 3.2)** — Public pages restyle. On branch
   `session-3.2-public-pages` (3.1 merged to `main` first, curator-confirmed), from the
   brand-kit mockups (`ui_kits/website/index|browse-filters|song|artists|artist.html`
