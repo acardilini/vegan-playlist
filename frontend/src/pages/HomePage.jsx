@@ -4,7 +4,6 @@ import { spotifyService } from '../api/spotifyService';
 import SearchAndFilter from '../components/SearchAndFilter';
 import SongCard from '../components/SongCard';
 import PaginationControls from '../components/PaginationControls';
-import AddToPlaylistModal from '../components/AddToPlaylistModal';
 
 // Round a live count down to the nearest hundred for display ("1,342" → "1,300+")
 function roundedStat(value) {
@@ -52,20 +51,12 @@ function FeaturedSongs() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
-  const [selectedSong, setSelectedSong] = useState(null);
-  const [message, setMessage] = useState('');
 
   useEffect(() => {
     const fetchFeaturedSongs = async () => {
       try {
         setLoading(true);
         const fetchedSongs = await spotifyService.getFeaturedSongs(4);
-
-        // DEBUG: Log the raw data from API
-        console.log('Raw API response:', fetchedSongs);
-        console.log('First song structure:', fetchedSongs[0]);
-
         setSongs(fetchedSongs);
       } catch (err) {
         setError('Failed to load featured songs');
@@ -78,15 +69,6 @@ function FeaturedSongs() {
     fetchFeaturedSongs();
   }, []);
 
-  const handleAddToPlaylist = (song) => {
-    setSelectedSong(song);
-    setShowAddToPlaylistModal(true);
-  };
-
-  const handleAddToPlaylistSuccess = (message) => {
-    setMessage(message);
-    setTimeout(() => setMessage(''), 3000);
-  };
   if (loading) {
     return (
       <section className="featured-songs">
@@ -117,9 +99,6 @@ function FeaturedSongs() {
     <section className="featured-songs">
       <div className="section-header">
         <h2>Featured songs</h2>
-        {message && (
-          <div className="success-message">{message}</div>
-        )}
       </div>
       <div className="songs-grid">
         {songs.map((song) => (
@@ -127,18 +106,9 @@ function FeaturedSongs() {
             key={song.id}
             song={song}
             songId={song.id}
-            onAddToPlaylist={handleAddToPlaylist}
           />
         ))}
       </div>
-
-      {showAddToPlaylistModal && selectedSong && (
-        <AddToPlaylistModal
-          song={selectedSong}
-          onClose={() => setShowAddToPlaylistModal(false)}
-          onSuccess={handleAddToPlaylistSuccess}
-        />
-      )}
     </section>
   );
 }
@@ -158,9 +128,6 @@ function SearchSection({ initialSearchQuery = '' }) {
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(true); // Start with true to show results immediately
   const [currentPage, setCurrentPage] = useState(1);
-  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
-  const [selectedSong, setSelectedSong] = useState(null);
-  const [message, setMessage] = useState('');
 
   // Load initial songs when component mounts
   useEffect(() => {
@@ -203,16 +170,6 @@ function SearchSection({ initialSearchQuery = '' }) {
     setHasSearched(true);
   }, []);
 
-  const handleAddToPlaylist = (song) => {
-    setSelectedSong(song);
-    setShowAddToPlaylistModal(true);
-  };
-
-  const handleAddToPlaylistSuccess = (message) => {
-    setMessage(message);
-    setTimeout(() => setMessage(''), 3000); // Clear message after 3 seconds
-  };
-
   return (
     <section className="search-section">
       <div className="search-section-content">
@@ -220,10 +177,6 @@ function SearchSection({ initialSearchQuery = '' }) {
           <h2>Browse the collection</h2>
           <p>Search by title, artist, or use filters to narrow by genre and theme.</p>
         </div>
-
-        {message && (
-          <div className="success-message">{message}</div>
-        )}
 
         <SearchAndFilter
           onResults={handleResults}
@@ -297,7 +250,6 @@ function SearchSection({ initialSearchQuery = '' }) {
                       key={song.id}
                       song={song}
                       songId={song.id}
-                      onAddToPlaylist={handleAddToPlaylist}
                     />
                   ))}
                 </div>
@@ -313,14 +265,6 @@ function SearchSection({ initialSearchQuery = '' }) {
               </div>
             )}
           </div>
-        )}
-
-        {showAddToPlaylistModal && selectedSong && (
-          <AddToPlaylistModal
-            song={selectedSong}
-            onClose={() => setShowAddToPlaylistModal(false)}
-            onSuccess={handleAddToPlaylistSuccess}
-          />
         )}
       </div>
     </section>

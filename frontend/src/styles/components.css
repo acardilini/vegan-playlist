@@ -205,62 +205,6 @@
   margin: 0;
 }
 
-/* Hover overlay actions on the artwork */
-.song-overlay-buttons {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: var(--space-2);
-  opacity: 0;
-  z-index: 2;
-  transition: opacity var(--duration-base) var(--ease-standard);
-}
-
-.song-card:hover .song-overlay-buttons {
-  opacity: 1;
-}
-
-.play-button {
-  background: var(--accent-ember-60);
-  color: var(--text-on-accent);
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard);
-}
-
-.play-button:hover {
-  background: var(--accent-ember-50);
-}
-
-.add-to-playlist-button {
-  background: var(--bg-surface-raised);
-  color: var(--text-primary);
-  border: 1px solid var(--border-hairline);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  backdrop-filter: none;
-  transition: background var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard);
-}
-
-.add-to-playlist-button:hover {
-  background: var(--accent-ember-60);
-  color: var(--text-on-accent);
-  transform: none;
-}
-
 /* Mood badge — pill over artwork, scrim background (no emoji, no ad hoc hues) */
 .mood-badge {
   display: inline-flex;
