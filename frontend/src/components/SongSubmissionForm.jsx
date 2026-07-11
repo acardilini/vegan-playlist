@@ -124,7 +124,7 @@ function SongSubmissionForm() {
     <div className="page-container">
       <div className="page-header">
         <h1>Suggest a song</h1>
-        <p>Help us grow the collection. Submit songs that speak to veganism, animal rights, or animal liberation.</p>
+        <p>Help us grow the collection. Submit songs that speak to veganism, animal rights, liberation, care and connection.</p>
       </div>
 
       <div className="submit-layout">
@@ -317,7 +317,7 @@ function SongSubmissionForm() {
           <div className="sidebar-card">
             <h3>Submission guidelines</h3>
             <ul>
-              <li><strong>Vegan themes:</strong> songs should speak to veganism, animal rights, or environmental consciousness.</li>
+              <li><strong>Vegan themes:</strong> songs should speak to veganism, animal rights, liberation, care or connection.</li>
               <li><strong>Any genre:</strong> metal to folk, electronic to hip-hop — all genres welcome.</li>
               <li><strong>Review process:</strong> our team reviews submissions before adding them to the playlist.</li>
             </ul>
