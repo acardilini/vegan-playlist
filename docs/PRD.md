@@ -301,8 +301,8 @@ keep/rebuild/drop/defer decisions are recorded in
 | `/song/:songId` | Song Detail | ✅ | Metadata, coding, YouTube embed, platform links, similar songs |
 | `/artists` | Artists (search results) | ✅ | Artist search + filters |
 | `/artist/:artistId` | Artist Detail | ✅ | Artist songs, stats, bio, advocacy notes, discography |
-| `/playlists` | Playlists directory | ✅ | User/curated playlist listing |
-| `/playlist/:playlistId` | Playlist Detail | ✅ | Playlist songs and metadata |
+| `/playlists` | Playlists directory | ✅ | Curated playlist listing (browse-only — see 11.2) |
+| `/playlist/:playlistId` | Playlist Detail | ✅ | Playlist songs and metadata (browse-only) |
 | `/submit` | Submit a Song | ✅ | Community suggestion form |
 | `/dashboard` | Data Dashboard | ✅ | Visualisations (Chart.js) |
 | `/about` | About | ✅ | Methodology / coding-system explanation |
@@ -316,7 +316,11 @@ keep/rebuild/drop/defer decisions are recorded in
 - **YouTube integration:** per-song video embeds with a primary-video concept. ✅
 - **Lyrics links:** lyrics lookup/links per song. ✅
 - **Artist pages:** stats, discography tracking, advocacy notes. ✅
-- **User playlists:** create/list/detail, add/remove songs (CRUD). ✅
+- **User playlists:** list/detail (browse curated playlists). ✅ — **create/add/remove
+  (CRUD) moved to ⛔ deferred pending auth** (Session 3.3: the anonymous create/remove UI
+  was deleted from the public site — no auth/spam story existed for it; the backend CRUD
+  routes are untouched and still back the admin Manage Playlists tab). Public creation
+  returns once real auth ships (Phase 4+).
 - **Song submissions:** public submit + stats. ✅
 - **Data dashboard:** year distribution, genre distribution, audio-features, vegan-themes,
   summary. ✅

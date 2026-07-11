@@ -80,14 +80,18 @@ Run before ending every working session:
 - **src/App.jsx** (~50 lines): router shell only — routes, header/nav, footer
 - **src/pages/**: one file per route — HomePage, SongDetailPage, PlaylistsPage,
   PlaylistDetailPage, AboutPage. Single-consumer helpers stay local to their page file
-- **src/components/**: 26 components — public (SearchAndFilter, ArtistSearchResults,
+- **src/components/**: 25 components — public (SearchAndFilter, ArtistSearchResults,
   ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge, YouTubeEmbed, plus the
-  shared NavigationMenu, SongCard, PaginationControls, AddToPlaylistModal) and admin
-  (AdminInterface is a login + tab-nav shell over ManageSongsTab, ManagePlaylistsTab and
-  the 8 other tab components; `CategorizationFields` is the one categorisation form shared
-  by Manage Songs and Bulk Categorization). Song intake/sync lives in the Staging tab
+  shared NavigationMenu, SongCard, PaginationControls) and admin (AdminInterface is a
+  login + tab-nav shell over ManageSongsTab, ManagePlaylistsTab and the 8 other tab
+  components; `CategorizationFields` is the one categorisation form shared by Manage
+  Songs and Bulk Categorization). Song intake/sync lives in the Staging tab
   (Add candidates + import-only Sync + mismatch report); Duplicate Manager is
-  data-quality only
+  data-quality only. **Public playlists are read-only (browse-only)** — Session 3.3
+  deleted `AddToPlaylistModal` and the create/remove-song UI (curator decision, no auth
+  story yet); the backend playlist routes are untouched and still serve the admin
+  Manage Playlists tab. Playlist creation returns to the public site in Phase 4+ once
+  there's real auth
 - **src/api/**: `spotifyService.js`, `playlistService.js`, and `adminApi.js` —
   admin code must fetch via `adminFetch` (relative `/api` URLs through the Vite proxy +
   `X-Admin-Password` header), never hardcode `localhost:5000` or the header
