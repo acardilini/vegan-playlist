@@ -199,17 +199,53 @@ added keyboard access + aria-labels + one-h1-per-route + focus-visible rings sit
   10 tabs clean (two pre-existing, admin-only, untouched-this-session issues noted for
   the record, not regressions); `npm run build` clean; `npx eslint src/` → 0 errors._
 
-## Phase 4 — Deployment Hardening
+## Phase 4 — Admin Rebuild
+**Goal:** Make the admin the streamlined heart of the operation so the curator keeps adding
+songs (anti-stagnation). Reorganise 10 tool-tabs → 5 job-areas around a single full-page
+Curation Workbench fed by derived queues.
+**Exit criteria:** The curator can take a song from capture → lyrics/enrichment → publish on
+one screen; the old scattered tabs are gone; nothing data is lost.
+**Design:** [`superpowers/specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md)
+(decomposes the rebuild into sub-projects A–F; brainstormed 2026-07-12).
+
+Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1–A4):
+
+- ◐ **A — Curation Workbench & lifecycle/queues.** The spine: single-song workbench, derived
+  queues, `song_processing` table, publish-incomplete. _Spec approved; plans:_
+  - ☐ **A1 — Data & backend foundation.** Migration 006 (`song_processing`, `songs.language`,
+    `song_lyrics.translation`); `curation.js` (processing state · queues + counts · workbench
+    read · per-panel saves); `videos.js` (one-primary invariant); lyrics-privacy guardrail.
+    Reuses `staging.js` lifecycle. Plan:
+    [`superpowers/plans/2026-07-12-admin-workbench-A1-backend.md`](./superpowers/plans/2026-07-12-admin-workbench-A1-backend.md).
+    _Smoke test: `node --test backend/test/` green + admin route curl checks + 401 without auth._
+  - ☐ **A2 — Admin nav shell + Songs area** (5-area IA; queue-rail + list; re-parent Artists/
+    Playlists/Data quality). _Plan written after A1 lands._
+  - ☐ **A3 — The Workbench page** (all panels, autosave-on-blur, prev/next, completeness
+    checklist, reject-confirm, quick-search links, highlights picker). Deletes StagingQueue/
+    LyricsLookupManager/YouTubeVideoManager/Manage Songs modal after data-parity check.
+  - ☐ **A4 — Dashboard landing + cleanup** (queue counts + Add a song; delete DataDashboard).
+- ☐ **B — Analysis integration.** Delete the mocked 5-array categorisation; public song page +
+  faceted browse read `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only
+  coding + lights up the "Needs analysis" queue. See `docs/LYRICS_ANALYSIS_INTEGRATION.md`.
+- ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
+  To-be-processed / spam. Reuses `staging.addSubmissionAsPending`.
+- ☐ **D — YouTube assist.** Search YouTube from the workbench, present candidates, pick best.
+- ☐ **E — Lyrics-search assist.** Multi-site search + capture (realistic MVP: quick-launch
+  search links + paste box; full auto-fetch scoped carefully — ToS/fragility).
+- ☐ **F — Spotify push.** Website→Spotify: paste Spotify URL → one button adds to the playlist
+  (needs a one-time write-auth Spotify OAuth connection).
+
+## Phase 5 — Deployment Hardening
 **Goal:** Ship it, cheaply, from GitHub.
 **Exit criteria:** Live deployment; secrets managed; DB hosted; documented deploy process.
 
-- ☐ **Session 4.1 — Environment & security.** Externalise config/secrets; input validation
+- ☐ **Session 5.1 — Environment & security.** Externalise config/secrets; input validation
   and basic hardening on public + admin endpoints; admin access control. _Smoke test: run
   locally from env config; confirm secrets not committed._
-- ☐ **Session 4.2 — Deploy pipeline & DB hosting.** Choose final platform; add deploy config
+- ☐ **Session 5.2 — Deploy pipeline & DB hosting.** Choose final platform; add deploy config
   (e.g. `render.yaml`); provision hosted Postgres; migrate data. _Smoke test: deploy a branch
   and load the live site._
-- ☐ **Session 4.3 — Launch checklist.** Domain, HTTPS, performance/load-time check, backups.
+- ☐ **Session 5.3 — Launch checklist.** Domain, HTTPS, performance/load-time check, backups.
   _Smoke test: full production walkthrough against the PRD's launch success criteria._
 
 ---

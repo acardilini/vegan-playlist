@@ -7,41 +7,48 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** **Phase 3 — Brand & UI Rebuild ✅ complete** (3.1, 3.2, 3.3 all merged;
-  3.3 merged 2026-07-12, merge `48a4529`). Phases 0–2 complete.
-- **Current session:** _between sessions — Session 3.3 merged to `main`_
-- **Next session:** Phase 4 — Deployment Hardening, Session 4.1
-- **Last updated:** 2026-07-12 _(3.3 merged to `main` on curator go-ahead; late
-  branch fix: About stats exact + "2017 / Playlist started" badge)_
+- **Phase:** **Phase 4 — Admin Rebuild (opening).** Phases 0–3 complete (Phase 3 —
+  Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
+  **Phase 5**.
+- **Current session:** _Admin-layer brainstorm + planning (2026-07-12) — **complete**.
+  Sub-project A (Curation Workbench & lifecycle) designed; plan A1 (data + backend
+  foundation) written. Design/planning only — no production code changed._
+- **Next session:** **Execute plan A1** — `docs/superpowers/plans/2026-07-12-admin-workbench-A1-backend.md`
+  (migration 006 + curation/videos services + workbench endpoints + guardrail tests).
+- **Last updated:** 2026-07-12 _(admin rebuild scoped as sub-projects A–F; A specced,
+  A1 planned; deployment renumbered to Phase 5)._
 
 ### Next Tasks (start here)
-1. **Phase 4 Session 4.1 planning** — environment & security (externalise
-   config/secrets, input validation, admin access control). Known 4.x items already
-   recorded in Watch-outs: public pages hardcode `http://localhost:5000`
-   (deployment breaks them until proxied/env-based), submissions-admin auth,
-   real admin auth.
-3. Optional curator to-do: the **Bandcamp/Website artist button** ships empty — populate
-   `artists.website_url` per artist via the admin **Artists tab → Edit → "Website /
-   Bandcamp URL"** whenever ready.
-2. ✅ Looks **done — curator appears to have run the playlist sync**: the DB held 1,821
-   songs on 2026-07-10 (= 1,800 + the 21 mismatch-report tracks from 2026-07-09).
-   Curator to confirm it was intentional; the new tracks are in the To-process queue.
-3. ✅ **Done — `session-2.2b-admin-ui-consolidation` merged to `main`** 2026-07-09
-   (click-through confirmed; Sync button located after a refresh).
-4. ✅ **Done — `session-2.2-backend-consolidation` merged to `main`** 2026-07-09.
-5. ✅ **Done — `session-2.1-frontend-decomposition` merged to `main`** 2026-07-08.
-4. ✅ **Done — `session-1.4-staging-queue` merged to `main`** 2026-07-08 (merge `032a126`,
-   pushed).
-4. **Curator decisions from 1.3 — status conflicts RESOLVED** (curator rule: one instance of
-   include → default to include, so the 18 reject/pending-but-included stay live, no change;
-   the new CLEARxCUT dup 5804 was merged into 80). Remaining **optional** items in
-   [`SESSION_1.3_CURATOR_DECISIONS.md`](./SESSION_1.3_CURATOR_DECISIONS.md): 6 clear attach
-   typos to fix then re-run `enrichFromSpotify.js --attach --apply`; 3 unmatched rows; 2
-   unclassified Processed values — enrichment only, not blocking.
-5. Optional curator to-do: **149 included songs are not on the Spotify playlist** — add by
-   hand if desired (`GET /api/admin/spotify-playlist-mismatch` lists them).
-6. The two source spreadsheets at `docs/playlist/` are now fully imported and can retire after
-   the curator spot-checks the site (keep as archive; still gitignored — lyrics).
+1. **Execute plan A1 — admin workbench backend** (branch `session-A1-workbench-backend`).
+   7 TDD tasks in [`plans/2026-07-12-admin-workbench-A1-backend.md`](./superpowers/plans/2026-07-12-admin-workbench-A1-backend.md):
+   migration 006 (`song_processing`, `songs.language`, `song_lyrics.translation`), the
+   `curation.js` service (processing state · derived queues + counts · workbench
+   assemble-read · per-panel saves), the `videos.js` service (one-primary invariant),
+   and the lyrics-privacy guardrail. **Note: A1 runs `node --test` against the live
+   shared DB and applies a migration — back up / use the ZZZTEST-sentinel fixtures as the
+   tests do.**
+2. **Then write + execute A2–A4** (frontend), against A1's real endpoints: A2 = 5-area nav
+   shell + Songs queue-rail/list; A3 = the full-page Workbench; A4 = Dashboard + cleanup.
+   See the spec's decomposition and each plan's "Follow-on plans" section.
+3. **Deferred to their own sub-projects:** B (analysis display / delete the mock
+   categorisation), C (submissions moderation / Inbox), D (YouTube search), E (lyrics
+   fetch), F (Spotify push). Design: [`specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md).
+4. **Phase 5 — Deployment Hardening** (was Phase 4): externalise config/secrets, input
+   validation, admin access control. Known items in Watch-outs: public pages hardcode
+   `http://localhost:5000` (deployment breaks them until proxied/env-based),
+   submissions-admin auth, real admin auth.
+**Still-open optional curator to-dos** (non-blocking, carried forward):
+
+- The **Bandcamp/Website artist button** ships empty — populate `artists.website_url` per
+  artist via the admin Artists tab whenever ready.
+- **149 included songs are not on the Spotify playlist** — add by hand if desired
+  (`GET /api/admin/spotify-playlist-mismatch` lists them). _(Sub-project F later makes this a
+  one-click push from the workbench.)_
+- 1.3 leftovers in [`SESSION_1.3_CURATOR_DECISIONS.md`](./SESSION_1.3_CURATOR_DECISIONS.md):
+  6 attach typos to fix then re-run `enrichFromSpotify.js --attach --apply`; 3 unmatched rows;
+  2 unclassified Processed values — enrichment only, not blocking.
+- The two source spreadsheets at `docs/playlist/` are fully imported and can retire after a
+  site spot-check (keep as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
 - **Truth source is live (1.1) + publication staging (1.2b):** the public site shows
@@ -114,6 +121,24 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-12 — Admin layer to be rebuilt as a dedicated phase, decomposed A–F
+  (brainstorm session).** The curator flagged the 10-tab admin as clunky/disjointed and a
+  stagnation risk ("if I can't easily add/update songs, the playlist goes stale"). Rather than
+  more incremental audit-cleanups, we designed a **workflow-oriented admin**: a single
+  full-page **Curation Workbench** (everything about one song on one screen) fed by
+  **derived queues**, reorganising 10 tool-tabs → 5 job-areas. Scoped as **6 sub-projects**
+  (A workbench+lifecycle · B analysis display / delete the mock categorisation · C submissions
+  moderation · D YouTube search · E lyrics fetch · F Spotify push), each with its own
+  spec→plan→build cycle. **Admin Rebuild becomes Phase 4; Deployment Hardening moves to
+  Phase 5.** Design: [`specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md).
+  Key sub-decisions: workbench is one screen for _both_ processing and editing; autosave-on-blur;
+  reject-with-confirm; the mocked 5-array categorisation is **deleted in B** and replaced by
+  the external `song_lyric_analysis` table (read-only in admin — the main app only displays it);
+  new `song_processing` table holds only the non-derivable workflow state (snooze / park reason /
+  lyrics avenues tried); `songs.language` (sung-in) is public metadata, `song_lyrics.translation`
+  stays local-only (copyright); publish-incomplete is supported with to-do queues tracking gaps;
+  the "Submit a song" page stays public (community submissions, moderated into the Inbox);
+  Spotify becomes a push target (website is truth), needing a one-time write-auth OAuth in F.
 - **2026-07-11 — Public playlists made read-only (Session 3.3, curator decision at
   design time).** Anyone-can-create/anyone-can-remove was never a real feature — it had
   no auth story and no spam protection (see the Backlog entry). Rather than leave dead
@@ -371,6 +396,22 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-12 (Admin brainstorm + A1 planning)** — Design/planning session, **no production
+  code changed** (no smoke test). Brainstormed the admin-layer rebuild with the curator via
+  user stories; wrote and committed the design spec
+  [`superpowers/specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md)
+  (`45a5566`) — admin reorganised 10 tabs → 5 job-areas around a single full-page Curation
+  Workbench + derived queues, decomposed into sub-projects A–F (see Decision Log). Then wrote
+  and committed the first implementation plan
+  [`superpowers/plans/2026-07-12-admin-workbench-A1-backend.md`](./superpowers/plans/2026-07-12-admin-workbench-A1-backend.md)
+  (`c1ac727`) — A1 = data + backend foundation, 7 TDD tasks (migration 006:
+  `song_processing` / `songs.language` / `song_lyrics.translation`; `curation.js` service:
+  processing state · derived queues + counts · workbench assemble-read · per-panel saves;
+  `videos.js`: one-primary invariant; a lyrics-privacy guardrail test), reusing the existing
+  `staging.js` lifecycle. Also created `docs/LYRICS_ANALYSIS_INTEGRATION.md` (curator-supplied)
+  documenting the shared `song_lyric_analysis` table + `taxonomy.json` codebook that B will
+  consume. `PROJECT_STATE.md` + `PROJECT_PLAN.md` updated: admin rebuild = **Phase 4**,
+  deployment → **Phase 5**. Frontend plans A2–A4 to be written against A1's real endpoints.
 - **2026-07-11 (Session 3.3)** — Remaining pages & polish (closes Phase 3). On branch
   `session-3.3-remaining-pages` (base `4627464`, plan committed at `c272c1d`), 9 code
   tasks + full smoke test, all review-approved: **(1) Playlists made read-only**
