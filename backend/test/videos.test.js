@@ -13,18 +13,18 @@ async function primaries(songId) {
 }
 
 after(async () => {
-  await pool.query(`DELETE FROM youtube_videos WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZTEST%')`);
-  await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZTEST%'`);
+  await pool.query(`DELETE FROM youtube_videos WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZVID%')`);
+  await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZVID%'`);
   await pool.end();
 });
 
 test('addVideo rejects a malformed youtube_id', async () => {
-  const id = await mkSong('ZZZTEST Vid Bad');
+  const id = await mkSong('ZZZVID Vid Bad');
   await assert.rejects(videos.addVideo(pool, id, { youtube_id: 'short' }), e => e.code === 'BAD_INPUT');
 });
 
 test('first video is primary; second only-primary-if-asked; setting primary clears siblings', async () => {
-  const id = await mkSong('ZZZTEST Vid Primary');
+  const id = await mkSong('ZZZVID Vid Primary');
   const v1 = await videos.addVideo(pool, id, { youtube_id: 'aaaaaaaaaaa', video_type: 'official' });
   assert.equal(v1.is_primary, true, 'first video auto-primary');
   const v2 = await videos.addVideo(pool, id, { youtube_id: 'bbbbbbbbbbb', video_type: 'live' });
@@ -37,7 +37,7 @@ test('first video is primary; second only-primary-if-asked; setting primary clea
 });
 
 test('deleting the primary promotes another remaining video', async () => {
-  const id = await mkSong('ZZZTEST Vid Delete');
+  const id = await mkSong('ZZZVID Vid Delete');
   const v1 = await videos.addVideo(pool, id, { youtube_id: 'ccccccccccc' });   // primary
   const v2 = await videos.addVideo(pool, id, { youtube_id: 'ddddddddddd' });
   await videos.deleteVideo(pool, v1.id);
