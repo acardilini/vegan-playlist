@@ -174,5 +174,94 @@ async function getWorkbench(db, id) {
   };
 }
 
-module.exports = { DEFAULT_MODEL, PARK_REASONS, QUEUE_NAMES,
-  getProcessing, setProcessing, listCurationQueue, queueCounts, getWorkbench, hasArt };
+const LYRICS_STATUSES = ['found', 'not_found', 'not_searched'];
+
+async function assertSong(db, id) {
+  if ((await db.query('SELECT 1 FROM songs WHERE id=$1', [id])).rows.length === 0) {
+    const e = new Error('song not found'); e.code = 'NOT_FOUND'; throw e;
+  }
+}
+function assertHttp(v, label) {
+  if (v != null && v !== '' && !/^https?:\/\//i.test(v)) {
+    const e = new Error(`${label} must be an http(s) URL`); e.code = 'BAD_INPUT'; throw e;
+  }
+}
+
+async function saveDetails(db, id, { title, language, status_notes } = {}) {
+  await assertSong(db, id);
+  const sets = [], params = [id];
+  const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
+  add('title', title); add('language', language); add('status_notes', status_notes);
+  if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
+  return getWorkbench(db, id);
+}
+
+async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_status, lyrics_url, lyrics_source } = {}) {
+  await assertSong(db, id);
+  if (lyrics_status != null && !LYRICS_STATUSES.includes(lyrics_status)) {
+    const e = new Error('invalid lyrics_status'); e.code = 'BAD_INPUT'; throw e;
+  }
+  if (lyrics !== undefined) {
+    if (lyrics == null || lyrics === '') {
+      await db.query('DELETE FROM song_lyrics WHERE song_id=$1', [id]);
+    } else {
+      await db.query(`
+        INSERT INTO song_lyrics (song_id, lyrics, source_url, translation)
+        VALUES ($1,$2,$3,$4)
+        ON CONFLICT (song_id) DO UPDATE SET
+          lyrics=EXCLUDED.lyrics, source_url=EXCLUDED.source_url, translation=EXCLUDED.translation`,
+        [id, lyrics, source_url || null, translation || null]);
+    }
+  } else if (translation !== undefined || source_url !== undefined) {
+    await db.query(`
+      UPDATE song_lyrics SET
+        translation = COALESCE($2, translation),
+        source_url  = COALESCE($3, source_url)
+      WHERE song_id=$1`,
+      [id, translation === undefined ? null : translation, source_url === undefined ? null : source_url]);
+  }
+  const sets = [], params = [id];
+  const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
+  add('lyrics_status', lyrics_status); add('lyrics_url', lyrics_url); add('lyrics_source', lyrics_source);
+  if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
+  return getWorkbench(db, id);
+}
+
+async function saveHighlights(db, id, { lyrics_highlights } = {}) {
+  await assertSong(db, id);
+  await db.query(`UPDATE songs SET lyrics_highlights=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+    [id, lyrics_highlights || null]);
+  return getWorkbench(db, id);
+}
+
+async function saveLinks(db, id, { spotify_url, bandcamp_url, soundcloud_url } = {}) {
+  await assertSong(db, id);
+  assertHttp(spotify_url, 'spotify_url'); assertHttp(bandcamp_url, 'bandcamp_url'); assertHttp(soundcloud_url, 'soundcloud_url');
+  const sets = [], params = [id];
+  const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
+  add('spotify_url', spotify_url); add('bandcamp_url', bandcamp_url); add('soundcloud_url', soundcloud_url);
+  if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
+  return getWorkbench(db, id);
+}
+
+async function setCover(db, id, { cover_url } = {}) {
+  await assertSong(db, id);
+  if (!cover_url || !/^https?:\/\//i.test(cover_url)) {
+    const e = new Error('cover_url must be an http(s) URL'); e.code = 'BAD_INPUT'; throw e;
+  }
+  const images = JSON.stringify([{ url: cover_url }]);
+  const song = (await db.query('SELECT album_id, title FROM songs WHERE id=$1', [id])).rows[0];
+  if (song.album_id) {
+    await db.query('UPDATE albums SET images=$2 WHERE id=$1', [song.album_id, images]);
+  } else {
+    const album = (await db.query(
+      `INSERT INTO albums (name, images, data_source) VALUES ($1, $2, 'manual') RETURNING id`,
+      [song.title || 'Untitled', images])).rows[0];
+    await db.query('UPDATE songs SET album_id=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1', [id, album.id]);
+  }
+  return getWorkbench(db, id);
+}
+
+module.exports = { DEFAULT_MODEL, PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
+  getProcessing, setProcessing, listCurationQueue, queueCounts, getWorkbench, hasArt,
+  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover };

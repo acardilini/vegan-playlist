@@ -2287,4 +2287,24 @@ router.put('/workbench/:id/processing', async (req, res) => {
   }
 });
 
+// Shared handler for the per-panel saves that return the reassembled workbench.
+function panelSave(fn) {
+  return async (req, res) => {
+    try {
+      const wb = await fn(pool, parseInt(req.params.id), req.body || {});
+      res.json({ success: true, workbench: wb });
+    } catch (e) {
+      if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+      if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+      console.error('workbench save error:', e);
+      res.status(500).json({ error: 'Failed to save', details: e.message });
+    }
+  };
+}
+router.put('/workbench/:id/details',    panelSave(curation.saveDetails));
+router.put('/workbench/:id/lyrics',     panelSave(curation.saveLyrics));
+router.put('/workbench/:id/highlights', panelSave(curation.saveHighlights));
+router.put('/workbench/:id/links',      panelSave(curation.saveLinks));
+router.put('/workbench/:id/cover',      panelSave(curation.setCover));
+
 module.exports = router;

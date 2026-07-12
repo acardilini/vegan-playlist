@@ -104,3 +104,47 @@ test('getWorkbench assembles song, lyrics, processing, completeness', async () =
 test('getWorkbench throws NOT_FOUND for missing song', async () => {
   await assert.rejects(curation.getWorkbench(pool, -777), e => e.code === 'NOT_FOUND');
 });
+
+test('saveDetails updates title + language', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Save Details' });
+  const wb = await curation.saveDetails(pool, id, { title: 'ZZZTEST Save Details 2', language: 'French' });
+  assert.equal(wb.title, 'ZZZTEST Save Details 2');
+  assert.equal(wb.language, 'French');
+});
+
+test('saveLyrics upserts local lyrics + translation and sets lyrics_status', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Save Lyrics' });
+  const wb = await curation.saveLyrics(pool, id, { lyrics: 'line one', source_url: 'http://src', translation: 'trans', lyrics_status: 'found' });
+  assert.equal(wb.lyrics, 'line one');
+  assert.equal(wb.translation, 'trans');
+  assert.equal(wb.lyrics_status, 'found');
+  await assert.rejects(curation.saveLyrics(pool, id, { lyrics_status: 'bogus' }), e => e.code === 'BAD_INPUT');
+});
+
+test('saveLyrics with empty lyrics deletes the local row', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Del Lyrics' });
+  await curation.saveLyrics(pool, id, { lyrics: 'temp' });
+  const wb = await curation.saveLyrics(pool, id, { lyrics: '' });
+  assert.equal(wb.lyrics, null);
+});
+
+test('saveHighlights updates public highlights', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Highlights' });
+  const wb = await curation.saveHighlights(pool, id, { lyrics_highlights: 'a memorable line' });
+  assert.equal(wb.lyrics_highlights, 'a memorable line');
+});
+
+test('saveLinks validates http(s)', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Links' });
+  const wb = await curation.saveLinks(pool, id, { bandcamp_url: 'https://band.camp/x' });
+  assert.equal(wb.bandcamp_url, 'https://band.camp/x');
+  await assert.rejects(curation.saveLinks(pool, id, { spotify_url: 'ftp://nope' }), e => e.code === 'BAD_INPUT');
+});
+
+test('setCover upserts album images for a non-Spotify song', async () => {
+  const id = await mkSong({ title: 'ZZZTEST Cover' });
+  const wb = await curation.setCover(pool, id, { cover_url: 'https://img/cover.jpg' });
+  assert.equal(wb.completeness.cover, true);
+  // images is a jsonb column, parsed by pg into a JS array — stringify to inspect it.
+  assert.ok(JSON.stringify(wb.album.images).includes('https://img/cover.jpg'));
+});
