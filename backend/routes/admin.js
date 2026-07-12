@@ -2242,6 +2242,29 @@ router.post('/submissions/:id/add-to-pending', async (req, res) => {
 
 // ==================== Curation workbench (Sub-project A) ====================
 
+router.get('/curation/queue', async (req, res) => {
+  try {
+    const { queue, q, limit, offset } = req.query;
+    const out = await curation.listCurationQueue(pool, {
+      queue, q: q || '', limit: limit ? parseInt(limit) : null, offset: offset ? parseInt(offset) : 0,
+    });
+    res.json(out);
+  } catch (e) {
+    if (e.code === 'BAD_QUEUE') return res.status(400).json({ error: 'Unknown queue' });
+    console.error('curation queue error:', e);
+    res.status(500).json({ error: 'Failed to list queue', details: e.message });
+  }
+});
+
+router.get('/curation/counts', async (req, res) => {
+  try {
+    res.json(await curation.queueCounts(pool));
+  } catch (e) {
+    console.error('curation counts error:', e);
+    res.status(500).json({ error: 'Failed to load queue counts', details: e.message });
+  }
+});
+
 router.put('/workbench/:id/processing', async (req, res) => {
   try {
     const row = await curation.setProcessing(pool, parseInt(req.params.id), req.body || {});

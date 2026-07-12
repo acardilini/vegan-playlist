@@ -43,3 +43,41 @@ test('setProcessing upserts and validates park_reason', async () => {
 test('setProcessing throws NOT_FOUND for missing song', async () => {
   await assert.rejects(curation.setProcessing(pool, -12345, { processing_note: 'x' }), e => e.code === 'NOT_FOUND');
 });
+
+test('listCurationQueue to-process excludes awaiting-community and future snoozed', async () => {
+  const active = await mkSong({ title: 'ZZZTEST Q Active', status: 'pending' });
+  const waiting = await mkSong({ title: 'ZZZTEST Q Waiting', status: 'pending' });
+  const snoozed = await mkSong({ title: 'ZZZTEST Q Snoozed', status: 'pending' });
+  await curation.setProcessing(pool, waiting, { park_reason: 'awaiting_community' });
+  await curation.setProcessing(pool, snoozed, { snooze_until: '2999-01-01' });
+
+  const ids = (await curation.listCurationQueue(pool, { queue: 'to-process' })).rows.map(r => r.id);
+  assert.ok(ids.includes(active));
+  assert.ok(!ids.includes(waiting), 'awaiting-community excluded from to-process');
+  assert.ok(!ids.includes(snoozed), 'future-snoozed excluded from to-process');
+
+  const wIds = (await curation.listCurationQueue(pool, { queue: 'awaiting-community' })).rows.map(r => r.id);
+  assert.ok(wIds.includes(waiting));
+  const rIds = (await curation.listCurationQueue(pool, { queue: 'remind-later' })).rows.map(r => r.id);
+  assert.ok(rIds.includes(snoozed));
+});
+
+test('listCurationQueue needs-lyrics = included songs with no lyrics row', async () => {
+  const missing = await mkSong({ title: 'ZZZTEST Q NoLyrics', status: 'included', published: true });
+  const has = await mkSong({ title: 'ZZZTEST Q HasLyrics', status: 'included', published: true });
+  await pool.query(`INSERT INTO song_lyrics (song_id, lyrics) VALUES ($1, 'la la')`, [has]);
+  const ids = (await curation.listCurationQueue(pool, { queue: 'needs-lyrics' })).rows.map(r => r.id);
+  assert.ok(ids.includes(missing));
+  assert.ok(!ids.includes(has));
+});
+
+test('listCurationQueue unknown queue throws BAD_QUEUE', async () => {
+  await assert.rejects(curation.listCurationQueue(pool, { queue: 'nope' }), e => e.code === 'BAD_QUEUE');
+});
+
+test('queueCounts returns a number for every queue key', async () => {
+  const c = await curation.queueCounts(pool);
+  for (const k of ['to-process','awaiting-community','remind-later','needs-lyrics','needs-cover','needs-video','needs-analysis','to-finalise','inbox']) {
+    assert.equal(typeof c[k], 'number', `count for ${k}`);
+  }
+});
