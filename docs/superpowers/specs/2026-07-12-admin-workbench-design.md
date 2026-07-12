@@ -115,12 +115,14 @@ and **Remind me later** (`snooze_until` set / due). `lyrics_tried` stops the cur
 re-searching dead ends; `park_reason='listened_unclear'` is the "can't understand, can't find
 lyrics" state that **stays `pending`** (explicitly _not_ included) with its avenues checked off.
 
-**Translation storage** — extend the local-only `song_lyrics` table (translations of
-copyrighted lyrics are also copyright-sensitive; keep local, never on a public route):
+**Language & translation storage.** The **language a song is sung in** is catalogue metadata
+(public-safe, and it will power future language filtering), so it lives on `songs`. The
+**translation** of the lyrics is copyright-sensitive like the lyrics themselves, so it stays in
+the **local-only** `song_lyrics` table (never a public route):
 
 ```sql
-ALTER TABLE song_lyrics ADD COLUMN IF NOT EXISTS language    VARCHAR(40);
-ALTER TABLE song_lyrics ADD COLUMN IF NOT EXISTS translation TEXT;
+ALTER TABLE songs       ADD COLUMN IF NOT EXISTS language    VARCHAR(40);  -- sung-in language (public)
+ALTER TABLE song_lyrics ADD COLUMN IF NOT EXISTS translation TEXT;         -- local-only, copyright
 ```
 
 ---
@@ -141,9 +143,9 @@ into one place.
   without returning to the list.
 
 ### Panels
-1. **Details** — title, artist(s), album, year, duration; Spotify id/url; for non-Spotify
-   songs, album name + **cover art via pasted URL** (upload deferred to Phase 4 — needs image
-   hosting).
+1. **Details** — title, artist(s), album, year, duration; **language sung in** (`songs.language`);
+   Spotify id/url; for non-Spotify songs, album name + **cover art via pasted URL** (upload
+   deferred to Phase 4 — needs image hosting).
 2. **Lyrics** (the heart):
    - Full-lyrics paste box → local-only `song_lyrics.lyrics` + **source URL** (`lyrics_url`/`lyrics_source`).
    - **Language** + optional **translation** box (original + translation stored side by side, local-only).
@@ -271,3 +273,8 @@ modal, `DataDashboard`, and the old `AdminInterface` tab shell.
   smoke test per the project workflow.
 - **No behaviour regressions on the public site:** A is admin-only; the public routes and the
   reused Artists/Playlists/Duplicate components are untouched.
+- **Deletions are UI-only — no data loss (curator condition).** The "deletes now" list removes
+  frontend components only. The data they managed (YouTube videos, lyrics, links, publish
+  state, completion counts) lives in the DB and is re-surfaced by the Workbench/Songs/Dashboard.
+  Each delete session must verify the same data is reachable in the new UI before removing the
+  old component.
