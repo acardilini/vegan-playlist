@@ -5,6 +5,8 @@ const express = require('express');
 const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/genreMapping');
 const staging = require('../services/staging');
+const curation = require('../services/curation');
+const videos = require('../services/videos');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
@@ -2236,6 +2238,113 @@ router.post('/submissions/:id/add-to-pending', async (req, res) => {
     if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Submission not found' });
     console.error('add-to-pending error:', e);
     res.status(500).json({ error: 'Failed to add submission to pending queue', details: e.message });
+  }
+});
+
+// ==================== Curation workbench (Sub-project A) ====================
+
+router.get('/curation/queue', async (req, res) => {
+  try {
+    const { queue, q, limit, offset } = req.query;
+    const out = await curation.listCurationQueue(pool, {
+      queue, q: q || '', limit: limit ? parseInt(limit) : null, offset: offset ? parseInt(offset) : 0,
+    });
+    res.json(out);
+  } catch (e) {
+    if (e.code === 'BAD_QUEUE') return res.status(400).json({ error: 'Unknown queue' });
+    console.error('curation queue error:', e);
+    res.status(500).json({ error: 'Failed to list queue', details: e.message });
+  }
+});
+
+router.get('/curation/counts', async (req, res) => {
+  try {
+    res.json(await curation.queueCounts(pool));
+  } catch (e) {
+    console.error('curation counts error:', e);
+    res.status(500).json({ error: 'Failed to load queue counts', details: e.message });
+  }
+});
+
+router.get('/workbench/:id', async (req, res) => {
+  try {
+    res.json(await curation.getWorkbench(pool, parseInt(req.params.id)));
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    console.error('workbench read error:', e);
+    res.status(500).json({ error: 'Failed to load workbench', details: e.message });
+  }
+});
+
+router.put('/workbench/:id/processing', async (req, res) => {
+  try {
+    const row = await curation.setProcessing(pool, parseInt(req.params.id), req.body || {});
+    res.json({ success: true, processing: row });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    console.error('processing save error:', e);
+    res.status(500).json({ error: 'Failed to save processing state', details: e.message });
+  }
+});
+
+// Shared handler for the per-panel saves that return the reassembled workbench.
+function panelSave(fn) {
+  return async (req, res) => {
+    try {
+      const wb = await fn(pool, parseInt(req.params.id), req.body || {});
+      res.json({ success: true, workbench: wb });
+    } catch (e) {
+      if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+      if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+      console.error('workbench save error:', e);
+      res.status(500).json({ error: 'Failed to save', details: e.message });
+    }
+  };
+}
+router.put('/workbench/:id/details',    panelSave(curation.saveDetails));
+router.put('/workbench/:id/lyrics',     panelSave(curation.saveLyrics));
+router.put('/workbench/:id/highlights', panelSave(curation.saveHighlights));
+router.put('/workbench/:id/links',      panelSave(curation.saveLinks));
+router.put('/workbench/:id/cover',      panelSave(curation.setCover));
+
+router.post('/workbench/:id/videos', async (req, res) => {
+  try {
+    const row = await videos.addVideo(pool, parseInt(req.params.id), req.body || {});
+    res.json({ success: true, video: row });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    console.error('add video error:', e);
+    res.status(500).json({ error: 'Failed to add video', details: e.message });
+  }
+});
+router.put('/workbench/videos/:videoId', async (req, res) => {
+  try {
+    res.json({ success: true, video: await videos.updateVideo(pool, parseInt(req.params.videoId), req.body || {}) });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Video not found' });
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    console.error('update video error:', e);
+    res.status(500).json({ error: 'Failed to update video', details: e.message });
+  }
+});
+router.put('/workbench/videos/:videoId/primary', async (req, res) => {
+  try {
+    res.json({ success: true, video: await videos.setPrimaryVideo(pool, parseInt(req.params.videoId)) });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Video not found' });
+    console.error('set primary error:', e);
+    res.status(500).json({ error: 'Failed to set primary', details: e.message });
+  }
+});
+router.delete('/workbench/videos/:videoId', async (req, res) => {
+  try {
+    res.json({ success: true, ...(await videos.deleteVideo(pool, parseInt(req.params.videoId))) });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Video not found' });
+    console.error('delete video error:', e);
+    res.status(500).json({ error: 'Failed to delete video', details: e.message });
   }
 });
 

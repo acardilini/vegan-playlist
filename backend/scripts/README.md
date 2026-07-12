@@ -33,3 +33,7 @@ Dumps all songs with category data to `vegan_playlist_complete_data.csv` at the 
 root, for external analysis or backup. No writes to the DB. Note: full lyrics are
 **never** part of exports that leave this machine (`song_lyrics` is local-only,
 copyright).
+
+> Migration 006 (Sub-project A1) added `song_lyrics.translation` — also local-only
+> (copyright). The same rule applies: no public route may SELECT it, and it is covered by
+> the `pg_dump --exclude-table-data=song_lyrics` production-dump exclusion.
