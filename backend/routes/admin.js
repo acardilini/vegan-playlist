@@ -5,6 +5,7 @@ const express = require('express');
 const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/genreMapping');
 const staging = require('../services/staging');
+const curation = require('../services/curation');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
@@ -2236,6 +2237,20 @@ router.post('/submissions/:id/add-to-pending', async (req, res) => {
     if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Submission not found' });
     console.error('add-to-pending error:', e);
     res.status(500).json({ error: 'Failed to add submission to pending queue', details: e.message });
+  }
+});
+
+// ==================== Curation workbench (Sub-project A) ====================
+
+router.put('/workbench/:id/processing', async (req, res) => {
+  try {
+    const row = await curation.setProcessing(pool, parseInt(req.params.id), req.body || {});
+    res.json({ success: true, processing: row });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    console.error('processing save error:', e);
+    res.status(500).json({ error: 'Failed to save processing state', details: e.message });
   }
 });
 
