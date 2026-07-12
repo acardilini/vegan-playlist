@@ -2265,6 +2265,16 @@ router.get('/curation/counts', async (req, res) => {
   }
 });
 
+router.get('/workbench/:id', async (req, res) => {
+  try {
+    res.json(await curation.getWorkbench(pool, parseInt(req.params.id)));
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    console.error('workbench read error:', e);
+    res.status(500).json({ error: 'Failed to load workbench', details: e.message });
+  }
+});
+
 router.put('/workbench/:id/processing', async (req, res) => {
   try {
     const row = await curation.setProcessing(pool, parseInt(req.params.id), req.body || {});

@@ -135,5 +135,44 @@ async function queueCounts(db) {
   return out;
 }
 
+function hasArt(images) {
+  return !!(images && !['null', '[]', ''].includes(String(images).trim()));
+}
+
+async function getWorkbench(db, id) {
+  const s = (await db.query(`
+    SELECT s.*, al.name AS album_name, al.images AS album_images, al.release_date AS album_release_date
+    FROM songs s LEFT JOIN albums al ON al.id=s.album_id WHERE s.id=$1`, [id])).rows[0];
+  if (!s) { const e = new Error('song not found'); e.code = 'NOT_FOUND'; throw e; }
+
+  const artists = (await db.query(
+    `SELECT a.id, a.name, a.website_url FROM song_artists sa JOIN artists a ON a.id=sa.artist_id
+     WHERE sa.song_id=$1 ORDER BY a.name`, [id])).rows;
+  const videos = (await db.query(
+    `SELECT id, youtube_id, video_title, video_type, is_primary FROM youtube_videos
+     WHERE song_id=$1 ORDER BY is_primary DESC, id`, [id])).rows;
+  const lyricsRow = (await db.query(
+    `SELECT lyrics, source_url, translation FROM song_lyrics WHERE song_id=$1`, [id])).rows[0] || null;
+  const processing = await getProcessing(db, id);
+  const analysed = (await db.query(
+    `SELECT 1 FROM song_lyric_analysis WHERE song_id=$1 AND model_used=$2`, [id, DEFAULT_MODEL])).rows.length > 0;
+
+  const cover = hasArt(s.album_images);
+  const play_link = !!(s.spotify_url || s.bandcamp_url || s.soundcloud_url || videos.length > 0);
+  return {
+    id: s.id, title: s.title, status: s.status, published: s.published, language: s.language,
+    spotify_id: s.spotify_id, spotify_url: s.spotify_url, bandcamp_url: s.bandcamp_url, soundcloud_url: s.soundcloud_url,
+    lyrics_status: s.lyrics_status, lyrics_url: s.lyrics_url, lyrics_source: s.lyrics_source,
+    lyrics_highlights: s.lyrics_highlights, status_notes: s.status_notes,
+    album: { name: s.album_name, images: s.album_images, release_date: s.album_release_date },
+    artists, videos,
+    lyrics: lyricsRow ? lyricsRow.lyrics : null,
+    lyrics_source_url: lyricsRow ? lyricsRow.source_url : null,
+    translation: lyricsRow ? lyricsRow.translation : null,
+    processing, analysed,
+    completeness: { lyrics: !!lyricsRow, cover, video: videos.length > 0, play_link, analysis: analysed },
+  };
+}
+
 module.exports = { DEFAULT_MODEL, PARK_REASONS, QUEUE_NAMES,
-  getProcessing, setProcessing, listCurationQueue, queueCounts };
+  getProcessing, setProcessing, listCurationQueue, queueCounts, getWorkbench, hasArt };

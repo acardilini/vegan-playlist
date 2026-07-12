@@ -81,3 +81,26 @@ test('queueCounts returns a number for every queue key', async () => {
     assert.equal(typeof c[k], 'number', `count for ${k}`);
   }
 });
+
+test('getWorkbench assembles song, lyrics, processing, completeness', async () => {
+  const id = await mkSong({ title: 'ZZZTEST WB', status: 'included', published: true, spotify_url: 'http://x' });
+  await pool.query(`INSERT INTO song_lyrics (song_id, lyrics, source_url, translation) VALUES ($1,$2,$3,$4)`,
+    [id, 'full lyric text', 'http://genius/x', 'translated text']);
+  await pool.query(`UPDATE songs SET language='Spanish', lyrics_highlights='a great line' WHERE id=$1`, [id]);
+
+  const wb = await curation.getWorkbench(pool, id);
+  assert.equal(wb.id, id);
+  assert.equal(wb.language, 'Spanish');
+  assert.equal(wb.lyrics, 'full lyric text');            // full lyrics returned (admin-only path)
+  assert.equal(wb.translation, 'translated text');
+  assert.equal(wb.lyrics_source_url, 'http://genius/x');
+  assert.equal(wb.lyrics_highlights, 'a great line');
+  assert.equal(wb.completeness.lyrics, true);
+  assert.equal(wb.completeness.play_link, true);
+  assert.equal(wb.completeness.video, false);
+  assert.ok(Array.isArray(wb.artists) && wb.artists.length >= 1);
+});
+
+test('getWorkbench throws NOT_FOUND for missing song', async () => {
+  await assert.rejects(curation.getWorkbench(pool, -777), e => e.code === 'NOT_FOUND');
+});
