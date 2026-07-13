@@ -17,6 +17,22 @@ async function mkSong({ title, status = 'pending', published = false, spotify_ur
   return s.id;
 }
 
+test('quickCapture creates a pending manual song in the to-process queue', async () => {
+  const { id } = await curation.quickCapture(pool, { title: 'ZZZCUR QuickCap', artist: 'ZZZCUR Capper' });
+  assert.ok(Number.isInteger(id));
+  const wb = await curation.getWorkbench(pool, id);
+  assert.equal(wb.status, 'pending');
+  assert.equal(wb.published, false);
+  assert.ok(wb.artists.some(a => a.name === 'ZZZCUR Capper'));
+  const ids = (await curation.listCurationQueue(pool, { queue: 'to-process' })).rows.map(r => r.id);
+  assert.ok(ids.includes(id), 'quick-captured song appears in to-process');
+});
+
+test('quickCapture rejects blank title or artist', async () => {
+  await assert.rejects(curation.quickCapture(pool, { title: '', artist: 'x' }), e => e.code === 'BAD_INPUT');
+  await assert.rejects(curation.quickCapture(pool, { title: 'x', artist: '  ' }), e => e.code === 'BAD_INPUT');
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_processing WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
   await pool.query(`DELETE FROM song_lyrics WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);

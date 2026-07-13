@@ -2266,6 +2266,17 @@ router.get('/curation/counts', async (req, res) => {
   }
 });
 
+router.post('/curation/quick-capture', async (req, res) => {
+  try {
+    const { id } = await curation.quickCapture(pool, req.body || {});
+    res.json({ success: true, id });
+  } catch (e) {
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    console.error('quick-capture error:', e);
+    res.status(500).json({ error: 'Failed to add song', details: e.message });
+  }
+});
+
 router.get('/workbench/:id', async (req, res) => {
   try {
     res.json(await curation.getWorkbench(pool, parseInt(req.params.id)));

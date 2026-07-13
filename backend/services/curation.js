@@ -262,6 +262,23 @@ async function setCover(db, id, { cover_url } = {}) {
   return getWorkbench(db, id);
 }
 
+async function quickCapture(db, { title, artist } = {}) {
+  const t = (title || '').trim();
+  const a = (artist || '').trim();
+  if (!t || !a) { const e = new Error('title and artist are required'); e.code = 'BAD_INPUT'; throw e; }
+  const song = (await db.query(
+    `INSERT INTO songs (title, status, published, data_source, created_at)
+     VALUES ($1, 'pending', false, 'manual', CURRENT_TIMESTAMP) RETURNING id`, [t])).rows[0];
+  let art = (await db.query(
+    `SELECT id FROM artists WHERE LOWER(name)=LOWER($1) AND data_source='manual'`, [a])).rows[0];
+  if (!art) {
+    art = (await db.query(
+      `INSERT INTO artists (name, data_source, created_at) VALUES ($1,'manual',CURRENT_TIMESTAMP) RETURNING id`, [a])).rows[0];
+  }
+  await db.query(`INSERT INTO song_artists (song_id, artist_id) VALUES ($1,$2)`, [song.id, art.id]);
+  return { id: song.id };
+}
+
 module.exports = { DEFAULT_MODEL, PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
   getProcessing, setProcessing, listCurationQueue, queueCounts, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover };
+  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture };
