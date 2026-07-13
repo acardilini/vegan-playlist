@@ -10,27 +10,32 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**A1 — Data & backend foundation: complete** (merged to `main`,
-  `145efbb`; 40/40 backend tests green; live-route smoke ✅). A1 was written+merged in a
-  session cut off by a power outage before its End-Session ran; recovered 2026-07-13
-  (smoke re-run, docs updated, pushed)._
-- **Next session:** **Write & execute A2 — admin nav shell + Songs area** against A1's real
-  endpoints (`/api/admin/curation/queue` + `/curation/counts` + `/workbench/:id`). Start with
-  brainstorming/planning (no A2 plan exists yet — it was deferred until A1 landed).
-- **Last updated:** 2026-07-13 _(A1 backend foundation done + merged; End-Session recovered
-  after the power-outage cutoff)._
+- **Current session:** _**A2 — admin nav shell + Songs area: complete** on branch
+  `session-A2-shell-songs` (pushed, awaiting curator click-through + merge). Brainstormed →
+  spec → plan → executed 7 tasks via subagent-driven development (per-task reviews + final
+  whole-branch review, all clean). 42/42 backend tests green; headless smoke 17/17 ✅._
+- **Next session:** **Write & execute A3 — the Curation Workbench** (full-page `/admin/song/:id`,
+  replacing the A2 stub). **Should follow promptly:** A2 replaced the old shell outright, so
+  per-song editing (lyrics/publish/include-reject) is unavailable in the new admin until A3.
+  Start with brainstorming → writing-plans.
+- **Last updated:** 2026-07-14 _(A2 shell + Songs area done + pushed; A3 is next and gated by
+  the editing gap)._
 
 ### Next Tasks (start here)
-1. **~~Execute plan A1~~ — DONE** (merged `145efbb`; migration 006 applied, 40/40 tests green,
-   live-route smoke ✅). Endpoints now live behind admin auth: `GET /api/admin/curation/counts`,
-   `GET /api/admin/curation/queue?queue=…`, `GET/PUT /api/admin/workbench/:id` (+ per-panel
-   saves: details/lyrics/highlights/links/cover), and the video routes (`/workbench/:id/videos`,
-   `/workbench/videos/:videoId[/primary]`).
-2. **Write + execute A2** (frontend) against A1's real endpoints: the 5-area admin nav shell +
-   Songs queue-rail/list consuming `/curation/queue` + `/curation/counts`; re-parent Artists/
-   Playlists/Data quality. **No A2 plan exists yet** — start with brainstorming → writing-plans
-   (the A1 plan deliberately deferred A2's design until A1 landed). Then A3 (full-page Workbench)
-   and A4 (Dashboard + cleanup). See the spec's decomposition and the A1 plan's "Follow-on plans".
+1. **~~A1 (backend foundation)~~ + ~~A2 (shell + Songs area)~~ — DONE.** A1 merged (`145efbb`).
+   A2 on branch `session-A2-shell-songs` (pushed, awaiting curator click-through + merge): the
+   5-area nested-route admin shell (`AdminLayout` + sidebar), the Songs area (queue rail off
+   `/curation/counts` incl. new `live` count + paginated list off `/curation/queue` + search),
+   a working **Add a song** (quick capture → new `curation.quickCapture`/`POST /curation/quick-capture`
+   pending; Spotify paste → existing `/staging/candidates`), Artists/Playlists/Data-quality
+   re-parented untouched, and a `/admin/song/:id` Workbench **stub**. Old `AdminInterface` deleted.
+2. **Write + execute A3 — the Curation Workbench** (full-page `/admin/song/:id`) against A1's
+   `GET/PUT /workbench/*` + video endpoints and the `staging` lifecycle. Deletes StagingQueue/
+   LyricsLookupManager/YouTubeVideoManager/ManageSongs-modal after a parity check. **Priority:**
+   closes the A2 editing gap (per-song lyrics/publish/include-reject are unavailable in the new
+   admin until A3). Then A4 (Dashboard landing, replacing the stub; deletes the admin dashboard).
+   _Plan-naming note: A4 must delete `DataCompletionDashboard` (the admin dashboard), NOT
+   `DataDashboard.jsx` (the PUBLIC `/dashboard` page, which stays)._
 3. **Deferred to their own sub-projects:** B (analysis display / delete the mock
    categorisation), C (submissions moderation / Inbox), D (YouTube search), E (lyrics
    fetch), F (Spotify push). Design: [`specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md).
@@ -397,6 +402,34 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-14 (A2 — admin nav shell + Songs area)** — Brainstormed → spec
+  ([`specs/2026-07-13-admin-workbench-A2-shell-songs-design.md`](./superpowers/specs/2026-07-13-admin-workbench-A2-shell-songs-design.md))
+  → plan ([`plans/2026-07-13-admin-workbench-A2-shell-songs.md`](./superpowers/plans/2026-07-13-admin-workbench-A2-shell-songs.md))
+  → executed 7 tasks via **subagent-driven development** (fresh implementer + per-task spec/quality
+  review each, then a final whole-branch review — all clean) on branch `session-A2-shell-songs`
+  (base `0e8ce62`). **Delivered:** the old 10-tab `AdminInterface` replaced by a **5-area
+  nested-route shell** (`AdminLayout` = client-side login gate + left sidebar + `<Outlet>`;
+  routes `/admin` Dashboard-stub · `/admin/songs` · `/admin/artists` · `/admin/playlists` ·
+  `/admin/data-quality` · `/admin/song/:id` Workbench-**stub**); the **Songs area** (`QueueRail`
+  off `/curation/counts` grouped Capture/Needs-work/Parked/Publish with Inbox + Needs-analysis
+  disabled as C/B stubs; `SongQueueList` off `/curation/queue` with missing-item chips, debounced
+  search, Prev/Next paging that never misuses `total`, `?queue=` URL sync + sanitize→`to-process`
+  for disabled/unknown keys, row-click → Workbench stub); a working **Add a song** modal (quick
+  capture + Spotify paste); Artists/Playlists/Data-quality **re-parented untouched**. **Two small
+  backend additions (TDD):** a `live` key in `curation.queueCounts`; `curation.quickCapture` +
+  `POST /api/admin/curation/quick-capture` creating a **pending** manual song (the legacy
+  `manual-songs` endpoint defaults `status='included'`, wrong for fresh captures). New
+  `frontend/src/styles/admin.css` (design tokens only). `AdminInterface.jsx` deleted; 7 superseded
+  tool components **unmounted** (files retained for A3/A4). **Verification:** backend `node --test`
+  **42/42**; `npm run build` clean, `eslint` 0 errors; **headless smoke 17/17** (login gate,
+  5-area sidebar, rail with live count 1342, disabled slots, 50-row list + friendly header +
+  chips, add-a-song bumping to-process 193→194, search, row→stub `/admin/song/6573`, all areas
+  render; test rows cleaned, to-process back to 192). Two console errors observed are
+  **pre-existing, in re-parented untouched components** (ArtistsManager's stray
+  `via.placeholder.com` → `ERR_CONNECTION_CLOSED`; a `<style jsx>` non-boolean-attr warning),
+  flagged since 3.3 — not A2 regressions. Final review deferred a handful of Minors to A3
+  (non-transactional quickCapture upsert; debounce delays paging + no AbortController; a11y
+  backdrop-close). Branch pushed; **not merged to `main`** — awaiting curator click-through.
 - **2026-07-13 (A1 — data & backend foundation; incl. power-outage recovery)** — Executed plan
   [`A1`](./superpowers/plans/2026-07-12-admin-workbench-A1-backend.md) — all 7 TDD tasks:
   **migration 006** (`song_processing` table, `songs.language`, local-only
