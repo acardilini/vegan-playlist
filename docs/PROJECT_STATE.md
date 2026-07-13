@@ -11,7 +11,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
 - **Current session:** _**A2 — admin nav shell + Songs area: complete** on branch
-  `session-A2-shell-songs` (pushed, awaiting curator click-through + merge). Brainstormed →
+  `session-A2-shell-songs`, **merged to `main` 2026-07-14** (merge head `b5ec26f`). Brainstormed →
   spec → plan → executed 7 tasks via subagent-driven development (per-task reviews + final
   whole-branch review, all clean). 42/42 backend tests green; headless smoke 17/17 ✅._
 - **Next session:** **Write & execute A3 — the Curation Workbench** (full-page `/admin/song/:id`,
@@ -23,7 +23,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 1. **~~A1 (backend foundation)~~ + ~~A2 (shell + Songs area)~~ — DONE.** A1 merged (`145efbb`).
-   A2 on branch `session-A2-shell-songs` (pushed, awaiting curator click-through + merge): the
+   A2 (`session-A2-shell-songs`, merged to `main` 2026-07-14): the
    5-area nested-route admin shell (`AdminLayout` + top-bar nav), the Songs area (queue rail off
    `/curation/counts` incl. new `live` count + paginated list off `/curation/queue` + search),
    a working **Add a song** (quick capture → new `curation.quickCapture`/`POST /curation/quick-capture`
@@ -429,7 +429,9 @@ Newest first. What actually happened each session.
   `via.placeholder.com` → `ERR_CONNECTION_CLOSED`; a `<style jsx>` non-boolean-attr warning),
   flagged since 3.3 — not A2 regressions. Final review deferred a handful of Minors to A3
   (non-transactional quickCapture upsert; debounce delays paging + no AbortController; a11y
-  backdrop-close). Branch pushed; **not merged to `main`** — awaiting curator click-through.
+  backdrop-close). **Merged to `main` 2026-07-14** (merge head `b5ec26f`); a same-day
+  curator-requested follow-up moved the 5-area nav from a left sidebar to a **horizontal top
+  bar** (queue rail stays the left column in Songs).
 - **2026-07-13 (A1 — data & backend foundation; incl. power-outage recovery)** — Executed plan
   [`A1`](./superpowers/plans/2026-07-12-admin-workbench-A1-backend.md) — all 7 TDD tasks:
   **migration 006** (`song_processing` table, `songs.language`, local-only
