@@ -2,12 +2,21 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import QueueRail from './QueueRail';
+import SongQueueList from './SongQueueList';
 
 const DEFAULT_QUEUE = 'to-process';
+// Only these queues are selectable in the list — Inbox and Needs analysis are
+// rail-disabled (reserved for sub-projects C/B) and A1's list endpoint 400s on
+// 'inbox'. Guard against a stale/typo'd ?queue= landing on one of them.
+const SELECTABLE_QUEUES = [
+  'to-process', 'needs-lyrics', 'needs-cover', 'needs-video',
+  'awaiting-community', 'remind-later', 'to-finalise', 'live',
+];
 
 function SongsArea() {
   const [params, setParams] = useSearchParams();
-  const activeQueue = params.get('queue') || DEFAULT_QUEUE;
+  const rawQueue = params.get('queue');
+  const activeQueue = SELECTABLE_QUEUES.includes(rawQueue) ? rawQueue : DEFAULT_QUEUE;
   const [counts, setCounts] = useState(null);
 
   const loadCounts = useCallback(() => {
@@ -26,9 +35,7 @@ function SongsArea() {
       <h1>Songs</h1>
       <div className="songs-layout">
         <QueueRail counts={counts} activeQueue={activeQueue} onSelect={selectQueue} />
-        <div className="songs-main" style={{ flex: 1, minWidth: 0 }}>
-          <p className="admin-stub">Selected queue: {activeQueue} — list arrives in the next step.</p>
-        </div>
+        <SongQueueList queue={activeQueue} />
       </div>
     </div>
   );

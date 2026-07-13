@@ -20,3 +20,22 @@
 .queue-item:disabled { color: var(--text-muted); opacity: 0.5; cursor: not-allowed; }
 .queue-item .queue-count { font-size: 0.75rem; color: var(--text-muted); background: var(--bg-surface-raised); border-radius: var(--radius-pill); padding: 0 var(--space-2); min-width: 26px; text-align: center; }
 .queue-item.active .queue-count { color: var(--accent-ember-60); }
+
+.queue-toolbar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+.queue-toolbar h2 { font-size: 1.05rem; margin: 0; }
+.song-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-2); border-bottom: 1px solid var(--border-hairline); width: 100%; background: none; border-left: none; border-right: none; border-top: none; text-align: left; cursor: pointer; color: var(--text-primary); }
+.song-row:hover { background: var(--bg-surface-raised); }
+.song-row .cover { width: 38px; height: 38px; border-radius: var(--radius-sm); flex-shrink: 0; background: var(--bg-surface-raised); background-size: cover; background-position: center; }
+.song-row .cover.placeholder { background-image: repeating-linear-gradient(45deg, var(--bg-surface-raised), var(--bg-surface-raised) 6px, var(--bg-surface) 6px, var(--bg-surface) 12px); }
+.song-row .song-meta { flex: 1; min-width: 0; }
+.song-row .song-title { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-row .song-artist { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-row .miss-chips { display: flex; gap: var(--space-1); flex-wrap: wrap; justify-content: flex-end; max-width: 260px; }
+.miss-chip { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); background: var(--bg-surface-raised); color: var(--text-muted); border: 1px solid var(--border-hairline); white-space: nowrap; }
+.miss-chip.warn { color: var(--accent-ember-60); border-color: var(--accent-ember-40); }
+.queue-status { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); font-weight: 600; }
+.queue-status.pending { color: var(--color-warning); border: 1px solid var(--color-warning); }
+.queue-status.live { color: var(--accent-moss-60); border: 1px solid var(--accent-moss-60); }
+.queue-status.included { color: var(--text-secondary); border: 1px solid var(--border-strong); }
+.queue-pager { display: flex; gap: var(--space-3); align-items: center; margin-top: var(--space-4); }
+.queue-empty { color: var(--text-muted); padding: var(--space-5) 0; }
