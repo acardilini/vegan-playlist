@@ -39,7 +39,7 @@ function AdminLayout() {
 
   return (
     <div className="admin-shell">
-      <nav className="admin-sidebar">
+      <nav className="admin-topbar">
         <div className="admin-brand">Admin</div>
         {AREAS.map(([to, label, end]) => (
           <NavLink key={to} to={to} end={end} className="admin-area-link">{label}</NavLink>

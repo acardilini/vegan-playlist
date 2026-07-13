@@ -24,7 +24,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ### Next Tasks (start here)
 1. **~~A1 (backend foundation)~~ + ~~A2 (shell + Songs area)~~ — DONE.** A1 merged (`145efbb`).
    A2 on branch `session-A2-shell-songs` (pushed, awaiting curator click-through + merge): the
-   5-area nested-route admin shell (`AdminLayout` + sidebar), the Songs area (queue rail off
+   5-area nested-route admin shell (`AdminLayout` + top-bar nav), the Songs area (queue rail off
    `/curation/counts` incl. new `live` count + paginated list off `/curation/queue` + search),
    a working **Add a song** (quick capture → new `curation.quickCapture`/`POST /curation/quick-capture`
    pending; Spotify paste → existing `/staging/candidates`), Artists/Playlists/Data-quality
@@ -408,7 +408,7 @@ Newest first. What actually happened each session.
   → executed 7 tasks via **subagent-driven development** (fresh implementer + per-task spec/quality
   review each, then a final whole-branch review — all clean) on branch `session-A2-shell-songs`
   (base `0e8ce62`). **Delivered:** the old 10-tab `AdminInterface` replaced by a **5-area
-  nested-route shell** (`AdminLayout` = client-side login gate + left sidebar + `<Outlet>`;
+  nested-route shell** (`AdminLayout` = client-side login gate + horizontal top-bar nav + `<Outlet>`;
   routes `/admin` Dashboard-stub · `/admin/songs` · `/admin/artists` · `/admin/playlists` ·
   `/admin/data-quality` · `/admin/song/:id` Workbench-**stub**); the **Songs area** (`QueueRail`
   off `/curation/counts` grouped Capture/Needs-work/Parked/Publish with Inbox + Needs-analysis
@@ -422,7 +422,7 @@ Newest first. What actually happened each session.
   `frontend/src/styles/admin.css` (design tokens only). `AdminInterface.jsx` deleted; 7 superseded
   tool components **unmounted** (files retained for A3/A4). **Verification:** backend `node --test`
   **42/42**; `npm run build` clean, `eslint` 0 errors; **headless smoke 17/17** (login gate,
-  5-area sidebar, rail with live count 1342, disabled slots, 50-row list + friendly header +
+  5-area top-bar nav, rail with live count 1342, disabled slots, 50-row list + friendly header +
   chips, add-a-song bumping to-process 193→194, search, row→stub `/admin/song/6573`, all areas
   render; test rows cleaned, to-process back to 192). Two console errors observed are
   **pre-existing, in re-parented untouched components** (ArtistsManager's stray
