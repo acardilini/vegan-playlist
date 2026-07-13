@@ -18,7 +18,7 @@ function statusLabel(row) {
   return row.status;
 }
 
-function SongQueueList({ queue }) {
+function SongQueueList({ queue, refreshKey }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState('');
@@ -36,7 +36,7 @@ function SongQueueList({ queue }) {
       .then(d => setRows(d.rows || []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  }, [queue, search, page]);
+  }, [queue, search, page, refreshKey]);
 
   // Debounce search; immediate on queue/page change.
   useEffect(() => {

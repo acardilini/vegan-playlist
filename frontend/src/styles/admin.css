@@ -39,3 +39,13 @@
 .queue-status.included { color: var(--text-secondary); border: 1px solid var(--border-strong); }
 .queue-pager { display: flex; gap: var(--space-3); align-items: center; margin-top: var(--space-4); }
 .queue-empty { color: var(--text-muted); padding: var(--space-5) 0; }
+
+.modal-backdrop { position: fixed; inset: 0; background: var(--bg-overlay); display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; z-index: 50; }
+.modal-card { background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised); width: 480px; max-width: 92vw; padding: var(--space-5); }
+.modal-card h2 { margin-top: 0; }
+.modal-tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+.modal-tabs .btn { flex: 1; }
+.modal-field { margin-bottom: var(--space-3); }
+.modal-field label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: var(--space-1); }
+.modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-4); }
+.modal-result { font-size: 0.85rem; color: var(--text-secondary); margin-top: var(--space-2); }
