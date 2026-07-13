@@ -52,18 +52,18 @@ function AddSongPanel({ onClose, onAdded }) {
         {mode === 'quick' ? (
           <>
             <div className="modal-field">
-              <label>Title</label>
-              <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} style={{ width: '100%' }} />
+              <label htmlFor="add-title">Title</label>
+              <input id="add-title" className="input" value={title} onChange={(e) => setTitle(e.target.value)} style={{ width: '100%' }} />
             </div>
             <div className="modal-field">
-              <label>Artist</label>
-              <input className="input" value={artist} onChange={(e) => setArtist(e.target.value)} style={{ width: '100%' }} />
+              <label htmlFor="add-artist">Artist</label>
+              <input id="add-artist" className="input" value={artist} onChange={(e) => setArtist(e.target.value)} style={{ width: '100%' }} />
             </div>
           </>
         ) : (
           <div className="modal-field">
-            <label>Spotify track or playlist URLs (space/newline separated)</label>
-            <textarea className="input" rows={4} value={urls} onChange={(e) => setUrls(e.target.value)}
+            <label htmlFor="add-urls">Spotify track or playlist URLs (space/newline separated)</label>
+            <textarea id="add-urls" className="input" rows={4} value={urls} onChange={(e) => setUrls(e.target.value)}
               placeholder="https://open.spotify.com/track/…" style={{ width: '100%' }} />
           </div>
         )}

@@ -4,6 +4,12 @@ import { adminFetch } from '../../api/adminApi';
 
 const PAGE_SIZE = 50;
 
+const QUEUE_LABELS = {
+  'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
+  'needs-video': 'Needs video', 'awaiting-community': 'Awaiting community',
+  'remind-later': 'Remind me later', 'to-finalise': 'To finalise', 'live': 'Live',
+};
+
 function coverStyle(row) {
   // A1 rows carry has_art but not the image URL; show a placeholder unless art exists.
   return row.has_art ? {} : {};
@@ -49,7 +55,7 @@ function SongQueueList({ queue, refreshKey }) {
   return (
     <div className="songs-main" style={{ flex: 1, minWidth: 0 }}>
       <div className="queue-toolbar">
-        <h2>{queue}</h2>
+        <h2>{QUEUE_LABELS[queue] || queue}</h2>
         <input className="input input-pill" placeholder="Search this queue…"
           value={search} onChange={(e) => { setPage(0); setSearch(e.target.value); }}
           style={{ width: 220 }} />
