@@ -212,14 +212,15 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
 
 - ◐ **A — Curation Workbench & lifecycle/queues.** The spine: single-song workbench, derived
   queues, `song_processing` table, publish-incomplete. _Spec approved; plans:_
-  - ☐ **A1 — Data & backend foundation.** Migration 006 (`song_processing`, `songs.language`,
-    `song_lyrics.translation`); `curation.js` (processing state · queues + counts · workbench
-    read · per-panel saves); `videos.js` (one-primary invariant); lyrics-privacy guardrail.
-    Reuses `staging.js` lifecycle. Plan:
+  - ☑ **A1 — Data & backend foundation** _(done 2026-07-13, merged to `main`)._ Migration 006
+    (`song_processing`, `songs.language`, `song_lyrics.translation`); `curation.js` (processing
+    state · queues + counts · workbench read · per-panel saves); `videos.js` (one-primary
+    invariant); lyrics-privacy guardrail. Reuses `staging.js` lifecycle. Plan:
     [`superpowers/plans/2026-07-12-admin-workbench-A1-backend.md`](./superpowers/plans/2026-07-12-admin-workbench-A1-backend.md).
-    _Smoke test: `node --test backend/test/` green + admin route curl checks + 401 without auth._
+    _Smoke test ✅: `node --test` green (40/40) + admin route curl checks (counts/queue/workbench)
+    + 404 on missing song + 401 without auth._
   - ☐ **A2 — Admin nav shell + Songs area** (5-area IA; queue-rail + list; re-parent Artists/
-    Playlists/Data quality). _Plan written after A1 lands._
+    Playlists/Data quality). **Next up** — plan to be written against A1's real endpoints.
   - ☐ **A3 — The Workbench page** (all panels, autosave-on-blur, prev/next, completeness
     checklist, reject-confirm, quick-search links, highlights picker). Deletes StagingQueue/
     LyricsLookupManager/YouTubeVideoManager/Manage Songs modal after data-parity check.

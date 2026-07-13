@@ -7,29 +7,30 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Phase:** **Phase 4 — Admin Rebuild (opening).** Phases 0–3 complete (Phase 3 —
+- **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _Admin-layer brainstorm + planning (2026-07-12) — **complete**.
-  Sub-project A (Curation Workbench & lifecycle) designed; plan A1 (data + backend
-  foundation) written. Design/planning only — no production code changed._
-- **Next session:** **Execute plan A1** — `docs/superpowers/plans/2026-07-12-admin-workbench-A1-backend.md`
-  (migration 006 + curation/videos services + workbench endpoints + guardrail tests).
-- **Last updated:** 2026-07-12 _(admin rebuild scoped as sub-projects A–F; A specced,
-  A1 planned; deployment renumbered to Phase 5)._
+- **Current session:** _**A1 — Data & backend foundation: complete** (merged to `main`,
+  `145efbb`; 40/40 backend tests green; live-route smoke ✅). A1 was written+merged in a
+  session cut off by a power outage before its End-Session ran; recovered 2026-07-13
+  (smoke re-run, docs updated, pushed)._
+- **Next session:** **Write & execute A2 — admin nav shell + Songs area** against A1's real
+  endpoints (`/api/admin/curation/queue` + `/curation/counts` + `/workbench/:id`). Start with
+  brainstorming/planning (no A2 plan exists yet — it was deferred until A1 landed).
+- **Last updated:** 2026-07-13 _(A1 backend foundation done + merged; End-Session recovered
+  after the power-outage cutoff)._
 
 ### Next Tasks (start here)
-1. **Execute plan A1 — admin workbench backend** (branch `session-A1-workbench-backend`).
-   7 TDD tasks in [`plans/2026-07-12-admin-workbench-A1-backend.md`](./superpowers/plans/2026-07-12-admin-workbench-A1-backend.md):
-   migration 006 (`song_processing`, `songs.language`, `song_lyrics.translation`), the
-   `curation.js` service (processing state · derived queues + counts · workbench
-   assemble-read · per-panel saves), the `videos.js` service (one-primary invariant),
-   and the lyrics-privacy guardrail. **Note: A1 runs `node --test` against the live
-   shared DB and applies a migration — back up / use the ZZZTEST-sentinel fixtures as the
-   tests do.**
-2. **Then write + execute A2–A4** (frontend), against A1's real endpoints: A2 = 5-area nav
-   shell + Songs queue-rail/list; A3 = the full-page Workbench; A4 = Dashboard + cleanup.
-   See the spec's decomposition and each plan's "Follow-on plans" section.
+1. **~~Execute plan A1~~ — DONE** (merged `145efbb`; migration 006 applied, 40/40 tests green,
+   live-route smoke ✅). Endpoints now live behind admin auth: `GET /api/admin/curation/counts`,
+   `GET /api/admin/curation/queue?queue=…`, `GET/PUT /api/admin/workbench/:id` (+ per-panel
+   saves: details/lyrics/highlights/links/cover), and the video routes (`/workbench/:id/videos`,
+   `/workbench/videos/:videoId[/primary]`).
+2. **Write + execute A2** (frontend) against A1's real endpoints: the 5-area admin nav shell +
+   Songs queue-rail/list consuming `/curation/queue` + `/curation/counts`; re-parent Artists/
+   Playlists/Data quality. **No A2 plan exists yet** — start with brainstorming → writing-plans
+   (the A1 plan deliberately deferred A2's design until A1 landed). Then A3 (full-page Workbench)
+   and A4 (Dashboard + cleanup). See the spec's decomposition and the A1 plan's "Follow-on plans".
 3. **Deferred to their own sub-projects:** B (analysis display / delete the mock
    categorisation), C (submissions moderation / Inbox), D (YouTube search), E (lyrics
    fetch), F (Spotify push). Design: [`specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md).
@@ -396,6 +397,26 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-13 (A1 — data & backend foundation; incl. power-outage recovery)** — Executed plan
+  [`A1`](./superpowers/plans/2026-07-12-admin-workbench-A1-backend.md) — all 7 TDD tasks:
+  **migration 006** (`song_processing` table, `songs.language`, local-only
+  `song_lyrics.translation` — applied via psql); **`backend/services/curation.js`** (processing
+  state upsert with `park_reason`/snooze; derived queues `to-process` / `awaiting-community` /
+  `remind-later` / `needs-lyrics` / `needs-cover` / `needs-video` / `needs-analysis` /
+  `to-finalise` + `queueCounts` incl. submissions `inbox`; `getWorkbench` assemble-read; per-panel
+  saves details/lyrics/highlights/links/cover); **`backend/services/videos.js`** (the
+  "exactly one primary per song" invariant — add/update/setPrimary/delete with promotion);
+  **lyrics-privacy guardrail** (`lyrics_privacy.test.js` asserts no public route references
+  `song_lyrics`/`translation`). Routes added to `admin.js` under a "Curation workbench" banner,
+  all behind `authenticateAdmin`. Reuses `staging.js` lifecycle unchanged. **The session was cut
+  off by a power outage** after the work was committed + merged to `main` (`145efbb`, plus a
+  parallel-race test fix `35a632a`) but before End-Session ran. **Recovered 2026-07-13:** re-ran
+  the full suite (**40/40 green**), live-route smoke against a fresh backend ✅
+  (`curation/counts` → 200 real data [192 to-process, 603 needs-lyrics, 715 needs-video, 43
+  to-finalise, 2 inbox]; `curation/queue` → rows with computed `missing[]`; `workbench/541` →
+  full assembled object, completeness all true, full lyrics returned on the admin path;
+  `workbench/-999` → 404; no-header → 401), updated these docs, and pushed the 9 backlogged
+  commits. **No frontend yet** — A2–A4 consume these endpoints (A2 plan still to be written).
 - **2026-07-12 (Admin brainstorm + A1 planning)** — Design/planning session, **no production
   code changed** (no smoke test). Brainstormed the admin-layer rebuild with the curator via
   user stories; wrote and committed the design spec
