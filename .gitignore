@@ -154,3 +154,6 @@ docs/playlist/
 
 # Database backups - contain song_lyrics rows (copyright: never commit lyrics)
 backups/
+
+# Superpowers brainstorming visual companion (local mockups)
+.superpowers/
