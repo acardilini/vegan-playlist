@@ -1,0 +1,13 @@
+/* Admin shell + Songs area — Phase 4 (A2). Design-token based. */
+.admin-shell { display: flex; min-height: calc(100vh - 120px); background: var(--bg-canvas); color: var(--text-primary); }
+.admin-sidebar { width: 150px; flex-shrink: 0; background: var(--bg-surface); border-right: 1px solid var(--border-hairline); padding: var(--space-4) var(--space-2); display: flex; flex-direction: column; gap: var(--space-1); }
+.admin-sidebar .admin-brand { font-family: Manrope, sans-serif; font-weight: 700; font-size: 0.95rem; padding: var(--space-2); margin-bottom: var(--space-2); }
+.admin-area-link { display: block; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; }
+.admin-area-link:hover { background: var(--bg-surface-raised); color: var(--text-primary); }
+.admin-area-link.active { background: var(--accent-ember-60); color: var(--text-on-accent); font-weight: 600; }
+.admin-sidebar .admin-logout { margin-top: auto; background: none; border: none; color: var(--text-muted); font-size: 0.85rem; text-align: left; padding: var(--space-2) var(--space-3); cursor: pointer; }
+.admin-sidebar .admin-logout:hover { color: var(--text-primary); }
+.admin-main { flex: 1; min-width: 0; padding: var(--space-5); }
+.admin-login { max-width: 380px; margin: var(--space-9) auto; background: var(--bg-surface); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg); padding: var(--space-6); }
+.admin-login h2 { margin-top: 0; }
+.admin-stub { color: var(--text-muted); }

@@ -10,9 +10,16 @@ import AboutPage from './pages/AboutPage';
 import SearchResults from './components/SearchResults';
 import ArtistSearchResults from './components/ArtistSearchResults';
 import ArtistDetailPage from './components/ArtistDetailPage';
-import AdminInterface from './components/AdminInterface';
 import SongSubmissionForm from './components/SongSubmissionForm';
 import DataDashboard from './components/DataDashboard';
+import './styles/admin.css';
+import AdminLayout from './components/admin/AdminLayout';
+import DashboardStub from './components/admin/DashboardStub';
+import SongsArea from './components/admin/SongsArea';
+import WorkbenchStub from './components/admin/WorkbenchStub';
+import ArtistsManager from './components/ArtistsManager';
+import ManagePlaylistsTab from './components/ManagePlaylistsTab';
+import DuplicateManager from './components/DuplicateManager';
 
 function App() {
   return (
@@ -36,7 +43,14 @@ function App() {
           <Route path="/submit" element={<SongSubmissionForm />} />
           <Route path="/dashboard" element={<DataDashboard />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/admin" element={<AdminInterface />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<DashboardStub />} />
+            <Route path="songs" element={<SongsArea />} />
+            <Route path="artists" element={<ArtistsManager />} />
+            <Route path="playlists" element={<ManagePlaylistsTab />} />
+            <Route path="data-quality" element={<DuplicateManager />} />
+            <Route path="song/:id" element={<WorkbenchStub />} />
+          </Route>
         </Routes>
 
         <footer className="app-footer">
