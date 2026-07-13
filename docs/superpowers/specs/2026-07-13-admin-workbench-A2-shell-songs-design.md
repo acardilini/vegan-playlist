@@ -57,7 +57,7 @@ Login/auth is unchanged in substance (client-side compare to `VITE_ADMIN_PASSWOR
 ## 4. Songs area behaviour
 
 **Queue rail**
-- Source of counts: `GET /curation/counts`. A1 returns `to-process`, `awaiting-community`, `remind-later`, `needs-lyrics`, `needs-cover`, `needs-video`, `needs-analysis`, `to-finalise`, `inbox` — but **not** `live`. Since the Live count is the rail's headline number, A2 makes **one small, additive backend change**: add a `live` key to `queueCounts` (reuses the existing `queueWhere('live')` clause; covered by extending the existing `queueCounts` test). This is the only backend touch in A2; everything else is frontend against A1 as-is.
+- Source of counts: `GET /curation/counts`. A1 returns `to-process`, `awaiting-community`, `remind-later`, `needs-lyrics`, `needs-cover`, `needs-video`, `needs-analysis`, `to-finalise`, `inbox` — but **not** `live`. Since the Live count is the rail's headline number, A2 adds a `live` key to `queueCounts` (reuses the existing `queueWhere('live')` clause; covered by extending the existing `queueCounts` test). This is one of A2's two small backend touches — see §5 for the other (`quickCapture`).
 - Grouping & labels:
   - **Capture:** Inbox *(dimmed)* · To be processed (`to-process`)
   - **Needs work:** Needs lyrics · Needs cover · Needs video · Needs analysis *(dimmed)*
@@ -81,10 +81,10 @@ Login/auth is unchanged in substance (client-side compare to `VITE_ADMIN_PASSWOR
 
 Opened from a "+ Add a song" button in the Songs area. Two modes in one modal; the modal **stays open and clears after each successful add** so the curator can add several in a row, and it **refreshes the rail counts** on success.
 
-- **Quick add** — title + artist → creates a `pending` manual song via the existing manual-song create path (the one Manage Songs' manual form uses today). Minimal fields; the rest is filled later in the Workbench.
-- **From Spotify** — paste one or many Spotify URLs → the existing `staging` candidate-intake endpoint (what today's "Add candidates" calls); reports added / skipped / invalid per URL.
+- **Quick add** — title + artist → creates a `pending` manual song. **Backend note:** the legacy `POST /api/admin/manual-songs` defaults `songs.status` to `'included'` (migration 001's column default), which would drop a fresh capture into *To finalise*, not *To be processed*. So A2 adds a small, unit-tested `curation.quickCapture(db, { title, artist })` service + `POST /api/admin/curation/quick-capture` route that inserts a `pending`, `data_source='manual'` song + artist link (mirroring the existing `curation.test.js` `mkSong` helper). Minimal fields; the rest is filled later in the Workbench.
+- **From Spotify** — paste one or many Spotify URLs → the existing `POST /api/admin/staging/candidates` endpoint (what today's "Add candidates" calls); returns `{ added, skippedExisting, invalid }`, all as `pending`. No change needed.
 
-No new backend is required — both paths already exist and are truth-source-safe (import-only; new songs land as `pending`).
+**Backend touches in A2 (two, both small and unit-tested):** the `live` key in `queueCounts` (§4) and `curation.quickCapture` + its route (above). Everything else is frontend against A1 as-is.
 
 ---
 
