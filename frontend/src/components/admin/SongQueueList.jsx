@@ -36,13 +36,13 @@ function SongQueueList({ queue, refreshKey }) {
       .then(d => setRows(d.rows || []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  }, [queue, search, page, refreshKey]);
+  }, [queue, search, page]);
 
   // Debounce search; immediate on queue/page change.
   useEffect(() => {
     const t = setTimeout(load, 250);
     return () => clearTimeout(t);
-  }, [load]);
+  }, [load, refreshKey]);
 
   const hasNext = rows.length === PAGE_SIZE;
 
