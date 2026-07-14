@@ -1,0 +1,69 @@
+import { useCallback, useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { adminFetch } from '../../api/adminApi';
+
+function Workbench() {
+  const { id } = useParams();
+  const [wb, setWb] = useState(null);
+  const [notFound, setNotFound] = useState(false);
+
+  const reload = useCallback(() => {
+    adminFetch(`/api/admin/workbench/${id}`)
+      .then(async (r) => {
+        if (r.status === 404) { setNotFound(true); return null; }
+        return r.ok ? r.json() : null;
+      })
+      .then((d) => { if (d) { setWb(d); setNotFound(false); } })
+      .catch(() => {});
+  }, [id]);
+
+  useEffect(() => { setWb(null); setNotFound(false); reload(); }, [reload]);
+
+  // eslint-disable-next-line no-unused-vars -- consumed by panels added in Tasks 3-7
+  const savePanel = useCallback(async (panel, body) => {
+    try {
+      const r = await adminFetch(`/api/admin/workbench/${id}/${panel}`, { method: 'PUT', body });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.workbench) { setWb(d.workbench); return { ok: true }; }
+      return { ok: false, error: d.error || 'Save failed' };
+    } catch { return { ok: false, error: 'Request failed' }; }
+  }, [id]);
+
+  // eslint-disable-next-line no-unused-vars -- consumed by panels added in Tasks 3-7
+  const saveProcessing = useCallback(async (body) => {
+    try {
+      const r = await adminFetch(`/api/admin/workbench/${id}/processing`, { method: 'PUT', body });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.processing) { setWb((w) => (w ? { ...w, processing: d.processing } : w)); return { ok: true }; }
+      return { ok: false, error: d.error || 'Save failed' };
+    } catch { return { ok: false, error: 'Request failed' }; }
+  }, [id]);
+
+  if (notFound) {
+    return (
+      <div>
+        <Link to="/admin/songs" className="btn btn-ghost btn-sm">&larr; Back to Songs</Link>
+        <h1>Song not found</h1>
+        <p className="admin-stub">No song with id {id}.</p>
+      </div>
+    );
+  }
+  if (!wb) return <div className="queue-empty">Loading…</div>;
+
+  const artistNames = (wb.artists || []).map((a) => a.name).join(', ') || '—';
+
+  return (
+    <div className="workbench">
+      <div className="wb-topbar">
+        <Link to="/admin/songs" className="btn btn-ghost btn-sm">&larr; Back to Songs</Link>
+        <h1 className="wb-title">{wb.title || `Song ${wb.id}`}</h1>
+        <div className="wb-artist">{artistNames}</div>
+      </div>
+      <div className="wb-grid">
+        <div className="wb-col wb-col-main">{/* Lyrics panel — Task 4/5 */}</div>
+        <div className="wb-col wb-col-side">{/* Details/Video/Links/Analysis/Notes — Tasks 3,6,7 */}</div>
+      </div>
+    </div>
+  );
+}
+export default Workbench;

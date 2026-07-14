@@ -16,7 +16,7 @@ import './styles/admin.css';
 import AdminLayout from './components/admin/AdminLayout';
 import DashboardStub from './components/admin/DashboardStub';
 import SongsArea from './components/admin/SongsArea';
-import WorkbenchStub from './components/admin/WorkbenchStub';
+import Workbench from './components/admin/Workbench';
 import ArtistsManager from './components/ArtistsManager';
 import ManagePlaylistsTab from './components/ManagePlaylistsTab';
 import DuplicateManager from './components/DuplicateManager';
@@ -49,7 +49,7 @@ function App() {
             <Route path="artists" element={<ArtistsManager />} />
             <Route path="playlists" element={<ManagePlaylistsTab />} />
             <Route path="data-quality" element={<DuplicateManager />} />
-            <Route path="song/:id" element={<WorkbenchStub />} />
+            <Route path="song/:id" element={<Workbench />} />
           </Route>
         </Routes>
 
