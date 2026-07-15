@@ -18,6 +18,10 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   const artist = (wb.artists || []).map((a) => a.name).join(' ');
   const [statusSave, setStatusSave] = useState('idle');
   const tried = Array.isArray(wb.processing?.lyrics_tried) ? wb.processing.lyrics_tried : [];
+  // Backend no-ops translation/source_url updates until a song_lyrics row exists
+  // (created only when full lyrics are first saved). Gate the UI so that trap
+  // is unreachable: no false "Saved" on a value that was silently dropped.
+  const hasLyrics = !!(wb.lyrics && wb.lyrics.trim());
 
   const onStatus = async (e) => {
     setStatusSave('saving');
@@ -43,7 +47,9 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
       <AutoText label="Full lyrics (local-only)" initial={wb.lyrics} multiline rows={12} monospace
         onSave={(v) => savePanel('lyrics', { lyrics: v })} />
       <AutoText label="Lyrics source URL" initial={wb.lyrics_source_url} placeholder="https://…"
+        disabled={!hasLyrics}
         onSave={(v) => savePanel('lyrics', { source_url: v })} />
+      {!hasLyrics && <p className="admin-stub">Add full lyrics first</p>}
 
       <label className="wb-field">
         <span className="wb-field-label">Lyrics status <SaveTag status={statusSave} /></span>
@@ -64,7 +70,9 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
       </div>
 
       <AutoText label="Translation (local-only)" initial={wb.translation} multiline rows={6}
+        disabled={!hasLyrics}
         onSave={(v) => savePanel('lyrics', { translation: v })} />
+      {!hasLyrics && <p className="admin-stub">Add full lyrics first</p>}
 
       {/* Task 5 inserts the Highlights picker here */}
     </section>

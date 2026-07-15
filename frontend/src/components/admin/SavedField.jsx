@@ -7,7 +7,7 @@ export function SaveTag({ status }) {
 }
 
 // Self-contained autosaving text field. onSave(value) → { ok, error? }.
-export function AutoText({ label, initial, onSave, multiline = false, rows = 3, placeholder, monospace = false }) {
+export function AutoText({ label, initial, onSave, multiline = false, rows = 3, placeholder, monospace = false, disabled = false }) {
   const [val, setVal] = useState(initial ?? '');
   const [status, setStatus] = useState('idle');
   // A successful save round-trips through a full workbench swap, which changes
@@ -25,6 +25,7 @@ export function AutoText({ label, initial, onSave, multiline = false, rows = 3, 
   }, [initial]);
 
   const commit = async () => {
+    if (disabled) return; // guarded field — never fire onSave
     if ((val ?? '') === (initial ?? '')) return; // unchanged — no request
     setStatus('saving');
     const res = await onSave(val);
@@ -36,7 +37,8 @@ export function AutoText({ label, initial, onSave, multiline = false, rows = 3, 
     className: `input${monospace ? ' wb-mono' : ''}`,
     value: val,
     placeholder,
-    onChange: (e) => { setVal(e.target.value); if (status !== 'idle') setStatus('idle'); },
+    disabled,
+    onChange: (e) => { if (disabled) return; setVal(e.target.value); if (status !== 'idle') setStatus('idle'); },
     onBlur: commit,
     style: { width: '100%' },
   };
