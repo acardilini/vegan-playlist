@@ -37,13 +37,16 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   const addHighlight = () => {
     const el = lyricsRef.current;
     if (!el) return;
-    const sel = el.value.substring(el.selectionStart, el.selectionEnd).trim();
+    const raw = el.value.substring(el.selectionStart, el.selectionEnd).trim();
+    // Collapse internal newlines/whitespace to a single space so a multi-line
+    // passage (e.g. a couplet) stays one entry in the newline-joined storage —
+    // otherwise it would fragment on the next `split('\n')` read.
+    const sel = raw.replace(/\s*\n\s*/g, ' ');
     if (!sel) { window.alert('Select a passage in the lyrics box first.'); return; }
-    if (highlights.includes(sel)) return;
     savePanel('highlights', { lyrics_highlights: [...highlights, sel].join('\n') });
   };
-  const removeHighlight = (h) => {
-    savePanel('highlights', { lyrics_highlights: highlights.filter((x) => x !== h).join('\n') });
+  const removeHighlight = (idx) => {
+    savePanel('highlights', { lyrics_highlights: highlights.filter((_, i) => i !== idx).join('\n') });
   };
 
   return (
@@ -95,9 +98,9 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
         {highlights.length === 0
           ? <p className="admin-stub">Select a line in the lyrics box above, then “Add selection”.</p>
           : <ul className="wb-highlights">
-              {highlights.map((h) => (
-                <li key={h}><span>{h}</span>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeHighlight(h)}>Remove</button>
+              {highlights.map((h, idx) => (
+                <li key={idx}><span>{h}</span>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeHighlight(idx)}>Remove</button>
                 </li>
               ))}
             </ul>}
