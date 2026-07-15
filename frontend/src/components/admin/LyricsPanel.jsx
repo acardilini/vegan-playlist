@@ -17,6 +17,8 @@ function searchLinks(title, artist) {
 function LyricsPanel({ wb, savePanel, saveProcessing }) {
   const artist = (wb.artists || []).map((a) => a.name).join(' ');
   const [statusSave, setStatusSave] = useState('idle');
+  const [avenuesSave, setAvenuesSave] = useState('idle');
+  const [highlightsSave, setHighlightsSave] = useState('idle');
   const tried = Array.isArray(wb.processing?.lyrics_tried) ? wb.processing.lyrics_tried : [];
   // Backend no-ops translation/source_url updates until a song_lyrics row exists
   // (created only when full lyrics are first saved). Gate the UI so that trap
@@ -30,11 +32,13 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
     const res = await savePanel('lyrics', { lyrics_status: e.target.value });
     setStatusSave(res.ok ? 'saved' : 'error');
   };
-  const toggleAvenue = (key) => {
+  const toggleAvenue = async (key) => {
     const next = tried.includes(key) ? tried.filter((k) => k !== key) : [...tried, key];
-    saveProcessing({ lyrics_tried: next });
+    setAvenuesSave('saving');
+    const res = await saveProcessing({ lyrics_tried: next });
+    setAvenuesSave(res.ok ? 'saved' : 'error');
   };
-  const addHighlight = () => {
+  const addHighlight = async () => {
     const el = lyricsRef.current;
     if (!el) return;
     const raw = el.value.substring(el.selectionStart, el.selectionEnd).trim();
@@ -43,10 +47,14 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
     // otherwise it would fragment on the next `split('\n')` read.
     const sel = raw.replace(/\s*\n\s*/g, ' ');
     if (!sel) { window.alert('Select a passage in the lyrics box first.'); return; }
-    savePanel('highlights', { lyrics_highlights: [...highlights, sel].join('\n') });
+    setHighlightsSave('saving');
+    const res = await savePanel('highlights', { lyrics_highlights: [...highlights, sel].join('\n') });
+    setHighlightsSave(res.ok ? 'saved' : 'error');
   };
-  const removeHighlight = (idx) => {
-    savePanel('highlights', { lyrics_highlights: highlights.filter((_, i) => i !== idx).join('\n') });
+  const removeHighlight = async (idx) => {
+    setHighlightsSave('saving');
+    const res = await savePanel('highlights', { lyrics_highlights: highlights.filter((_, i) => i !== idx).join('\n') });
+    setHighlightsSave(res.ok ? 'saved' : 'error');
   };
 
   return (
@@ -75,7 +83,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
       </label>
 
       <div className="wb-field">
-        <span className="wb-field-label">Avenues tried</span>
+        <span className="wb-field-label">Avenues tried <SaveTag status={avenuesSave} /></span>
         <div className="wb-avenues">
           {AVENUES.map(([key, label]) => (
             <label key={key} className="wb-check">
@@ -92,7 +100,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
 
       <div className="wb-field">
         <div className="wb-highlights-head">
-          <span className="wb-field-label">Key lyrics (public highlights)</span>
+          <span className="wb-field-label">Key lyrics (public highlights) <SaveTag status={highlightsSave} /></span>
           <button type="button" className="btn btn-secondary btn-sm" onClick={addHighlight}>+ Add selection</button>
         </div>
         {highlights.length === 0
