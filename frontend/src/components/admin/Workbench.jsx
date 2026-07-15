@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import WorkbenchTopBar from './WorkbenchTopBar';
+import DetailsPanel from './DetailsPanel';
 
 function Workbench() {
   const { id } = useParams();
@@ -20,7 +21,6 @@ function Workbench() {
 
   useEffect(() => { setWb(null); setNotFound(false); reload(); }, [reload]);
 
-  // eslint-disable-next-line no-unused-vars -- consumed by panels added in Tasks 3-7
   const savePanel = useCallback(async (panel, body) => {
     try {
       const r = await adminFetch(`/api/admin/workbench/${id}/${panel}`, { method: 'PUT', body });
@@ -79,7 +79,10 @@ function Workbench() {
       </div>
       <div className="wb-grid">
         <div className="wb-col wb-col-main">{/* Lyrics panel — Task 4/5 */}</div>
-        <div className="wb-col wb-col-side">{/* Details/Video/Links/Analysis/Notes — Tasks 3,6,7 */}</div>
+        <div className="wb-col wb-col-side">
+          <DetailsPanel wb={wb} savePanel={savePanel} />
+          {/* Video/Links/Analysis/Notes — Tasks 6,7 */}
+        </div>
       </div>
     </div>
   );

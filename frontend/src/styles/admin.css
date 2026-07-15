@@ -80,3 +80,7 @@
 .wb-complete-item.done { color: var(--accent-moss-60); border-color: var(--accent-moss-60); }
 .wb-complete-item.todo { color: var(--text-muted); }
 .wb-nav { margin-left: auto; display: inline-flex; gap: var(--space-2); }
+
+.wb-cover { margin-top: var(--space-3); }
+.wb-cover-img { width: 120px; height: 120px; object-fit: cover; border-radius: var(--radius-md); display: block; margin-bottom: var(--space-2); }
+.wb-cover-ph { display: block; width: 120px; height: 120px; border-radius: var(--radius-md); margin-bottom: var(--space-2); background-image: repeating-linear-gradient(45deg, var(--bg-surface-raised), var(--bg-surface-raised) 6px, var(--bg-surface) 6px, var(--bg-surface) 12px); }
