@@ -4,6 +4,7 @@ import { adminFetch } from '../../api/adminApi';
 import WorkbenchTopBar from './WorkbenchTopBar';
 import DetailsPanel from './DetailsPanel';
 import LyricsPanel from './LyricsPanel';
+import VideoPanel from './VideoPanel';
 
 function Workbench() {
   const { id } = useParams();
@@ -84,7 +85,8 @@ function Workbench() {
         </div>
         <div className="wb-col wb-col-side">
           <DetailsPanel wb={wb} savePanel={savePanel} />
-          {/* Video/Links/Analysis/Notes — Tasks 6,7 */}
+          <VideoPanel wb={wb} id={id} reload={reload} />
+          {/* Links/Analysis/Notes — Task 7 */}
         </div>
       </div>
     </div>
