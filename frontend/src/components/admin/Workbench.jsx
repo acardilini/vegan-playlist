@@ -5,6 +5,9 @@ import WorkbenchTopBar from './WorkbenchTopBar';
 import DetailsPanel from './DetailsPanel';
 import LyricsPanel from './LyricsPanel';
 import VideoPanel from './VideoPanel';
+import LinksPanel from './LinksPanel';
+import AnalysisPanel from './AnalysisPanel';
+import NotesPanel from './NotesPanel';
 
 function Workbench() {
   const { id } = useParams();
@@ -86,7 +89,9 @@ function Workbench() {
         <div className="wb-col wb-col-side">
           <DetailsPanel wb={wb} savePanel={savePanel} />
           <VideoPanel wb={wb} id={id} reload={reload} />
-          {/* Links/Analysis/Notes — Task 7 */}
+          <LinksPanel wb={wb} savePanel={savePanel} id={id} reload={reload} />
+          <AnalysisPanel wb={wb} />
+          <NotesPanel wb={wb} savePanel={savePanel} saveProcessing={saveProcessing} />
         </div>
       </div>
     </div>
