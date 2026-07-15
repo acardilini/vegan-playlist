@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import WorkbenchTopBar from './WorkbenchTopBar';
 import DetailsPanel from './DetailsPanel';
+import LyricsPanel from './LyricsPanel';
 
 function Workbench() {
   const { id } = useParams();
@@ -78,7 +79,9 @@ function Workbench() {
         <WorkbenchTopBar wb={wb} onAction={doAction} onPark={saveProcessing} nav={null} />
       </div>
       <div className="wb-grid">
-        <div className="wb-col wb-col-main">{/* Lyrics panel — Task 4/5 */}</div>
+        <div className="wb-col wb-col-main">
+          <LyricsPanel wb={wb} savePanel={savePanel} saveProcessing={saveProcessing} />
+        </div>
         <div className="wb-col wb-col-side">
           <DetailsPanel wb={wb} savePanel={savePanel} />
           {/* Video/Links/Analysis/Notes — Tasks 6,7 */}

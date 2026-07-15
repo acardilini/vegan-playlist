@@ -84,3 +84,7 @@
 .wb-cover { margin-top: var(--space-3); }
 .wb-cover-img { width: 120px; height: 120px; object-fit: cover; border-radius: var(--radius-md); display: block; margin-bottom: var(--space-2); }
 .wb-cover-ph { display: block; width: 120px; height: 120px; border-radius: var(--radius-md); margin-bottom: var(--space-2); background-image: repeating-linear-gradient(45deg, var(--bg-surface-raised), var(--bg-surface-raised) 6px, var(--bg-surface) 6px, var(--bg-surface) 12px); }
+
+.wb-quicklinks { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-3); }
+.wb-avenues { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.wb-check { font-size: 0.85rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: var(--space-1); }
