@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
+import WorkbenchTopBar from './WorkbenchTopBar';
 
 function Workbench() {
   const { id } = useParams();
@@ -29,7 +30,6 @@ function Workbench() {
     } catch { return { ok: false, error: 'Request failed' }; }
   }, [id]);
 
-  // eslint-disable-next-line no-unused-vars -- consumed by panels added in Tasks 3-7
   const saveProcessing = useCallback(async (body) => {
     try {
       const r = await adminFetch(`/api/admin/workbench/${id}/processing`, { method: 'PUT', body });
@@ -38,6 +38,23 @@ function Workbench() {
       return { ok: false, error: d.error || 'Save failed' };
     } catch { return { ok: false, error: 'Request failed' }; }
   }, [id]);
+
+  const doAction = useCallback(async (kind) => {
+    if (kind === 'reject' && !window.confirm('Reject this song? It stays recoverable, but this clears the include decision.')) return;
+    const map = {
+      'include': ['include', { publish: false }],
+      'include-publish': ['include', { publish: true }],
+      'reject': ['reject', undefined],
+      'publish': ['publish', undefined],
+      'unpublish': ['unpublish', undefined],
+    };
+    const [path, body] = map[kind];
+    try {
+      const r = await adminFetch(`/api/admin/songs/${id}/${path}`, { method: 'POST', body });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); window.alert(d.error || 'Action failed'); return; }
+      reload();
+    } catch { window.alert('Request failed'); }
+  }, [id, reload]);
 
   if (notFound) {
     return (
@@ -58,6 +75,7 @@ function Workbench() {
         <Link to="/admin/songs" className="btn btn-ghost btn-sm">&larr; Back to Songs</Link>
         <h1 className="wb-title">{wb.title || `Song ${wb.id}`}</h1>
         <div className="wb-artist">{artistNames}</div>
+        <WorkbenchTopBar wb={wb} onAction={doAction} onPark={saveProcessing} nav={null} />
       </div>
       <div className="wb-grid">
         <div className="wb-col wb-col-main">{/* Lyrics panel — Task 4/5 */}</div>

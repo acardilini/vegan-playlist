@@ -70,3 +70,13 @@
 .wb-save-saving { color: var(--text-muted); }
 .wb-save-saved { color: var(--accent-moss-60); }
 .wb-save-error { color: var(--color-danger); }
+
+.wb-decisions { margin-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.wb-decisions-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.wb-badges { display: inline-flex; gap: var(--space-2); align-items: center; }
+.wb-badge-muted { font-size: 0.68rem; color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); padding: 1px var(--space-2); }
+.wb-complete { display: inline-flex; gap: var(--space-1); flex-wrap: wrap; }
+.wb-complete-item { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); border: 1px solid var(--border-hairline); }
+.wb-complete-item.done { color: var(--accent-moss-60); border-color: var(--accent-moss-60); }
+.wb-complete-item.todo { color: var(--text-muted); }
+.wb-nav { margin-left: auto; display: inline-flex; gap: var(--space-2); }
