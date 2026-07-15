@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AutoText, SaveTag } from './SavedField';
 
 const LYRICS_STATUSES = ['found', 'not_found', 'not_searched'];
@@ -22,6 +22,8 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   // (created only when full lyrics are first saved). Gate the UI so that trap
   // is unreachable: no false "Saved" on a value that was silently dropped.
   const hasLyrics = !!(wb.lyrics && wb.lyrics.trim());
+  const lyricsRef = useRef(null);
+  const highlights = (wb.lyrics_highlights || '').split('\n').map((h) => h.trim()).filter(Boolean);
 
   const onStatus = async (e) => {
     setStatusSave('saving');
@@ -31,6 +33,17 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   const toggleAvenue = (key) => {
     const next = tried.includes(key) ? tried.filter((k) => k !== key) : [...tried, key];
     saveProcessing({ lyrics_tried: next });
+  };
+  const addHighlight = () => {
+    const el = lyricsRef.current;
+    if (!el) return;
+    const sel = el.value.substring(el.selectionStart, el.selectionEnd).trim();
+    if (!sel) { window.alert('Select a passage in the lyrics box first.'); return; }
+    if (highlights.includes(sel)) return;
+    savePanel('highlights', { lyrics_highlights: [...highlights, sel].join('\n') });
+  };
+  const removeHighlight = (h) => {
+    savePanel('highlights', { lyrics_highlights: highlights.filter((x) => x !== h).join('\n') });
   };
 
   return (
@@ -45,7 +58,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
       </div>
 
       <AutoText label="Full lyrics (local-only)" initial={wb.lyrics} multiline rows={12} monospace
-        onSave={(v) => savePanel('lyrics', { lyrics: v })} />
+        inputRef={lyricsRef} onSave={(v) => savePanel('lyrics', { lyrics: v })} />
       <AutoText label="Lyrics source URL" initial={wb.lyrics_source_url} placeholder="https://…"
         disabled={!hasLyrics}
         onSave={(v) => savePanel('lyrics', { source_url: v })} />
@@ -74,7 +87,21 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
         onSave={(v) => savePanel('lyrics', { translation: v })} />
       {!hasLyrics && <p className="admin-stub">Add full lyrics first</p>}
 
-      {/* Task 5 inserts the Highlights picker here */}
+      <div className="wb-field">
+        <div className="wb-highlights-head">
+          <span className="wb-field-label">Key lyrics (public highlights)</span>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={addHighlight}>+ Add selection</button>
+        </div>
+        {highlights.length === 0
+          ? <p className="admin-stub">Select a line in the lyrics box above, then “Add selection”.</p>
+          : <ul className="wb-highlights">
+              {highlights.map((h) => (
+                <li key={h}><span>{h}</span>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => removeHighlight(h)}>Remove</button>
+                </li>
+              ))}
+            </ul>}
+      </div>
     </section>
   );
 }

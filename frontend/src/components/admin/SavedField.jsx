@@ -7,7 +7,7 @@ export function SaveTag({ status }) {
 }
 
 // Self-contained autosaving text field. onSave(value) → { ok, error? }.
-export function AutoText({ label, initial, onSave, multiline = false, rows = 3, placeholder, monospace = false, disabled = false }) {
+export function AutoText({ label, initial, onSave, multiline = false, rows = 3, placeholder, monospace = false, disabled = false, inputRef }) {
   const [val, setVal] = useState(initial ?? '');
   const [status, setStatus] = useState('idle');
   // A successful save round-trips through a full workbench swap, which changes
@@ -34,6 +34,7 @@ export function AutoText({ label, initial, onSave, multiline = false, rows = 3, 
   };
 
   const common = {
+    ref: inputRef,
     className: `input${monospace ? ' wb-mono' : ''}`,
     value: val,
     placeholder,
