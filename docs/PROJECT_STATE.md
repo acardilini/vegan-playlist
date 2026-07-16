@@ -10,37 +10,39 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Phase 3 + admin manual smoke test + polish (2026-07-16).**
-  Between-phases verification before A4: the curator manually walked the Phase 3 public site and
-  the Phase 4 admin-so-far (A2 shell + A3 workbench). **All core flows work.** Seven polish items
-  plus two curator feature requests (YouTube/Bandcamp quick-search links; "Open ↗" URL buttons)
-  were fixed/added in one pass (see Changelog + Decision Log). Frontend-only except one read-only
-  public playlists-route subquery; no curatorial data touched. Verified: eslint 0 errors, `npm run
-  build` clean, curator re-confirmed every fix. Committed + pushed straight to `main` (no feature
-  branch). A3 detail preserved in the Changelog below._
-- **Next session:** **A4 — Dashboard landing + cleanup** (replace the `/admin` dashboard stub
-  with queue counts + Add-a-song; delete `DataCompletionDashboard` — the admin dashboard, NOT
-  the public `DataDashboard.jsx`). Then sub-projects B–F.
-- **Last updated:** 2026-07-16 _(Phase 3 + admin manual smoke test + polish pass done, committed
-  to `main`; A4 is next)._
+- **Current session:** _**A4 — Admin Dashboard landing + cleanup (2026-07-17).** Replaced the
+  `/admin` `DashboardStub` with the real Dashboard: **"Needs your attention"** action tiles (To be
+  processed / Needs lyrics / Needs cover / Needs video / To finalise — each links to the matching
+  Songs queue; **Inbox** tile disabled, reserved for sub-project C), a compact **"Catalogue health"**
+  line (total · live · to-finalise · pending · rejected), a **"Recent activity"** feed (last 10 edited
+  songs → their workbench), and **Add-a-song** (reuses `AddSongPanel`). Two new read-only backend
+  endpoints: `GET /api/admin/curation/catalogue-stats` + `/curation/recent`. Deleted the old **admin**
+  `DataCompletionDashboard` + its `/completion-stats` route + its exclusive `App.css` (shared
+  `.stat-card`/`.action-buttons`/`.stat-value` preserved) + `DashboardStub`. **Sub-project A
+  (Curation Workbench & lifecycle) is now complete (A1–A4).** Executed via subagent-driven development
+  (per-task spec+quality reviews + an opus whole-branch review, all clean); backend **45/45**;
+  build+eslint clean; **live headless smoke + curator manual smoke (13/13) both passed**. Branch
+  `session-A4-dashboard` merged no-ff (`77ea3b5`) and pushed._
+- **Next session:** **Sub-project B — Analysis integration** (its own spec→plan→build), or the
+  curator's pick among B–F. B: delete the mocked 5-array categorisation; public song page + faceted
+  browse read `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only coding + lights up
+  the **Needs-analysis** queue. See [`docs/LYRICS_ANALYSIS_INTEGRATION.md`](./LYRICS_ANALYSIS_INTEGRATION.md).
+- **Last updated:** 2026-07-17 _(A4 done, merged to `main` + pushed; sub-project A complete; B–F next)._
 
 ### Next Tasks (start here)
-1. **~~A1 (backend)~~ + ~~A2 (shell + Songs area)~~ + ~~A3 (Curation Workbench)~~ — DONE.**
-   A1 merged (`145efbb`); A2 merged to `main` 2026-07-14 (`b5ec26f`). **A3
-   (`session-A3-workbench`, merged to `main` 2026-07-16 — merge `8579b4e`, pushed):** the full two-column workbench at
-   `/admin/song/:id` — sticky top bar (badges, completeness row, lifecycle buttons, within-page
-   Prev/Next) + panels Details / Lyrics (+ interactive highlights picker) / Video / Links /
-   Analysis (read-only) / Notes; autosave-on-blur via a shared `AutoText`/`SaveTag`; reject-confirm;
-   quick-search links. Frontend-only (consumes A1's `GET/PUT /workbench/*` + video + `staging`
-   lifecycle). Deleted StagingQueue/LyricsLookupManager/YouTubeVideoManager/ManageSongsTab +
-   WorkbenchStub after a clean parity check.
-2. **Next: execute A4 — Dashboard landing + cleanup.** Replace the `/admin` dashboard stub with
-   queue counts + Add-a-song; delete the admin dashboard.
-   _Plan-naming note: A4 must delete `DataCompletionDashboard` (the admin dashboard), NOT
-   `DataDashboard.jsx` (the PUBLIC `/dashboard` page, which stays)._
-3. **Deferred to their own sub-projects:** B (analysis display / delete the mock
-   categorisation), C (submissions moderation / Inbox), D (YouTube search), E (lyrics
-   fetch), F (Spotify push). Design: [`specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md).
+1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
+   complete.** A1 merged (`145efbb`); A2 (`b5ec26f`, 2026-07-14); A3 (`8579b4e`, 2026-07-16). **A4
+   (`session-A4-dashboard`, merged to `main` 2026-07-17 — merge `77ea3b5`, pushed):** the `/admin`
+   Dashboard — action tiles → Songs queues, catalogue-health line, recent-activity feed → workbench,
+   Add-a-song; read-only `GET /curation/catalogue-stats` + `/curation/recent`; deleted the old admin
+   `DataCompletionDashboard` + `/completion-stats` route + `DashboardStub`.
+2. **Next: sub-project B — Analysis integration** (its own spec→plan→build; or curator's pick among
+   B–F). Delete the mocked 5-array categorisation; public song page + faceted browse read
+   `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only coding + lights up the
+   **Needs-analysis** queue. See [`docs/LYRICS_ANALYSIS_INTEGRATION.md`](./LYRICS_ANALYSIS_INTEGRATION.md).
+3. **Remaining sub-projects:** C (submissions moderation / Inbox — the dashboard's disabled **Inbox**
+   tile lights up here), D (YouTube search), E (lyrics fetch), F (Spotify push). Design:
+   [`specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md).
 4. **Phase 5 — Deployment Hardening** (was Phase 4): externalise config/secrets, input
    validation, admin access control. Known items in Watch-outs: public pages hardcode
    `http://localhost:5000` (deployment breaks them until proxied/env-based),
@@ -128,6 +130,25 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-17 — A4 dashboard = "blend of both" (action tiles + compact health), recent activity
+  from `updated_at`, deletions done surgically (curator-approved at brainstorm + one plan erratum
+  caught mid-build).** The `/admin` landing answers both "what should I work on" (clickable queue
+  tiles → the Songs area) and "how healthy is the catalogue" (a one-line totals strip) — deliberately
+  lean, **no** completion-percentage bars or "priority action" nagging, so it doesn't regrow into the
+  old wall. "Recent activity" is the last 10 songs by `songs.updated_at` (every workbench save +
+  lifecycle change bumps it — reliable) linking to the workbench; the heavier "what changed" audit
+  feed was rejected (YAGNI — no event log exists). Two new endpoints are **read-only** aggregation
+  (`catalogueStats` pure SELECT; `recentlyEdited` parameterised `LIMIT`), so the dataset-safety
+  invariant holds. **Two implementer deviations from the plan were accepted as correct fixes:**
+  (1) `recentlyEdited`'s limit clamp uses an `isNaN` check, not the plan's literal `parseInt||10` —
+  `0||10`→10 would have failed the plan's own `limit=0` test (JS falsy-zero); the clamp now correctly
+  maps 0→1, non-numeric→10, range `[1,50]`. (2) **Plan erratum:** the plan's Task-5 CSS DELETE list
+  wrongly listed `.stat-value` as exclusive to the deleted admin dashboard — it is actually **shared**
+  via `.stat-badge .stat-value` by the public HomePage/About/DataDashboard and is the sole source of
+  their badge margin; both implementer and reviewer caught it and it was **kept** (deleting it would
+  have visually regressed three live public pages). The Inbox tile ships disabled (sub-project C lights
+  it up). **Sub-project A (Curation Workbench & lifecycle) is complete with A4.**
 
 - **2026-07-16 — Phase 3 + admin manual smoke-test findings resolved as one polish pass
   (curator-approved).** After the curator manually verified the Phase 3 public site and the A2/A3
@@ -448,6 +469,31 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-17 (A4 — Admin Dashboard landing + cleanup; closes sub-project A)** — Brainstormed →
+  spec ([`specs/2026-07-16-admin-dashboard-A4-design.md`](./superpowers/specs/2026-07-16-admin-dashboard-A4-design.md))
+  → plan ([`plans/2026-07-16-admin-dashboard-A4.md`](./superpowers/plans/2026-07-16-admin-dashboard-A4.md))
+  → executed 6 tasks via **subagent-driven development** (fresh implementer + per-task spec/quality
+  review each, then an **opus whole-branch review** — all clean) on branch `session-A4-dashboard`
+  (base `28e44e0`). **Delivered:** the `/admin` `DashboardStub` replaced by a real **`Dashboard.jsx`** —
+  **"Needs your attention"** action tiles (To be processed / Needs lyrics / Needs cover / Needs video /
+  To finalise, each a link to `/admin/songs?queue=<key>`; **Inbox** tile disabled for sub-project C),
+  a compact **"Catalogue health"** line, a **"Recent activity"** feed (last 10 edited songs → their
+  Curation Workbench), and **Add-a-song** (reuses `AddSongPanel`). **Two read-only backend endpoints
+  (TDD):** `curation.catalogueStats` → `GET /api/admin/curation/catalogue-stats`; `curation.recentlyEdited`
+  → `GET /api/admin/curation/recent`. New dashboard styles in `admin.css` (tokens only) + a
+  `.queue-status.rejected` rule. **Cleanup:** deleted the old **admin** `DataCompletionDashboard.jsx`
+  (523 lines, unmounted since A2), its orphaned `GET /completion-stats` route (229 lines), its exclusive
+  `App.css` block, and `DashboardStub.jsx` — **preserving** the shared `.stat-card`/`.action-buttons`
+  and (plan-erratum catch) `.stat-value`. **The public `DataDashboard.jsx` was NOT touched.** Net
+  **+228 / −1127** (mostly dead-code removal). **Two implementer deviations accepted as correct fixes**
+  (isNaN limit clamp; keeping shared `.stat-value` — see Decision Log). **Verification:** backend
+  `node --test` **45/45** (pristine, incl. 3 new tests); `npm run build` clean, eslint 0 errors; **live
+  headless smoke** (endpoints correct, `completion-stats` → 404, all tiles navigate, Inbox inert,
+  Add-a-song round-trip, DB baseline restored) **plus the curator's manual walk (13/13)**. Merged to
+  `main` no-ff (`77ea3b5`, 45/45 re-verified on merged main), feature branch deleted, **pushed to
+  `origin/main`** (this push also carried the earlier unpushed A4 spec+plan doc commits). **Sub-project
+  A (Curation Workbench & lifecycle) is complete — B is next.**
 
 - **2026-07-16 (Phase 3 + admin manual smoke test + polish)** — Between-phases verification session
   (the curator's call, to avoid accumulating un-clicked work before A4). The curator manually walked

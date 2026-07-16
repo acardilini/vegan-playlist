@@ -210,8 +210,9 @@ one screen; the old scattered tabs are gone; nothing data is lost.
 
 Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1–A4):
 
-- ◐ **A — Curation Workbench & lifecycle/queues.** The spine: single-song workbench, derived
-  queues, `song_processing` table, publish-incomplete. _Spec approved; plans:_
+- ☑ **A — Curation Workbench & lifecycle/queues** _(complete 2026-07-17 — A1–A4 all merged to
+  `main`)._ The spine: single-song workbench, derived queues, `song_processing` table,
+  publish-incomplete. _Spec approved; plans:_
   - ☑ **A1 — Data & backend foundation** _(done 2026-07-13, merged to `main`)._ Migration 006
     (`song_processing`, `songs.language`, `song_lyrics.translation`); `curation.js` (processing
     state · queues + counts · workbench read · per-panel saves); `videos.js` (one-primary
@@ -239,7 +240,13 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     pass (admin login-CSS root cause, filter-chip removal, playlist covers, date-field width,
     Spotify-button move, English quick-pick; YouTube/Bandcamp search links + Open buttons). See
     PROJECT_STATE Changelog/Decision Log. Committed straight to `main`._
-  - ☐ **A4 — Dashboard landing + cleanup** (queue counts + Add a song; delete DataDashboard). **Next up.**
+  - ☑ **A4 — Dashboard landing + cleanup** _(done 2026-07-17, branch `session-A4-dashboard` merged
+    to `main` — merge `77ea3b5`, pushed)._ Real `/admin` Dashboard: action tiles → Songs queues,
+    catalogue-health line, recent-activity feed → workbench, Add-a-song; read-only
+    `GET /curation/catalogue-stats` + `/curation/recent`. Deleted the old admin `DataCompletionDashboard`
+    (NOT the public `DataDashboard.jsx`) + `/completion-stats` route + `DashboardStub`. _Executed via
+    subagent-driven development (per-task + opus whole-branch reviews, all clean). Smoke ✅: backend
+    45/45; build+eslint clean; live headless + curator manual (13/13)._
 - ☐ **B — Analysis integration.** Delete the mocked 5-array categorisation; public song page +
   faceted browse read `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only
   coding + lights up the "Needs analysis" queue. See `docs/LYRICS_ANALYSIS_INTEGRATION.md`.
