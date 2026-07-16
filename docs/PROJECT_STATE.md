@@ -10,30 +10,32 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**A2 — admin nav shell + Songs area: complete** on branch
-  `session-A2-shell-songs`, **merged to `main` 2026-07-14** (merge head `b5ec26f`). Brainstormed →
-  spec → plan → executed 7 tasks via subagent-driven development (per-task reviews + final
-  whole-branch review, all clean). 42/42 backend tests green; headless smoke 17/17 ✅._
-- **Next session:** **Write & execute A3 — the Curation Workbench** (full-page `/admin/song/:id`,
-  replacing the A2 stub). **Should follow promptly:** A2 replaced the old shell outright, so
-  per-song editing (lyrics/publish/include-reject) is unavailable in the new admin until A3.
-  Start with brainstorming → writing-plans.
-- **Last updated:** 2026-07-14 _(A2 shell + Songs area done + pushed; A3 is next and gated by
-  the editing gap)._
+- **Current session:** _**A3 — the Curation Workbench: complete** on branch
+  `session-A3-workbench` (base `72b45a8`). Executed the 9-task plan via subagent-driven
+  development (fresh implementer + per-task spec/quality review each, then a whole-branch
+  review — all clean). The full-page workbench at `/admin/song/:id` replaces the A2 stub and
+  **closes the A2 editing gap** (per-song lyrics/publish/include-reject are usable again).
+  Frontend-only (consumes A1's endpoints). **Verification:** backend 42/42; `npm run build`
+  clean, eslint 0 errors; headless smoke 10/10 workbench flow; DB left as found. **Not yet
+  merged** — awaiting curator decision._
+- **Next session:** **A4 — Dashboard landing + cleanup** (replace the `/admin` dashboard stub
+  with queue counts + Add-a-song; delete `DataCompletionDashboard` — the admin dashboard, NOT
+  the public `DataDashboard.jsx`). Then sub-projects B–F.
+- **Last updated:** 2026-07-16 _(A3 workbench done on branch, reviewed + smoke-tested; awaiting
+  merge; A4 is next)._
 
 ### Next Tasks (start here)
-1. **~~A1 (backend foundation)~~ + ~~A2 (shell + Songs area)~~ — DONE.** A1 merged (`145efbb`).
-   A2 (`session-A2-shell-songs`, merged to `main` 2026-07-14): the
-   5-area nested-route admin shell (`AdminLayout` + top-bar nav), the Songs area (queue rail off
-   `/curation/counts` incl. new `live` count + paginated list off `/curation/queue` + search),
-   a working **Add a song** (quick capture → new `curation.quickCapture`/`POST /curation/quick-capture`
-   pending; Spotify paste → existing `/staging/candidates`), Artists/Playlists/Data-quality
-   re-parented untouched, and a `/admin/song/:id` Workbench **stub**. Old `AdminInterface` deleted.
-2. **Write + execute A3 — the Curation Workbench** (full-page `/admin/song/:id`) against A1's
-   `GET/PUT /workbench/*` + video endpoints and the `staging` lifecycle. Deletes StagingQueue/
-   LyricsLookupManager/YouTubeVideoManager/ManageSongs-modal after a parity check. **Priority:**
-   closes the A2 editing gap (per-song lyrics/publish/include-reject are unavailable in the new
-   admin until A3). Then A4 (Dashboard landing, replacing the stub; deletes the admin dashboard).
+1. **~~A1 (backend)~~ + ~~A2 (shell + Songs area)~~ + ~~A3 (Curation Workbench)~~ — DONE.**
+   A1 merged (`145efbb`); A2 merged to `main` 2026-07-14 (`b5ec26f`). **A3
+   (`session-A3-workbench`, done 2026-07-16, awaiting merge):** the full two-column workbench at
+   `/admin/song/:id` — sticky top bar (badges, completeness row, lifecycle buttons, within-page
+   Prev/Next) + panels Details / Lyrics (+ interactive highlights picker) / Video / Links /
+   Analysis (read-only) / Notes; autosave-on-blur via a shared `AutoText`/`SaveTag`; reject-confirm;
+   quick-search links. Frontend-only (consumes A1's `GET/PUT /workbench/*` + video + `staging`
+   lifecycle). Deleted StagingQueue/LyricsLookupManager/YouTubeVideoManager/ManageSongsTab +
+   WorkbenchStub after a clean parity check.
+2. **Next: execute A4 — Dashboard landing + cleanup.** Replace the `/admin` dashboard stub with
+   queue counts + Add-a-song; delete the admin dashboard.
    _Plan-naming note: A4 must delete `DataCompletionDashboard` (the admin dashboard), NOT
    `DataDashboard.jsx` (the PUBLIC `/dashboard` page, which stays)._
 3. **Deferred to their own sub-projects:** B (analysis display / delete the mock
@@ -127,6 +129,32 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-16 — A3 Curation Workbench design choices + four mid-build hardening decisions
+  (all curator-approved during subagent-driven execution).** The workbench is one two-column
+  screen (main = Lyrics; side = Details/Video/Links/Analysis/Notes) with a sticky top bar;
+  fields autosave on blur via a shared `AutoText`/`SaveTag` primitive (`SavedField.jsx`); the
+  Key-lyrics highlights picker is interactive (select-in-textarea → "+ Add selection");
+  within-page Prev/Next pages through the queue via `location.state` (absent on a direct-URL
+  open). **Four defects surfaced by the per-task reviews were fixed rather than shipped, each a
+  curator call at the time:** (1) a shared-primitive **race** — the container swaps `wb` before
+  `AutoText`'s save resolves and React 18 batches both, so the `[initial]` re-seed effect stomped
+  the "Saved" tag before paint; fixed with a `savedByUs` ref that gates *only* the status reset
+  (re-seed still unconditional). (2) A **false "Saved"** — A1's backend silently no-ops a
+  translation/source-URL save when no lyrics row exists yet but returns success; fixed by
+  **disabling** those two fields (additive `disabled` prop on `AutoText`) with an "add lyrics
+  first" hint until lyrics exist. (3) **Highlights** stored newline-joined fragmented on a
+  multi-line selection and were keyed by string content (a repeated chorus line couldn't be added
+  twice; Remove deleted all copies); fixed by collapsing internal newlines to a space and keying
+  by index. (4) **Save-failure feedback made a class standard** — several plan-pseudocode saves
+  were fire-and-forget (silent on failure); now the highlights picker, avenues checkboxes, the
+  whole Video panel (add/set-primary/delete), Links' attach-spotify, and the top-bar Park/Remind
+  controls all await and surface failure via `SaveTag`, and every `adminFetch` mutation is wrapped
+  in try/catch (it *rejects* on network-level failure before reaching `r.ok`). A final
+  whole-branch review also caught that `savePanel`/`saveProcessing` bypassed Task 8's
+  stale-response token guard (save-then-Next could render the previous song's data under the new
+  URL); fixed by extending the same token guard to both helpers. Playlist-membership indicator on
+  the workbench is deferred to sub-project F (Spotify push). No backend file changed in A3 — the
+  copyright guardrail (`lyrics`/`translation` are admin-path-only) is intact by construction.
 - **2026-07-12 — Admin layer to be rebuilt as a dedicated phase, decomposed A–F
   (brainstorm session).** The curator flagged the 10-tab admin as clunky/disjointed and a
   stagnation risk ("if I can't easily add/update songs, the playlist goes stale"). Rather than
@@ -402,6 +430,37 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-16 (A3 — the Curation Workbench)** — Executed plan
+  [`plans/2026-07-14-admin-workbench-A3-page.md`](./superpowers/plans/2026-07-14-admin-workbench-A3-page.md)
+  (spec [`specs/2026-07-14-admin-workbench-A3-page-design.md`](./superpowers/specs/2026-07-14-admin-workbench-A3-page-design.md))
+  via **subagent-driven development** on branch `session-A3-workbench` (base `72b45a8`) — a fresh
+  implementer per task + per-task spec/quality review, then a whole-branch review. **Delivered:**
+  the full-page workbench at `/admin/song/:id` replacing the A2 stub — a sticky **top bar**
+  (`WorkbenchTopBar`: status badges, five-item completeness row, lifecycle buttons
+  Include/Include&publish/Reject-with-confirm/Publish/Unpublish/Re-include + Park/Remind, and
+  within-page **‹ Prev / Next ›** paging the queue via `location.state`), a **container**
+  (`Workbench.jsx`) that fetches the single assemble-read `GET /workbench/:id` and swaps whole-`wb`
+  on panel PUTs / merges partials / `reload()`s after video+lifecycle routes, a shared
+  autosave-on-blur primitive (`SavedField.jsx`: `AutoText` + `SaveTag`), and six panels — **Details**
+  (title/language autosave, read-only meta, cover paste), **Lyrics** (paste, status, source, avenues,
+  quick-search links, translation, + an **interactive highlights picker**), **Video** (add-by-URL/id,
+  set-primary, delete), **Links** (Spotify/Bandcamp/SoundCloud + attach-Spotify), **Analysis**
+  (read-only), **Notes**. Deleted 5 superseded components (`WorkbenchStub`, `StagingQueue`,
+  `LyricsLookupManager`, `YouTubeVideoManager`, `ManageSongsTab`) after a clean parity check +
+  importer grep. **Frontend-only — no backend file changed.** Four review-surfaced defects were
+  fixed rather than shipped (curator-approved each): the `SavedField` save-tag race, a false
+  "Saved" on translation-before-lyrics (fields now disabled until lyrics exist), highlights
+  fragmentation + content-identity (newline-collapse + index keys), and a save-failure feedback
+  **class standard** (all mutations await + surface via `SaveTag`, `adminFetch` calls wrapped in
+  try/catch). The whole-branch review additionally caught that `savePanel`/`saveProcessing`
+  bypassed Task 8's stale-nav token guard (save-then-Next could render the previous song) — fixed
+  by extending the guard to both helpers (provably race-free: token capture + increment are both
+  synchronous). **Verification:** backend `node --test` **42/42** pristine; `npm run build` clean,
+  eslint 0 errors; **headless workbench smoke 10/10** (lyrics→Saved+completeness, highlight add,
+  video add→primary, Spotify URL→play-link, Include&publish→live, Prev/Next + direct-URL hides them,
+  Reject-confirm cancel, reload persistence); throwaway probe songs used throughout and cleaned up,
+  DB queue counts identical before/after (4 leftover test songs from earlier A3 sessions also swept).
+  **Not yet merged** — pushed and awaiting the curator's merge decision.
 - **2026-07-14 (A2 — admin nav shell + Songs area)** — Brainstormed → spec
   ([`specs/2026-07-13-admin-workbench-A2-shell-songs-design.md`](./superpowers/specs/2026-07-13-admin-workbench-A2-shell-songs-design.md))
   → plan ([`plans/2026-07-13-admin-workbench-A2-shell-songs.md`](./superpowers/plans/2026-07-13-admin-workbench-A2-shell-songs.md))
