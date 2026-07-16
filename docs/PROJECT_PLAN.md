@@ -225,12 +225,16 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     `/curation/queue` + search + Add-a-song); Artists/Playlists/Data-quality re-parented; Workbench
     **stub** at `/admin/song/:id`; old `AdminInterface` deleted. Backend: `live` count +
     `curation.quickCapture` (pending). _Smoke ✅: backend 42/42; build+eslint clean; headless 17/17._
-  - ☐ **A3 — The Workbench page** (all panels, autosave-on-blur, prev/next, completeness
-    checklist, reject-confirm, quick-search links, highlights picker). **Next up — priority:**
-    closes the A2 editing gap (per-song editing is unavailable in the new admin until A3). Replaces
-    the A2 stub at `/admin/song/:id`. Deletes StagingQueue/LyricsLookupManager/YouTubeVideoManager/
-    Manage Songs modal after data-parity check.
-  - ☐ **A4 — Dashboard landing + cleanup** (queue counts + Add a song; delete DataDashboard).
+  - ☑ **A3 — The Workbench page** _(done 2026-07-16, branch `session-A3-workbench`)._ Full
+    two-column workbench replacing the A2 stub at `/admin/song/:id`: sticky top bar (status badges,
+    completeness row, lifecycle buttons, within-page Prev/Next) + panels for Details, Lyrics (+
+    interactive highlights picker), Video, Links, Analysis (read-only), Notes; autosave-on-blur via a
+    shared `AutoText`/`SaveTag` primitive; reject-confirm; quick-search links. Frontend-only (consumes
+    A1 endpoints). Deleted StagingQueue/LyricsLookupManager/YouTubeVideoManager/ManageSongsTab +
+    WorkbenchStub after a clean data-parity check. _Executed via subagent-driven development (per-task
+    reviews + whole-branch review, all clean). Smoke ✅: backend 42/42; build+eslint clean; headless
+    10/10 workbench flow._
+  - ☐ **A4 — Dashboard landing + cleanup** (queue counts + Add a song; delete DataDashboard). **Next up.**
 - ☐ **B — Analysis integration.** Delete the mocked 5-array categorisation; public song page +
   faceted browse read `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only
   coding + lights up the "Needs analysis" queue. See `docs/LYRICS_ANALYSIS_INTEGRATION.md`.
