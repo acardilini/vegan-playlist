@@ -14,7 +14,7 @@ import SongSubmissionForm from './components/SongSubmissionForm';
 import DataDashboard from './components/DataDashboard';
 import './styles/admin.css';
 import AdminLayout from './components/admin/AdminLayout';
-import DashboardStub from './components/admin/DashboardStub';
+import Dashboard from './components/admin/Dashboard';
 import SongsArea from './components/admin/SongsArea';
 import Workbench from './components/admin/Workbench';
 import ArtistsManager from './components/ArtistsManager';
@@ -44,7 +44,7 @@ function App() {
           <Route path="/dashboard" element={<DataDashboard />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<DashboardStub />} />
+            <Route index element={<Dashboard />} />
             <Route path="songs" element={<SongsArea />} />
             <Route path="artists" element={<ArtistsManager />} />
             <Route path="playlists" element={<ManagePlaylistsTab />} />
