@@ -10,21 +10,19 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**A3 — the Curation Workbench: complete** on branch
-  `session-A3-workbench` (base `72b45a8`). Executed the 9-task plan via subagent-driven
-  development (fresh implementer + per-task spec/quality review each, then a whole-branch
-  review — all clean). The full-page workbench at `/admin/song/:id` replaces the A2 stub and
-  **closes the A2 editing gap** (per-song lyrics/publish/include-reject are usable again).
-  Frontend-only (consumes A1's endpoints). **Verification:** backend 42/42; `npm run build`
-  clean, eslint 0 errors; headless smoke 10/10 workbench flow; DB left as found. **Merged to
-  `main` 2026-07-16** (no-ff merge `8579b4e`; 42/42 re-verified on merged main) **and pushed to
-  `origin/main`** (the earlier A2/3.x backlog went up in the same push — main was 16 commits
-  ahead of origin). Feature branch deleted._
+- **Current session:** _**Phase 3 + admin manual smoke test + polish (2026-07-16).**
+  Between-phases verification before A4: the curator manually walked the Phase 3 public site and
+  the Phase 4 admin-so-far (A2 shell + A3 workbench). **All core flows work.** Seven polish items
+  plus two curator feature requests (YouTube/Bandcamp quick-search links; "Open ↗" URL buttons)
+  were fixed/added in one pass (see Changelog + Decision Log). Frontend-only except one read-only
+  public playlists-route subquery; no curatorial data touched. Verified: eslint 0 errors, `npm run
+  build` clean, curator re-confirmed every fix. Committed + pushed straight to `main` (no feature
+  branch). A3 detail preserved in the Changelog below._
 - **Next session:** **A4 — Dashboard landing + cleanup** (replace the `/admin` dashboard stub
   with queue counts + Add-a-song; delete `DataCompletionDashboard` — the admin dashboard, NOT
   the public `DataDashboard.jsx`). Then sub-projects B–F.
-- **Last updated:** 2026-07-16 _(A3 workbench done on branch, reviewed + smoke-tested; awaiting
-  merge; A4 is next)._
+- **Last updated:** 2026-07-16 _(Phase 3 + admin manual smoke test + polish pass done, committed
+  to `main`; A4 is next)._
 
 ### Next Tasks (start here)
 1. **~~A1 (backend)~~ + ~~A2 (shell + Songs area)~~ + ~~A3 (Curation Workbench)~~ — DONE.**
@@ -131,6 +129,25 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-16 — Phase 3 + admin manual smoke-test findings resolved as one polish pass
+  (curator-approved).** After the curator manually verified the Phase 3 public site and the A2/A3
+  admin, seven small issues were fixed now rather than deferred: (1) the admin **login page** was
+  broken by a **dead legacy `.admin-login` rule in `App.css`** (from the removed AdminInterface)
+  that forced `display:flex`+`min-height:100vh` onto the new login card, making it full-height with
+  row-flex "squished" text — the whole dead login CSS block was deleted so only `admin.css` applies
+  (a first width-only fix didn't work because it never overrode `display`/`min-height`). (2) The
+  browse **genre filter chips** duplicated the dropdown checkboxes → chips row + its two feeder
+  functions removed; the checkboxes are the sole control (a panel-closed "active filters" summary
+  can return later if wanted). (3) **Playlist cards** now show a cover derived from the first member
+  song's album art via a read-only subquery on the public `GET /api/playlists` (the `playlists`
+  table has no cover column; one representative image, a mosaic is future work). (4) Workbench
+  **Remind-me date** input widened (150→175px). (5) **Attach Spotify by search** moved directly
+  under the Spotify URL input. (6) One-click **"Set English"** language quick-pick (free-text still
+  covers other languages). Plus two curator feature requests: **quick-search links** (Search YouTube
+  in the Video panel, Search Bandcamp in Links — the same link-launch MVP as the lyrics quick-search,
+  i.e. the realistic form of sub-projects D/E) and **"Open ↗"** buttons beside saved Spotify /
+  Bandcamp / SoundCloud URLs. Frontend-only except the one read-only playlists subquery; no
+  curatorial data touched; committed straight to `main` (small, curator-verified).
 - **2026-07-16 — A3 Curation Workbench design choices + four mid-build hardening decisions
   (all curator-approved during subagent-driven execution).** The workbench is one two-column
   screen (main = Lyrics; side = Details/Video/Links/Analysis/Notes) with a sticky top bar;
@@ -432,6 +449,22 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-16 (Phase 3 + admin manual smoke test + polish)** — Between-phases verification session
+  (the curator's call, to avoid accumulating un-clicked work before A4). The curator manually walked
+  the **Phase 3 public site** (Home, Browse/Search, Song Detail, Artists, Playlists, Submit,
+  Dashboard, About, responsive) and the **Phase 4 admin so far** (A2 nav shell + A3 Curation
+  Workbench). **Result: all core flows work** on both surfaces. Seven polish items surfaced and were
+  fixed in one pass (see Decision Log): admin **login layout** (root cause = a dead legacy
+  `.admin-login` block in `App.css` deleted — a first width-only attempt didn't fix it), redundant
+  **genre filter chips** removed, **playlist-card covers** derived from member album art (read-only
+  `GET /api/playlists` subquery), Remind-me **date field** widened, **Attach-Spotify** button
+  repositioned under the Spotify URL, and a **"Set English"** language quick-pick. Two curator
+  feature requests also landed: **Search YouTube** (Video panel) + **Search Bandcamp** (Links)
+  quick-search links, and **"Open ↗"** buttons on saved Spotify/Bandcamp/SoundCloud URLs. Net
+  **10 files, +92/−196** (mostly dead-CSS removal). **Verification:** eslint 0 errors, `npm run
+  build` clean, playlists route returns real derived `cover_images`; **curator manually re-confirmed
+  every fix**. No curatorial data touched (backend change is a single read-only public subquery).
+  Committed + pushed straight to `main`. **A4 remains next.**
 - **2026-07-16 (A3 — the Curation Workbench)** — Executed plan
   [`plans/2026-07-14-admin-workbench-A3-page.md`](./superpowers/plans/2026-07-14-admin-workbench-A3-page.md)
   (spec [`specs/2026-07-14-admin-workbench-A3-page-design.md`](./superpowers/specs/2026-07-14-admin-workbench-A3-page-design.md))

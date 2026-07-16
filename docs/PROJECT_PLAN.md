@@ -234,6 +234,11 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     WorkbenchStub after a clean data-parity check. _Executed via subagent-driven development (per-task
     reviews + whole-branch review, all clean). Smoke ✅: backend 42/42; build+eslint clean; headless
     10/10 workbench flow._
+  - _Between A3 and A4 (2026-07-16): **curator manual smoke test** of the Phase 3 public site +
+    A2/A3 admin — all flows work. 7 polish fixes + 2 quick-search/"Open" features landed in one
+    pass (admin login-CSS root cause, filter-chip removal, playlist covers, date-field width,
+    Spotify-button move, English quick-pick; YouTube/Bandcamp search links + Open buttons). See
+    PROJECT_STATE Changelog/Decision Log. Committed straight to `main`._
   - ☐ **A4 — Dashboard landing + cleanup** (queue counts + Add a song; delete DataDashboard). **Next up.**
 - ☐ **B — Analysis integration.** Delete the mocked 5-array categorisation; public song page +
   faceted browse read `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only

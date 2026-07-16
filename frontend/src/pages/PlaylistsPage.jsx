@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { playlistService } from '../api/playlistService';
 
+function coverUrl(images) {
+  if (!images) return null;
+  let arr = images;
+  if (typeof images === 'string') { try { arr = JSON.parse(images); } catch { return null; } }
+  return Array.isArray(arr) && arr[0] && arr[0].url ? arr[0].url : null;
+}
+
 function PlaylistsPage() {
   const navigate = useNavigate();
   const [playlists, setPlaylists] = useState([]);
@@ -54,9 +61,18 @@ function PlaylistsPage() {
                 }
               }}
             >
-              <div className="artwork-placeholder" aria-hidden="true">
-                <span>playlist</span>
-              </div>
+              {coverUrl(playlist.cover_images) ? (
+                <img
+                  className="playlist-card-cover"
+                  src={coverUrl(playlist.cover_images)}
+                  alt=""
+                  aria-hidden="true"
+                />
+              ) : (
+                <div className="artwork-placeholder" aria-hidden="true">
+                  <span>playlist</span>
+                </div>
+              )}
               <h2 className="playlist-card-name">{playlist.name}</h2>
               <div className="playlist-card-meta">
                 <span>{playlist.song_count} songs</span>

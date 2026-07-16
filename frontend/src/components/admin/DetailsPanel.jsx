@@ -1,4 +1,5 @@
-import { AutoText } from './SavedField';
+import { useState } from 'react';
+import { AutoText, SaveTag } from './SavedField';
 
 function coverUrl(images) {
   if (!images) return null;
@@ -10,12 +11,26 @@ function coverUrl(images) {
 function DetailsPanel({ wb, savePanel }) {
   const artistNames = (wb.artists || []).map((a) => a.name).join(', ') || '—';
   const cover = coverUrl(wb.album && wb.album.images);
+  const [langSave, setLangSave] = useState('idle');
+
+  const setEnglish = async () => {
+    setLangSave('saving');
+    const res = await savePanel('details', { language: 'English' });
+    setLangSave(res && res.ok ? 'saved' : 'error');
+  };
+
   return (
     <section className="wb-panel">
       <h2>Details</h2>
       <AutoText label="Title" initial={wb.title} onSave={(v) => savePanel('details', { title: v })} />
-      <AutoText label="Language sung in" initial={wb.language} placeholder="e.g. English"
-        onSave={(v) => savePanel('details', { language: v })} />
+      <div className="wb-lang">
+        <AutoText label="Language sung in" initial={wb.language} placeholder="e.g. English"
+          onSave={(v) => savePanel('details', { language: v })} />
+        {wb.language !== 'English' && (
+          <button type="button" className="btn btn-secondary btn-sm" onClick={setEnglish}>Set English</button>
+        )}
+        <SaveTag status={langSave} />
+      </div>
       <div className="wb-readonly">
         <div><span className="k">Artist(s)</span>{artistNames}</div>
         <div><span className="k">Album</span>{(wb.album && wb.album.name) || '—'}</div>

@@ -70,7 +70,7 @@ function WorkbenchTopBar({ wb, onAction, onPark, nav }) {
             {PARK_REASONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
           <input className="input" type="date" title="Remind me later"
-            onChange={(e) => { if (e.target.value) park({ snooze_until: e.target.value }); }} style={{ width: 150 }} />
+            onChange={(e) => { if (e.target.value) park({ snooze_until: e.target.value }); }} style={{ width: 175 }} />
           <SaveTag status={parkSave} />
         </>}
         {isIncluded && !wb.published && <button className="btn btn-primary btn-sm" onClick={() => onAction('publish')}>Publish</button>}

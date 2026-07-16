@@ -1881,10 +1881,16 @@
   box-shadow: var(--shadow-card), 0 0 0 3px var(--focus-ring);
 }
 
-.playlist-card .artwork-placeholder {
+.playlist-card .artwork-placeholder,
+.playlist-card-cover {
   aspect-ratio: 1 / 1;
   width: 100%;
   border-radius: var(--radius-sm);
+}
+
+.playlist-card-cover {
+  object-fit: cover;
+  display: block;
 }
 
 .playlist-card-name {

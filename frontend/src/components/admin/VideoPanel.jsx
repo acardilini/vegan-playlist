@@ -58,9 +58,17 @@ function VideoPanel({ wb, id, reload }) {
   };
 
   const videos = wb.videos || [];
+  const artist = (wb.artists || []).map((a) => a.name).join(' ');
+  const ytSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${wb.title || ''} ${artist}`.trim())}`;
   return (
     <section className="wb-panel">
       <h2>Video <SaveTag status={status} /></h2>
+
+      <div className="wb-quicklinks">
+        <span className="wb-field-label">Find a video:</span>
+        <a className="btn btn-secondary btn-sm" href={ytSearch} target="_blank" rel="noreferrer">Search YouTube</a>
+      </div>
+
       {videos.length === 0 ? <p className="admin-stub">No videos yet.</p> : (
         <ul className="wb-videos">
           {videos.map((v) => (

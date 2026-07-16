@@ -10,9 +10,18 @@ router.get('/', async (req, res) => {
     const offset = (page - 1) * limit;
     
     const result = await pool.query(`
-      SELECT 
+      SELECT
         p.*,
-        COUNT(ps.song_id) as song_count
+        COUNT(ps.song_id) as song_count,
+        (
+          SELECT al.images
+          FROM playlist_songs ps2
+          JOIN songs s2 ON s2.id = ps2.song_id
+          JOIN albums al ON al.id = s2.album_id
+          WHERE ps2.playlist_id = p.id AND al.images IS NOT NULL
+          ORDER BY ps2.position ASC NULLS LAST, ps2.id ASC
+          LIMIT 1
+        ) AS cover_images
       FROM playlists p
       LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
       WHERE p.is_public = true
