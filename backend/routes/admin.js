@@ -2266,6 +2266,15 @@ router.get('/curation/counts', async (req, res) => {
   }
 });
 
+router.get('/curation/catalogue-stats', async (req, res) => {
+  try {
+    res.json(await curation.catalogueStats(pool));
+  } catch (e) {
+    console.error('catalogue-stats error:', e);
+    res.status(500).json({ error: 'Failed to load catalogue stats', details: e.message });
+  }
+});
+
 router.post('/curation/quick-capture', async (req, res) => {
   try {
     const { id } = await curation.quickCapture(pool, req.body || {});

@@ -101,6 +101,21 @@ test('queueCounts returns a number for every queue key', async () => {
   }
 });
 
+test('catalogueStats returns integer totals by status', async () => {
+  const s0 = await curation.catalogueStats(pool);
+  assert.equal(typeof s0.total, 'number');
+  await mkSong({ title: 'ZZZCUR Stat Live', status: 'included', published: true });
+  await mkSong({ title: 'ZZZCUR Stat Fin',  status: 'included', published: false });
+  await mkSong({ title: 'ZZZCUR Stat Pend', status: 'pending' });
+  await mkSong({ title: 'ZZZCUR Stat Rej',  status: 'rejected' });
+  const s1 = await curation.catalogueStats(pool);
+  assert.equal(s1.total, s0.total + 4);
+  assert.equal(s1.live, s0.live + 1);
+  assert.equal(s1.toFinalise, s0.toFinalise + 1);
+  assert.equal(s1.pending, s0.pending + 1);
+  assert.equal(s1.rejected, s0.rejected + 1);
+});
+
 test('getWorkbench assembles song, lyrics, processing, completeness', async () => {
   const id = await mkSong({ title: 'ZZZCUR WB', status: 'included', published: true, spotify_url: 'http://x' });
   await pool.query(`INSERT INTO song_lyrics (song_id, lyrics, source_url, translation) VALUES ($1,$2,$3,$4)`,

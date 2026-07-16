@@ -135,6 +135,19 @@ async function queueCounts(db) {
   return out;
 }
 
+async function catalogueStats(db) {
+  const r = await db.query(`
+    SELECT
+      COUNT(*)::int                                                     AS total,
+      COUNT(*) FILTER (WHERE status='included' AND published=true)::int  AS live,
+      COUNT(*) FILTER (WHERE status='included' AND published=false)::int AS to_finalise,
+      COUNT(*) FILTER (WHERE status='pending')::int                      AS pending,
+      COUNT(*) FILTER (WHERE status='rejected')::int                     AS rejected
+    FROM songs`);
+  const x = r.rows[0];
+  return { total: x.total, live: x.live, toFinalise: x.to_finalise, pending: x.pending, rejected: x.rejected };
+}
+
 function hasArt(images) {
   return !!(images && !['null', '[]', ''].includes(String(images).trim()));
 }
@@ -280,5 +293,5 @@ async function quickCapture(db, { title, artist } = {}) {
 }
 
 module.exports = { DEFAULT_MODEL, PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
-  getProcessing, setProcessing, listCurationQueue, queueCounts, getWorkbench, hasArt,
+  getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, getWorkbench, hasArt,
   saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture };
