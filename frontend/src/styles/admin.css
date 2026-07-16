@@ -103,3 +103,26 @@
 .wb-videos li a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wb-vtype { font-size: 0.7rem; color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
 .wb-video-add { display: flex; gap: var(--space-2); align-items: center; }
+
+/* Dashboard landing — A4 */
+.admin-dashboard { max-width: 1100px; }
+.dash-section { margin-bottom: var(--space-6); }
+.dash-heading { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 var(--space-3); }
+.dash-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); }
+.dash-tile { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); background: var(--bg-surface); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg); text-decoration: none; color: var(--text-primary); }
+.dash-tile:hover:not(.disabled) { background: var(--bg-surface-raised); border-color: var(--border-strong); }
+.dash-tile-n { font-family: Manrope, sans-serif; font-weight: 700; font-size: 1.6rem; line-height: 1; }
+.dash-tile-label { font-size: 0.85rem; color: var(--text-secondary); }
+.dash-tile.disabled { opacity: 0.5; cursor: not-allowed; }
+.dash-tile-soon { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.dash-health { font-size: 0.95rem; color: var(--text-secondary); margin: 0; }
+.dash-health strong { color: var(--text-primary); }
+.dash-recent { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+.dash-recent-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2); border-bottom: 1px solid var(--border-hairline); text-decoration: none; color: var(--text-primary); }
+.dash-recent-row:hover { background: var(--bg-surface-raised); }
+.dash-recent-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dash-recent-title { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-recent-artist { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-recent-time { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+.dash-recent-arrow { color: var(--text-muted); }
+.queue-status.rejected { color: var(--text-muted); border: 1px solid var(--border-hairline); }

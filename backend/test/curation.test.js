@@ -101,6 +101,21 @@ test('queueCounts returns a number for every queue key', async () => {
   }
 });
 
+test('catalogueStats returns integer totals by status', async () => {
+  const s0 = await curation.catalogueStats(pool);
+  assert.equal(typeof s0.total, 'number');
+  await mkSong({ title: 'ZZZCUR Stat Live', status: 'included', published: true });
+  await mkSong({ title: 'ZZZCUR Stat Fin',  status: 'included', published: false });
+  await mkSong({ title: 'ZZZCUR Stat Pend', status: 'pending' });
+  await mkSong({ title: 'ZZZCUR Stat Rej',  status: 'rejected' });
+  const s1 = await curation.catalogueStats(pool);
+  assert.equal(s1.total, s0.total + 4);
+  assert.equal(s1.live, s0.live + 1);
+  assert.equal(s1.toFinalise, s0.toFinalise + 1);
+  assert.equal(s1.pending, s0.pending + 1);
+  assert.equal(s1.rejected, s0.rejected + 1);
+});
+
 test('getWorkbench assembles song, lyrics, processing, completeness', async () => {
   const id = await mkSong({ title: 'ZZZCUR WB', status: 'included', published: true, spotify_url: 'http://x' });
   await pool.query(`INSERT INTO song_lyrics (song_id, lyrics, source_url, translation) VALUES ($1,$2,$3,$4)`,
@@ -166,4 +181,23 @@ test('setCover upserts album images for a non-Spotify song', async () => {
   assert.equal(wb.completeness.cover, true);
   // images is a jsonb column, parsed by pg into a JS array — stringify to inspect it.
   assert.ok(JSON.stringify(wb.album.images).includes('https://img/cover.jpg'));
+});
+
+test('recentlyEdited returns most-recently-updated songs first', async () => {
+  const older = await mkSong({ title: 'ZZZCUR Recent Older' });
+  const newer = await mkSong({ title: 'ZZZCUR Recent Newer' });
+  await pool.query(`UPDATE songs SET updated_at = now() + interval '2 seconds' WHERE id=$1`, [newer]);
+  const rows = await curation.recentlyEdited(pool, 50);
+  const ids = rows.map(r => r.id);
+  assert.ok(ids.includes(newer), 'newer song present');
+  assert.ok(ids.includes(older), 'older song present');
+  assert.ok(ids.indexOf(newer) < ids.indexOf(older), 'newer appears before older');
+  const row = rows.find(r => r.id === newer);
+  assert.equal(typeof row.title, 'string');
+  assert.ok('artists' in row && 'status' in row && 'published' in row && 'updated_at' in row);
+});
+
+test('recentlyEdited clamps limit into [1,50]', async () => {
+  assert.equal((await curation.recentlyEdited(pool, 0)).length <= 1, true);
+  assert.ok((await curation.recentlyEdited(pool, 9999)).length <= 50);
 });
