@@ -2275,6 +2275,15 @@ router.get('/curation/catalogue-stats', async (req, res) => {
   }
 });
 
+router.get('/curation/recent', async (req, res) => {
+  try {
+    res.json(await curation.recentlyEdited(pool, req.query.limit));
+  } catch (e) {
+    console.error('curation recent error:', e);
+    res.status(500).json({ error: 'Failed to load recent activity', details: e.message });
+  }
+});
+
 router.post('/curation/quick-capture', async (req, res) => {
   try {
     const { id } = await curation.quickCapture(pool, req.body || {});

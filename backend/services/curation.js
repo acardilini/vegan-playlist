@@ -148,6 +148,20 @@ async function catalogueStats(db) {
   return { total: x.total, live: x.live, toFinalise: x.to_finalise, pending: x.pending, rejected: x.rejected };
 }
 
+async function recentlyEdited(db, limit = 10) {
+  const parsed = parseInt(limit, 10);
+  const n = isNaN(parsed) ? 10 : Math.min(Math.max(1, parsed), 50);
+  return (await db.query(`
+    SELECT s.id, s.title, s.status, s.published, s.updated_at,
+           COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists
+    FROM songs s
+    LEFT JOIN song_artists sa ON sa.song_id=s.id
+    LEFT JOIN artists a ON a.id=sa.artist_id
+    GROUP BY s.id
+    ORDER BY s.updated_at DESC NULLS LAST, s.id DESC
+    LIMIT $1`, [n])).rows;
+}
+
 function hasArt(images) {
   return !!(images && !['null', '[]', ''].includes(String(images).trim()));
 }
@@ -293,5 +307,5 @@ async function quickCapture(db, { title, artist } = {}) {
 }
 
 module.exports = { DEFAULT_MODEL, PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
-  getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, getWorkbench, hasArt,
+  getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
   saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture };

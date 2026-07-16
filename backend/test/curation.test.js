@@ -182,3 +182,22 @@ test('setCover upserts album images for a non-Spotify song', async () => {
   // images is a jsonb column, parsed by pg into a JS array — stringify to inspect it.
   assert.ok(JSON.stringify(wb.album.images).includes('https://img/cover.jpg'));
 });
+
+test('recentlyEdited returns most-recently-updated songs first', async () => {
+  const older = await mkSong({ title: 'ZZZCUR Recent Older' });
+  const newer = await mkSong({ title: 'ZZZCUR Recent Newer' });
+  await pool.query(`UPDATE songs SET updated_at = now() + interval '2 seconds' WHERE id=$1`, [newer]);
+  const rows = await curation.recentlyEdited(pool, 50);
+  const ids = rows.map(r => r.id);
+  assert.ok(ids.includes(newer), 'newer song present');
+  assert.ok(ids.includes(older), 'older song present');
+  assert.ok(ids.indexOf(newer) < ids.indexOf(older), 'newer appears before older');
+  const row = rows.find(r => r.id === newer);
+  assert.equal(typeof row.title, 'string');
+  assert.ok('artists' in row && 'status' in row && 'published' in row && 'updated_at' in row);
+});
+
+test('recentlyEdited clamps limit into [1,50]', async () => {
+  assert.equal((await curation.recentlyEdited(pool, 0)).length <= 1, true);
+  assert.ok((await curation.recentlyEdited(pool, 9999)).length <= 50);
+});
