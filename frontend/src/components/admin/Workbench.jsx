@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import WorkbenchTopBar from './WorkbenchTopBar';
 import DetailsPanel from './DetailsPanel';
@@ -11,16 +11,22 @@ import NotesPanel from './NotesPanel';
 
 function Workbench() {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [wb, setWb] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  // Guards against a stale in-flight response landing after Prev/Next has already
+  // moved `id` on: only the response for the most recently issued reload() wins.
+  const requestTokenRef = useRef(0);
 
   const reload = useCallback(() => {
+    const token = ++requestTokenRef.current;
     adminFetch(`/api/admin/workbench/${id}`)
       .then(async (r) => {
-        if (r.status === 404) { setNotFound(true); return null; }
+        if (r.status === 404) { if (token === requestTokenRef.current) setNotFound(true); return null; }
         return r.ok ? r.json() : null;
       })
-      .then((d) => { if (d) { setWb(d); setNotFound(false); } })
+      .then((d) => { if (d && token === requestTokenRef.current) { setWb(d); setNotFound(false); } })
       .catch(() => {});
   }, [id]);
 
@@ -74,13 +80,29 @@ function Workbench() {
 
   const artistNames = (wb.artists || []).map((a) => a.name).join(', ') || '—';
 
+  const navState = location.state && Array.isArray(location.state.ids) ? location.state : null;
+  let nav = null;
+  if (navState) {
+    const idx = navState.ids.indexOf(parseInt(id));
+    const go = (targetIdx) => {
+      const targetId = navState.ids[targetIdx];
+      navigate(`/admin/song/${targetId}`, { state: { ...navState, index: targetIdx } });
+    };
+    nav = {
+      hasPrev: idx > 0,
+      hasNext: idx >= 0 && idx < navState.ids.length - 1,
+      onPrev: () => go(idx - 1),
+      onNext: () => go(idx + 1),
+    };
+  }
+
   return (
     <div className="workbench">
       <div className="wb-topbar">
         <Link to="/admin/songs" className="btn btn-ghost btn-sm">&larr; Back to Songs</Link>
         <h1 className="wb-title">{wb.title || `Song ${wb.id}`}</h1>
         <div className="wb-artist">{artistNames}</div>
-        <WorkbenchTopBar wb={wb} onAction={doAction} onPark={saveProcessing} nav={null} />
+        <WorkbenchTopBar wb={wb} onAction={doAction} onPark={saveProcessing} nav={nav} />
       </div>
       <div className="wb-grid">
         <div className="wb-col wb-col-main">

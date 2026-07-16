@@ -67,7 +67,9 @@ function SongQueueList({ queue, refreshKey }) {
         <div className="queue-empty">Nothing here right now.</div>
       ) : (
         rows.map(row => (
-          <button key={row.id} className="song-row" onClick={() => navigate(`/admin/song/${row.id}`)}>
+          <button key={row.id} className="song-row" onClick={() => navigate(`/admin/song/${row.id}`, {
+            state: { from: queue, ids: rows.map((r) => r.id), index: rows.findIndex((r) => r.id === row.id) },
+          })}>
             <span className={`cover ${row.has_art ? '' : 'placeholder'}`} style={coverStyle(row)} />
             <span className="song-meta">
               <span className="song-title">{row.title}</span>
