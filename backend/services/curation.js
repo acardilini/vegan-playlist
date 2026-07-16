@@ -150,6 +150,7 @@ async function catalogueStats(db) {
 
 async function recentlyEdited(db, limit = 10) {
   const parsed = parseInt(limit, 10);
+  // isNaN (not `parsed || 10`) so an explicit limit=0 clamps to 1, not the default 10.
   const n = isNaN(parsed) ? 10 : Math.min(Math.max(1, parsed), 50);
   return (await db.query(`
     SELECT s.id, s.title, s.status, s.published, s.updated_at,
