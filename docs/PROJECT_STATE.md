@@ -26,7 +26,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Next session:** **Sub-project B — Analysis integration** (its own spec→plan→build), or the
   curator's pick among B–F. B: delete the mocked 5-array categorisation; public song page + faceted
   browse read `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only coding + lights up
-  the **Needs-analysis** queue. See [`docs/LYRICS_ANALYSIS_INTEGRATION.md`](./LYRICS_ANALYSIS_INTEGRATION.md).
+  the **Needs-analysis** queue. See [`docs/LYRICS_VECTOR_ANALYSIS_INTEGRATION.md`](./LYRICS_VECTOR_ANALYSIS_INTEGRATION.md).
 - **Last updated:** 2026-07-17 _(A4 done, merged to `main` + pushed; sub-project A complete; B–F next)._
 
 ### Next Tasks (start here)
@@ -39,7 +39,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 2. **Next: sub-project B — Analysis integration** (its own spec→plan→build; or curator's pick among
    B–F). Delete the mocked 5-array categorisation; public song page + faceted browse read
    `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only coding + lights up the
-   **Needs-analysis** queue. See [`docs/LYRICS_ANALYSIS_INTEGRATION.md`](./LYRICS_ANALYSIS_INTEGRATION.md).
+   **Needs-analysis** queue. See [`docs/LYRICS_VECTOR_ANALYSIS_INTEGRATION.md`](./LYRICS_VECTOR_ANALYSIS_INTEGRATION.md).
 3. **Remaining sub-projects:** C (submissions moderation / Inbox — the dashboard's disabled **Inbox**
    tile lights up here), D (YouTube search), E (lyrics fetch), F (Spotify push). Design:
    [`specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md).

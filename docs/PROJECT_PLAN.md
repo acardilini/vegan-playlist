@@ -249,7 +249,7 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     45/45; build+eslint clean; live headless + curator manual (13/13)._
 - ☐ **B — Analysis integration.** Delete the mocked 5-array categorisation; public song page +
   faceted browse read `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only
-  coding + lights up the "Needs analysis" queue. See `docs/LYRICS_ANALYSIS_INTEGRATION.md`.
+  coding + lights up the "Needs analysis" queue. See `docs/LYRICS_VECTOR_ANALYSIS_INTEGRATION.md`.
 - ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
   To-be-processed / spam. Reuses `staging.addSubmissionAsPending`.
 - ☐ **D — YouTube assist.** Search YouTube from the workbench, present candidates, pick best.
