@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { SaveTag } from './SavedField';
+
 const PARK_REASONS = [
   ['awaiting_community', 'Awaiting community'],
   ['needs_transcription', 'Needs transcription'],
@@ -37,6 +40,14 @@ function Completeness({ c }) {
 function WorkbenchTopBar({ wb, onAction, onPark, nav }) {
   const isPending = wb.status === 'pending';
   const isIncluded = wb.status === 'included';
+  const [parkSave, setParkSave] = useState('idle');
+
+  const park = async (body) => {
+    setParkSave('saving');
+    const res = await onPark(body);
+    setParkSave(res && res.ok ? 'saved' : 'error');
+  };
+
   return (
     <div className="wb-decisions">
       <div className="wb-decisions-row">
@@ -54,12 +65,13 @@ function WorkbenchTopBar({ wb, onAction, onPark, nav }) {
           <button className="btn btn-primary btn-sm" onClick={() => onAction('include')}>Include</button>
           <button className="btn btn-primary btn-sm" onClick={() => onAction('include-publish')}>Include &amp; publish</button>
           <button className="btn btn-secondary btn-sm" onClick={() => onAction('reject')}>Reject</button>
-          <select className="select" defaultValue="" onChange={(e) => { if (e.target.value) { onPark({ park_reason: e.target.value }); e.target.value = ''; } }}>
+          <select className="select" defaultValue="" onChange={(e) => { if (e.target.value) { park({ park_reason: e.target.value }); e.target.value = ''; } }}>
             <option value="">Park…</option>
             {PARK_REASONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
           <input className="input" type="date" title="Remind me later"
-            onChange={(e) => { if (e.target.value) onPark({ snooze_until: e.target.value }); }} style={{ width: 150 }} />
+            onChange={(e) => { if (e.target.value) park({ snooze_until: e.target.value }); }} style={{ width: 150 }} />
+          <SaveTag status={parkSave} />
         </>}
         {isIncluded && !wb.published && <button className="btn btn-primary btn-sm" onClick={() => onAction('publish')}>Publish</button>}
         {isIncluded && wb.published && <button className="btn btn-secondary btn-sm" onClick={() => onAction('unpublish')}>Unpublish</button>}

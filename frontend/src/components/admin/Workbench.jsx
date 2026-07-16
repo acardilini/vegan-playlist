@@ -33,19 +33,32 @@ function Workbench() {
   useEffect(() => { setWb(null); setNotFound(false); reload(); }, [reload]);
 
   const savePanel = useCallback(async (panel, body) => {
+    // Capture the current token (do not increment — only reload() does that).
+    // If a reload() fires before this PUT resolves (e.g. Prev/Next navigated
+    // away), requestTokenRef will have moved on and we must not clobber the
+    // now-current song's state with this stale response.
+    const token = requestTokenRef.current;
     try {
       const r = await adminFetch(`/api/admin/workbench/${id}/${panel}`, { method: 'PUT', body });
       const d = await r.json().catch(() => ({}));
-      if (r.ok && d.workbench) { setWb(d.workbench); return { ok: true }; }
+      if (r.ok && d.workbench) {
+        if (token === requestTokenRef.current) setWb(d.workbench);
+        return { ok: true };
+      }
       return { ok: false, error: d.error || 'Save failed' };
     } catch { return { ok: false, error: 'Request failed' }; }
   }, [id]);
 
   const saveProcessing = useCallback(async (body) => {
+    // See savePanel — same stale-navigation guard.
+    const token = requestTokenRef.current;
     try {
       const r = await adminFetch(`/api/admin/workbench/${id}/processing`, { method: 'PUT', body });
       const d = await r.json().catch(() => ({}));
-      if (r.ok && d.processing) { setWb((w) => (w ? { ...w, processing: d.processing } : w)); return { ok: true }; }
+      if (r.ok && d.processing) {
+        if (token === requestTokenRef.current) setWb((w) => (w ? { ...w, processing: d.processing } : w));
+        return { ok: true };
+      }
       return { ok: false, error: d.error || 'Save failed' };
     } catch { return { ok: false, error: 'Request failed' }; }
   }, [id]);
