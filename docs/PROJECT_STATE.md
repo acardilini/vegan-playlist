@@ -16,8 +16,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   review — all clean). The full-page workbench at `/admin/song/:id` replaces the A2 stub and
   **closes the A2 editing gap** (per-song lyrics/publish/include-reject are usable again).
   Frontend-only (consumes A1's endpoints). **Verification:** backend 42/42; `npm run build`
-  clean, eslint 0 errors; headless smoke 10/10 workbench flow; DB left as found. **Not yet
-  merged** — awaiting curator decision._
+  clean, eslint 0 errors; headless smoke 10/10 workbench flow; DB left as found. **Merged to
+  `main` 2026-07-16** (no-ff merge `8579b4e`; 42/42 re-verified on merged main) **and pushed to
+  `origin/main`** (the earlier A2/3.x backlog went up in the same push — main was 16 commits
+  ahead of origin). Feature branch deleted._
 - **Next session:** **A4 — Dashboard landing + cleanup** (replace the `/admin` dashboard stub
   with queue counts + Add-a-song; delete `DataCompletionDashboard` — the admin dashboard, NOT
   the public `DataDashboard.jsx`). Then sub-projects B–F.
@@ -27,7 +29,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ### Next Tasks (start here)
 1. **~~A1 (backend)~~ + ~~A2 (shell + Songs area)~~ + ~~A3 (Curation Workbench)~~ — DONE.**
    A1 merged (`145efbb`); A2 merged to `main` 2026-07-14 (`b5ec26f`). **A3
-   (`session-A3-workbench`, done 2026-07-16, awaiting merge):** the full two-column workbench at
+   (`session-A3-workbench`, merged to `main` 2026-07-16 — merge `8579b4e`, pushed):** the full two-column workbench at
    `/admin/song/:id` — sticky top bar (badges, completeness row, lifecycle buttons, within-page
    Prev/Next) + panels Details / Lyrics (+ interactive highlights picker) / Video / Links /
    Analysis (read-only) / Notes; autosave-on-blur via a shared `AutoText`/`SaveTag`; reject-confirm;
@@ -460,7 +462,9 @@ Newest first. What actually happened each session.
   video add→primary, Spotify URL→play-link, Include&publish→live, Prev/Next + direct-URL hides them,
   Reject-confirm cancel, reload persistence); throwaway probe songs used throughout and cleaned up,
   DB queue counts identical before/after (4 leftover test songs from earlier A3 sessions also swept).
-  **Not yet merged** — pushed and awaiting the curator's merge decision.
+  **Merged to `main`** via no-ff merge `8579b4e` (42/42 re-verified on merged main), feature branch
+  deleted, and **pushed to `origin/main`** — the same push carried the earlier unpushed A2/3.x
+  backlog (main had been 16 commits ahead of origin).
 - **2026-07-14 (A2 — admin nav shell + Songs area)** — Brainstormed → spec
   ([`specs/2026-07-13-admin-workbench-A2-shell-songs-design.md`](./superpowers/specs/2026-07-13-admin-workbench-A2-shell-songs-design.md))
   → plan ([`plans/2026-07-13-admin-workbench-A2-shell-songs.md`](./superpowers/plans/2026-07-13-admin-workbench-A2-shell-songs.md))
