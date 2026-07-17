@@ -20,6 +20,7 @@ app.use('/api/playlists', require('./routes/playlists'));
 app.use('/api/youtube', require('./routes/youtube'));
 app.use('/api/submissions', require('./routes/submissions'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/analysis', require('./routes/analysis'));
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

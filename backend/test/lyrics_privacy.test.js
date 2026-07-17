@@ -5,7 +5,7 @@ const path = require('path');
 
 // The full-lyrics table (song_lyrics.lyrics/.translation) is LOCAL ONLY. Only admin.js
 // (behind auth) may reference it. Guard against a public route ever SELECTing it.
-const PUBLIC_ROUTES = ['spotify.js', 'playlists.js', 'youtube.js', 'submissions.js', 'analytics.js'];
+const PUBLIC_ROUTES = ['spotify.js', 'playlists.js', 'youtube.js', 'submissions.js', 'analytics.js', 'analysis.js'];
 
 test('no public route references song_lyrics', () => {
   for (const f of PUBLIC_ROUTES) {
