@@ -64,6 +64,27 @@ test('getSongAnalysis returns null for an un-coded song', async () => {
   assert.equal(await analysis.getSongAnalysis(pool, s.id), null);
 });
 
+test('facetTree returns the hierarchy with distinct-song counts', async () => {
+  await mkCodedSong(); // themes:[killing] (cruelty_suffering/violence), targets:[cows] (farmed_domesticated/mammals)
+  const t = await analysis.facetTree(pool);
+  assert.equal(t.themes.label, 'Core Sentiments & Themes');
+  assert.ok(t.themes.count >= 1);
+  const cruelty = t.themes.sub_dimensions.find(s => s.id === 'cruelty_suffering');
+  assert.ok(cruelty && cruelty.count >= 1, 'cruelty_suffering sub-dim present');
+  assert.equal(cruelty.label, 'Bodily Harm, Confinement & Suffering');
+  const violence = cruelty.groups.find(g => g.id === 'violence');
+  assert.ok(violence, 'violence group present');
+  const killing = violence.codes.find(c => c.code === 'killing');
+  assert.ok(killing && killing.count >= 1);
+  assert.equal(killing.label, 'Killing');
+  // empty nodes omitted
+  assert.ok(t.themes.sub_dimensions.every(s => s.groups.length > 0));
+  assert.ok(t.themes.sub_dimensions.every(s => s.groups.every(g => g.codes.length > 0)));
+  // targets tree too
+  const farmed = t.targets.sub_dimensions.find(s => s.id === 'farmed_domesticated');
+  assert.ok(farmed.groups.find(g => g.id === 'mammals').codes.find(c => c.code === 'cows'));
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);

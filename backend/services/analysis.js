@@ -67,4 +67,54 @@ async function getSongAnalysis(db, songId) {
   };
 }
 
-module.exports = { DEFAULT_MODEL, EVIDENCE_DIMS, DIM_TO_TAXONOMY, taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM };
+// DB column -> public dimension name used in API output (facetTree, etc.).
+const PUBLIC_DIMS = { themes: 'themes', topics: 'targets', advocacy: 'actions', tactics: 'tactics', moral_frames: 'moral_frames' };
+
+async function facetTree(db) {
+  const out = {};
+  for (const [col, pub] of Object.entries(PUBLIC_DIMS)) {
+    // One query: distinct (song_id, code) pairs over live+coded songs for this dimension.
+    // ${col} comes from the controlled PUBLIC_DIMS whitelist — never user input.
+    const rows = (await db.query(
+      `SELECT DISTINCT s.id AS song_id, elem->>'code' AS code
+       FROM songs s
+       JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = $1
+       CROSS JOIN LATERAL jsonb_array_elements(sa.${col}) AS elem
+       WHERE s.status = 'included' AND s.published = true`,
+      [DEFAULT_MODEL])).rows;
+
+    // Distinct-song sets at code / group / sub-dimension / dimension level.
+    const codeSongs = new Map(), groupSongs = new Map(), subSongs = new Map(), dimSongs = new Set();
+    const bump = (m, k, songId) => { let s = m.get(k); if (!s) { s = new Set(); m.set(k, s); } s.add(songId); };
+    for (const { song_id, code } of rows) {
+      const sd = SUBDIM[col].get(code);
+      if (!sd) continue; // code absent from taxonomy — skip defensively
+      bump(codeSongs, code, song_id);
+      bump(groupSongs, `${sd.sub_dimension}/${sd.group}`, song_id);
+      bump(subSongs, sd.sub_dimension, song_id);
+      dimSongs.add(song_id);
+    }
+
+    const taxKey = DIM_TO_TAXONOMY[col];
+    const codesOf = taxonomy[taxKey] || [];
+    const h = taxonomy.hierarchy[taxKey];
+    const subDimensions = [];
+    for (const [subId, sub] of Object.entries(h.sub_dimensions)) {
+      const groups = [];
+      for (const [groupId, groupLabel] of Object.entries(sub.groups)) {
+        const codes = codesOf
+          .filter(i => i.sub_dimension === subId && i.group === groupId)
+          .map(i => ({ code: i.id, label: i.label, count: (codeSongs.get(i.id) || new Set()).size }))
+          .filter(c => c.count > 0);
+        if (codes.length === 0) continue;
+        groups.push({ id: groupId, label: groupLabel, count: (groupSongs.get(`${subId}/${groupId}`) || new Set()).size, codes });
+      }
+      if (groups.length === 0) continue;
+      subDimensions.push({ id: subId, label: sub.label, count: (subSongs.get(subId) || new Set()).size, groups });
+    }
+    out[pub] = { label: h.label, count: dimSongs.size, sub_dimensions: subDimensions };
+  }
+  return out;
+}
+
+module.exports = { DEFAULT_MODEL, EVIDENCE_DIMS, DIM_TO_TAXONOMY, taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree };
