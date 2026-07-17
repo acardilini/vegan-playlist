@@ -104,6 +104,15 @@ test('facetFilterConditions with no selections needs no join', () => {
   assert.deepEqual(r.params, []);
 });
 
+test('themeCounts aggregates real themes from song_lyric_analysis', async () => {
+  await mkCodedSong(); // themes:[killing]
+  const rows = await analysis.themeCounts(pool, 15);
+  const killing = rows.find(r => r.theme === 'killing');
+  assert.ok(killing && killing.song_count >= 1);
+  assert.equal(killing.label, 'Killing');
+  assert.ok(rows.length <= 15);
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);

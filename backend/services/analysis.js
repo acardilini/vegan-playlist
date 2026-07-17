@@ -136,4 +136,18 @@ function facetFilterConditions(selections, startIndex) {
   return { clauses, params, needsJoin: clauses.length > 0 };
 }
 
-module.exports = { DEFAULT_MODEL, EVIDENCE_DIMS, DIM_TO_TAXONOMY, taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree, facetFilterConditions };
+async function themeCounts(db, limit = 15) {
+  const r = await db.query(
+    `SELECT elem->>'code' AS theme, COUNT(DISTINCT s.id)::int AS song_count
+     FROM songs s
+     JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = $1
+     CROSS JOIN LATERAL jsonb_array_elements(sa.themes) AS elem
+     WHERE s.status = 'included' AND s.published = true
+     GROUP BY elem->>'code'
+     ORDER BY song_count DESC
+     LIMIT $2`,
+    [DEFAULT_MODEL, limit]);
+  return r.rows.map(row => ({ theme: row.theme, label: label('themes', row.theme), song_count: row.song_count }));
+}
+
+module.exports = { DEFAULT_MODEL, EVIDENCE_DIMS, DIM_TO_TAXONOMY, taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree, facetFilterConditions, themeCounts };
