@@ -612,8 +612,10 @@ const router = express.Router();
 const pool = require('../database/db');
 const analysis = require('../services/analysis');
 
-// Public, read-only qualitative analysis surface. Reads song_lyric_analysis only —
-// never song_lyrics / translation (see test/lyrics_privacy.test.js).
+// Public, read-only qualitative analysis surface. Reads only the song_lyric_analysis
+// table — no access to the local-only full-lyrics table (see test/lyrics_privacy.test.js
+// guard). NOTE: do not write the guarded table/column names in this file's text, even in
+// comments — the guard greps raw source, so naming them here would false-trip it.
 
 router.get('/facets', async (req, res) => {
   try {
