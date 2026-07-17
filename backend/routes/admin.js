@@ -129,12 +129,6 @@ router.post('/manual-songs', async (req, res) => {
       // Genre
       genre,
       parent_genre,
-      // Categorization
-      vegan_focus,
-      animal_category,
-      advocacy_style,
-      advocacy_issues,
-      lyrical_explicitness,
       your_review,
       audio_review_url,
       inclusion_notes,
@@ -220,19 +214,17 @@ router.post('/manual-songs', async (req, res) => {
       const songResult = await client.query(`
         INSERT INTO songs (
           title, album_id, duration_ms, popularity, explicit, track_number, disc_number,
-          custom_mood, genre, parent_genre, data_source, manual_song_id, vegan_focus, animal_category, 
-          advocacy_style, advocacy_issues, lyrical_explicitness, your_review, 
-          audio_review_url, inclusion_notes, rating, energy, danceability, valence, 
-          acousticness, instrumentalness, liveness, speechiness, tempo, loudness, 
+          custom_mood, genre, parent_genre, data_source, manual_song_id, your_review,
+          audio_review_url, inclusion_notes, rating, energy, danceability, valence,
+          acousticness, instrumentalness, liveness, speechiness, tempo, loudness,
           key, mode, time_signature, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, CURRENT_TIMESTAMP)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, CURRENT_TIMESTAMP)
         RETURNING id
       `, [
         title, albumId, duration_ms, popularity, explicit, track_number, disc_number,
-        custom_mood, genre, finalParentGenre, 'manual', manualSongId, vegan_focus, animal_category, 
-        advocacy_style, advocacy_issues, lyrical_explicitness, your_review, 
-        audio_review_url, inclusion_notes, rating, energy, danceability, valence, 
-        acousticness, instrumentalness, liveness, speechiness, tempo, loudness, 
+        custom_mood, genre, finalParentGenre, 'manual', manualSongId, your_review,
+        audio_review_url, inclusion_notes, rating, energy, danceability, valence,
+        acousticness, instrumentalness, liveness, speechiness, tempo, loudness,
         key, mode, time_signature
       ]);
       
@@ -322,8 +314,7 @@ router.put('/manual-songs/:id', async (req, res) => {
         // Update all song fields
         const categoryFields = [
           'popularity', 'explicit', 'track_number', 'disc_number', 'custom_mood',
-          'genre', 'parent_genre', 'vegan_focus', 'animal_category', 'advocacy_style', 'advocacy_issues', 
-          'lyrical_explicitness', 'your_review', 'audio_review_url', 'inclusion_notes', 
+          'genre', 'parent_genre', 'your_review', 'audio_review_url', 'inclusion_notes',
           'rating', 'energy', 'danceability', 'valence', 'acousticness', 
           'instrumentalness', 'liveness', 'speechiness', 'tempo', 'loudness', 
           'key', 'mode', 'time_signature'
@@ -424,22 +415,8 @@ router.delete('/manual-songs/:id', async (req, res) => {
 // Get categorization options
 router.get('/categorization-options', async (req, res) => {
   try {
-    // Get existing category values from songs
-    const queries = {
-      vegan_focus: `SELECT DISTINCT UNNEST(vegan_focus) as value FROM songs WHERE vegan_focus IS NOT NULL`,
-      animal_category: `SELECT DISTINCT UNNEST(animal_category) as value FROM songs WHERE animal_category IS NOT NULL`,
-      advocacy_style: `SELECT DISTINCT UNNEST(advocacy_style) as value FROM songs WHERE advocacy_style IS NOT NULL`,
-      advocacy_issues: `SELECT DISTINCT UNNEST(advocacy_issues) as value FROM songs WHERE advocacy_issues IS NOT NULL`,
-      lyrical_explicitness: `SELECT DISTINCT UNNEST(lyrical_explicitness) as value FROM songs WHERE lyrical_explicitness IS NOT NULL`
-    };
-    
     const results = {};
-    
-    for (const [category, query] of Object.entries(queries)) {
-      const result = await pool.query(query);
-      results[category] = result.rows.map(row => row.value).sort();
-    }
-    
+
     // Add genre options from the hierarchy
     results.parent_genres = getParentGenres();
     results.subgenres = getAllSubgenres();
@@ -472,12 +449,6 @@ router.put('/songs/:id/categorize', async (req, res) => {
       // Genre
       genre,
       parent_genre,
-      // Categorization
-      vegan_focus,
-      animal_category,
-      advocacy_style,
-      advocacy_issues,
-      lyrical_explicitness,
       your_review,
       audio_review_url,
       inclusion_notes,
@@ -560,27 +531,6 @@ router.put('/songs/:id/categorize', async (req, res) => {
         values.push(calculatedParentGenre);
       }
       
-      // Categorization fields
-      if (vegan_focus !== undefined) {
-        updateFields.push(`vegan_focus = $${paramIndex++}`);
-        values.push(vegan_focus);
-      }
-      if (animal_category !== undefined) {
-        updateFields.push(`animal_category = $${paramIndex++}`);
-        values.push(animal_category);
-      }
-      if (advocacy_style !== undefined) {
-        updateFields.push(`advocacy_style = $${paramIndex++}`);
-        values.push(advocacy_style);  
-      }
-      if (advocacy_issues !== undefined) {
-        updateFields.push(`advocacy_issues = $${paramIndex++}`);
-        values.push(advocacy_issues);
-      }
-      if (lyrical_explicitness !== undefined) {
-        updateFields.push(`lyrical_explicitness = $${paramIndex++}`);
-        values.push(lyrical_explicitness);
-      }
       if (your_review !== undefined) {
         updateFields.push(`your_review = $${paramIndex++}`);
         values.push(your_review);
@@ -709,38 +659,14 @@ router.post('/bulk-upload', upload.single('csv'), async (req, res) => {
           continue;
         }
 
-        // Parse array fields (comma-separated values)
-        const parseArrayField = (value) => {
-          if (!value || value.trim() === '') return null;
-          return value.split(',').map(v => v.trim()).filter(v => v.length > 0);
-        };
-
-        const updateData = {
-          vegan_focus: parseArrayField(row['Vegan Focus'] || row.vegan_focus),
-          animal_category: parseArrayField(row['Animal Category'] || row.animal_category),
-          advocacy_style: parseArrayField(row['Advocacy Style'] || row.advocacy_style),
-          advocacy_issues: parseArrayField(row['Advocacy Issues'] || row.advocacy_issues),
-          lyrical_explicitness: parseArrayField(row['Lyrical Explicitness'] || row.lyrical_explicitness)
-        };
-
         // Update song in database
         const updateResult = await pool.query(`
-          UPDATE songs 
-          SET 
-            vegan_focus = $2,
-            animal_category = $3,
-            advocacy_style = $4,
-            advocacy_issues = $5,
-            lyrical_explicitness = $6,
+          UPDATE songs
+          SET
             updated_at = CURRENT_TIMESTAMP
           WHERE id = $1
         `, [
-          songId,
-          updateData.vegan_focus,
-          updateData.animal_category,
-          updateData.advocacy_style,
-          updateData.advocacy_issues,
-          updateData.lyrical_explicitness
+          songId
         ]);
 
         if (updateResult.rowCount > 0) {
@@ -851,11 +777,6 @@ router.put('/update-song/:id', async (req, res) => {
 
     // Handle categorization updates
     const {
-      vegan_focus,
-      animal_category,
-      advocacy_style,
-      advocacy_issues,
-      lyrical_explicitness,
       featured
     } = req.body;
 
@@ -864,31 +785,6 @@ router.put('/update-song/:id', async (req, res) => {
     const values = [songId];
     let paramCount = 1;
 
-    if (vegan_focus !== undefined) {
-      paramCount++;
-      fields.push(`vegan_focus = $${paramCount}`);
-      values.push(vegan_focus || null);
-    }
-    if (animal_category !== undefined) {
-      paramCount++;
-      fields.push(`animal_category = $${paramCount}`);
-      values.push(animal_category || null);
-    }
-    if (advocacy_style !== undefined) {
-      paramCount++;
-      fields.push(`advocacy_style = $${paramCount}`);
-      values.push(advocacy_style || null);
-    }
-    if (advocacy_issues !== undefined) {
-      paramCount++;
-      fields.push(`advocacy_issues = $${paramCount}`);
-      values.push(advocacy_issues || null);
-    }
-    if (lyrical_explicitness !== undefined) {
-      paramCount++;
-      fields.push(`lyrical_explicitness = $${paramCount}`);
-      values.push(lyrical_explicitness || null);
-    }
     if (featured !== undefined) {
       paramCount++;
       fields.push(`featured = $${paramCount}`);
@@ -1249,19 +1145,14 @@ router.get('/songs-missing-lyrics', async (req, res) => {
           string_agg(a.name, ', ') as artists,
           s.popularity,
           s.lyrics_url,
-          CASE 
-            WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 
-            THEN 1 ELSE 0 
-          END as has_vegan_focus,
           s.created_at
         FROM songs s
         LEFT JOIN song_artists sa ON s.id = sa.song_id
         LEFT JOIN artists a ON sa.artist_id = a.id
         WHERE s.lyrics_url IS NULL OR s.lyrics_url = ''
-        GROUP BY s.id, s.title, s.popularity, s.lyrics_url, s.vegan_focus, s.created_at
-        ORDER BY 
-          (CASE WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 THEN 1 ELSE 0 END) DESC,
-          s.popularity DESC NULLS LAST, 
+        GROUP BY s.id, s.title, s.popularity, s.lyrics_url, s.created_at
+        ORDER BY
+          s.popularity DESC NULLS LAST,
           s.title
         LIMIT $1 OFFSET $2
       `;
@@ -1280,18 +1171,13 @@ router.get('/songs-missing-lyrics', async (req, res) => {
           string_agg(a.name, ', ') as artists,
           s.popularity,
           NULL as lyrics_url,
-          CASE 
-            WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 
-            THEN 1 ELSE 0 
-          END as has_vegan_focus,
           s.created_at
         FROM songs s
         LEFT JOIN song_artists sa ON s.id = sa.song_id
         LEFT JOIN artists a ON sa.artist_id = a.id
-        GROUP BY s.id, s.title, s.popularity, s.vegan_focus, s.created_at
-        ORDER BY 
-          (CASE WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 THEN 1 ELSE 0 END) DESC,
-          s.popularity DESC NULLS LAST, 
+        GROUP BY s.id, s.title, s.popularity, s.created_at
+        ORDER BY
+          s.popularity DESC NULLS LAST,
           s.title
         LIMIT $1 OFFSET $2
       `;
