@@ -1,6 +1,6 @@
 // Curation-workbench service. Functions take `db` (pool or client) first for testability.
 // Mirrors services/staging.js conventions.
-const { DEFAULT_MODEL } = require('./analysis');
+const { DEFAULT_MODEL, getSongAnalysis } = require('./analysis');
 const PARK_REASONS = ['awaiting_community', 'needs_transcription', 'listened_unclear'];
 
 async function getProcessing(db, songId) {
@@ -184,6 +184,7 @@ async function getWorkbench(db, id) {
   const processing = await getProcessing(db, id);
   const analysed = (await db.query(
     `SELECT 1 FROM song_lyric_analysis WHERE song_id=$1 AND model_used=$2`, [id, DEFAULT_MODEL])).rows.length > 0;
+  const analysisObj = analysed ? await getSongAnalysis(db, id) : null;
 
   const cover = hasArt(s.album_images);
   const play_link = !!(s.spotify_url || s.bandcamp_url || s.soundcloud_url || videos.length > 0);
@@ -197,7 +198,7 @@ async function getWorkbench(db, id) {
     lyrics: lyricsRow ? lyricsRow.lyrics : null,
     lyrics_source_url: lyricsRow ? lyricsRow.source_url : null,
     translation: lyricsRow ? lyricsRow.translation : null,
-    processing, analysed,
+    processing, analysed, analysis: analysisObj,
     completeness: { lyrics: !!lyricsRow, cover, video: videos.length > 0, play_link, analysis: analysed },
   };
 }
