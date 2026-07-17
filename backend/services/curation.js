@@ -1,6 +1,6 @@
 // Curation-workbench service. Functions take `db` (pool or client) first for testability.
 // Mirrors services/staging.js conventions.
-const DEFAULT_MODEL = 'gemma4:latest';
+const { DEFAULT_MODEL } = require('./analysis');
 const PARK_REASONS = ['awaiting_community', 'needs_transcription', 'listened_unclear'];
 
 async function getProcessing(db, songId) {
