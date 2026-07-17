@@ -2,6 +2,7 @@ const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getSubgenres } = require('../utils/genreMapping');
+const analysis = require('../services/analysis');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -285,6 +286,11 @@ router.get('/search', async (req, res) => {
       valence_max,
       genres,
       parent_genres,
+      themes: fThemes,
+      targets: fTargets,
+      actions: fActions,
+      tactics: fTactics,
+      moral_frames: fMoralFrames,
       page = 1,
       limit = 20,
       sort_by = 'popularity'
@@ -407,6 +413,22 @@ router.get('/search', async (req, res) => {
       paramIndex++;
     }
 
+    // Analysis facet filters (AND logic; joins song_lyric_analysis when any is set)
+    const facet = analysis.facetFilterConditions(
+      { themes: fThemes, targets: fTargets, actions: fActions, tactics: fTactics, moral_frames: fMoralFrames },
+      paramIndex);
+    if (facet.needsJoin) {
+      whereConditions.push(...facet.clauses);
+      queryParams.push(...facet.params);
+      paramIndex += facet.params.length;
+    }
+    // facetFilterConditions() emits clauses against alias `sa` for song_lyric_analysis;
+    // this handler already uses `sa` for song_artists below, so that join is aliased
+    // `sart` in this query only to avoid a collision.
+    const facetJoin = facet.needsJoin
+      ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.DEFAULT_MODEL}'`
+      : '';
+
     // Build WHERE clause
     const whereClause = whereConditions.length > 0 ? 
       `WHERE ${whereConditions.join(' AND ')}` : '';
@@ -463,9 +485,10 @@ router.get('/search', async (req, res) => {
         ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
       FROM songs s
       LEFT JOIN albums al ON s.album_id = al.id
-      JOIN song_artists sa ON s.id = sa.song_id
-      JOIN artists a ON sa.artist_id = a.id
+      JOIN song_artists sart ON s.id = sart.song_id
+      JOIN artists a ON sart.artist_id = a.id
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
+      ${facetJoin}
       ${whereClause}
       GROUP BY s.id, al.id
       ${orderBy}
@@ -479,8 +502,9 @@ router.get('/search', async (req, res) => {
       SELECT COUNT(DISTINCT s.id) as total
       FROM songs s
       LEFT JOIN albums al ON s.album_id = al.id
-      JOIN song_artists sa ON s.id = sa.song_id
-      JOIN artists a ON sa.artist_id = a.id
+      JOIN song_artists sart ON s.id = sart.song_id
+      JOIN artists a ON sart.artist_id = a.id
+      ${facetJoin}
       ${whereClause}
     `;
     
