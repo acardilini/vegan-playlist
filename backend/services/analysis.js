@@ -117,4 +117,23 @@ async function facetTree(db) {
   return out;
 }
 
-module.exports = { DEFAULT_MODEL, EVIDENCE_DIMS, DIM_TO_TAXONOMY, taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree };
+const FACET_TO_COLUMN = { themes: 'themes', targets: 'topics', actions: 'advocacy', tactics: 'tactics', moral_frames: 'moral_frames' };
+
+function facetFilterConditions(selections, startIndex) {
+  const clauses = [], params = [];
+  let idx = startIndex;
+  for (const [facet, column] of Object.entries(FACET_TO_COLUMN)) {
+    const raw = selections && selections[facet];
+    if (!raw) continue;
+    const codes = Array.isArray(raw) ? raw : [raw];
+    for (const code of codes) {
+      if (!code) continue;
+      clauses.push(`sa.${column} @> $${idx}::jsonb`);
+      params.push(JSON.stringify([{ code }]));
+      idx++;
+    }
+  }
+  return { clauses, params, needsJoin: clauses.length > 0 };
+}
+
+module.exports = { DEFAULT_MODEL, EVIDENCE_DIMS, DIM_TO_TAXONOMY, taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree, facetFilterConditions };

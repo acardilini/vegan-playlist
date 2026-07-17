@@ -85,6 +85,25 @@ test('facetTree returns the hierarchy with distinct-song counts', async () => {
   assert.ok(farmed.groups.find(g => g.id === 'mammals').codes.find(c => c.code === 'cows'));
 });
 
+test('facetFilterConditions builds AND clauses with mapped columns', () => {
+  const { clauses, params, needsJoin } = analysis.facetFilterConditions(
+    { themes: ['killing', 'suffering'], targets: ['cows'] }, 5);
+  assert.equal(needsJoin, true);
+  assert.equal(clauses.length, 3); // two themes + one target, all ANDed
+  assert.ok(clauses.includes('sa.themes @> $5::jsonb'));
+  assert.ok(clauses.includes('sa.themes @> $6::jsonb'));
+  assert.ok(clauses.includes('sa.topics @> $7::jsonb')); // targets -> topics column
+  assert.deepEqual(JSON.parse(params[0]), [{ code: 'killing' }]);
+  assert.deepEqual(JSON.parse(params[2]), [{ code: 'cows' }]);
+});
+
+test('facetFilterConditions with no selections needs no join', () => {
+  const r = analysis.facetFilterConditions({}, 1);
+  assert.equal(r.needsJoin, false);
+  assert.deepEqual(r.clauses, []);
+  assert.deepEqual(r.params, []);
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);
