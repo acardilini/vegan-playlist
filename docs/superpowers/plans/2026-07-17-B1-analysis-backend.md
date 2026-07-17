@@ -17,11 +17,12 @@
 - **Tests:** `node:test`, run with `node --test` from `backend/`. New test file uses the **unique fixture sentinel `ZZZANL`** (existing files use ZZZTEST/ZZZCUR/ZZZVID/ZZZBK). Clean up all `ZZZANL%` rows in `after()`.
 - **Migrations:** additive/DDL SQL files in `backend/database/migrations/`, applied manually via `psql` in order. `psql` on this machine: `/c/Program Files/PostgreSQL/17/bin/psql`. Connection env is in `backend/.env` (`DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD`).
 - **DB safety:** the only schema change is dropping five columns proven empty across all rows; the migration self-guards and aborts if any is non-empty.
+- **Taxonomy is a 4-level hierarchy** (Dimension → Sub-dimension → Group → Code): each evidence code carries `sub_dimension` + `group`, and `taxonomy.hierarchy.<dim>` supplies the display label for every level (validated: every code's sub_dimension/group exists in `hierarchy`). `getSongAnalysis` enriches each returned code with `sub_dimension`/`sub_dimension_label`/`group`; `facetTree` returns the nested tree with **distinct-song** rollup counts (a song with sibling codes counts once per node). Code ids are unchanged from the pre-hierarchy codebook, so no re-coding. `taxonomy.json` was re-vendored on this branch (commit `70161d5`); Task 1's `analysis.js`/tests are unaffected.
 
 ## File Structure
 
 - **Create** `backend/data/taxonomy.json` — vendored codebook (label/definition/facet-option source).
-- **Create** `backend/services/analysis.js` — `DEFAULT_MODEL`, taxonomy loader + label lookup, `getSongAnalysis`, `facetCounts`, `facetFilterConditions`, `themeCounts`.
+- **Create** `backend/services/analysis.js` — `DEFAULT_MODEL`, taxonomy loader + label/sub-dimension lookup + `hierarchy`, `getSongAnalysis`, `facetTree`, `facetFilterConditions`, `themeCounts`.
 - **Create** `backend/routes/analysis.js` — public router: `GET /song/:id`, `GET /facets`.
 - **Create** `backend/database/migrations/007_drop_mock_categorisation.sql` — self-guarding DROP COLUMN.
 - **Create** `backend/test/analysis.test.js` — service unit tests (sentinel `ZZZANL`).
@@ -185,8 +186,11 @@ EOF
 
 **Interfaces:**
 - Produces: `getSongAnalysis(db, songId)` → `null` if the song has no `gemma4:latest` row, else an object:
-  `{ perspective, intensity, clarity, focus_amount, lyrical_tone, target_audience, emotions: string[], explanation, themes: [{code,label,evidence}], targets: [...], actions: [...], tactics: [...], moral_frames: [...] }`.
-  Each dimension array preserves DB order; `label` is added via `label()`. `emotions` defaults to `[]`.
+  `{ perspective, intensity, clarity, focus_amount, lyrical_tone, target_audience, emotions: string[], explanation, themes: [{code,label,evidence,sub_dimension,sub_dimension_label,group}], targets: [...], actions: [...], tactics: [...], moral_frames: [...] }`.
+  Each dimension array preserves DB order; `label`, `sub_dimension`, `sub_dimension_label`, `group` are
+  added from the taxonomy (so the frontend can colour chips + build the inline mini-legend). `emotions`
+  defaults to `[]`.
+- Also produces (helpers added to `analysis.js`, exported): `SUBDIM` maps + `subDimensionLabel(dbCol, subId)`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -219,9 +223,14 @@ test('getSongAnalysis returns the full coding with display labels', async () => 
   assert.equal(a.themes[0].code, 'killing');
   assert.equal(a.themes[0].label, 'Killing');
   assert.equal(a.themes[0].evidence, 'ground beef');
+  // enriched from the taxonomy hierarchy
+  assert.equal(a.themes[0].sub_dimension, 'cruelty_suffering');
+  assert.equal(a.themes[0].sub_dimension_label, 'Bodily Harm, Confinement & Suffering');
+  assert.equal(a.themes[0].group, 'violence');
   // topics column surfaces as "targets"
   assert.equal(a.targets[0].code, 'cows');
   assert.equal(a.targets[0].label, 'Cows');
+  assert.equal(a.targets[0].sub_dimension, 'farmed_domesticated');
   assert.deepEqual(a.actions, []);
 });
 
@@ -248,10 +257,26 @@ Expected: FAIL — `analysis.getSongAnalysis is not a function`.
 
 Add to `backend/services/analysis.js` (before `module.exports`, and add it to the exports):
 ```javascript
+// Per-DB-column code -> {sub_dimension, group} maps, and sub-dimension label lookup from `hierarchy`.
+const SUBDIM = {};
+for (const [dbCol, taxKey] of Object.entries(DIM_TO_TAXONOMY)) {
+  SUBDIM[dbCol] = new Map((taxonomy[taxKey] || []).map(i => [i.id, { sub_dimension: i.sub_dimension, group: i.group }]));
+}
+function subDimensionLabel(dbCol, subId) {
+  const h = taxonomy.hierarchy && taxonomy.hierarchy[DIM_TO_TAXONOMY[dbCol]];
+  return (h && h.sub_dimensions[subId] && h.sub_dimensions[subId].label) || titleCase(subId || '');
+}
+
 function mapDim(dimension, arr) {
-  return (Array.isArray(arr) ? arr : []).map(row => ({
-    code: row.code, label: label(dimension, row.code), evidence: row.evidence,
-  }));
+  return (Array.isArray(arr) ? arr : []).map(row => {
+    const sd = SUBDIM[dimension].get(row.code) || {};
+    return {
+      code: row.code, label: label(dimension, row.code), evidence: row.evidence,
+      sub_dimension: sd.sub_dimension || null,
+      sub_dimension_label: sd.sub_dimension ? subDimensionLabel(dimension, sd.sub_dimension) : null,
+      group: sd.group || null,
+    };
+  });
 }
 
 async function getSongAnalysis(db, songId) {
@@ -274,7 +299,7 @@ async function getSongAnalysis(db, songId) {
   };
 }
 ```
-Update the `module.exports` line to include `getSongAnalysis`.
+Update the `module.exports` line to include `getSongAnalysis`, `subDimensionLabel`, and `SUBDIM`.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -294,63 +319,101 @@ EOF
 
 ---
 
-### Task 4: `facetCounts(db)` — per-code live-song counts
+### Task 4: `facetTree(db)` — hierarchical facets with distinct-song counts
 
 **Files:**
 - Modify: `backend/services/analysis.js`
 - Test: `backend/test/analysis.test.js`
 
 **Interfaces:**
-- Produces: `facetCounts(db)` → object keyed by public dimension name (`themes`,`targets`,`actions`,`tactics`,`moral_frames`), each an array `[{ code, label, count }]` sorted by `count` desc then `label`. `count` = number of `status='included' AND published=true` songs whose gemma4 row contains that code. Only codes with count > 0 are included.
+- Produces: `facetTree(db)` → object keyed by public dimension name (`themes`,`targets`,`actions`,`tactics`,`moral_frames`). Each value: `{ label, count, sub_dimensions: [{ id, label, count, groups: [{ id, label, count, codes: [{ code, label, count }] }] }] }`, ordered exactly as `taxonomy.hierarchy[<dim>]`. Every `count` is a **distinct live-song** count (`status='included' AND published=true`) — a song with two sibling codes counts once at the group/sub-dimension/dimension level. Empty nodes (0 live songs) are omitted: a code with count 0 is dropped, a group with no surviving codes is dropped, a sub-dimension with no surviving groups is dropped.
+- Uses `PUBLIC_DIMS` (DB column → public name) and `SUBDIM` + `taxonomy.hierarchy` from Tasks 1/3.
 
 - [ ] **Step 1: Write the failing test**
 
 Add to `backend/test/analysis.test.js`:
 ```javascript
-test('facetCounts counts coded live songs per code', async () => {
-  const id = await mkCodedSong(); // themes:[killing], targets:[cows], live
-  const f = await analysis.facetCounts(pool);
-  const killing = f.themes.find(c => c.code === 'killing');
-  assert.ok(killing && killing.count >= 1, 'killing theme counted');
+test('facetTree returns the hierarchy with distinct-song counts', async () => {
+  await mkCodedSong(); // themes:[killing] (cruelty_suffering/violence), targets:[cows] (farmed_domesticated/mammals)
+  const t = await analysis.facetTree(pool);
+  assert.equal(t.themes.label, 'Core Sentiments & Themes');
+  assert.ok(t.themes.count >= 1);
+  const cruelty = t.themes.sub_dimensions.find(s => s.id === 'cruelty_suffering');
+  assert.ok(cruelty && cruelty.count >= 1, 'cruelty_suffering sub-dim present');
+  assert.equal(cruelty.label, 'Bodily Harm, Confinement & Suffering');
+  const violence = cruelty.groups.find(g => g.id === 'violence');
+  assert.ok(violence, 'violence group present');
+  const killing = violence.codes.find(c => c.code === 'killing');
+  assert.ok(killing && killing.count >= 1);
   assert.equal(killing.label, 'Killing');
-  const cows = f.targets.find(c => c.code === 'cows');
-  assert.ok(cows && cows.count >= 1, 'cows target counted');
-  // shape: only positive counts, sorted desc
-  assert.ok(f.themes.every(c => c.count > 0));
+  // empty nodes omitted
+  assert.ok(t.themes.sub_dimensions.every(s => s.groups.length > 0));
+  assert.ok(t.themes.sub_dimensions.every(s => s.groups.every(g => g.codes.length > 0)));
+  // targets tree too
+  const farmed = t.targets.sub_dimensions.find(s => s.id === 'farmed_domesticated');
+  assert.ok(farmed.groups.find(g => g.id === 'mammals').codes.find(c => c.code === 'cows'));
 });
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `node --test test/analysis.test.js`
-Expected: FAIL — `analysis.facetCounts is not a function`.
+Expected: FAIL — `analysis.facetTree is not a function`.
 
-- [ ] **Step 3: Implement `facetCounts`**
+- [ ] **Step 3: Implement `facetTree`**
 
-Add to `backend/services/analysis.js`. One query per evidence dimension, unnesting the JSONB `code` values over live+coded songs:
+Add to `backend/services/analysis.js` (the `PUBLIC_DIMS` map is defined here if not already):
 ```javascript
 const PUBLIC_DIMS = { themes: 'themes', topics: 'targets', advocacy: 'actions', tactics: 'tactics', moral_frames: 'moral_frames' };
 
-async function facetCounts(db) {
+async function facetTree(db) {
   const out = {};
   for (const [col, pub] of Object.entries(PUBLIC_DIMS)) {
-    const r = await db.query(
-      `SELECT elem->>'code' AS code, COUNT(DISTINCT s.id)::int AS count
+    // One query: distinct (song_id, code) pairs over live+coded songs for this dimension.
+    // ${col} comes from the controlled PUBLIC_DIMS whitelist — never user input.
+    const rows = (await db.query(
+      `SELECT DISTINCT s.id AS song_id, elem->>'code' AS code
        FROM songs s
        JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = $1
        CROSS JOIN LATERAL jsonb_array_elements(sa.${col}) AS elem
-       WHERE s.status = 'included' AND s.published = true
-       GROUP BY elem->>'code'
-       HAVING COUNT(DISTINCT s.id) > 0`,
-      [DEFAULT_MODEL]);
-    out[pub] = r.rows
-      .map(row => ({ code: row.code, label: label(col, row.code), count: row.count }))
-      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+       WHERE s.status = 'included' AND s.published = true`,
+      [DEFAULT_MODEL])).rows;
+
+    // Distinct-song sets at code / group / sub-dimension / dimension level.
+    const codeSongs = new Map(), groupSongs = new Map(), subSongs = new Map(), dimSongs = new Set();
+    const bump = (m, k, songId) => { let s = m.get(k); if (!s) { s = new Set(); m.set(k, s); } s.add(songId); };
+    for (const { song_id, code } of rows) {
+      const sd = SUBDIM[col].get(code);
+      if (!sd) continue; // code absent from taxonomy — skip defensively
+      bump(codeSongs, code, song_id);
+      bump(groupSongs, `${sd.sub_dimension}/${sd.group}`, song_id);
+      bump(subSongs, sd.sub_dimension, song_id);
+      dimSongs.add(song_id);
+    }
+
+    const taxKey = DIM_TO_TAXONOMY[col];
+    const codesOf = taxonomy[taxKey] || [];
+    const h = taxonomy.hierarchy[taxKey];
+    const subDimensions = [];
+    for (const [subId, sub] of Object.entries(h.sub_dimensions)) {
+      const groups = [];
+      for (const [groupId, groupLabel] of Object.entries(sub.groups)) {
+        const codes = codesOf
+          .filter(i => i.sub_dimension === subId && i.group === groupId)
+          .map(i => ({ code: i.id, label: i.label, count: (codeSongs.get(i.id) || new Set()).size }))
+          .filter(c => c.count > 0);
+        if (codes.length === 0) continue;
+        groups.push({ id: groupId, label: groupLabel, count: (groupSongs.get(`${subId}/${groupId}`) || new Set()).size, codes });
+      }
+      if (groups.length === 0) continue;
+      subDimensions.push({ id: subId, label: sub.label, count: (subSongs.get(subId) || new Set()).size, groups });
+    }
+    out[pub] = { label: h.label, count: dimSongs.size, sub_dimensions: subDimensions };
   }
   return out;
 }
 ```
-`${col}` is interpolated from a controlled whitelist (the `PUBLIC_DIMS` keys), never user input — safe. Add `facetCounts` to `module.exports`.
+Add `facetTree` and `PUBLIC_DIMS` to `module.exports`.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -362,7 +425,7 @@ Expected: PASS.
 ```bash
 git add backend/services/analysis.js backend/test/analysis.test.js
 git commit -F - <<'EOF'
-feat(B1): facetCounts per-code live-song counts for browse facets
+feat(B1): facetTree hierarchical facets with distinct-song rollup counts
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 EOF
@@ -525,8 +588,8 @@ EOF
 - Modify: `backend/test/lyrics_privacy.test.js:8`
 
 **Interfaces:**
-- Consumes: `analysis.getSongAnalysis`, `analysis.facetCounts` (Tasks 3–4).
-- Produces HTTP: `GET /api/analysis/song/:id` → the analysis object or `404 {error}`; `GET /api/analysis/facets` → `facetCounts` result.
+- Consumes: `analysis.getSongAnalysis`, `analysis.facetTree` (Tasks 3–4).
+- Produces HTTP: `GET /api/analysis/song/:id` → the analysis object or `404 {error}`; `GET /api/analysis/facets` → `facetTree` result (the hierarchical tree).
 
 - [ ] **Step 1: Add the new public route to the privacy guardrail (failing test first)**
 
@@ -554,7 +617,7 @@ const analysis = require('../services/analysis');
 
 router.get('/facets', async (req, res) => {
   try {
-    res.json(await analysis.facetCounts(pool));
+    res.json(await analysis.facetTree(pool));
   } catch (e) {
     console.error('facets error:', e);
     res.status(500).json({ error: 'Failed to load facets' });
@@ -595,7 +658,7 @@ curl -s localhost:5000/api/analysis/facets | head -c 300
 curl -s localhost:5000/api/analysis/song/30 | head -c 300
 curl -s -o /dev/null -w "%{http_code}\n" localhost:5000/api/analysis/song/999999   # expect 404
 ```
-Expected: facets returns a JSON object with `themes`/`targets` arrays; song/30 returns the coding; a non-existent id returns `404`.
+Expected: facets returns a JSON object with `themes`/`targets` keys, each `{label, count, sub_dimensions:[…]}` (the hierarchical tree); song/30 returns the coding with `sub_dimension`/`sub_dimension_label` on each code; a non-existent id returns `404`.
 
 - [ ] **Step 7: Commit**
 
@@ -1096,6 +1159,6 @@ Expected: `0` (test `after()` hooks cleaned up).
 
 **Placeholder scan:** removal Tasks 11–12 give line anchors + the exact snippets to delete and, where a query's basis changes (similar-songs, data-quality sort), the replacement predicate — no "handle appropriately" left open. Route endpoints are smoke-verified (the repo has no supertest harness; this matches the A1–A4 convention of service unit tests + headless curl).
 
-**Type consistency:** `facetFilterConditions` public facet names (`themes/targets/actions/tactics/moral_frames`) match the `/search` params (Task 9) and `facetCounts` output keys (Task 4). `getSongAnalysis` dimension keys (`themes/targets/actions/tactics/moral_frames`) match what B2's `LyricalAnalysis` will consume. `DEFAULT_MODEL` is defined once (Task 1) and imported by curation.js (Task 2), spotify.js (Task 9), analytics.js (Task 10).
+**Type consistency:** `facetFilterConditions` public facet names (`themes/targets/actions/tactics/moral_frames`) match the `/search` params (Task 9) and `facetTree` output keys (Task 4). `getSongAnalysis` dimension keys (`themes/targets/actions/tactics/moral_frames`) — each code carrying `code/label/evidence/sub_dimension/sub_dimension_label/group` — match what B2's `LyricalAnalysis` will consume. `PUBLIC_DIMS`/`SUBDIM`/`DIM_TO_TAXONOMY` are the single DB-column↔taxonomy mapping used by Tasks 3, 4, 5. `DEFAULT_MODEL` is defined once (Task 1) and imported by curation.js (Task 2), spotify.js (Task 9), analytics.js (Task 10).
 
 **Ordering safety:** code references are removed (Tasks 10–12) **before** the columns are dropped (Task 13), so no endpoint queries a dropped column. `/categorization-options` is emptied, not deleted, so no current caller 404s before B2/B3.
