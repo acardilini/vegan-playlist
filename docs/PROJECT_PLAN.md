@@ -247,9 +247,24 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     (NOT the public `DataDashboard.jsx`) + `/completion-stats` route + `DashboardStub`. _Executed via
     subagent-driven development (per-task + opus whole-branch reviews, all clean). Smoke ✅: backend
     45/45; build+eslint clean; live headless + curator manual (13/13)._
-- ☐ **B — Analysis integration.** Delete the mocked 5-array categorisation; public song page +
-  faceted browse read `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only
-  coding + lights up the "Needs analysis" queue. See `docs/LYRICS_VECTOR_ANALYSIS_INTEGRATION.md`.
+- ◐ **B — Analysis integration** _(in progress — brainstormed + spec'd 2026-07-17; B1 plan written,
+  executing)._ Replace the mocked 5-array categorisation with the real `song_lyric_analysis` coding +
+  `vector_space.json` across five display-only surfaces: public song page ("Option C" layout), full
+  faceted browse (all-AND, coded-only), a new **Explore** vector-space map page (2D+3D, spotlight
+  filter), the public DataDashboard theme chart (`vegan-themes` repointed), and the admin workbench
+  read-only Analysis panel + "Needs-analysis" queue. `gemma4:latest` only; `taxonomy.json` vendored in;
+  migration 007 drops the five empty mock columns. Spec:
+  [`superpowers/specs/2026-07-17-B-analysis-integration-design.md`](./superpowers/specs/2026-07-17-B-analysis-integration-design.md).
+  Plans (one spec → four builds, like A1–A4):
+  - ◐ **B1 — Backend & data foundation** _(plan written 2026-07-17, executing)._ `services/analysis.js`
+    (taxonomy loader, `getSongAnalysis`, `facetCounts`, `facetFilterConditions` all-AND, `themeCounts`);
+    public `/api/analysis` router; `/search` facet filtering; `vegan-themes` repoint; `getWorkbench` full
+    analysis; migration 007 + mock-reference removal from spotify/analytics/admin. Plan:
+    [`superpowers/plans/2026-07-17-B1-analysis-backend.md`](./superpowers/plans/2026-07-17-B1-analysis-backend.md).
+  - ☐ **B2 — Song page + workbench panel + mock-UI deletion.** `LyricalAnalysis` component (Option C);
+    song-page + admin read-only panel; DataDashboard theme chart; delete the mock categorisation UI.
+  - ☐ **B3 — Faceted browse.** Full facet groups, all-AND, coded-only note, per-code counts.
+  - ☐ **B4 — Explore vector map.** 2D + 3D scatter, space/colour toggles, spotlight filter, hover/click.
 - ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
   To-be-processed / spam. Reuses `staging.addSubmissionAsPending`.
 - ☐ **D — YouTube assist.** Search YouTube from the workbench, present candidates, pick best.

@@ -10,24 +10,23 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**A4 — Admin Dashboard landing + cleanup (2026-07-17).** Replaced the
-  `/admin` `DashboardStub` with the real Dashboard: **"Needs your attention"** action tiles (To be
-  processed / Needs lyrics / Needs cover / Needs video / To finalise — each links to the matching
-  Songs queue; **Inbox** tile disabled, reserved for sub-project C), a compact **"Catalogue health"**
-  line (total · live · to-finalise · pending · rejected), a **"Recent activity"** feed (last 10 edited
-  songs → their workbench), and **Add-a-song** (reuses `AddSongPanel`). Two new read-only backend
-  endpoints: `GET /api/admin/curation/catalogue-stats` + `/curation/recent`. Deleted the old **admin**
-  `DataCompletionDashboard` + its `/completion-stats` route + its exclusive `App.css` (shared
-  `.stat-card`/`.action-buttons`/`.stat-value` preserved) + `DashboardStub`. **Sub-project A
-  (Curation Workbench & lifecycle) is now complete (A1–A4).** Executed via subagent-driven development
-  (per-task spec+quality reviews + an opus whole-branch review, all clean); backend **45/45**;
-  build+eslint clean; **live headless smoke + curator manual smoke (13/13) both passed**. Branch
-  `session-A4-dashboard` merged no-ff (`77ea3b5`) and pushed._
-- **Next session:** **Sub-project B — Analysis integration** (its own spec→plan→build), or the
-  curator's pick among B–F. B: delete the mocked 5-array categorisation; public song page + faceted
-  browse read `song_lyric_analysis` (+ `taxonomy.json`); workbench shows read-only coding + lights up
-  the **Needs-analysis** queue. See [`docs/LYRICS_VECTOR_ANALYSIS_INTEGRATION.md`](./LYRICS_VECTOR_ANALYSIS_INTEGRATION.md).
-- **Last updated:** 2026-07-17 _(A4 done, merged to `main` + pushed; sub-project A complete; B–F next)._
+- **Current session:** _**Sub-project B — Analysis Integration: brainstorm + spec + B1 plan
+  (2026-07-17).** Brainstormed the full B design with the curator via the visual companion (song-page
+  analysis layout, faceted browse, vector-space map) + terminal scope decisions. Wrote & committed the
+  design spec
+  ([`specs/2026-07-17-B-analysis-integration-design.md`](./superpowers/specs/2026-07-17-B-analysis-integration-design.md),
+  `139a1cc`) and the first implementation plan
+  ([`plans/2026-07-17-B1-analysis-backend.md`](./superpowers/plans/2026-07-17-B1-analysis-backend.md),
+  `ae2f826`). **No production code changed yet** (planning only). Verified the shared DB holds the real
+  data: `song_lyric_analysis` 685 songs (`gemma4:latest`) with GIN indexes on all 5 JSONB dims,
+  `song_embeddings` 1,748, `frontend/public/vector_space.json` 658 songs; `taxonomy.json` codebook
+  located (to be vendored in B1). About to execute **B1** via subagent-driven development._
+- **Next session:** **Execute B1 — Analysis backend & data foundation** (14 TDD tasks: new
+  `services/analysis.js`, public `/api/analysis` router, `/search` facet filtering, analytics
+  `vegan-themes` repoint, `getWorkbench` full analysis, migration 007 dropping the five empty mock
+  columns). Then **B2** (song-page display + workbench panel + mock-UI deletion), **B3** (faceted
+  browse), **B4** (Explore vector map).
+- **Last updated:** 2026-07-17 _(B brainstormed; spec + B1 plan committed; starting B1 build)._
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -130,6 +129,24 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-17 — Sub-project B (Analysis Integration) design decided (brainstorm + visual companion).**
+  Replace the mocked, always-empty 5-array categorisation (`vegan_focus`/`animal_category`/`advocacy_style`/
+  `advocacy_issues`/`lyrical_explicitness` — verified 0 non-empty rows across all 1,821 songs) with the
+  real `song_lyric_analysis` coding (**`gemma4:latest` only**; 685 songs) + `vector_space.json`, across
+  five **display-only** surfaces. Key choices: **song page** = "Option C" (compact attributes card + all
+  chips per non-empty dimension; explanation + one evidence quote per code behind a "Show evidence"
+  toggle; emoji-free; short evidence fragments shown publicly — distinct from the local-only full
+  `song_lyrics`); **faceted browse** = full (all 5 dimensions + tone/intensity), **always-AND** everywhere
+  (within and across groups), only-coded with a visible note; **vector map** = its own top-nav "Explore"
+  page, 2D + 3D, space toggle (semantic/thematic/acoustic), colour-by dominant-theme default, theme/animal
+  **spotlight filter**; **mock removal** = UI + drop the 5 DB columns (migration 007); **`analytics/vegan-themes`
+  repointed** at the real theme aggregation (feeds the public DataDashboard). `taxonomy.json` codebook
+  **vendored into the repo** as the label/definition/facet-option source. One spec → four plans: **B1**
+  (backend/data), **B2** (song page + workbench panel + mock-UI deletion), **B3** (faceted browse), **B4**
+  (Explore map). YAGNI out of scope: the `gemini-3.5-flash` model + any switcher, the monthly regeneration
+  pipeline, and the `songs.rating` field. Spec:
+  [`specs/2026-07-17-B-analysis-integration-design.md`](./superpowers/specs/2026-07-17-B-analysis-integration-design.md).
 
 - **2026-07-17 — A4 dashboard = "blend of both" (action tiles + compact health), recent activity
   from `updated_at`, deletions done surgically (curator-approved at brainstorm + one plan erratum
@@ -470,6 +487,19 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-17 (B — brainstorm + spec + B1 plan; planning only, no smoke test)** — Started sub-project B
+  (Analysis Integration). Verified the shared DB holds the real analysis data: `song_lyric_analysis` 685
+  songs on `gemma4:latest` (508 gemini, unused) with GIN indexes on all five JSONB dimensions;
+  `song_embeddings` 1,748; `frontend/public/vector_space.json` 658 songs. Located + read the
+  `taxonomy.json` codebook (five evidence dimensions themes/targets/actions/tactics/moral-frames as
+  `{id,label,definition}` + scalar categories) at
+  `C:\Users\Owner\.gemini\antigravity\scratch\vegan-playlist-analysis\data\taxonomy.json`. Brainstormed
+  the design with the curator using the **visual companion** (three song-page layouts → "Option C"
+  expanded/emoji-free; browse facet scope → full/all-AND with a coded-only note; vector-map concept → own
+  "Explore" page, 2D+3D, colour-by theme, spotlight filter). Confirmed the five mock categorisation columns
+  are empty across all 1,821 songs (safe to drop). Wrote & committed the design spec (`139a1cc`) and the
+  **B1** implementation plan (`ae2f826`, 14 TDD tasks). No production code changed. **Next:** execute B1
+  via subagent-driven development.
 - **2026-07-17 (A4 — Admin Dashboard landing + cleanup; closes sub-project A)** — Brainstormed →
   spec ([`specs/2026-07-16-admin-dashboard-A4-design.md`](./superpowers/specs/2026-07-16-admin-dashboard-A4-design.md))
   → plan ([`plans/2026-07-16-admin-dashboard-A4.md`](./superpowers/plans/2026-07-16-admin-dashboard-A4.md))
