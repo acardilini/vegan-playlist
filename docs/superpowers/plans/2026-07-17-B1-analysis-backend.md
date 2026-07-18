@@ -1065,6 +1065,13 @@ BEGIN
   END IF;
 END $$;
 
+-- The legacy view songs_with_manual_categories (from manual_additions_schema.sql) COALESCEs
+-- these five columns with the manual_categorizations override table. That whole
+-- manual-categorisation design is abandoned (manual_categorizations has 0 rows; the view has
+-- 0 dependents and is referenced nowhere in app code — verified). It depends on the columns,
+-- so drop it first or the ALTERs fail with "cannot drop column ... because other objects depend".
+DROP VIEW IF EXISTS songs_with_manual_categories;
+
 ALTER TABLE songs DROP COLUMN IF EXISTS vegan_focus;
 ALTER TABLE songs DROP COLUMN IF EXISTS animal_category;
 ALTER TABLE songs DROP COLUMN IF EXISTS advocacy_style;

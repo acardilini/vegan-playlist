@@ -117,6 +117,8 @@ surfaces the un-coded songs to the curator. B does not add coding UI.
 - **Workbench:** extend `curation.getWorkbench` to return the full analysis object (not just the
   `analysed` boolean) for the read-only panel.
 - **Migration 007 — drop mock arrays:** verify all five columns are empty across every row, then
+  `DROP VIEW IF EXISTS songs_with_manual_categories` (a dead legacy view that COALESCEs these
+  columns with the 0-row `manual_categorizations` table — referenced nowhere in app code) and
   `DROP COLUMN` `vegan_focus`, `animal_category`, `advocacy_style`, `advocacy_issues`,
   `lyrical_explicitness` from `songs`. Remove their references in `admin.js` (manual-song create,
   edit, bulk-categorisation, `categorization-options`), `spotify.js` (public SELECTs), and
