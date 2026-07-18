@@ -65,20 +65,6 @@ function ArtistDetailPage() {
     navigate(`/song/${songId}`);
   };
 
-  const CategoryBadges = ({ categories, colorClass }) => {
-    if (!categories || categories.length === 0) return null;
-
-    return (
-      <div className="category-badges">
-        {categories.map((category, index) => (
-          <span key={index} className={`category-badge ${colorClass}`}>
-            {category}
-          </span>
-        ))}
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="artist-detail-container loading">
@@ -256,11 +242,6 @@ function ArtistDetailPage() {
 
                   <div className="song-info">
                     <h3 className="song-title">{song.title}</h3>
-
-                    <div className="song-categories">
-                      <CategoryBadges categories={song.vegan_focus} colorClass="vegan-focus" />
-                      <CategoryBadges categories={song.advocacy_style} colorClass="advocacy-style" />
-                    </div>
                   </div>
 
                   <div className="song-stats">

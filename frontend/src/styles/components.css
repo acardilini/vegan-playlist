@@ -1235,43 +1235,6 @@
   color: var(--text-muted);
 }
 
-/* Advocacy analysis badges */
-.categories-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.category-group h3 {
-  font: var(--text-label);
-  color: var(--text-primary);
-  margin: 0 0 var(--space-2);
-}
-
-.category-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.category-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 14px;
-  border-radius: var(--radius-pill);
-  font: var(--text-meta);
-  letter-spacing: 0.02em;
-  background: var(--bg-surface-raised);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-hairline);
-}
-
-.category-badge.vegan-focus {
-  background: var(--accent-moss-40);
-  color: var(--accent-moss-80);
-  border-color: transparent;
-}
-
 .review-content {
   background: var(--bg-surface);
   border: 1px solid var(--border-hairline);
@@ -1357,20 +1320,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.similarity-reasons {
-  display: flex;
-  gap: var(--space-1);
-  flex-wrap: wrap;
-}
-
-.similarity-tag {
-  font: var(--text-meta);
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-moss-40);
-  color: var(--accent-moss-80);
 }
 
 /* ---------------------------------------------------------------- */

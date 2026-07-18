@@ -210,20 +210,6 @@ function SearchSection({ initialSearchQuery = '' }) {
                 {Object.values(searchResults.filters_applied || {}).some(isActiveFilterValue) && (
                   <div className="applied-filters">
                     <span>Filters applied:</span>
-                    {searchResults.filters_applied.vegan_focus && searchResults.filters_applied.vegan_focus.length > 0 && (
-                      <span className="applied-filter">
-                        Focus: {Array.isArray(searchResults.filters_applied.vegan_focus)
-                          ? searchResults.filters_applied.vegan_focus.join(', ')
-                          : searchResults.filters_applied.vegan_focus}
-                      </span>
-                    )}
-                    {searchResults.filters_applied.advocacy_style && searchResults.filters_applied.advocacy_style.length > 0 && (
-                      <span className="applied-filter">
-                        Style: {Array.isArray(searchResults.filters_applied.advocacy_style)
-                          ? searchResults.filters_applied.advocacy_style.join(', ')
-                          : searchResults.filters_applied.advocacy_style}
-                      </span>
-                    )}
                     {searchResults.filters_applied.genres && searchResults.filters_applied.genres.length > 0 && (
                       <span className="applied-filter">
                         Genre: {Array.isArray(searchResults.filters_applied.genres)

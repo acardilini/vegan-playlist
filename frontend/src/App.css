@@ -521,23 +521,6 @@ main {
   margin-bottom: var(--spacing-sm);
 }
 
-.category-badge {
-  font-size: var(--font-size-xs);
-  padding: 2px 6px;
-  border-radius: var(--border-radius-sm);
-  font-weight: bold;
-}
-
-.category-badge.vegan-focus {
-  background: oklch(0.72 0.15 40 / 0.2);
-  color: var(--color-accent-primary);
-}
-
-.category-badge.advocacy-style {
-  background: rgba(255, 215, 0, 0.2);
-  color: #FFD700;
-}
-
 .pagination {
   text-align: center;
   padding: var(--spacing-lg);
