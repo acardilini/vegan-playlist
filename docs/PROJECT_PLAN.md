@@ -256,10 +256,15 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
   migration 007 drops the five empty mock columns. Spec:
   [`superpowers/specs/2026-07-17-B-analysis-integration-design.md`](./superpowers/specs/2026-07-17-B-analysis-integration-design.md).
   Plans (one spec → four builds, like A1–A4):
-  - ◐ **B1 — Backend & data foundation** _(plan written 2026-07-17, executing)._ `services/analysis.js`
-    (taxonomy loader, `getSongAnalysis`, `facetCounts`, `facetFilterConditions` all-AND, `themeCounts`);
-    public `/api/analysis` router; `/search` facet filtering; `vegan-themes` repoint; `getWorkbench` full
-    analysis; migration 007 + mock-reference removal from spotify/analytics/admin. Plan:
+  - ☑ **B1 — Backend & data foundation** _(done 2026-07-18, branch `session-B1-analysis-backend` merged
+    to `main` — merge `4d5d6ee`, pushed)._ `services/analysis.js` (4-level taxonomy loader,
+    `getSongAnalysis` w/ sub-dimension enrichment, `facetTree` hierarchical facets w/ distinct-song rollup
+    counts, `facetFilterConditions` all-AND, `themeCounts`); public `/api/analysis` router; `/search` facet
+    filtering; `vegan-themes` repoint; `getWorkbench` full analysis; migration 007 dropped the 5 mock columns
+    + a dead dependent view; mock-reference removal from spotify/analytics/admin + export/audit scripts.
+    _Executed via subagent-driven development (per-task + opus whole-branch reviews, all clean). Smoke ✅:
+    backend 54/54; live headless smoke (facet tree, sub-dimension analysis, /search AND-narrowing, real
+    vegan-themes, workbench analysis)._ Plan:
     [`superpowers/plans/2026-07-17-B1-analysis-backend.md`](./superpowers/plans/2026-07-17-B1-analysis-backend.md).
   - ☐ **B2 — Song page + workbench panel + mock-UI deletion.** `LyricalAnalysis` component (Option C);
     song-page + admin read-only panel; DataDashboard theme chart; delete the mock categorisation UI.
