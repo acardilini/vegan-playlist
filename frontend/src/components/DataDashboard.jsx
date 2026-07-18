@@ -39,8 +39,6 @@ function DataDashboard() {
   const [filters, setFilters] = useState({
     genre: '',
     parent_genre: '',
-    vegan_focus: '',
-    advocacy_style: '',
     min_year: '',
     max_year: ''
   });
@@ -132,7 +130,7 @@ function DataDashboard() {
   };
 
   const veganThemesChartData = {
-    labels: (veganThemes || []).map(item => item.theme),
+    labels: (veganThemes || []).map(item => item.label || item.theme),
     datasets: [
       {
         label: 'Songs with Theme',
@@ -170,8 +168,6 @@ function DataDashboard() {
     setFilters({
       genre: '',
       parent_genre: '',
-      vegan_focus: '',
-      advocacy_style: '',
       min_year: '',
       max_year: ''
     });
@@ -249,21 +245,6 @@ function DataDashboard() {
               <option value="">All parent genres</option>
               {filterOptions.parent_genres?.map(genre => (
                 <option key={genre} value={genre}>{genre}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="field">
-            <label className="field-label" htmlFor="dash-theme">Vegan theme</label>
-            <select
-              id="dash-theme"
-              className="select"
-              value={filters.vegan_focus}
-              onChange={(e) => handleFilterChange('vegan_focus', e.target.value)}
-            >
-              <option value="">All themes</option>
-              {filterOptions.vegan_themes?.map(theme => (
-                <option key={theme} value={theme}>{theme}</option>
               ))}
             </select>
           </div>
