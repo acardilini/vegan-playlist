@@ -35,11 +35,29 @@ function subDimensionLabel(dbCol, subId) {
   return (h && h.sub_dimensions[subId] && h.sub_dimensions[subId].label) || titleCase(subId || '');
 }
 
+// Per-DB-column code -> definition map (for chip tooltips).
+const DEFS = {};
+for (const [dbCol, taxKey] of Object.entries(DIM_TO_TAXONOMY)) {
+  DEFS[dbCol] = new Map((taxonomy[taxKey] || []).map(i => [i.id, i.definition || '']));
+}
+
+// Scalar category label lookup. Some taxonomy scalar lists are [{id,label}],
+// others are plain strings; fall back to Title Case in both misses.
+function scalarLabel(listKey, value) {
+  if (!value) return null;
+  for (const item of (taxonomy[listKey] || [])) {
+    if (typeof item === 'string') { if (item === value) return titleCase(value); }
+    else if (item && item.id === value) return item.label || titleCase(value);
+  }
+  return titleCase(value);
+}
+
 function mapDim(dimension, arr) {
   return (Array.isArray(arr) ? arr : []).map(row => {
     const sd = SUBDIM[dimension].get(row.code) || {};
     return {
       code: row.code, label: label(dimension, row.code), evidence: row.evidence,
+      definition: (DEFS[dimension].get(row.code)) || '',
       sub_dimension: sd.sub_dimension || null,
       sub_dimension_label: sd.sub_dimension ? subDimensionLabel(dimension, sd.sub_dimension) : null,
       group: sd.group || null,
@@ -55,6 +73,13 @@ async function getSongAnalysis(db, songId) {
     [songId, DEFAULT_MODEL]);
   if (r.rows.length === 0) return null;
   const a = r.rows[0];
+  const attributes = [
+    ['Perspective', scalarLabel('perspectives', a.perspective)],
+    ['Tone', scalarLabel('lyrical_tones', a.lyrical_tone)],
+    ['Intensity', scalarLabel('intensity_levels', a.intensity)],
+    ['Clarity', scalarLabel('clarity_levels', a.clarity)],
+    ['Focus', scalarLabel('focus_amounts', a.focus_amount)],
+  ].filter(([, v]) => v).map(([label, value]) => ({ label, value }));
   return {
     perspective: a.perspective, intensity: a.intensity, clarity: a.clarity,
     focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone, target_audience: a.target_audience,
@@ -64,6 +89,7 @@ async function getSongAnalysis(db, songId) {
     actions: mapDim('advocacy', a.advocacy),
     tactics: mapDim('tactics', a.tactics),
     moral_frames: mapDim('moral_frames', a.moral_frames),
+    attributes,
   };
 }
 
