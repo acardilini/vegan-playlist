@@ -21,11 +21,6 @@ async function exportAllSongsData() {
         s.date_added,
         s.genre,
         s.parent_genre,
-        s.vegan_focus,
-        s.animal_category,
-        s.advocacy_style,
-        s.advocacy_issues,
-        s.lyrical_explicitness,
         s.energy,
         s.danceability,
         s.valence,
@@ -64,8 +59,7 @@ async function exportAllSongsData() {
     const headers = [
       'ID', 'Title', 'Artists', 'Album', 'Release Date', 'Duration (ms)', 'Popularity',
       'Genre', 'Parent Genre', 'Artist Genres',
-      'Vegan Focus', 'Animal Category', 'Advocacy Style', 'Advocacy Issues', 'Lyrical Explicitness',
-      'Energy', 'Danceability', 'Valence', 'Tempo', 'Acousticness', 'Instrumentalness', 
+      'Energy', 'Danceability', 'Valence', 'Tempo', 'Acousticness', 'Instrumentalness',
       'Liveness', 'Speechiness', 'Loudness', 'Key', 'Mode', 'Time Signature',
       'Explicit', 'Data Source', 'Date Added', 'Spotify ID', 'Spotify URL', 'Preview URL',
       'Album Type', 'Total Tracks', 'Artist Spotify IDs'
@@ -101,11 +95,6 @@ async function exportAllSongsData() {
         song.genre || '',
         song.parent_genre || '',
         formatArrayForCSV(song.artist_genres),
-        formatArrayForCSV(song.vegan_focus),
-        formatArrayForCSV(song.animal_category),
-        formatArrayForCSV(song.advocacy_style),
-        formatArrayForCSV(song.advocacy_issues),
-        formatArrayForCSV(song.lyrical_explicitness),
         song.energy || '',
         song.danceability || '',
         song.valence || '',
@@ -143,7 +132,6 @@ async function exportAllSongsData() {
     // Show some statistics
     const stats = {
       with_genre: result.rows.filter(s => s.genre).length,
-      with_vegan_focus: result.rows.filter(s => s.vegan_focus && s.vegan_focus.length > 0).length,
       with_audio_features: result.rows.filter(s => s.energy !== null).length,
       spotify_songs: result.rows.filter(s => s.data_source === 'spotify').length,
       manual_songs: result.rows.filter(s => s.data_source === 'manual').length
@@ -151,7 +139,6 @@ async function exportAllSongsData() {
     
     console.log(`\n📈 Export Statistics:`);
     console.log(`Songs with genre: ${stats.with_genre}`);
-    console.log(`Songs with vegan focus: ${stats.with_vegan_focus}`);
     console.log(`Songs with audio features: ${stats.with_audio_features}`);
     console.log(`Spotify imported: ${stats.spotify_songs}`);
     console.log(`Manually added: ${stats.manual_songs}`);
