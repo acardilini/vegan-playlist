@@ -447,13 +447,14 @@ git commit -m "feat(B2): add LyricalAnalysis component (Option-C display)"
 - Consumes: `LyricalAnalysis` (Task 3); Task 1's `/api/analysis/song/:id` (404 when uncoded).
 - Produces: `spotifyService.getAnalysis(songId)` → analysis object or `null` (on 404/any error). Song page renders `LyricalAnalysis` in place of the mock section.
 
-- [ ] **Step 1: Add the service method.** In `frontend/src/api/spotifyService.js`, add (note the analysis router is mounted at `/api/analysis`, **not** under `/api/spotify` — build the URL from the origin, not `API_BASE`):
+- [ ] **Step 1: Add the service method.** In `frontend/src/api/spotifyService.js`, add. The analysis router is mounted at `/api/analysis` (**not** under `/api/spotify`, so do not use `API_BASE`). Use a **relative** `/api/analysis/...` URL — `/api` is already proxied by Vite to the backend (per the admin `adminFetch` convention), so this honours the Global Constraint of not hardcoding `http://localhost:5000` in new code:
 
 ```js
-  // Get read-only lyric analysis for a song (null when uncoded)
+  // Get read-only lyric analysis for a song (null when uncoded).
+  // Relative URL — /api is proxied by Vite to the backend (no hardcoded origin).
   getAnalysis: async (songId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/analysis/song/${songId}`);
+      const response = await fetch(`/api/analysis/song/${songId}`);
       if (response.status === 404) return null;
       if (!response.ok) throw new Error('Failed to fetch analysis');
       return await response.json();
@@ -463,8 +464,6 @@ git commit -m "feat(B2): add LyricalAnalysis component (Option-C display)"
     }
   },
 ```
-
-(The `http://localhost:5000` prefix matches the existing pre-existing pattern in this file — Global Constraints: do not widen the debt, but this file already uses it, so stay consistent rather than introduce a second convention.)
 
 - [ ] **Step 2: Wire it into the song page.** In `frontend/src/pages/SongDetailPage.jsx`:
 
