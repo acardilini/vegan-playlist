@@ -2,6 +2,7 @@ const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getSubgenres } = require('../utils/genreMapping');
+const analysis = require('../services/analysis');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -269,12 +270,7 @@ router.get('/search', async (req, res) => {
   try {
     console.log('🔍 Search endpoint hit with query:', req.query);
     const { 
-      q: query, 
-      vegan_focus, 
-      animal_category, 
-      advocacy_style, 
-      advocacy_issues,
-      lyrical_explicitness,
+      q: query,
       year_from,
       year_to,
       energy_min,
@@ -285,6 +281,11 @@ router.get('/search', async (req, res) => {
       valence_max,
       genres,
       parent_genres,
+      themes: fThemes,
+      targets: fTargets,
+      actions: fActions,
+      tactics: fTactics,
+      moral_frames: fMoralFrames,
       page = 1,
       limit = 20,
       sort_by = 'popularity'
@@ -304,46 +305,6 @@ router.get('/search', async (req, res) => {
         LOWER(s.your_review) LIKE LOWER($${paramIndex})
       )`);
       queryParams.push(searchTerm);
-      paramIndex++;
-    }
-
-    // Vegan focus filter
-    if (vegan_focus) {
-      const focuses = Array.isArray(vegan_focus) ? vegan_focus : [vegan_focus];
-      whereConditions.push(`s.vegan_focus && $${paramIndex}::text[]`);
-      queryParams.push(focuses);
-      paramIndex++;
-    }
-
-    // Animal category filter
-    if (animal_category) {
-      const categories = Array.isArray(animal_category) ? animal_category : [animal_category];
-      whereConditions.push(`s.animal_category && $${paramIndex}::text[]`);
-      queryParams.push(categories);
-      paramIndex++;
-    }
-
-    // Advocacy style filter
-    if (advocacy_style) {
-      const styles = Array.isArray(advocacy_style) ? advocacy_style : [advocacy_style];
-      whereConditions.push(`s.advocacy_style && $${paramIndex}::text[]`);
-      queryParams.push(styles);
-      paramIndex++;
-    }
-
-    // Advocacy issues filter
-    if (advocacy_issues) {
-      const issues = Array.isArray(advocacy_issues) ? advocacy_issues : [advocacy_issues];
-      whereConditions.push(`s.advocacy_issues && $${paramIndex}::text[]`);
-      queryParams.push(issues);
-      paramIndex++;
-    }
-
-    // Lyrical explicitness filter
-    if (lyrical_explicitness) {
-      const explicitness = Array.isArray(lyrical_explicitness) ? lyrical_explicitness : [lyrical_explicitness];
-      whereConditions.push(`s.lyrical_explicitness && $${paramIndex}::text[]`);
-      queryParams.push(explicitness);
       paramIndex++;
     }
 
@@ -407,6 +368,22 @@ router.get('/search', async (req, res) => {
       paramIndex++;
     }
 
+    // Analysis facet filters (AND logic; joins song_lyric_analysis when any is set)
+    const facet = analysis.facetFilterConditions(
+      { themes: fThemes, targets: fTargets, actions: fActions, tactics: fTactics, moral_frames: fMoralFrames },
+      paramIndex);
+    if (facet.needsJoin) {
+      whereConditions.push(...facet.clauses);
+      queryParams.push(...facet.params);
+      paramIndex += facet.params.length;
+    }
+    // facetFilterConditions() emits clauses against alias `sa` for song_lyric_analysis;
+    // this handler already uses `sa` for song_artists below, so that join is aliased
+    // `sart` in this query only to avoid a collision.
+    const facetJoin = facet.needsJoin
+      ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.DEFAULT_MODEL}'`
+      : '';
+
     // Build WHERE clause
     const whereClause = whereConditions.length > 0 ? 
       `WHERE ${whereConditions.join(' AND ')}` : '';
@@ -451,11 +428,6 @@ router.get('/search', async (req, res) => {
         s.energy,
         s.danceability,
         s.valence,
-        s.vegan_focus,
-        s.animal_category,
-        s.advocacy_style,
-        s.advocacy_issues,
-        s.lyrical_explicitness,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
@@ -463,9 +435,10 @@ router.get('/search', async (req, res) => {
         ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
       FROM songs s
       LEFT JOIN albums al ON s.album_id = al.id
-      JOIN song_artists sa ON s.id = sa.song_id
-      JOIN artists a ON sa.artist_id = a.id
+      JOIN song_artists sart ON s.id = sart.song_id
+      JOIN artists a ON sart.artist_id = a.id
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
+      ${facetJoin}
       ${whereClause}
       GROUP BY s.id, al.id
       ${orderBy}
@@ -479,8 +452,9 @@ router.get('/search', async (req, res) => {
       SELECT COUNT(DISTINCT s.id) as total
       FROM songs s
       LEFT JOIN albums al ON s.album_id = al.id
-      JOIN song_artists sa ON s.id = sa.song_id
-      JOIN artists a ON sa.artist_id = a.id
+      JOIN song_artists sart ON s.id = sart.song_id
+      JOIN artists a ON sart.artist_id = a.id
+      ${facetJoin}
       ${whereClause}
     `;
     
@@ -497,11 +471,6 @@ router.get('/search', async (req, res) => {
       },
       filters_applied: {
         query: query || null,
-        vegan_focus: vegan_focus ? (Array.isArray(vegan_focus) ? vegan_focus : [vegan_focus]) : null,
-        animal_category: animal_category ? (Array.isArray(animal_category) ? animal_category : [animal_category]) : null,
-        advocacy_style: advocacy_style ? (Array.isArray(advocacy_style) ? advocacy_style : [advocacy_style]) : null,
-        advocacy_issues: advocacy_issues ? (Array.isArray(advocacy_issues) ? advocacy_issues : [advocacy_issues]) : null,
-        lyrical_explicitness: lyrical_explicitness ? (Array.isArray(lyrical_explicitness) ? lyrical_explicitness : [lyrical_explicitness]) : null,
         year_range: { from: year_from || null, to: year_to || null },
         energy_range: { min: energy_min || null, max: energy_max || null },
         danceability_range: { min: danceability_min || null, max: danceability_max || null },
@@ -521,46 +490,6 @@ router.get('/search', async (req, res) => {
 router.get('/filter-options', async (req, res) => {
   try {
     // Get all unique filter values with counts
-    const veganFocusQuery = `
-      SELECT UNNEST(vegan_focus) as value, COUNT(*) as count
-      FROM songs
-      WHERE vegan_focus IS NOT NULL AND status = 'included' AND published = true
-      GROUP BY UNNEST(vegan_focus)
-      ORDER BY count DESC
-    `;
-
-    const animalCategoryQuery = `
-      SELECT UNNEST(animal_category) as value, COUNT(*) as count
-      FROM songs
-      WHERE animal_category IS NOT NULL AND status = 'included' AND published = true
-      GROUP BY UNNEST(animal_category)
-      ORDER BY count DESC
-    `;
-
-    const advocacyStyleQuery = `
-      SELECT UNNEST(advocacy_style) as value, COUNT(*) as count
-      FROM songs
-      WHERE advocacy_style IS NOT NULL AND status = 'included' AND published = true
-      GROUP BY UNNEST(advocacy_style)
-      ORDER BY count DESC
-    `;
-
-    const advocacyIssuesQuery = `
-      SELECT UNNEST(advocacy_issues) as value, COUNT(*) as count
-      FROM songs
-      WHERE advocacy_issues IS NOT NULL AND status = 'included' AND published = true
-      GROUP BY UNNEST(advocacy_issues)
-      ORDER BY count DESC
-    `;
-
-    const lyricalExplicitnessQuery = `
-      SELECT UNNEST(lyrical_explicitness) as value, COUNT(*) as count
-      FROM songs
-      WHERE lyrical_explicitness IS NOT NULL AND status = 'included' AND published = true
-      GROUP BY UNNEST(lyrical_explicitness)
-      ORDER BY count DESC
-    `;
-
     // Use song-level genres to match the filtering logic
     const genresQuery = `
       SELECT
@@ -603,21 +532,11 @@ router.get('/filter-options', async (req, res) => {
     `;
 
     const [
-      veganFocus,
-      animalCategory,
-      advocacyStyle,
-      advocacyIssues,
-      lyricalExplicitness,
       genres,
       parentGenres,
       yearRange,
       audioFeatures
     ] = await Promise.all([
-      pool.query(veganFocusQuery),
-      pool.query(animalCategoryQuery),
-      pool.query(advocacyStyleQuery),
-      pool.query(advocacyIssuesQuery),
-      pool.query(lyricalExplicitnessQuery),
       pool.query(genresQuery),
       pool.query(parentGenresQuery),
       pool.query(yearRangeQuery),
@@ -628,11 +547,6 @@ router.get('/filter-options', async (req, res) => {
     console.log('DEBUG: About to send response with parent_genres');
 
     res.json({
-      vegan_focus: veganFocus.rows,
-      animal_category: animalCategory.rows,
-      advocacy_style: advocacyStyle.rows,
-      advocacy_issues: advocacyIssues.rows,
-      lyrical_explicitness: lyricalExplicitness.rows,
       // Legacy support for existing genre filter
       genres: genres.rows,
       // New hierarchical genre data
@@ -725,14 +639,14 @@ router.get('/songs/:id/similar', async (req, res) => {
     const songId = req.params.id;
     const limit = parseInt(req.query.limit) || 6;
     
-    // Simple approach: get songs with similar vegan focus or advocacy style
+    // Simple approach: get songs with similar genre or audio features
     const result = await pool.query(`
       WITH current_song AS (
-        SELECT vegan_focus, advocacy_style, energy, danceability, valence
-        FROM songs 
+        SELECT genre, energy, danceability, valence
+        FROM songs
         WHERE id = $1
       )
-      SELECT 
+      SELECT
         s.id,
         s.spotify_id,
         s.title,
@@ -742,8 +656,6 @@ router.get('/songs/:id/similar', async (req, res) => {
         s.energy,
         s.danceability,
         s.valence,
-        s.vegan_focus,
-        s.advocacy_style,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
@@ -756,10 +668,9 @@ router.get('/songs/:id/similar', async (req, res) => {
       WHERE s.id != $1
         AND s.status = 'included' AND s.published = true
         AND (
-          s.vegan_focus && cs.vegan_focus 
-          OR s.advocacy_style && cs.advocacy_style
+          (cs.genre IS NOT NULL AND s.genre = cs.genre)
           OR (
-            cs.energy IS NOT NULL AND s.energy IS NOT NULL 
+            cs.energy IS NOT NULL AND s.energy IS NOT NULL
             AND ABS(s.energy - cs.energy) <= 0.3
           )
         )
@@ -1024,11 +935,6 @@ router.get('/artists/:id', async (req, res) => {
         s.energy,
         s.danceability,
         s.valence,
-        s.vegan_focus,
-        s.animal_category,
-        s.advocacy_style,
-        s.advocacy_issues,
-        s.lyrical_explicitness,
         al.name as album_name,
         al.release_date,
         al.images as album_images,

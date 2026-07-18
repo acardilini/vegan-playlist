@@ -33,7 +33,21 @@ test('quickCapture rejects blank title or artist', async () => {
   await assert.rejects(curation.quickCapture(pool, { title: 'x', artist: '  ' }), e => e.code === 'BAD_INPUT');
 });
 
+test('getWorkbench includes the full analysis object when coded', async () => {
+  const id = await mkSong({ title: 'ZZZCUR Analysed', status: 'included', published: true });
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, perspective, emotions, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, 'gemma4:latest', 'human_observer', ARRAY['hope'],
+       $2::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
+    [id, JSON.stringify([{ code: 'compassion', evidence: 'be kind' }])]);
+  const wb = await curation.getWorkbench(pool, id);
+  assert.equal(wb.analysed, true);
+  assert.equal(wb.analysis.perspective, 'human_observer');
+  assert.equal(wb.analysis.themes[0].label, 'Compassion');
+});
+
 after(async () => {
+  await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
   await pool.query(`DELETE FROM song_processing WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
   await pool.query(`DELETE FROM song_lyrics WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
   await pool.query(`DELETE FROM youtube_videos WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);

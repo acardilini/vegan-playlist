@@ -57,30 +57,6 @@ async function auditDatabase() {
       console.log(`${label.padEnd(20)}: ${completed.toString().padStart(4)}/${totalSongs} (${percentage}%)`);
     }
 
-    // Vegan categorization completion
-    console.log('\n🌱 VEGAN CATEGORIZATION COMPLETION:');
-    console.log('=' .repeat(50));
-    
-    const veganFields = [
-      { field: 'vegan_focus', label: 'Vegan Focus' },
-      { field: 'animal_category', label: 'Animal Category' },
-      { field: 'advocacy_style', label: 'Advocacy Style' },
-      { field: 'advocacy_issues', label: 'Advocacy Issues' },
-      { field: 'lyrical_explicitness', label: 'Lyrical Approach' }
-    ];
-
-    for (const { field, label } of veganFields) {
-      const completedResult = await pool.query(`
-        SELECT COUNT(*) as completed 
-        FROM songs 
-        WHERE ${field} IS NOT NULL 
-        AND array_length(${field}, 1) > 0
-      `);
-      const completed = parseInt(completedResult.rows[0].completed);
-      const percentage = ((completed / totalSongs) * 100).toFixed(1);
-      console.log(`${label.padEnd(20)}: ${completed.toString().padStart(4)}/${totalSongs} (${percentage}%)`);
-    }
-
     // YouTube video coverage
     console.log('\n🎥 YOUTUBE VIDEO COVERAGE:');
     console.log('=' .repeat(50));
@@ -195,19 +171,8 @@ async function auditDatabase() {
     console.log('\n🎯 PRIORITY RECOMMENDATIONS:');
     console.log('=' .repeat(50));
     
-    // Songs with no categorization at all
-    const noCategoriesResult = await pool.query(`
-      SELECT COUNT(*) as count 
-      FROM songs 
-      WHERE (vegan_focus IS NULL OR array_length(vegan_focus, 1) = 0)
-      AND (animal_category IS NULL OR array_length(animal_category, 1) = 0)
-      AND (advocacy_style IS NULL OR array_length(advocacy_style, 1) = 0)
-    `);
-    const noCategories = parseInt(noCategoriesResult.rows[0].count);
-    
-    console.log(`1. Songs with NO vegan categorization: ${noCategories} songs`);
-    console.log(`2. Songs needing YouTube videos: ${songsWithoutVideos} songs`);
-    console.log(`3. Songs missing basic metadata varies by field`);
+    console.log(`1. Songs needing YouTube videos: ${songsWithoutVideos} songs`);
+    console.log(`2. Songs missing basic metadata varies by field`);
 
     // Most incomplete songs
     console.log('\n🚨 MOST INCOMPLETE SONGS:');
@@ -220,31 +185,28 @@ async function auditDatabase() {
         string_agg(a.name, ', ') as artists,
         s.data_source,
         CASE WHEN yv.song_id IS NOT NULL THEN 1 ELSE 0 END as has_video,
-        CASE WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 THEN 1 ELSE 0 END as has_vegan_focus,
         CASE WHEN s.duration_ms IS NOT NULL THEN 1 ELSE 0 END as has_duration,
         CASE WHEN s.genre IS NOT NULL THEN 1 ELSE 0 END as has_genre
       FROM songs s
       LEFT JOIN song_artists sa ON s.id = sa.song_id
       LEFT JOIN artists a ON sa.artist_id = a.id
       LEFT JOIN (SELECT DISTINCT song_id FROM youtube_videos) yv ON s.id = yv.song_id
-      GROUP BY s.id, s.title, s.data_source, s.vegan_focus, s.duration_ms, s.genre, yv.song_id
+      GROUP BY s.id, s.title, s.data_source, s.duration_ms, s.genre, yv.song_id
       ORDER BY (CASE WHEN yv.song_id IS NOT NULL THEN 1 ELSE 0 END +
-                CASE WHEN s.vegan_focus IS NOT NULL AND array_length(s.vegan_focus, 1) > 0 THEN 1 ELSE 0 END +
                 CASE WHEN s.duration_ms IS NOT NULL THEN 1 ELSE 0 END +
                 CASE WHEN s.genre IS NOT NULL THEN 1 ELSE 0 END) ASC
       LIMIT 10
     `);
 
     for (const song of incompleteResult.rows) {
-      const completionScore = song.has_video + song.has_vegan_focus + song.has_duration + song.has_genre;
+      const completionScore = song.has_video + song.has_duration + song.has_genre;
       const missing = [];
       if (!song.has_video) missing.push('Video');
-      if (!song.has_vegan_focus) missing.push('Vegan Categories');
       if (!song.has_duration) missing.push('Duration');
       if (!song.has_genre) missing.push('Genre');
-      
+
       console.log(`${song.title} by ${song.artists}`);
-      console.log(`   Missing: ${missing.join(', ')} (Score: ${completionScore}/4)`);
+      console.log(`   Missing: ${missing.join(', ')} (Score: ${completionScore}/3)`);
     }
 
     console.log('\n✅ Database audit complete!\n');
