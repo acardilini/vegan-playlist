@@ -152,5 +152,19 @@ export const spotifyService = {
       console.error('Error fetching artist filter options:', error);
       throw error;
     }
-  }
+  },
+
+  // Get read-only lyric analysis for a song (null when uncoded).
+  // Relative URL — /api is proxied by Vite to the backend (no hardcoded origin).
+  getAnalysis: async (songId) => {
+    try {
+      const response = await fetch(`/api/analysis/song/${songId}`);
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error('Failed to fetch analysis');
+      return await response.json();
+    } catch (error) {
+      console.warn('Could not load analysis:', error);
+      return null;
+    }
+  },
 };

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
 import YouTubeEmbed from '../components/YouTubeEmbed';
+import LyricalAnalysis from '../components/LyricalAnalysis';
 
 function SongDetailPage() {
   const { songId } = useParams();
@@ -9,6 +10,7 @@ function SongDetailPage() {
   const [song, setSong] = useState(null);
   const [similarSongs, setSimilarSongs] = useState([]);
   const [youtubeVideo, setYoutubeVideo] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -16,7 +18,7 @@ function SongDetailPage() {
     const fetchSongData = async () => {
       try {
         setLoading(true);
-        const [songData, similarData, youtubeData] = await Promise.all([
+        const [songData, similarData, youtubeData, analysisData] = await Promise.all([
           spotifyService.getSong(songId),
           spotifyService.getSimilarSongs(songId, 6).catch(err => {
             console.warn('Could not load similar songs:', err);
@@ -27,12 +29,14 @@ function SongDetailPage() {
             .catch(err => {
               console.warn('Could not load YouTube video:', err);
               return { success: true, video: null };
-            })
+            }),
+          spotifyService.getAnalysis(songId),
         ]);
 
         setSong(songData);
         setSimilarSongs(similarData.similar_songs || []);
         setYoutubeVideo(youtubeData.success ? youtubeData.video : null);
+        setAnalysis(analysisData);
       } catch (err) {
         console.error('Error fetching song:', err);
         setError('Failed to load song details');
@@ -67,23 +71,6 @@ function SongDetailPage() {
     return 'View lyrics';
   };
 
-  const CategoryBadges = ({ categories, title, colorClass }) => {
-    if (!categories || categories.length === 0) return null;
-
-    return (
-      <div className="category-group">
-        <h3>{title}</h3>
-        <div className="category-badges">
-          {categories.map((category, index) => (
-            <span key={index} className={`category-badge ${colorClass}`}>
-              {category}
-            </span>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="song-detail-container loading">
@@ -109,15 +96,6 @@ function SongDetailPage() {
   const artistNames = Array.isArray(song.artists)
     ? song.artists.map(artist => (artist && artist.name) || artist).join(', ')
     : song.artists;
-
-  // Curator rule: only show the analysis section when the song has been coded
-  const hasAnalysis = [
-    song.vegan_focus,
-    song.animal_category,
-    song.advocacy_style,
-    song.advocacy_issues,
-    song.lyrical_explicitness
-  ].some(categories => categories && categories.length > 0);
 
   return (
     <div className="song-detail-container">
@@ -217,37 +195,10 @@ function SongDetailPage() {
         </section>
       )}
 
-      {/* Only rendered once the song has thematic coding (curator request 2026-07-10) */}
-      {hasAnalysis && (
+      {analysis && (
         <section className="detail-section">
-          <h2>Animal advocacy analysis</h2>
-          <div className="categories-grid">
-            <CategoryBadges
-              categories={song.vegan_focus}
-              title="Vegan focus"
-              colorClass="vegan-focus"
-            />
-            <CategoryBadges
-              categories={song.animal_category}
-              title="Animal category"
-              colorClass="animal-category"
-            />
-            <CategoryBadges
-              categories={song.advocacy_style}
-              title="Advocacy style"
-              colorClass="advocacy-style"
-            />
-            <CategoryBadges
-              categories={song.advocacy_issues}
-              title="Advocacy issues"
-              colorClass="advocacy-issues"
-            />
-            <CategoryBadges
-              categories={song.lyrical_explicitness}
-              title="Lyrical approach"
-              colorClass="lyrical-explicitness"
-            />
-          </div>
+          <h2>Lyrical analysis</h2>
+          <LyricalAnalysis analysis={analysis} />
         </section>
       )}
 
@@ -295,19 +246,6 @@ function SongDetailPage() {
                       ? similarSong.artists.join(', ')
                       : similarSong.artists}
                   </p>
-
-                  <div className="similarity-reasons">
-                    {similarSong.vegan_focus && similarSong.vegan_focus.some(focus =>
-                      song.vegan_focus?.includes(focus)
-                    ) && (
-                      <span className="similarity-tag vegan-focus">Similar focus</span>
-                    )}
-                    {similarSong.advocacy_style && similarSong.advocacy_style.some(style =>
-                      song.advocacy_style?.includes(style)
-                    ) && (
-                      <span className="similarity-tag advocacy-style">Similar style</span>
-                    )}
-                  </div>
                 </div>
               </div>
             ))}
