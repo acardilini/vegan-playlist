@@ -313,7 +313,7 @@ router.get('/search', async (req, res) => {
         orderBy = 'ORDER BY s.valence DESC NULLS LAST, s.title ASC';
         break;
       case 'date_added':
-        orderBy = 'ORDER BY s.playlist_added_at DESC NULLS LAST, s.title ASC';
+        orderBy = 'ORDER BY COALESCE(s.playlist_added_at, s.date_added) DESC NULLS LAST, s.title ASC';
         break;
       default:
         orderBy = 'ORDER BY s.popularity DESC, s.title ASC';

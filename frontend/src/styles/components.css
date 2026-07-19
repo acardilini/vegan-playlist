@@ -2187,13 +2187,14 @@
 .la-evidence-tag { font-size: 0.75rem; color: var(--text-muted); }
 .la-evidence-quote { color: var(--text-secondary); font-style: italic; }
 
-/* B3 — thematic facet tree */
-.theme-facet-tree .filter-options.scrollable { max-height: 320px; }
+/* B3 — thematic facet tree (colour-forward hierarchy) */
+.theme-facet-tree .filter-options.scrollable { max-height: 360px; }
 .filter-note {
   color: var(--text-muted);
-  font: var(--text-meta);
+  font: var(--text-body-sm);
   margin: var(--space-1) 0 var(--space-2);
 }
+/* Dimension: bold header row with expand caret */
 .facet-dim-header {
   display: flex;
   justify-content: space-between;
@@ -2202,19 +2203,31 @@
   background: none;
   border: none;
   color: var(--text-primary);
-  font: var(--text-label);
+  font: var(--text-body);
+  font-weight: 700;
   cursor: pointer;
-  padding: var(--space-1) 0;
+  padding: var(--space-2) 0;
 }
-.facet-sub {
-  border-left: 3px solid var(--border-hairline);
+.facet-sub { margin: var(--space-1) 0 var(--space-2); }
+/* Nested left rails show the level nesting (sub-dimension rail takes its colour, inline) */
+.facet-rail {
+  border-left: 2px solid var(--border-hairline);
+  margin-left: var(--space-2);
   padding-left: var(--space-2);
-  margin: var(--space-1) 0 var(--space-1) var(--space-2);
 }
-.facet-subdim { font: var(--text-label); color: var(--text-primary); }
-.facet-grouprow { padding-left: var(--space-3); }
-.facet-code { padding-left: var(--space-5); }
-.facet-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: var(--space-1); vertical-align: middle; }
+.facet-rail-neutral { border-left-color: var(--border-hairline); }
+/* Rows: bigger, left-aligned, level-distinct typography */
+.theme-facet-tree .filter-option .filter-label { font: var(--text-body-sm); }
+.facet-subdim .filter-label { font: var(--text-body); font-weight: 600; }
+.facet-subdim-label { display: inline-flex; align-items: center; }
+.facet-group-label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font: var(--text-meta);
+  color: var(--text-secondary);
+}
+.facet-code .filter-label { color: var(--text-primary); }
+.facet-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: var(--space-1); vertical-align: middle; flex-shrink: 0; }
 
 /* B3 — active filter chips (below the filters panel) */
 .filter-chips {
