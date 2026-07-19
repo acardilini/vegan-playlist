@@ -1,8 +1,9 @@
 const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const pool = require('../database/db');
-const { getParentGenres, getAllSubgenres, getSubgenres } = require('../utils/genreMapping');
+const { getSubgenres } = require('../utils/genreMapping');
 const analysis = require('../services/analysis');
+const genres_svc = require('../services/genres');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -486,82 +487,67 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// Get filter options and counts
+// Get filter options and counts for the browse UI.
 router.get('/filter-options', async (req, res) => {
   try {
-    // Get all unique filter values with counts
-    // Use song-level genres to match the filtering logic
-    const genresQuery = `
-      SELECT
-        s.genre as value,
-        COUNT(*) as count
-      FROM songs s
-      WHERE s.genre IS NOT NULL AND s.genre != '' AND s.status = 'included' AND s.published = true
-      GROUP BY s.genre
-      ORDER BY count DESC, value ASC
-    `;
+    const LIVE = `s.status = 'included' AND s.published = true`;
 
-    // Calculate parent genres from song-level parent_genre field to match filtering
-    const parentGenresQuery = `
-      SELECT
-        s.parent_genre as value,
-        COUNT(*) as count
+    // Effective genre per live song (song genre, else primary artist's first genre).
+    const effectiveGenreQuery = `
+      SELECT ${genres_svc.EFFECTIVE_GENRE_EXPR} AS effective_genre
       FROM songs s
-      WHERE s.parent_genre IS NOT NULL AND s.parent_genre != '' AND s.status = 'included' AND s.published = true
-      GROUP BY s.parent_genre
-      ORDER BY count DESC, value ASC
-    `;
+      ${genres_svc.EFFECTIVE_GENRE_JOIN}
+      WHERE ${LIVE}`;
 
     const yearRangeQuery = `
-      SELECT
-        MIN(EXTRACT(YEAR FROM release_date)) as min_year,
-        MAX(EXTRACT(YEAR FROM release_date)) as max_year
+      SELECT MIN(EXTRACT(YEAR FROM release_date)) AS min_year,
+             MAX(EXTRACT(YEAR FROM release_date)) AS max_year
       FROM albums
       WHERE release_date IS NOT NULL
-        AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)
-    `;
+        AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)`;
 
-    const audioFeaturesQuery = `
-      SELECT
-        MIN(energy) as min_energy, MAX(energy) as max_energy,
-        MIN(danceability) as min_danceability, MAX(danceability) as max_danceability,
-        MIN(valence) as min_valence, MAX(valence) as max_valence
+    const languagesQuery = `
+      SELECT language AS value, COUNT(*)::int AS count
       FROM songs
-      WHERE (energy IS NOT NULL OR danceability IS NOT NULL OR valence IS NOT NULL)
-        AND status = 'included' AND published = true
-    `;
+      WHERE status = 'included' AND published = true AND language IS NOT NULL AND language <> ''
+      GROUP BY language
+      ORDER BY count DESC, value ASC`;
 
-    const [
-      genres,
-      parentGenres,
-      yearRange,
-      audioFeatures
-    ] = await Promise.all([
-      pool.query(genresQuery),
-      pool.query(parentGenresQuery),
+    const lengthCountsQuery = `
+      SELECT
+        COUNT(*) FILTER (WHERE duration_ms < 120000)::int AS short,
+        COUNT(*) FILTER (WHERE duration_ms >= 120000 AND duration_ms < 240000)::int AS medium,
+        COUNT(*) FILTER (WHERE duration_ms >= 240000)::int AS long
+      FROM songs
+      WHERE status = 'included' AND published = true AND duration_ms > 0`;
+
+    const availabilityQuery = `
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE spotify_id IS NOT NULL AND spotify_id <> '')::int AS on_spotify,
+        COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = songs.id))::int AS has_youtube,
+        COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = songs.id AND la.model_used = $1))::int AS has_analysis
+      FROM songs
+      WHERE status = 'included' AND published = true`;
+
+    const [effGenres, yearRange, languages, lengthCounts, availability] = await Promise.all([
+      pool.query(effectiveGenreQuery),
       pool.query(yearRangeQuery),
-      pool.query(audioFeaturesQuery)
+      pool.query(languagesQuery),
+      pool.query(lengthCountsQuery),
+      pool.query(availabilityQuery, [analysis.DEFAULT_MODEL]),
     ]);
 
-    console.log('Parent genres query result:', parentGenres.rows?.length, 'rows');
-    console.log('DEBUG: About to send response with parent_genres');
-
+    const lc = lengthCounts.rows[0] || {};
     res.json({
-      // Legacy support for existing genre filter
-      genres: genres.rows,
-      // New hierarchical genre data
-      subgenres: genres.rows,
-      parent_genres: parentGenres.rows.length > 0 ? parentGenres.rows : getParentGenres().map(pg => ({ value: pg, count: 0 })),
+      genre_tree: genres_svc.buildGenreTree(effGenres.rows),
       year_range: yearRange.rows[0] || { min_year: null, max_year: null },
-      audio_features: audioFeatures.rows[0] || { 
-        min_energy: null, max_energy: null,
-        min_danceability: null, max_danceability: null,
-        min_valence: null, max_valence: null
-      }
+      languages: languages.rows,
+      length_buckets: genres_svc.LENGTH_BUCKETS.map(b => ({ value: b.value, label: b.label, count: lc[b.value] || 0 })),
+      availability: availability.rows[0] || { total: 0, on_spotify: 0, has_youtube: 0, has_analysis: 0 },
     });
   } catch (error) {
     console.error('Error fetching filter options:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to fetch filter options', details: error.message });
   }
 });
