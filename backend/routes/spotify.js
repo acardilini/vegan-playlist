@@ -452,6 +452,77 @@ router.get('/filter-options', async (req, res) => {
   }
 });
 
+// Dynamic, cross-filtered facet counts (exclude-self). Same params as /search.
+router.get('/browse-facets', async (req, res) => {
+  try {
+    const f = req.query;
+    const LIVE = `s.status = 'included' AND s.published = true`;
+    const whereSql = (bw) => 'WHERE ' + [LIVE, ...bw.where].join(' AND ');
+    const MODEL = analysis.DEFAULT_MODEL;
+
+    const bwG = browse.buildWhere(f, { exclude: 'genre' });
+    const genreSql = `SELECT DISTINCT s.id, ${genres_svc.EFFECTIVE_GENRE_EXPR} AS effective_genre
+      FROM songs s${browse.joinSql({ ...bwG.joins, effectiveGenre: true })} ${whereSql(bwG)}`;
+
+    const bwL = browse.buildWhere(f, { exclude: 'length' });
+    const lengthSql = `SELECT
+        COUNT(DISTINCT s.id) FILTER (WHERE s.duration_ms >= 1 AND s.duration_ms < 120000)::int AS short,
+        COUNT(DISTINCT s.id) FILTER (WHERE s.duration_ms >= 120000 AND s.duration_ms < 240000)::int AS medium,
+        COUNT(DISTINCT s.id) FILTER (WHERE s.duration_ms >= 240000)::int AS long
+      FROM songs s${browse.joinSql(bwL.joins)} ${whereSql(bwL)}`;
+
+    const bwA = browse.buildWhere(f, { exclude: 'available' });
+    const availSql = `SELECT
+        COUNT(DISTINCT s.id) FILTER (WHERE s.spotify_id IS NOT NULL AND s.spotify_id <> '')::int AS on_spotify,
+        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = s.id))::int AS has_youtube
+      FROM songs s${browse.joinSql(bwA.joins)} ${whereSql(bwA)}`;
+
+    const bwT = browse.buildWhere(f, { exclude: 'analysis_toggle' });
+    const toggleSql = `SELECT
+        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${MODEL}'))::int AS has_analysis
+      FROM songs s${browse.joinSql(bwT.joins)} ${whereSql(bwT)}`;
+
+    const bwLang = browse.buildWhere(f, { exclude: 'language' });
+    const langSql = `SELECT s.language AS value, COUNT(DISTINCT s.id)::int AS count
+      FROM songs s${browse.joinSql(bwLang.joins)} ${whereSql(bwLang)} AND s.language IS NOT NULL AND s.language <> ''
+      GROUP BY s.language ORDER BY count DESC, value ASC`;
+
+    const bwAn = browse.buildWhere(f, { exclude: 'analysis', startIndex: 2 });
+    const constraint = { joinSql: browse.joinSql(bwAn.joins), where: bwAn.where, params: bwAn.params };
+
+    const yearSql = `SELECT MIN(EXTRACT(YEAR FROM release_date)) AS min_year, MAX(EXTRACT(YEAR FROM release_date)) AS max_year
+      FROM albums WHERE release_date IS NOT NULL
+        AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)`;
+
+    const [gR, lR, aR, tR, langR, facets, yR] = await Promise.all([
+      pool.query(genreSql, bwG.params),
+      pool.query(lengthSql, bwL.params),
+      pool.query(availSql, bwA.params),
+      pool.query(toggleSql, bwT.params),
+      pool.query(langSql, bwLang.params),
+      analysis.facetTree(pool, constraint),
+      pool.query(yearSql),
+    ]);
+
+    const lc = lR.rows[0] || {};
+    res.json({
+      genre_tree: genres_svc.buildGenreTree(gR.rows),
+      facets,
+      length_buckets: genres_svc.LENGTH_BUCKETS.map(b => ({ value: b.value, label: b.label, count: lc[b.value] || 0 })),
+      availability: {
+        on_spotify: aR.rows[0]?.on_spotify || 0,
+        has_youtube: aR.rows[0]?.has_youtube || 0,
+        has_analysis: tR.rows[0]?.has_analysis || 0,
+      },
+      languages: langR.rows,
+      year_range: yR.rows[0] || { min_year: null, max_year: null },
+    });
+  } catch (error) {
+    console.error('Error in browse-facets:', error);
+    res.status(500).json({ error: 'Failed to load browse facets', details: error.message });
+  }
+});
+
 // Get artist filter options and counts
 router.get('/artist-filter-options', async (req, res) => {
   try {
