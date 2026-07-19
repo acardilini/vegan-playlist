@@ -2211,9 +2211,9 @@
   padding-left: var(--space-2);
   margin: var(--space-1) 0 var(--space-1) var(--space-2);
 }
-.facet-sub-label { font: var(--text-meta); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
-.facet-group-label { color: var(--text-secondary); font: var(--text-body-sm); margin: 2px 0; }
-.facet-code { padding-left: var(--space-2); }
+.facet-subdim { font: var(--text-label); color: var(--text-primary); }
+.facet-grouprow { padding-left: var(--space-3); }
+.facet-code { padding-left: var(--space-5); }
 .facet-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: var(--space-1); vertical-align: middle; }
 
 /* B3 — active filter chips (below the filters panel) */
