@@ -158,8 +158,10 @@ test('facetTree rolls up two codes in the same group with distinct-song counts',
   // Distinct-song rollup: killing in A+B, brutality in A only, group = 2 distinct songs.
   assert.ok(killing.count >= 2, 'killing counts both songs');
   assert.ok(brutality.count >= 1, 'brutality counts song A');
-  assert.ok(violence.count >= 2, 'group counts distinct songs, not code occurrences');
-  assert.ok(violence.count >= killing.count, 'group >= any single code (distinct-song union)');
+  // Discriminating: the violence group's count is the UNION of its codes' distinct songs.
+  // A buggy occurrence-SUM rollup would instead give killing.count + brutality.count.
+  assert.ok(violence.count >= killing.count, 'group >= any single code (distinct-song union property)');
+  assert.ok(violence.count < killing.count + brutality.count, 'group count is NOT occurrence sum of codes');
 });
 
 after(async () => {
