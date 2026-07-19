@@ -940,7 +940,7 @@
 
 .range-inputs input {
   flex: 1;
-  max-width: 90px;
+  min-width: 0;
   padding: 6px 10px;
   background: var(--bg-surface-raised);
   border: 1px solid var(--border-hairline);
@@ -2239,3 +2239,16 @@
 .filter-chip:hover { border-color: var(--accent-ember-60); color: var(--text-primary); }
 .filter-chip:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
 .filter-chip-x { color: var(--text-muted); font-size: 0.8em; }
+
+/* B3 — two-column filters panel (Option B) */
+.filters-layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+.filters-col-main { display: flex; flex-direction: column; gap: var(--space-5); }
+.filters-col-side { display: flex; flex-direction: column; gap: var(--space-5); }
+@media (max-width: 768px) {
+  .filters-layout { grid-template-columns: 1fr; }
+}
