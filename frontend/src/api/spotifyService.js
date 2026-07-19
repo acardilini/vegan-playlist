@@ -179,4 +179,22 @@ export const spotifyService = {
       return {};
     }
   },
+
+  // Dynamic cross-filtered facet counts for the browse sidebar. Relative URL (Vite proxy).
+  getBrowseFacets: async (filters = {}) => {
+    try {
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v === null || v === undefined || v === '') return;
+        if (Array.isArray(v)) v.forEach(x => params.append(k, x));
+        else params.append(k, v);
+      });
+      const res = await fetch(`/api/spotify/browse-facets?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch browse facets');
+      return await res.json();
+    } catch (error) {
+      console.warn('Could not load browse facets:', error);
+      return {};
+    }
+  },
 };
