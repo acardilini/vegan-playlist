@@ -13,6 +13,7 @@ const EMPTY_FILTERS = {
   has_youtube: false, has_analysis: false, on_spotify: false,
   languages: [],
   themes: [], targets: [], actions: [], tactics: [], moral_frames: [],
+  facet_groups: [], facet_subdims: [],
   sort_by: 'year',
 };
 
@@ -55,6 +56,8 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     if (filters.on_spotify) p.on_spotify = 'true';
     if (filters.languages.length) p.languages = filters.languages;
     DIM_KEYS.forEach(k => { if (filters[k].length) p[k] = filters[k]; });
+    if (filters.facet_groups.length) p.facet_groups = filters.facet_groups;
+    if (filters.facet_subdims.length) p.facet_subdims = filters.facet_subdims;
     return p;
   }, [searchQuery, filters, currentPage]);
 
@@ -108,6 +111,41 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
 
   const onToggleFacet = (dimKey, code, checked) => toggleInArray(dimKey, code, checked);
 
+  const findSub = (dimKey, subId) => (facets[dimKey]?.sub_dimensions || []).find(s => s.id === subId);
+  const findGroup = (dimKey, groupId) => {
+    for (const s of (facets[dimKey]?.sub_dimensions || [])) {
+      const g = s.groups.find(x => x.id === groupId);
+      if (g) return g;
+    }
+    return null;
+  };
+
+  const onToggleGroup = (dimKey, groupId, checked) => setFilters(prev => {
+    const k = `${dimKey}:${groupId}`;
+    const facet_groups = checked ? [...prev.facet_groups, k] : prev.facet_groups.filter(v => v !== k);
+    let codes = prev[dimKey];
+    if (checked) {
+      const g = findGroup(dimKey, groupId);
+      const ids = g ? g.codes.map(c => c.code) : [];
+      codes = prev[dimKey].filter(c => !ids.includes(c)); // ancestor covers -> clear own codes
+    }
+    return { ...prev, facet_groups, [dimKey]: codes };
+  });
+
+  const onToggleSubdim = (dimKey, subId, checked) => setFilters(prev => {
+    const k = `${dimKey}:${subId}`;
+    const facet_subdims = checked ? [...prev.facet_subdims, k] : prev.facet_subdims.filter(v => v !== k);
+    let facet_groups = prev.facet_groups, codes = prev[dimKey];
+    if (checked) {
+      const s = findSub(dimKey, subId);
+      const gKeys = s ? s.groups.map(g => `${dimKey}:${g.id}`) : [];
+      const cIds = s ? s.groups.flatMap(g => g.codes.map(c => c.code)) : [];
+      facet_groups = prev.facet_groups.filter(v => !gKeys.includes(v));
+      codes = prev[dimKey].filter(c => !cIds.includes(c));
+    }
+    return { ...prev, facet_subdims, facet_groups, [dimKey]: codes };
+  });
+
   const setScalar = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
   const toggleBool = (key) => setFilters(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -130,6 +168,18 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     return m;
   }, [filterOptions]);
 
+  const facetLabelMaps = useMemo(() => {
+    const groups = {}, subdims = {};
+    DIM_KEYS.forEach(dim => {
+      groups[dim] = {}; subdims[dim] = {};
+      (facets[dim]?.sub_dimensions || []).forEach(sub => {
+        subdims[dim][sub.id] = sub.label;
+        sub.groups.forEach(g => { groups[dim][g.id] = g.label; });
+      });
+    });
+    return { groups, subdims };
+  }, [facets]);
+
   const chips = useMemo(() => {
     const list = [];
     if (searchQuery) list.push({ key: 'q:', label: `"${searchQuery}"` });
@@ -148,10 +198,18 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     if (filters.has_analysis) list.push({ key: 'has_analysis:', label: 'Has analysis' });
     if (filters.on_spotify) list.push({ key: 'on_spotify:', label: 'On Spotify' });
     filters.languages.forEach(l => list.push({ key: `language:${l}`, label: l }));
+    filters.facet_subdims.forEach(v => {
+      const [dk, id] = [v.slice(0, v.indexOf(':')), v.slice(v.indexOf(':') + 1)];
+      list.push({ key: `subdim:${v}`, label: facetLabelMaps.subdims[dk]?.[id] || id });
+    });
+    filters.facet_groups.forEach(v => {
+      const [dk, id] = [v.slice(0, v.indexOf(':')), v.slice(v.indexOf(':') + 1)];
+      list.push({ key: `group:${v}`, label: facetLabelMaps.groups[dk]?.[id] || id });
+    });
     DIM_KEYS.forEach(dim => filters[dim].forEach(code =>
       list.push({ key: `${dim}:${code}`, label: codeLabelMap[dim]?.[code] || code })));
     return list;
-  }, [searchQuery, filters, filterOptions, lengthLabelMap, codeLabelMap]);
+  }, [searchQuery, filters, filterOptions, lengthLabelMap, codeLabelMap, facetLabelMaps]);
 
   const removeChip = (key) => {
     const [type, value] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
@@ -165,6 +223,14 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     if (type === 'length') return toggleInArray('lengths', value, false);
     if (type === 'language') return toggleInArray('languages', value, false);
     if (['has_youtube', 'has_analysis', 'on_spotify'].includes(type)) return setScalar(type, false);
+    if (type === 'subdim') {
+      const [dk, id] = [value.slice(0, value.indexOf(':')), value.slice(value.indexOf(':') + 1)];
+      return onToggleSubdim(dk, id, false);
+    }
+    if (type === 'group') {
+      const [dk, id] = [value.slice(0, value.indexOf(':')), value.slice(value.indexOf(':') + 1)];
+      return onToggleGroup(dk, id, false);
+    }
     if (DIM_KEYS.includes(type)) return toggleInArray(type, value, false);
   };
 
@@ -185,6 +251,10 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         selected={filters}
         onToggle={onToggleFacet}
         codedCount={filterOptions.availability?.has_analysis || 0}
+        selectedGroups={filters.facet_groups}
+        selectedSubdims={filters.facet_subdims}
+        onToggleGroup={onToggleGroup}
+        onToggleSubdim={onToggleSubdim}
       />
       <div className="filter-section">
         <h3 className="filter-title">Year range</h3>
@@ -282,6 +352,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             <option value="title">Title</option>
             <option value="artist">Artist</option>
             <option value="year">Year</option>
+            <option value="date_added">Date added</option>
           </select>
         </div>
         <FilterChips chips={chips} onRemove={removeChip} />
