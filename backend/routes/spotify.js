@@ -4,6 +4,7 @@ const pool = require('../database/db');
 const { getSubgenres } = require('../utils/genreMapping');
 const analysis = require('../services/analysis');
 const genres_svc = require('../services/genres');
+const browse = require('../services/browseFilters');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -270,147 +271,24 @@ router.get('/songs/:id', async (req, res) => {
 router.get('/search', async (req, res) => {
   try {
     console.log('🔍 Search endpoint hit with query:', req.query);
-    const { 
-      q: query,
-      year_from,
-      year_to,
-      energy_min,
-      energy_max,
-      danceability_min,
-      danceability_max,
-      valence_min,
-      valence_max,
-      genres,
-      parent_genres,
-      lengths,
-      has_youtube,
-      has_analysis,
-      on_spotify,
-      languages,
-      themes: fThemes,
-      targets: fTargets,
-      actions: fActions,
-      tactics: fTactics,
-      moral_frames: fMoralFrames,
+    const {
+      q,
       page = 1,
       limit = 20,
       sort_by = 'popularity'
     } = req.query;
 
-    let whereConditions = [`s.status = 'included' AND s.published = true`];
-    let queryParams = [];
-    let paramIndex = 1;
-
-    // Text search
-    if (query && query.trim()) {
-      const searchTerm = `%${query.trim()}%`;
-      whereConditions.push(`(
-        LOWER(s.title) LIKE LOWER($${paramIndex}) OR
-        LOWER(a.name) LIKE LOWER($${paramIndex}) OR
-        LOWER(al.name) LIKE LOWER($${paramIndex}) OR
-        LOWER(s.your_review) LIKE LOWER($${paramIndex})
-      )`);
-      queryParams.push(searchTerm);
-      paramIndex++;
-    }
-
-    // Year range filter
-    if (year_from) {
-      whereConditions.push(`EXTRACT(YEAR FROM al.release_date) >= $${paramIndex}`);
-      queryParams.push(parseInt(year_from));
-      paramIndex++;
-    }
-    if (year_to) {
-      whereConditions.push(`EXTRACT(YEAR FROM al.release_date) <= $${paramIndex}`);
-      queryParams.push(parseInt(year_to));
-      paramIndex++;
-    }
-
-    // Audio feature filters
-    if (energy_min !== undefined) {
-      whereConditions.push(`s.energy >= $${paramIndex}`);
-      queryParams.push(parseFloat(energy_min));
-      paramIndex++;
-    }
-    if (energy_max !== undefined) {
-      whereConditions.push(`s.energy <= $${paramIndex}`);
-      queryParams.push(parseFloat(energy_max));
-      paramIndex++;
-    }
-    if (danceability_min !== undefined) {
-      whereConditions.push(`s.danceability >= $${paramIndex}`);
-      queryParams.push(parseFloat(danceability_min));
-      paramIndex++;
-    }
-    if (danceability_max !== undefined) {
-      whereConditions.push(`s.danceability <= $${paramIndex}`);
-      queryParams.push(parseFloat(danceability_max));
-      paramIndex++;
-    }
-    if (valence_min !== undefined) {
-      whereConditions.push(`s.valence >= $${paramIndex}`);
-      queryParams.push(parseFloat(valence_min));
-      paramIndex++;
-    }
-    if (valence_max !== undefined) {
-      whereConditions.push(`s.valence <= $${paramIndex}`);
-      queryParams.push(parseFloat(valence_max));
-      paramIndex++;
-    }
-
-    // Effective-genre filtering: song genre, else primary artist's first genre.
-    // The frontend expands a selected parent into its subgenre values, so we only
-    // ever match subgenre-level effective values here.
-    let needsEffectiveGenreJoin = false;
-    const gf = genres ? genres_svc.genreFilterClause(genres, paramIndex) : null;
-    if (gf) {
-      whereConditions.push(gf.clause);
-      queryParams.push(...gf.params);
-      paramIndex += gf.params.length;
-      needsEffectiveGenreJoin = true;
-    }
-
-    // Song length presets (Short/Medium/Long) -> duration_ms ranges (no params).
-    const lengthClause = lengths ? genres_svc.lengthFilterClause(lengths) : null;
-    if (lengthClause) whereConditions.push(lengthClause);
-
-    // Availability / analysis toggles.
-    if (has_youtube === 'true') {
-      whereConditions.push(`EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = s.id)`);
-    }
-    if (has_analysis === 'true') {
-      whereConditions.push(`EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${analysis.DEFAULT_MODEL}')`);
-    }
-    if (on_spotify === 'true') {
-      whereConditions.push(`s.spotify_id IS NOT NULL AND s.spotify_id <> ''`);
-    }
-
-    // Language filter (sung-in language).
-    if (languages) {
-      const langList = Array.isArray(languages) ? languages : [languages];
-      whereConditions.push(`s.language = ANY($${paramIndex}::text[])`);
-      queryParams.push(langList);
-      paramIndex++;
-    }
-
-    // Analysis facet filters (AND logic; joins song_lyric_analysis when any is set)
-    const facet = analysis.facetFilterConditions(
-      { themes: fThemes, targets: fTargets, actions: fActions, tactics: fTactics, moral_frames: fMoralFrames },
-      paramIndex);
-    if (facet.needsJoin) {
-      whereConditions.push(...facet.clauses);
-      queryParams.push(...facet.params);
-      paramIndex += facet.params.length;
-    }
-    // facetFilterConditions() emits clauses against alias `sa` for song_lyric_analysis;
-    // this handler already uses `sa` for song_artists below, so that join is aliased
-    // `sart` in this query only to avoid a collision.
-    const facetJoin = facet.needsJoin
+    const bw = browse.buildWhere(req.query, { startIndex: 1 });
+    const whereConditions = [`s.status = 'included' AND s.published = true`, ...bw.where];
+    const queryParams = [...bw.params];
+    let paramIndex = bw.nextIndex;
+    const effectiveGenreJoin = bw.joins.effectiveGenre ? genres_svc.EFFECTIVE_GENRE_JOIN : '';
+    const facetJoin = bw.joins.analysis
       ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.DEFAULT_MODEL}'`
       : '';
 
     // Build WHERE clause
-    const whereClause = whereConditions.length > 0 ? 
+    const whereClause = whereConditions.length > 0 ?
       `WHERE ${whereConditions.join(' AND ')}` : '';
 
     // Sorting options
@@ -441,8 +319,6 @@ router.get('/search', async (req, res) => {
     // Pagination
     const offset = (parseInt(page) - 1) * parseInt(limit);
     queryParams.push(parseInt(limit), offset);
-
-    const effectiveGenreJoin = needsEffectiveGenreJoin ? genres_svc.EFFECTIVE_GENRE_JOIN : '';
 
     const searchQuery = `
       SELECT
@@ -499,13 +375,9 @@ router.get('/search', async (req, res) => {
         pages: Math.ceil(total / parseInt(limit))
       },
       filters_applied: {
-        query: query || null,
-        year_range: { from: year_from || null, to: year_to || null },
-        energy_range: { min: energy_min || null, max: energy_max || null },
-        danceability_range: { min: danceability_min || null, max: danceability_max || null },
-        valence_range: { min: valence_min || null, max: valence_max || null },
-        genres: genres ? (Array.isArray(genres) ? genres : [genres]) : null,
-        parent_genres: parent_genres ? (Array.isArray(parent_genres) ? parent_genres : [parent_genres]) : null,
+        query: q || null,
+        genres: req.query.genres ? (Array.isArray(req.query.genres) ? req.query.genres : [req.query.genres]) : null,
+        year_range: { from: req.query.year_from || null, to: req.query.year_to || null },
         sort_by
       }
     });
