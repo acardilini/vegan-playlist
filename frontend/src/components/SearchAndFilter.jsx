@@ -13,15 +13,15 @@ const EMPTY_FILTERS = {
   has_youtube: false, has_analysis: false, on_spotify: false,
   languages: [],
   themes: [], targets: [], actions: [], tactics: [], moral_frames: [],
-  sort_by: 'popularity',
+  sort_by: 'year',
 };
 
-function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', currentPage = 1, onPageReset }) {
+function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', currentPage = 1, onPageReset, children }) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [filterOptions, setFilterOptions] = useState({});
   const [facets, setFacets] = useState({});
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -167,143 +167,122 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
   const activeCount = chips.length;
   const yr = filterOptions.year_range || {};
 
-  return (
-    <div className="search-and-filter">
-      <div className="search-container">
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Search songs, artists, albums..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <button
-          className={`filter-toggle ${isFiltersOpen ? 'active' : ''}`}
-          onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-        >
-          Filters {activeCount > 0 && <span className="filter-badge">{activeCount}</span>}
-        </button>
-        {activeCount > 0 && (
-          <button className="clear-filters" onClick={clearAllFilters}>Clear all</button>
-        )}
+  const filterGroups = (
+    <div className="sidebar-groups">
+      <GenreFilterTree
+        tree={filterOptions.genre_tree}
+        selectedGenres={filters.genres}
+        selectedParents={filters.parent_genres}
+        onToggleGenre={onToggleGenre}
+        onToggleParent={onToggleParent}
+      />
+      <ThemeFacetTree
+        facets={facets}
+        selected={filters}
+        onToggle={onToggleFacet}
+        codedCount={filterOptions.availability?.has_analysis || 0}
+      />
+      <div className="filter-section">
+        <h3 className="filter-title">Year range</h3>
+        <div className="range-inputs">
+          <input type="number" placeholder={yr.min_year ? `From ${yr.min_year}` : 'From'}
+            value={filters.year_from} onChange={(e) => setScalar('year_from', e.target.value)}
+            min={yr.min_year} max={yr.max_year} />
+          <span>to</span>
+          <input type="number" placeholder={yr.max_year ? `To ${yr.max_year}` : 'To'}
+            value={filters.year_to} onChange={(e) => setScalar('year_to', e.target.value)}
+            min={yr.min_year} max={yr.max_year} />
+        </div>
       </div>
-
-      <div className="sort-container">
-        <label>Sort by:</label>
-        <select value={filters.sort_by} onChange={(e) => setScalar('sort_by', e.target.value)}>
-          <option value="popularity">Popularity</option>
-          <option value="title">Title</option>
-          <option value="artist">Artist</option>
-          <option value="year">Year</option>
-        </select>
+      <div className="filter-section">
+        <h3 className="filter-title">Song length</h3>
+        <div className="filter-options">
+          {(filterOptions.length_buckets || []).map(b => (
+            <label key={b.value} className="filter-option">
+              <input type="checkbox" checked={filters.lengths.includes(b.value)}
+                onChange={(e) => toggleInArray('lengths', b.value, e.target.checked)} />
+              <span className="filter-label">{b.label}<span className="filter-count">({b.count})</span></span>
+            </label>
+          ))}
+        </div>
       </div>
-
-      {isFiltersOpen && (
-        <div className="filters-panel">
-          <div className="filters-layout">
-            <div className="filters-col-main">
-              <GenreFilterTree
-                tree={filterOptions.genre_tree}
-                selectedGenres={filters.genres}
-                selectedParents={filters.parent_genres}
-                onToggleGenre={onToggleGenre}
-                onToggleParent={onToggleParent}
-              />
-              <ThemeFacetTree
-                facets={facets}
-                selected={filters}
-                onToggle={onToggleFacet}
-                codedCount={filterOptions.availability?.has_analysis || 0}
-              />
-            </div>
-
-            <div className="filters-col-side">
-              <div className="filter-section">
-                <h3 className="filter-title">Year range</h3>
-                <div className="range-inputs">
-                  <input
-                    type="number"
-                    placeholder={yr.min_year ? `From ${yr.min_year}` : 'From'}
-                    value={filters.year_from}
-                    onChange={(e) => setScalar('year_from', e.target.value)}
-                    min={yr.min_year} max={yr.max_year}
-                  />
-                  <span>to</span>
-                  <input
-                    type="number"
-                    placeholder={yr.max_year ? `To ${yr.max_year}` : 'To'}
-                    value={filters.year_to}
-                    onChange={(e) => setScalar('year_to', e.target.value)}
-                    min={yr.min_year} max={yr.max_year}
-                  />
-                </div>
-              </div>
-
-              <div className="filter-section">
-                <h3 className="filter-title">Song length</h3>
-                <div className="filter-options">
-                  {(filterOptions.length_buckets || []).map(b => (
-                    <label key={b.value} className="filter-option">
-                      <input
-                        type="checkbox"
-                        checked={filters.lengths.includes(b.value)}
-                        onChange={(e) => toggleInArray('lengths', b.value, e.target.checked)}
-                      />
-                      <span className="filter-label">{b.label}<span className="filter-count">({b.count})</span></span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="filter-section">
-                <h3 className="filter-title">Available on</h3>
-                <div className="filter-options">
-                  <label className="filter-option">
-                    <input type="checkbox" checked={filters.on_spotify} onChange={() => toggleBool('on_spotify')} />
-                    <span className="filter-label">On Spotify<span className="filter-count">({filterOptions.availability?.on_spotify || 0})</span></span>
-                  </label>
-                  <label className="filter-option">
-                    <input type="checkbox" checked={filters.has_youtube} onChange={() => toggleBool('has_youtube')} />
-                    <span className="filter-label">Has YouTube<span className="filter-count">({filterOptions.availability?.has_youtube || 0})</span></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="filter-section">
-                <h3 className="filter-title">Analysis</h3>
-                <div className="filter-options">
-                  <label className="filter-option">
-                    <input type="checkbox" checked={filters.has_analysis} onChange={() => toggleBool('has_analysis')} />
-                    <span className="filter-label">Has lyrics analysis<span className="filter-count">({filterOptions.availability?.has_analysis || 0})</span></span>
-                  </label>
-                </div>
-              </div>
-
-              {(filterOptions.languages?.length > 0) && (
-                <div className="filter-section">
-                  <h3 className="filter-title">Language</h3>
-                  <div className="filter-options">
-                    {filterOptions.languages.map(l => (
-                      <label key={l.value} className="filter-option">
-                        <input
-                          type="checkbox"
-                          checked={filters.languages.includes(l.value)}
-                          onChange={(e) => toggleInArray('languages', l.value, e.target.checked)}
-                        />
-                        <span className="filter-label">{l.value}<span className="filter-count">({l.count})</span></span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+      <div className="filter-section">
+        <h3 className="filter-title">Available on</h3>
+        <div className="filter-options">
+          <label className="filter-option">
+            <input type="checkbox" checked={filters.on_spotify} onChange={() => toggleBool('on_spotify')} />
+            <span className="filter-label">On Spotify<span className="filter-count">({filterOptions.availability?.on_spotify || 0})</span></span>
+          </label>
+          <label className="filter-option">
+            <input type="checkbox" checked={filters.has_youtube} onChange={() => toggleBool('has_youtube')} />
+            <span className="filter-label">Has YouTube<span className="filter-count">({filterOptions.availability?.has_youtube || 0})</span></span>
+          </label>
+        </div>
+      </div>
+      <div className="filter-section">
+        <h3 className="filter-title">Analysis</h3>
+        <div className="filter-options">
+          <label className="filter-option">
+            <input type="checkbox" checked={filters.has_analysis} onChange={() => toggleBool('has_analysis')} />
+            <span className="filter-label">Has lyrics analysis<span className="filter-count">({filterOptions.availability?.has_analysis || 0})</span></span>
+          </label>
+        </div>
+      </div>
+      {(filterOptions.languages?.length > 0) && (
+        <div className="filter-section">
+          <h3 className="filter-title">Language</h3>
+          <div className="filter-options">
+            {filterOptions.languages.map(l => (
+              <label key={l.value} className="filter-option">
+                <input type="checkbox" checked={filters.languages.includes(l.value)}
+                  onChange={(e) => toggleInArray('languages', l.value, e.target.checked)} />
+                <span className="filter-label">{l.value}<span className="filter-count">({l.count})</span></span>
+              </label>
+            ))}
           </div>
         </div>
       )}
+    </div>
+  );
 
-      <FilterChips chips={chips} onRemove={removeChip} />
+  return (
+    <div className="browse">
+      <div className="browse-top">
+        <div className="search-container">
+          <input type="text" className="search-input" placeholder="Search songs, artists, albums..."
+            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <button className="filter-toggle drawer-toggle" onClick={() => setDrawerOpen(true)}>
+            Filters {activeCount > 0 && <span className="filter-badge">{activeCount}</span>}
+          </button>
+          {activeCount > 0 && (
+            <button className="clear-filters" onClick={clearAllFilters}>Clear all</button>
+          )}
+        </div>
+        <div className="sort-container">
+          <label>Sort by:</label>
+          <select value={filters.sort_by} onChange={(e) => setScalar('sort_by', e.target.value)}>
+            <option value="title">Title</option>
+            <option value="artist">Artist</option>
+            <option value="year">Year</option>
+          </select>
+        </div>
+        <FilterChips chips={chips} onRemove={removeChip} />
+      </div>
 
-      {loading && <div className="search-loading">Searching...</div>}
+      <div className="browse-body">
+        <aside className={`browse-sidebar ${drawerOpen ? 'open' : ''}`}>
+          <div className="sidebar-drawer-head">
+            <h2 className="sidebar-title">Filters</h2>
+            <button className="drawer-close" onClick={() => setDrawerOpen(false)} aria-label="Close filters">✕</button>
+          </div>
+          {filterGroups}
+        </aside>
+        {drawerOpen && <div className="drawer-scrim" onClick={() => setDrawerOpen(false)} />}
+        <div className="browse-results">
+          {loading && <div className="search-loading">Searching...</div>}
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

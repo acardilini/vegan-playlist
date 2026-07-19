@@ -134,7 +134,7 @@ function SearchSection({ initialSearchQuery = '' }) {
           q: initialSearchQuery, // Use initial query if provided
           page: 1,
           limit: 20,
-          sort_by: 'popularity'
+          sort_by: 'year'
         });
         setSearchResults(results);
         setHasSearched(true);
@@ -180,73 +180,73 @@ function SearchSection({ initialSearchQuery = '' }) {
           currentPage={currentPage}
           onPageReset={() => setCurrentPage(1)}
           initialQuery={initialSearchQuery}
-        />
+        >
+          {/* Song Results */}
+          {hasSearched && (
+            <div className="home-search-results">
+              {loading && <div className="loading">Loading songs…</div>}
+              {error && <div className="error-message">{error}</div>}
+              {!loading && !error && (!searchResults || searchResults.songs?.length === 0) && (
+                <div className="no-results">No songs found. Try different filters or search terms.</div>
+              )}
+              {!loading && !error && searchResults && searchResults.songs?.length > 0 && (
+                <div className="search-results-container">
+                  <h3>
+                    {searchResults.filters_applied?.query ||
+                     Object.values(searchResults.filters_applied || {}).some(isActiveFilterValue) ? (
+                      <>
+                        {searchResults.pagination.total} songs found
+                        {searchResults.filters_applied?.query && (
+                          <span> for "{searchResults.filters_applied.query}"</span>
+                        )}
+                      </>
+                    ) : (
+                      <>Showing {searchResults.pagination.total} songs</>
+                    )}
+                  </h3>
 
-        {/* Song Results */}
-        {hasSearched && (
-          <div className="home-search-results">
-            {loading && <div className="loading">Loading songs…</div>}
-            {error && <div className="error-message">{error}</div>}
-            {!loading && !error && (!searchResults || searchResults.songs?.length === 0) && (
-              <div className="no-results">No songs found. Try different filters or search terms.</div>
-            )}
-            {!loading && !error && searchResults && searchResults.songs?.length > 0 && (
-              <div className="search-results-container">
-                <h3>
-                  {searchResults.filters_applied?.query ||
-                   Object.values(searchResults.filters_applied || {}).some(isActiveFilterValue) ? (
-                    <>
-                      {searchResults.pagination.total} songs found
-                      {searchResults.filters_applied?.query && (
-                        <span> for "{searchResults.filters_applied.query}"</span>
+                  {/* Applied filters summary */}
+                  {Object.values(searchResults.filters_applied || {}).some(isActiveFilterValue) && (
+                    <div className="applied-filters">
+                      <span>Filters applied:</span>
+                      {searchResults.filters_applied.genres && searchResults.filters_applied.genres.length > 0 && (
+                        <span className="applied-filter">
+                          Genre: {Array.isArray(searchResults.filters_applied.genres)
+                            ? searchResults.filters_applied.genres.join(', ')
+                            : searchResults.filters_applied.genres}
+                        </span>
                       )}
-                    </>
-                  ) : (
-                    <>Showing {searchResults.pagination.total} songs</>
+                      {searchResults.filters_applied.year_range && (searchResults.filters_applied.year_range.from || searchResults.filters_applied.year_range.to) && (
+                        <span className="applied-filter">
+                          Year: {searchResults.filters_applied.year_range.from || '?'} - {searchResults.filters_applied.year_range.to || '?'}
+                        </span>
+                      )}
+                    </div>
                   )}
-                </h3>
 
-                {/* Applied filters summary */}
-                {Object.values(searchResults.filters_applied || {}).some(isActiveFilterValue) && (
-                  <div className="applied-filters">
-                    <span>Filters applied:</span>
-                    {searchResults.filters_applied.genres && searchResults.filters_applied.genres.length > 0 && (
-                      <span className="applied-filter">
-                        Genre: {Array.isArray(searchResults.filters_applied.genres)
-                          ? searchResults.filters_applied.genres.join(', ')
-                          : searchResults.filters_applied.genres}
-                      </span>
-                    )}
-                    {searchResults.filters_applied.year_range && (searchResults.filters_applied.year_range.from || searchResults.filters_applied.year_range.to) && (
-                      <span className="applied-filter">
-                        Year: {searchResults.filters_applied.year_range.from || '?'} - {searchResults.filters_applied.year_range.to || '?'}
-                      </span>
-                    )}
+                  <div className="songs-grid">
+                    {searchResults.songs.map((song) => (
+                      <SongCard
+                        key={song.id}
+                        song={song}
+                        songId={song.id}
+                      />
+                    ))}
                   </div>
-                )}
 
-                <div className="songs-grid">
-                  {searchResults.songs.map((song) => (
-                    <SongCard
-                      key={song.id}
-                      song={song}
-                      songId={song.id}
+                  {/* Pagination */}
+                  {searchResults.pagination.pages > 1 && (
+                    <PaginationControls
+                      currentPage={searchResults.pagination.page}
+                      totalPages={searchResults.pagination.pages}
+                      onPageChange={setCurrentPage}
                     />
-                  ))}
+                  )}
                 </div>
-
-                {/* Pagination */}
-                {searchResults.pagination.pages > 1 && (
-                  <PaginationControls
-                    currentPage={searchResults.pagination.page}
-                    totalPages={searchResults.pagination.pages}
-                    onPageChange={setCurrentPage}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </SearchAndFilter>
       </div>
     </section>
   );
