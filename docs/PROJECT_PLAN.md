@@ -266,8 +266,14 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     backend 54/54; live headless smoke (facet tree, sub-dimension analysis, /search AND-narrowing, real
     vegan-themes, workbench analysis)._ Plan:
     [`superpowers/plans/2026-07-17-B1-analysis-backend.md`](./superpowers/plans/2026-07-17-B1-analysis-backend.md).
-  - ☐ **B2 — Song page + workbench panel + mock-UI deletion.** `LyricalAnalysis` component (Option C);
-    song-page + admin read-only panel; DataDashboard theme chart; delete the mock categorisation UI.
+  - ☑ **B2 — Song page + workbench panel + mock-UI deletion** _(done 2026-07-19, branch
+    `session-B2-song-page-analysis` merged to `main`, pushed)._ `LyricalAnalysis` Option-C component
+    (attributes card + sub-dimension-coloured chips + inline mini-legend + evidence toggle) on the public
+    song page + read-only admin workbench; enriched analysis payload (per-code definitions + scalar
+    attribute labels); shared `subDimensionPalette.js`; DataDashboard theme chart on real `vegan-themes`;
+    mock categorisation UI deleted (`CategorizationFields`/`BulkCategorizationWorkflow`/`BulkEditModal`).
+    _Smoke ✅: backend 56/56; build + lint clean; live smoke of all 3 surfaces, curator-confirmed._ Plan:
+    [`superpowers/plans/2026-07-18-B2-song-page-analysis.md`](./superpowers/plans/2026-07-18-B2-song-page-analysis.md).
   - ☐ **B3 — Faceted browse.** Full facet groups, all-AND, coded-only note, per-code counts.
   - ☐ **B4 — Explore vector map.** 2D + 3D scatter, space/colour toggles, spotlight filter, hover/click.
 - ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
