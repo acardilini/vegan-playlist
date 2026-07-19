@@ -167,4 +167,16 @@ export const spotifyService = {
       return null;
     }
   },
+
+  // Get the analysis facet tree for browse filters. Relative URL — Vite proxies /api.
+  getFacets: async () => {
+    try {
+      const response = await fetch('/api/analysis/facets');
+      if (!response.ok) throw new Error('Failed to fetch facets');
+      return await response.json();
+    } catch (error) {
+      console.warn('Could not load facets:', error);
+      return {};
+    }
+  },
 };
