@@ -73,6 +73,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     const t = setTimeout(async () => {
       const data = await spotifyService.getBrowseFacets(facetParams);
       if (token !== facetsReq.current) return; // stale — a newer request superseded this
+      if (!data || !data.genre_tree) return; // failed/empty response — keep last-good counts
       setFilterOptions({
         genre_tree: data.genre_tree, year_range: data.year_range,
         languages: data.languages, length_buckets: data.length_buckets,
@@ -200,24 +201,32 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       <div className="filter-section">
         <h3 className="filter-title">Song length</h3>
         <div className="filter-options">
-          {(filterOptions.length_buckets || []).map(b => (
-            <label key={b.value} className="filter-option">
-              <input type="checkbox" checked={filters.lengths.includes(b.value)}
-                onChange={(e) => toggleInArray('lengths', b.value, e.target.checked)} />
-              <span className="filter-label">{b.label}<span className="filter-count">({b.count})</span></span>
-            </label>
-          ))}
+          {(filterOptions.length_buckets || []).map(b => {
+            const selected = filters.lengths.includes(b.value);
+            const zero = b.count === 0 && !selected;
+            return (
+              <label key={b.value} className={`filter-option ${zero ? 'is-zero' : ''}`}>
+                <input type="checkbox" checked={selected} disabled={zero}
+                  onChange={(e) => toggleInArray('lengths', b.value, e.target.checked)} />
+                <span className="filter-label">{b.label}<span className="filter-count">({b.count})</span></span>
+              </label>
+            );
+          })}
         </div>
       </div>
       <div className="filter-section">
         <h3 className="filter-title">Available on</h3>
         <div className="filter-options">
-          <label className="filter-option">
-            <input type="checkbox" checked={filters.on_spotify} onChange={() => toggleBool('on_spotify')} />
+          <label className={`filter-option ${(filterOptions.availability?.on_spotify || 0) === 0 && !filters.on_spotify ? 'is-zero' : ''}`}>
+            <input type="checkbox" checked={filters.on_spotify}
+              disabled={(filterOptions.availability?.on_spotify || 0) === 0 && !filters.on_spotify}
+              onChange={() => toggleBool('on_spotify')} />
             <span className="filter-label">On Spotify<span className="filter-count">({filterOptions.availability?.on_spotify || 0})</span></span>
           </label>
-          <label className="filter-option">
-            <input type="checkbox" checked={filters.has_youtube} onChange={() => toggleBool('has_youtube')} />
+          <label className={`filter-option ${(filterOptions.availability?.has_youtube || 0) === 0 && !filters.has_youtube ? 'is-zero' : ''}`}>
+            <input type="checkbox" checked={filters.has_youtube}
+              disabled={(filterOptions.availability?.has_youtube || 0) === 0 && !filters.has_youtube}
+              onChange={() => toggleBool('has_youtube')} />
             <span className="filter-label">Has YouTube<span className="filter-count">({filterOptions.availability?.has_youtube || 0})</span></span>
           </label>
         </div>
@@ -225,8 +234,10 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       <div className="filter-section">
         <h3 className="filter-title">Analysis</h3>
         <div className="filter-options">
-          <label className="filter-option">
-            <input type="checkbox" checked={filters.has_analysis} onChange={() => toggleBool('has_analysis')} />
+          <label className={`filter-option ${(filterOptions.availability?.has_analysis || 0) === 0 && !filters.has_analysis ? 'is-zero' : ''}`}>
+            <input type="checkbox" checked={filters.has_analysis}
+              disabled={(filterOptions.availability?.has_analysis || 0) === 0 && !filters.has_analysis}
+              onChange={() => toggleBool('has_analysis')} />
             <span className="filter-label">Has lyrics analysis<span className="filter-count">({filterOptions.availability?.has_analysis || 0})</span></span>
           </label>
         </div>
@@ -235,13 +246,17 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         <div className="filter-section">
           <h3 className="filter-title">Language</h3>
           <div className="filter-options">
-            {filterOptions.languages.map(l => (
-              <label key={l.value} className="filter-option">
-                <input type="checkbox" checked={filters.languages.includes(l.value)}
-                  onChange={(e) => toggleInArray('languages', l.value, e.target.checked)} />
-                <span className="filter-label">{l.value}<span className="filter-count">({l.count})</span></span>
-              </label>
-            ))}
+            {filterOptions.languages.map(l => {
+              const selected = filters.languages.includes(l.value);
+              const zero = l.count === 0 && !selected;
+              return (
+                <label key={l.value} className={`filter-option ${zero ? 'is-zero' : ''}`}>
+                  <input type="checkbox" checked={selected} disabled={zero}
+                    onChange={(e) => toggleInArray('languages', l.value, e.target.checked)} />
+                  <span className="filter-label">{l.value}<span className="filter-count">({l.count})</span></span>
+                </label>
+              );
+            })}
           </div>
         </div>
       )}
