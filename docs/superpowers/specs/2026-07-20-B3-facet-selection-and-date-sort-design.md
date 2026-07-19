@@ -93,8 +93,11 @@ Verify the specific Moral Frames (closed) and expanded-row cases are left-aligne
 - **Frontend:** add `<option value="date_added">Date added</option>` to the Sort dropdown (alongside
   Title/Artist/Year; Year stays the default from the prior round).
 - **Backend `/search`:** add a `date_added` case to the `orderBy` switch →
-  `ORDER BY s.playlist_added_at DESC NULLS LAST, s.title ASC` (newest additions first). The column is
-  populated for all live songs.
+  `ORDER BY s.playlist_added_at DESC NULLS LAST, s.title ASC` (newest additions first). **Caveat:**
+  `playlist_added_at` is NULL for the ~534-song April-2026 batch (never on the Spotify playlist), so
+  `NULLS LAST` sorts that recent batch to the bottom. Curator to confirm at smoke whether to keep strict
+  playlist-date semantics or fall back to `COALESCE(playlist_added_at, date_added)` so those sort by
+  import date.
 
 ## Out of scope (YAGNI)
 
