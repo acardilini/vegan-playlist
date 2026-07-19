@@ -43,11 +43,15 @@ test('genreFilterClause returns null for empty input', () => {
   assert.equal(g.genreFilterClause(undefined, 1), null);
 });
 
+test('EFFECTIVE_GENRE_EXPR includes TRIM for parity with buildGenreTree', () => {
+  assert.ok(g.EFFECTIVE_GENRE_EXPR.includes('TRIM'), 'effective-genre expression trims to match buildGenreTree');
+});
+
 test('lengthFilterClause maps presets to duration ranges (OR)', () => {
-  assert.equal(g.lengthFilterClause(['short']), '((s.duration_ms < 120000))');
+  assert.equal(g.lengthFilterClause(['short']), '((s.duration_ms >= 1 AND s.duration_ms < 120000))');
   assert.equal(
     g.lengthFilterClause(['short', 'long']),
-    '((s.duration_ms < 120000) OR (s.duration_ms >= 240000))');
+    '((s.duration_ms >= 1 AND s.duration_ms < 120000) OR (s.duration_ms >= 240000))');
   assert.equal(g.lengthFilterClause(['medium']), '((s.duration_ms >= 120000 AND s.duration_ms < 240000))');
   assert.equal(g.lengthFilterClause([]), null);
 });

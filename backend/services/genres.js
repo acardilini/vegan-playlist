@@ -16,7 +16,7 @@ const EFFECTIVE_GENRE_JOIN = `
     LIMIT 1
   ) efg ON true`;
 
-const EFFECTIVE_GENRE_EXPR = `LOWER(COALESCE(NULLIF(s.genre, ''), efg.g))`;
+const EFFECTIVE_GENRE_EXPR = `LOWER(TRIM(COALESCE(NULLIF(s.genre, ''), efg.g)))`;
 
 function buildGenreTree(rows) {
   const parents = new Map(); // parent -> Map(subgenre -> count)
@@ -50,7 +50,7 @@ function genreFilterClause(genres, startIndex) {
 
 // Fixed preset -> duration_ms range (ms). Values are constants, safe to inline into SQL.
 const LENGTH_BUCKETS = [
-  { value: 'short', label: 'Short (< 2 min)', min: null, max: 120000 },
+  { value: 'short', label: 'Short (< 2 min)', min: 1, max: 120000 },
   { value: 'medium', label: 'Medium (2–4 min)', min: 120000, max: 240000 },
   { value: 'long', label: 'Long (4+ min)', min: 240000, max: null },
 ];
