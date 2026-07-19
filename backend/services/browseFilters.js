@@ -42,8 +42,15 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
     where.push(`s.language = ANY($${idx}::text[])`); params.push(asList(filters.languages)); idx++;
   }
   if (inc('analysis')) {
-    const sel = { themes: filters.themes, targets: filters.targets, actions: filters.actions, tactics: filters.tactics, moral_frames: filters.moral_frames };
-    const f = analysis.facetFilterConditions(sel, idx);
+    const sel = {
+      codes: {
+        themes: filters.themes, targets: filters.targets, actions: filters.actions,
+        tactics: filters.tactics, moral_frames: filters.moral_frames,
+      },
+      groups: filters.facet_groups,
+      subdims: filters.facet_subdims,
+    };
+    const f = analysis.facetSelectionClauses(sel, idx);
     if (f.needsJoin) { where.push(...f.clauses); params.push(...f.params); idx += f.params.length; joins.analysis = true; }
   }
 
