@@ -111,7 +111,7 @@ function FeaturedSongs() {
 // True only when a filter value is genuinely active (empty arrays, empty
 // strings, default sort, and blank year_range objects don't count)
 function isActiveFilterValue(value) {
-  if (!value || value === 'popularity') return false;
+  if (!value || value === 'year') return false;
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === 'object') return Object.values(value).some(Boolean);
   return true;
