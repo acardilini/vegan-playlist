@@ -121,6 +121,15 @@ Every **counted** filter group recomputes its counts from the current selection,
   public endpoint).
 - Selecting a filter still triggers the existing `/search`; results and counts refresh together.
 
+### 5. Sort options — drop "Popularity"
+
+Remove **Popularity** from the "Sort by" dropdown (popularity is already display-suppressed
+site-wide; the curator does not want it as a sort). Remaining options: **Title · Artist · Year**.
+The default sort becomes **Year (newest first)** (`sort_by='year'`, which the backend already maps to
+`release_date DESC NULLS LAST, title ASC`). The frontend's default `sort_by` state changes from
+`'popularity'` to `'year'`; the backend still accepts `popularity` (harmless, no longer sent). This
+is a small change folded into the sidebar frontend work.
+
 ## Out of scope (YAGNI)
 
 - Per-analysis-dimension exclude-self (the whole tree is one group).
