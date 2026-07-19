@@ -282,6 +282,11 @@ router.get('/search', async (req, res) => {
       valence_max,
       genres,
       parent_genres,
+      lengths,
+      has_youtube,
+      has_analysis,
+      on_spotify,
+      languages,
       themes: fThemes,
       targets: fTargets,
       actions: fActions,
@@ -353,19 +358,38 @@ router.get('/search', async (req, res) => {
       paramIndex++;
     }
 
-    // Genre filtering (specific subgenres) - Use songs.genre field
-    if (genres) {
-      const genreList = Array.isArray(genres) ? genres : [genres];
-      whereConditions.push(`s.genre = ANY($${paramIndex}::text[])`);
-      queryParams.push(genreList);
-      paramIndex++;
+    // Effective-genre filtering: song genre, else primary artist's first genre.
+    // The frontend expands a selected parent into its subgenre values, so we only
+    // ever match subgenre-level effective values here.
+    let needsEffectiveGenreJoin = false;
+    const gf = genres ? genres_svc.genreFilterClause(genres, paramIndex) : null;
+    if (gf) {
+      whereConditions.push(gf.clause);
+      queryParams.push(...gf.params);
+      paramIndex += gf.params.length;
+      needsEffectiveGenreJoin = true;
     }
-    
-    // Parent genre filtering - Use songs.parent_genre field
-    if (parent_genres) {
-      const parentGenreList = Array.isArray(parent_genres) ? parent_genres : [parent_genres];
-      whereConditions.push(`s.parent_genre = ANY($${paramIndex}::text[])`);
-      queryParams.push(parentGenreList);
+
+    // Song length presets (Short/Medium/Long) -> duration_ms ranges (no params).
+    const lengthClause = lengths ? genres_svc.lengthFilterClause(lengths) : null;
+    if (lengthClause) whereConditions.push(lengthClause);
+
+    // Availability / analysis toggles.
+    if (has_youtube === 'true') {
+      whereConditions.push(`EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = s.id)`);
+    }
+    if (has_analysis === 'true') {
+      whereConditions.push(`EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${analysis.DEFAULT_MODEL}')`);
+    }
+    if (on_spotify === 'true') {
+      whereConditions.push(`s.spotify_id IS NOT NULL AND s.spotify_id <> ''`);
+    }
+
+    // Language filter (sung-in language).
+    if (languages) {
+      const langList = Array.isArray(languages) ? languages : [languages];
+      whereConditions.push(`s.language = ANY($${paramIndex}::text[])`);
+      queryParams.push(langList);
       paramIndex++;
     }
 
@@ -418,8 +442,10 @@ router.get('/search', async (req, res) => {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     queryParams.push(parseInt(limit), offset);
 
+    const effectiveGenreJoin = needsEffectiveGenreJoin ? genres_svc.EFFECTIVE_GENRE_JOIN : '';
+
     const searchQuery = `
-      SELECT 
+      SELECT
         s.id,
         s.spotify_id,
         s.title,
@@ -439,6 +465,7 @@ router.get('/search', async (req, res) => {
       JOIN song_artists sart ON s.id = sart.song_id
       JOIN artists a ON sart.artist_id = a.id
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
+      ${effectiveGenreJoin}
       ${facetJoin}
       ${whereClause}
       GROUP BY s.id, al.id
@@ -455,6 +482,7 @@ router.get('/search', async (req, res) => {
       LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sart ON s.id = sart.song_id
       JOIN artists a ON sart.artist_id = a.id
+      ${effectiveGenreJoin}
       ${facetJoin}
       ${whereClause}
     `;
