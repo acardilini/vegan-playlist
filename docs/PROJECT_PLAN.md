@@ -1,6 +1,6 @@
 # The Vegan Playlist — Modernisation Project Plan
 
-_Last updated: 2026-07-06_
+_Last updated: 2026-07-19_
 
 This is the phased roadmap for modernising the prototype into a clean, branded, deployable
 product. See [`PROJECT_OVERVIEW.md`](./PROJECT_OVERVIEW.md) for the philosophy and
