@@ -189,6 +189,43 @@ test('facetTree accepts a constraint that narrows the counted set', async () => 
   assert.ok(uKilling.count > constrainedCount, 'constraint reduces the counted set');
 });
 
+test('facetSelectionClauses: a group is one OR-term over its codes', () => {
+  const { clauses, params, needsJoin } = analysis.facetSelectionClauses(
+    { groups: ['themes:violence'] }, 1);
+  assert.equal(needsJoin, true);
+  assert.equal(clauses.length, 1, 'one term = one clause');
+  // violence group = killing, brutality, systemic_violence (3 codes) -> parenthesised OR
+  assert.match(clauses[0], /^\(sa\.themes @> \$1::jsonb OR sa\.themes @> \$2::jsonb OR sa\.themes @> \$3::jsonb\)$/);
+  assert.equal(params.length, 3);
+  const codes = params.map(p => JSON.parse(p)[0].code).sort();
+  assert.deepEqual(codes, ['brutality', 'killing', 'systemic_violence']);
+});
+
+test('facetSelectionClauses: a sub-dimension ORs all its codes in one term', () => {
+  const { clauses, params } = analysis.facetSelectionClauses(
+    { subdims: ['themes:cruelty_suffering'] }, 1);
+  assert.equal(clauses.length, 1);
+  assert.ok(clauses[0].startsWith('(') && clauses[0].includes(' OR '));
+  assert.ok(params.length > 3, 'cruelty_suffering spans several codes');
+});
+
+test('facetSelectionClauses: codes AND with a group term, indices sequential', () => {
+  const { clauses, params, needsJoin } = analysis.facetSelectionClauses(
+    { codes: { targets: ['cows'] }, groups: ['themes:violence'] }, 5);
+  assert.equal(needsJoin, true);
+  assert.equal(clauses.length, 2, 'one code term + one group term');
+  assert.ok(clauses.includes('sa.topics @> $5::jsonb'), 'code term first, at startIndex');
+  assert.ok(clauses.some(c => c.startsWith('(sa.themes @> $6::jsonb OR')), 'group term continues numbering');
+  assert.equal(params.length, 4); // cows + 3 violence codes
+});
+
+test('facetSelectionClauses: empty selection needs no join', () => {
+  const r = analysis.facetSelectionClauses({}, 1);
+  assert.equal(r.needsJoin, false);
+  assert.deepEqual(r.clauses, []);
+  assert.deepEqual(r.params, []);
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);

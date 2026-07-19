@@ -149,21 +149,65 @@ async function facetTree(db, constraint = null) {
 
 const FACET_TO_COLUMN = { themes: 'themes', targets: 'topics', actions: 'advocacy', tactics: 'tactics', moral_frames: 'moral_frames' };
 
-function facetFilterConditions(selections, startIndex) {
+// Reverse maps (built once): per facet dimension, group id -> [code ids] and sub-dimension id -> [code ids].
+const FACET_GROUP_CODES = {};
+const FACET_SUBDIM_CODES = {};
+for (const dimKey of Object.keys(FACET_TO_COLUMN)) {
+  const list = taxonomy[dimKey] || [];
+  const g = new Map(), s = new Map();
+  for (const it of list) {
+    if (it.group) { if (!g.has(it.group)) g.set(it.group, []); g.get(it.group).push(it.id); }
+    if (it.sub_dimension) { if (!s.has(it.sub_dimension)) s.set(it.sub_dimension, []); s.get(it.sub_dimension).push(it.id); }
+  }
+  FACET_GROUP_CODES[dimKey] = g;
+  FACET_SUBDIM_CODES[dimKey] = s;
+}
+
+function splitDimId(v) {
+  const i = String(v).indexOf(':');
+  return i < 0 ? [null, null] : [v.slice(0, i), v.slice(i + 1)];
+}
+
+// AND-of-terms builder. codes: exact terms; groups/subdims: OR-over-their-codes terms.
+function facetSelectionClauses(sel, startIndex) {
   const clauses = [], params = [];
   let idx = startIndex;
-  for (const [facet, column] of Object.entries(FACET_TO_COLUMN)) {
-    const raw = selections && selections[facet];
-    if (!raw) continue;
-    const codes = Array.isArray(raw) ? raw : [raw];
-    for (const code of codes) {
+  const asArr = (v) => v == null ? [] : (Array.isArray(v) ? v : [v]);
+  const pushTerm = (column, codeList) => {
+    const ors = [];
+    for (const code of codeList) {
       if (!code) continue;
-      clauses.push(`sa.${column} @> $${idx}::jsonb`);
+      ors.push(`sa.${column} @> $${idx}::jsonb`);
       params.push(JSON.stringify([{ code }]));
       idx++;
     }
+    if (ors.length === 1) clauses.push(ors[0]);
+    else if (ors.length > 1) clauses.push('(' + ors.join(' OR ') + ')');
+  };
+
+  // individual code terms (each exact, ANDed)
+  for (const [dimKey, column] of Object.entries(FACET_TO_COLUMN)) {
+    for (const code of asArr(sel.codes && sel.codes[dimKey])) pushTerm(column, [code]);
+  }
+  // group terms (each OR over its codes)
+  for (const gv of asArr(sel.groups)) {
+    const [dimKey, id] = splitDimId(gv);
+    const column = FACET_TO_COLUMN[dimKey];
+    const codes = column && FACET_GROUP_CODES[dimKey] && FACET_GROUP_CODES[dimKey].get(id);
+    if (codes && codes.length) pushTerm(column, codes);
+  }
+  // sub-dimension terms (each OR over its codes)
+  for (const sv of asArr(sel.subdims)) {
+    const [dimKey, id] = splitDimId(sv);
+    const column = FACET_TO_COLUMN[dimKey];
+    const codes = column && FACET_SUBDIM_CODES[dimKey] && FACET_SUBDIM_CODES[dimKey].get(id);
+    if (codes && codes.length) pushTerm(column, codes);
   }
   return { clauses, params, needsJoin: clauses.length > 0 };
+}
+
+function facetFilterConditions(selections, startIndex) {
+  return facetSelectionClauses({ codes: selections }, startIndex);
 }
 
 async function themeCounts(db, limit = 15) {
@@ -180,4 +224,4 @@ async function themeCounts(db, limit = 15) {
   return r.rows.map(row => ({ theme: row.theme, label: label('themes', row.theme), song_count: row.song_count }));
 }
 
-module.exports = { DEFAULT_MODEL, EVIDENCE_DIMS, DIM_TO_TAXONOMY, taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree, facetFilterConditions, themeCounts };
+module.exports = { DEFAULT_MODEL, EVIDENCE_DIMS, DIM_TO_TAXONOMY, taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree, facetFilterConditions, facetSelectionClauses, themeCounts };
