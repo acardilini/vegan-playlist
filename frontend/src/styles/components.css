@@ -2186,3 +2186,32 @@
 .la-evidence-list li { display: flex; flex-direction: column; gap: 2px; }
 .la-evidence-tag { font-size: 0.75rem; color: var(--text-muted); }
 .la-evidence-quote { color: var(--text-secondary); font-style: italic; }
+
+/* B3 — thematic facet tree */
+.theme-facet-tree .filter-options.scrollable { max-height: 320px; }
+.filter-note {
+  color: var(--text-muted);
+  font: var(--text-meta);
+  margin: var(--space-1) 0 var(--space-2);
+}
+.facet-dim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font: var(--text-label);
+  cursor: pointer;
+  padding: var(--space-1) 0;
+}
+.facet-sub {
+  border-left: 3px solid var(--border-hairline);
+  padding-left: var(--space-2);
+  margin: var(--space-1) 0 var(--space-1) var(--space-2);
+}
+.facet-sub-label { font: var(--text-meta); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
+.facet-group-label { color: var(--text-secondary); font: var(--text-body-sm); margin: 2px 0; }
+.facet-code { padding-left: var(--space-2); }
+.facet-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: var(--space-1); vertical-align: middle; }
