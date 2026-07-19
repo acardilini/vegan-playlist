@@ -133,6 +133,35 @@ test('themeCounts aggregates real themes from song_lyric_analysis', async () => 
   assert.ok(rows.length <= 15);
 });
 
+test('facetTree rolls up two codes in the same group with distinct-song counts', async () => {
+  // Song A: both violence codes; Song B: only killing. Group "violence" = 2 distinct songs.
+  const a = (await pool.query(
+    `INSERT INTO songs (title, status, published, data_source)
+     VALUES ('ZZZANL TwoCode A', 'included', true, 'manual') RETURNING id`)).rows[0];
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, 'gemma4:latest', $2::jsonb, '[]', '[]', '[]', '[]')`,
+    [a.id, JSON.stringify([{ code: 'killing', evidence: 'x' }, { code: 'brutality', evidence: 'y' }])]);
+  const b = (await pool.query(
+    `INSERT INTO songs (title, status, published, data_source)
+     VALUES ('ZZZANL TwoCode B', 'included', true, 'manual') RETURNING id`)).rows[0];
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, 'gemma4:latest', $2::jsonb, '[]', '[]', '[]', '[]')`,
+    [b.id, JSON.stringify([{ code: 'killing', evidence: 'z' }])]);
+
+  const t = await analysis.facetTree(pool);
+  const cruelty = t.themes.sub_dimensions.find(s => s.id === 'cruelty_suffering');
+  const violence = cruelty.groups.find(g => g.id === 'violence');
+  const killing = violence.codes.find(c => c.code === 'killing');
+  const brutality = violence.codes.find(c => c.code === 'brutality');
+  // Distinct-song rollup: killing in A+B, brutality in A only, group = 2 distinct songs.
+  assert.ok(killing.count >= 2, 'killing counts both songs');
+  assert.ok(brutality.count >= 1, 'brutality counts song A');
+  assert.ok(violence.count >= 2, 'group counts distinct songs, not code occurrences');
+  assert.ok(violence.count >= killing.count, 'group >= any single code (distinct-song union)');
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);
