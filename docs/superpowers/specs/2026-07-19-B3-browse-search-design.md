@@ -127,6 +127,12 @@ Sort by: [ Popularity ▾ ]
 Filter groups are collapsible sections (the genre tree and facet tree are large). Styling uses
 the design-system tokens (`--bg-*`/`--text-*`/`--accent-*`/`--space-*`), never raw colours.
 
+**Panel structure (chosen via visual companion, 2026-07-19): two-column drop-down panel.**
+The two large trees (Genre, Themes & advocacy) occupy a wider left column; the five compact
+filters (Year range, Song length, Available on, Has analysis, Language) stack in a right
+column. On narrow/mobile viewports the two columns collapse to a single column (i.e. the
+accordion form). The filters button still opens/closes the whole panel; chips render below it.
+
 ### 6. Backend changes
 
 - **`GET /api/spotify/filter-options`** — return the effective-genre tree (parents +
