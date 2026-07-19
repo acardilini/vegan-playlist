@@ -164,6 +164,31 @@ test('facetTree rolls up two codes in the same group with distinct-song counts',
   assert.ok(violence.count < killing.count + brutality.count, 'group count is NOT occurrence sum of codes');
 });
 
+test('facetTree accepts a constraint that narrows the counted set', async () => {
+  // One coded song with theme killing; constrain to a non-matching language -> zero counts.
+  const s = (await pool.query(
+    `INSERT INTO songs (title, status, published, data_source, language)
+     VALUES ('ZZZANL Constrained', 'included', true, 'manual', 'English') RETURNING id`)).rows[0];
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, 'gemma4:latest', $2::jsonb, '[]', '[]', '[]', '[]')`,
+    [s.id, JSON.stringify([{ code: 'killing', evidence: 'x' }])]);
+
+  // Constrain to a language that no coded song has -> killing count unaffected by our new row.
+  const constrained = await analysis.facetTree(pool, {
+    joinSql: '', where: [`s.language = $2`], params: ['ZZZ-NoSuchLang'],
+  });
+  // themes dimension should have no 'killing' contribution from our English song under this constraint
+  const cruelty = (constrained.themes.sub_dimensions || []).find(sd => sd.id === 'cruelty_suffering');
+  const killing = cruelty && cruelty.groups.find(g => g.id === 'violence')?.codes.find(c => c.code === 'killing');
+  const constrainedCount = killing ? killing.count : 0;
+
+  const unconstrained = await analysis.facetTree(pool);
+  const uKilling = unconstrained.themes.sub_dimensions.find(sd => sd.id === 'cruelty_suffering')
+    .groups.find(g => g.id === 'violence').codes.find(c => c.code === 'killing');
+  assert.ok(uKilling.count > constrainedCount, 'constraint reduces the counted set');
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);

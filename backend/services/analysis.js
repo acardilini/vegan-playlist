@@ -96,18 +96,22 @@ async function getSongAnalysis(db, songId) {
 // DB column -> public dimension name used in API output (facetTree, etc.).
 const PUBLIC_DIMS = { themes: 'themes', topics: 'targets', advocacy: 'actions', tactics: 'tactics', moral_frames: 'moral_frames' };
 
-async function facetTree(db) {
+async function facetTree(db, constraint = null) {
   const out = {};
+  const extraJoin = constraint ? (constraint.joinSql || '') : '';
+  const extraWhere = constraint && constraint.where && constraint.where.length
+    ? ' AND ' + constraint.where.join(' AND ') : '';
+  const extraParams = constraint && constraint.params ? constraint.params : [];
   for (const [col, pub] of Object.entries(PUBLIC_DIMS)) {
     // One query: distinct (song_id, code) pairs over live+coded songs for this dimension.
     // ${col} comes from the controlled PUBLIC_DIMS whitelist — never user input.
     const rows = (await db.query(
       `SELECT DISTINCT s.id AS song_id, elem->>'code' AS code
-       FROM songs s
+       FROM songs s${extraJoin}
        JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = $1
        CROSS JOIN LATERAL jsonb_array_elements(sa.${col}) AS elem
-       WHERE s.status = 'included' AND s.published = true`,
-      [DEFAULT_MODEL])).rows;
+       WHERE s.status = 'included' AND s.published = true${extraWhere}`,
+      [DEFAULT_MODEL, ...extraParams])).rows;
 
     // Distinct-song sets at code / group / sub-dimension / dimension level.
     const codeSongs = new Map(), groupSongs = new Map(), subSongs = new Map(), dimSongs = new Set();
