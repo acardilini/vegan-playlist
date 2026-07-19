@@ -57,6 +57,26 @@ test('getSongAnalysis returns the full coding with display labels', async () => 
   assert.deepEqual(a.actions, []);
 });
 
+test('getSongAnalysis enriches each code with its taxonomy definition', async () => {
+  const id = await mkCodedSong();
+  const a = await analysis.getSongAnalysis(pool, id);
+  assert.equal(typeof a.themes[0].definition, 'string');
+  assert.ok(a.themes[0].definition.length > 0, 'killing has a non-empty definition');
+});
+
+test('getSongAnalysis resolves scalar attributes to display labels', async () => {
+  const id = await mkCodedSong();
+  const a = await analysis.getSongAnalysis(pool, id);
+  assert.ok(Array.isArray(a.attributes));
+  // fixture: intensity 'high_confrontational', clarity 'highly_explicit', focus 'central_focus'
+  const byLabel = Object.fromEntries(a.attributes.map(x => [x.label, x.value]));
+  assert.equal(byLabel['Intensity'], 'High/Confrontational');
+  assert.equal(byLabel['Clarity'], 'Highly Explicit');
+  assert.equal(byLabel['Focus'], 'Central Focus');
+  // no null/empty attributes leak in
+  assert.ok(a.attributes.every(x => x.value));
+});
+
 test('getSongAnalysis returns null for an un-coded song', async () => {
   const s = (await pool.query(
     `INSERT INTO songs (title, status, published, data_source)

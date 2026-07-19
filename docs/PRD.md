@@ -346,11 +346,13 @@ keep/rebuild/drop/defer decisions are recorded in
 `/api/analytics` (dataset visualisation data).
 
 ### 11.5 Data Model (implemented tables)
-`artists`, `albums`, `songs` (rich `TEXT[]` coding arrays: `vegan_focus`, `animal_category`,
-`advocacy_style`, `advocacy_issues`, `lyrical_explicitness`; plus `your_review`,
-`audio_review_url`, `inclusion_notes`, `rating`), `song_artists`, `categories`,
-`song_categories`, `playlists`, `playlist_songs`. Extended via migrations: featured field,
-lyrics fields, manual-additions, YouTube videos, song-submissions, playlist-sync.
+`artists`, `albums`, `songs` (curatorial fields `your_review`, `audio_review_url`,
+`inclusion_notes`, `rating`), `song_artists`, `categories`, `song_categories`, `playlists`,
+`playlist_songs`. Real lyrical analysis lives in `song_lyric_analysis` (the five mock
+categorisation arrays `vegan_focus`/`animal_category`/`advocacy_style`/`advocacy_issues`/
+`lyrical_explicitness` were always empty and were dropped in migration 007, sub-project B).
+Extended via migrations: featured field, lyrics fields, manual-additions, YouTube videos,
+song-submissions, playlist-sync.
 
 ### 11.6 Known Gaps vs. Vision (Sections 1–10)
 - **Authentication/authorisation:** the admin console is not access-controlled. ⛔ (Phase 4).

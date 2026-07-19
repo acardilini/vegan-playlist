@@ -1,11 +1,17 @@
+import LyricalAnalysis from '../LyricalAnalysis';
+
 function AnalysisPanel({ wb }) {
   return (
     <section className="wb-panel">
       <h2>Analysis</h2>
-      <p className="wb-readonly">
-        {wb.analysed ? 'Analysed (gemma4:latest)' : 'Not yet analysed'}
-      </p>
-      <p className="admin-stub">Coded themes are added by the external analysis process (sub-project B). Read-only here.</p>
+      {wb.analysis ? (
+        <>
+          <p className="wb-readonly">Coded with gemma4:latest. Read-only — added by the external analysis process.</p>
+          <LyricalAnalysis analysis={wb.analysis} />
+        </>
+      ) : (
+        <p className="admin-stub">Not yet analysed. Coded themes are added by the external analysis process (sub-project B).</p>
+      )}
     </section>
   );
 }

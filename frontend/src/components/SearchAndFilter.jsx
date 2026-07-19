@@ -4,11 +4,6 @@ import { spotifyService } from '../api/spotifyService';
 function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', currentPage = 1, onPageReset }) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [filters, setFilters] = useState({
-    vegan_focus: [],
-    animal_category: [],
-    advocacy_style: [],
-    advocacy_issues: [],
-    lyrical_explicitness: [],
     genres: [],
     parent_genres: [],
     year_from: '',
@@ -118,11 +113,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
 
   const clearAllFilters = () => {
     setFilters({
-      vegan_focus: [],
-      animal_category: [],
-      advocacy_style: [],
-      advocacy_issues: [],
-      lyrical_explicitness: [],
       genres: [],
       parent_genres: [],
       year_from: '',
@@ -341,81 +331,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     );
   };
 
-  const FilterSection = ({ title, filterKey, options, type = 'checkbox', searchable = false }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-
-    if (!options || options.length === 0) return null;
-
-    const filteredOptions = searchable && searchTerm
-      ? options.filter(option => 
-          option.value.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : options;
-
-    return (
-      <div className="filter-section">
-        <h3 className="filter-title">{title}</h3>
-        
-        {searchable && options.length > 10 && (
-          <div className="filter-search">
-            <input
-              type="text"
-              placeholder={`Search ${title.toLowerCase()}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="filter-search-input"
-            />
-          </div>
-        )}
-        
-        <div className={`filter-options ${searchable ? 'scrollable' : ''}`}>
-          {type === 'checkbox' && filteredOptions.map(option => (
-            <label key={option.value} className="filter-option">
-              <input
-                type="checkbox"
-                checked={filters[filterKey].includes(option.value)}
-                onChange={(e) => handleFilterChange(filterKey, option.value, e.target.checked)}
-              />
-              <span className="filter-label">
-                {option.value}
-                <span className="filter-count">({option.count})</span>
-              </span>
-            </label>
-          ))}
-          {type === 'range' && (
-            <div className="range-inputs">
-              <input
-                type="number"
-                placeholder="Min"
-                value={filters[`${filterKey}_min`] || ''}
-                onChange={(e) => handleFilterChange(`${filterKey}_min`, e.target.value)}
-                step="0.1"
-                min="0"
-                max="1"
-              />
-              <span>to</span>
-              <input
-                type="number"
-                placeholder="Max"
-                value={filters[`${filterKey}_max`] || ''}
-                onChange={(e) => handleFilterChange(`${filterKey}_max`, e.target.value)}
-                step="0.1"
-                min="0"
-                max="1"
-              />
-            </div>
-          )}
-        </div>
-        
-        {searchable && searchTerm && filteredOptions.length === 0 && (
-          <div className="no-filter-results">
-            No {title.toLowerCase()} found matching "{searchTerm}"
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="search-and-filter">
       {/* Search Bar */}
@@ -460,37 +375,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       {isFiltersOpen && (
         <div className="filters-panel">
           <div className="filters-grid">
-            {/* Vegan Categories */}
-            <FilterSection
-              title="Vegan Focus"
-              filterKey="vegan_focus"
-              options={filterOptions.vegan_focus}
-            />
-            
-            <FilterSection
-              title="Animal Category"
-              filterKey="animal_category"
-              options={filterOptions.animal_category}
-            />
-            
-            <FilterSection
-              title="Advocacy Style"
-              filterKey="advocacy_style"
-              options={filterOptions.advocacy_style}
-            />
-            
-            <FilterSection
-              title="Advocacy Issues"
-              filterKey="advocacy_issues"
-              options={filterOptions.advocacy_issues}
-            />
-            
-            <FilterSection
-              title="Lyrical Style"
-              filterKey="lyrical_explicitness"
-              options={filterOptions.lyrical_explicitness}
-            />
-            
             <HierarchicalGenreFilter />
 
             {/* Year Range */}

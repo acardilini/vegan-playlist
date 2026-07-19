@@ -1235,43 +1235,6 @@
   color: var(--text-muted);
 }
 
-/* Advocacy analysis badges */
-.categories-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.category-group h3 {
-  font: var(--text-label);
-  color: var(--text-primary);
-  margin: 0 0 var(--space-2);
-}
-
-.category-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.category-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 14px;
-  border-radius: var(--radius-pill);
-  font: var(--text-meta);
-  letter-spacing: 0.02em;
-  background: var(--bg-surface-raised);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-hairline);
-}
-
-.category-badge.vegan-focus {
-  background: var(--accent-moss-40);
-  color: var(--accent-moss-80);
-  border-color: transparent;
-}
-
 .review-content {
   background: var(--bg-surface);
   border: 1px solid var(--border-hairline);
@@ -1357,20 +1320,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.similarity-reasons {
-  display: flex;
-  gap: var(--space-1);
-  flex-wrap: wrap;
-}
-
-.similarity-tag {
-  font: var(--text-meta);
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-moss-40);
-  color: var(--accent-moss-80);
 }
 
 /* ---------------------------------------------------------------- */
@@ -2201,3 +2150,39 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   Lyrical analysis (B2) — read-only qualitative coding display
+   ============================================================ */
+
+.lyrical-analysis { display: flex; flex-direction: column; gap: var(--space-4); }
+.la-attributes {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3); background: var(--bg-surface-raised);
+  border: 1px solid var(--border-hairline); border-radius: var(--radius-md, 8px);
+}
+.la-attr { display: flex; flex-direction: column; gap: 2px; }
+.la-attr-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.la-attr-value { color: var(--text-primary); }
+.la-dimension { display: flex; flex-direction: column; gap: var(--space-2); }
+.la-dim-heading { margin: 0; color: var(--text-primary); }
+.la-legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+.la-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+.la-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+.la-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.la-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border: 1px solid var(--border-hairline); border-left-width: 3px;
+  border-radius: 999px; background: var(--bg-surface-raised); color: var(--text-primary);
+  font-size: 0.85rem;
+}
+.la-chip-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.la-evidence-wrap { display: flex; flex-direction: column; gap: var(--space-3); }
+.la-evidence-toggle { align-self: flex-start; }
+.la-evidence { display: flex; flex-direction: column; gap: var(--space-3); }
+.la-evidence-block h5 { margin: 0 0 var(--space-1); color: var(--text-primary); }
+.la-evidence-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.la-evidence-list li { display: flex; flex-direction: column; gap: 2px; }
+.la-evidence-tag { font-size: 0.75rem; color: var(--text-muted); }
+.la-evidence-quote { color: var(--text-secondary); font-style: italic; }

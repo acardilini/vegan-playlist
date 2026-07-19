@@ -10,32 +10,28 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**B1 — Analysis Backend & Data Foundation (2026-07-17 → 2026-07-18).**
-  Executed the 14-task B1 plan via **subagent-driven development** (fresh implementer + per-task
-  spec/quality review each, then an **opus whole-branch review** — all clean). **Delivered:** new
-  `services/analysis.js` (4-level taxonomy loader Dimension>Sub-dimension>Group>Code; `getSongAnalysis`
-  with per-code sub-dimension enrichment; `facetTree` with **distinct-song** rollup counts;
-  `facetFilterConditions` AND-logic; `themeCounts`); public **`/api/analysis`** router (song + facets)
-  behind the copyright guard; **`/search`** analysis-facet AND filtering; `getWorkbench` returns the
-  full analysis object; `analytics/vegan-themes` repointed at `song_lyric_analysis`. **Migration 007**
-  drops the five empty mock columns (`vegan_focus`/`animal_category`/`advocacy_style`/`advocacy_issues`/
-  `lyrical_explicitness`) + a dead dependent view (`songs_with_manual_categories`); all references
-  stripped from `spotify.js`/`analytics.js`/`admin.js` + the export/audit scripts. **Mid-session the
-  curator restructured `taxonomy.json` into the 4-level hierarchy** (spec + plan updated accordingly;
-  song-page chips will be colour-coded by sub-dimension with an inline mini-legend, browse gets a
-  hierarchical facet tree, the map colours by sub-dimension). Backend **54/54**; live headless smoke
-  passed (facet tree, sub-dimension-enriched analysis, `/search` AND-narrowing 361→58→21, real
-  vegan-themes, workbench analysis). Branch `session-B1-analysis-backend` (18 commits) merged no-ff
-  (`4d5d6ee`) to `main`; **pushed**._
-- **Next session:** **B2 — Song page + workbench panel + mock-UI deletion.** Build the `LyricalAnalysis`
-  component (Option-C layout: compact attributes + all chips **colour-coded by sub-dimension** with an
-  inline mini-legend; explanation + per-code evidence behind a "Show evidence" toggle), consume it on
-  the public song page + read-only in the admin workbench Analysis panel, wire the DataDashboard theme
-  chart to the repointed `vegan-themes`, and **delete the mock categorisation UI** (`CategorizationFields`,
-  `BulkCategorizationWorkflow`, `BulkEditModal` bits + mock reads in HomePage/DataDashboard/
-  ArtistDetailPage/SearchAndFilter). Then **B3** (hierarchical faceted browse), **B4** (Explore vector
-  map, 2D+3D). B1's endpoints are live for B2–B4 to consume.
-- **Last updated:** 2026-07-18 _(B1 done, merged to `main` + pushed; B2 next)._
+- **Current session:** _**B2 — Song page + workbench panel + mock-UI deletion (2026-07-19).**
+  Executed the 7-task B2 plan on branch `session-B2-song-page-analysis`. **Delivered:** the new
+  **`LyricalAnalysis`** component (Option-C: compact attributes card + all chips **colour-coded by
+  sub-dimension** with an inline mini-legend; explanation + per-code evidence behind a "Show evidence"
+  toggle), consumed on the **public song page** (`SongDetailPage`, replacing the mock advocacy section)
+  and **read-only in the admin workbench Analysis panel**; **enriched** `getSongAnalysis` /
+  `/api/analysis/song/:id` with per-code `definition` + resolved scalar **attribute labels**
+  (`attributes[{label,value}]`) + `analysis.test.js`; a shared **dataviz-validated sub-dimension colour
+  palette** (`styles/subDimensionPalette.js`); the **DataDashboard theme chart** labelled from the real
+  `analytics/vegan-themes` (dead theme filter removed); and **deleted the mock categorisation UI**
+  (`CategorizationFields`, `BulkCategorizationWorkflow`, `BulkEditModal`) + all remaining mock-array
+  reads (HomePage/DataDashboard/ArtistDetailPage/SearchAndFilter). Backend **56/56**; frontend build +
+  lint clean (0 errors); **live smoke passed** — enriched `/api/analysis/song/1`, workbench `analysis`,
+  real `vegan-themes` (suffering 446/killing 358/brutality 306), mock UI gone with zero references, and
+  the **curator visually confirmed all three surfaces**. Merged no-ff to `main`; **pushed**.
+  (This session also verified the DB + repo survived an improper shutdown intact.)_
+- **Next session:** **B3 — hierarchical faceted browse.** Build the collapsible
+  `Dimension→Sub-dimension→Group→Code` facet tree UI over B1's `facetTree` (distinct-song rollup counts)
+  + `/search` analysis-facet AND filtering, with a visible only-coded note; sub-dimension colouring reuses
+  B2's shared palette. Deferred from B1: add a 2-codes-same-group `facetTree` test in B3. Then **B4**
+  (Explore vector map, 2D+3D). B1's endpoints + B2's palette are live for B3–B4 to consume.
+- **Last updated:** 2026-07-19 _(B2 done, merged to `main` + pushed; B3 next)._
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -44,13 +40,17 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    Dashboard — action tiles → Songs queues, catalogue-health line, recent-activity feed → workbench,
    Add-a-song; read-only `GET /curation/catalogue-stats` + `/curation/recent`; deleted the old admin
    `DataCompletionDashboard` + `/completion-stats` route + `DashboardStub`.
-2. **Sub-project B — Analysis integration (in progress). ~~B1~~ DONE** (`session-B1-analysis-backend`
-   merged to `main` 2026-07-18 — merge `4d5d6ee`, pushed): backend foundation — `services/analysis.js`,
+2. **Sub-project B — Analysis integration (in progress). ~~B1~~ + ~~B2~~ DONE.** B1
+   (`session-B1-analysis-backend`, merged `4d5d6ee`, 2026-07-18): backend foundation — `services/analysis.js`,
    public `/api/analysis` router, `/search` facet filtering, `getWorkbench` analysis, `analytics/vegan-themes`
-   repoint, migration 007 dropping the 5 mock columns + dead view. **Next: B2 — Song page + workbench
-   panel + mock-UI deletion** (`LyricalAnalysis` Option-C component, sub-dimension-coloured chips + inline
-   mini-legend, DataDashboard theme chart, delete the mock categorisation UI). Then **B3** (hierarchical
-   faceted browse), **B4** (Explore vector map). Plans consume B1's live endpoints. Design spec:
+   repoint, migration 007 dropping the 5 mock columns + dead view. **B2** (`session-B2-song-page-analysis`,
+   merged 2026-07-19): the `LyricalAnalysis` Option-C component (sub-dimension-coloured chips + inline
+   mini-legend + evidence toggle) on the public song page + read-only admin workbench; enriched analysis
+   payload (per-code definitions + scalar attribute labels); shared `subDimensionPalette.js`; DataDashboard
+   theme chart on real `vegan-themes`; **mock categorisation UI deleted**. **Next: B3 — hierarchical
+   faceted browse** (facet-tree UI over B1's `facetTree` + `/search` AND filtering; reuses B2's palette;
+   add the deferred 2-codes-same-group `facetTree` test). Then **B4** (Explore vector map). Plans consume
+   B1's live endpoints + B2's palette. Design spec:
    [`specs/2026-07-17-B-analysis-integration-design.md`](./superpowers/specs/2026-07-17-B-analysis-integration-design.md).
 3. **Remaining sub-projects:** C (submissions moderation / Inbox — the dashboard's disabled **Inbox**
    tile lights up here), D (YouTube search), E (lyrics fetch), F (Spotify push). Design:
@@ -522,6 +522,29 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-19 (B2 — Song page + workbench panel + mock-UI deletion; merged to `main`)** — Resumed after
+  an improper machine shutdown (battery reset). **First verified nothing was lost:** `git fsck` clean
+  (only normal dangling merge objects), working tree clean, all 9 B2 commits intact; DB alive and healthy
+  (**1,778 songs / 1,366 included / 1,332 live / 167 pending / 245 rejected**; `song_lyric_analysis` 1,853;
+  local `song_lyrics` 909 — counts drifted from B1's snapshot via the curator's own analysis/curation work,
+  not the crash). B2's code was fully committed on `session-B2-song-page-analysis` (base `4d4f602`); the
+  crash had interrupted only the End-Session wrap-up. **B2 delivered (7 tasks):** (1) enriched
+  `getSongAnalysis` / `GET /api/analysis/song/:id` with per-code `definition` + resolved scalar **attribute
+  labels** (`attributes[{label,value}]`) + `analysis.test.js`; (2) shared **dataviz-validated
+  sub-dimension palette** (`styles/subDimensionPalette.js`); (3) the **`LyricalAnalysis`** Option-C
+  component (attributes card + sub-dimension-coloured chips + inline mini-legend + "Show evidence" toggle,
+  emoji-free); (4) rendered on the **public song page** (`SongDetailPage`, dropping the mock advocacy
+  section); (5) **read-only in the admin workbench Analysis panel**; (6) **DataDashboard** theme chart
+  labelled from real `analytics/vegan-themes`, dead theme filter removed; (7) **deleted the mock
+  categorisation UI** — `CategorizationFields`, `BulkCategorizationWorkflow`, `BulkEditModal` + all
+  remaining mock-array reads in HomePage/DataDashboard/ArtistDetailPage/SearchAndFilter. **Verification:**
+  backend `node --test` **56/56**; `npm run build` clean, eslint 0 errors (8 pre-existing warnings);
+  **live smoke** on fresh backend :5000 + frontend :5173 — `/api/analysis/song/1` returns the full
+  enriched payload, `/api/admin/workbench/1` returns `analysis`, `vegan-themes` real (suffering 446 /
+  killing 358 / brutality 306), the 3 mock components gone with **zero** references; **curator visually
+  confirmed all three surfaces**. Net across the branch: **17 files, +1,005 / −967** (mostly mock-UI
+  deletion). Merged no-ff to `main`, pushed. **B3 (faceted browse) + B4 (Explore map) remain.**
 
 - **2026-07-18 (B1 — Analysis Backend & Data Foundation; merged to `main`)** — Executed the 14-task B1
   plan via **subagent-driven development** (fresh implementer + per-task spec/quality review each, then an
