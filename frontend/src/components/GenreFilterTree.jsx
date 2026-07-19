@@ -50,9 +50,10 @@ function GenreFilterTree({ tree, selectedGenres, selectedParents, onToggleParent
                 >
                   {isExpanded ? '▼' : '▶'}
                 </button>
-                <label className="filter-option parent-genre">
+                <label className={`filter-option parent-genre ${parent.count === 0 && !selectedParents.includes(parent.value) ? 'is-zero' : ''}`}>
                   <input
                     type="checkbox"
+                    disabled={parent.count === 0 && !selectedParents.includes(parent.value)}
                     checked={selectedParents.includes(parent.value)}
                     onChange={(e) => onToggleParent(parent.value, e.target.checked, subValues)}
                   />
@@ -65,19 +66,17 @@ function GenreFilterTree({ tree, selectedGenres, selectedParents, onToggleParent
 
               {isExpanded && (
                 <div className="subgenres-container">
-                  {subs.map((sub) => (
-                    <label key={sub.value} className="filter-option subgenre">
-                      <input
-                        type="checkbox"
-                        checked={selectedGenres.includes(sub.value)}
-                        onChange={(e) => onToggleGenre(sub.value, e.target.checked)}
-                      />
-                      <span className="filter-label">
-                        {sub.value}
-                        <span className="filter-count">({sub.count})</span>
-                      </span>
-                    </label>
-                  ))}
+                  {subs.map((sub) => {
+                    const zero = sub.count === 0 && !selectedGenres.includes(sub.value);
+                    return (
+                      <label key={sub.value} className={`filter-option subgenre ${zero ? 'is-zero' : ''}`}>
+                        <input type="checkbox" disabled={zero}
+                          checked={selectedGenres.includes(sub.value)}
+                          onChange={(e) => onToggleGenre(sub.value, e.target.checked)} />
+                        <span className="filter-label">{sub.value}<span className="filter-count">({sub.count})</span></span>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
             </div>

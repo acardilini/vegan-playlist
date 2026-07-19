@@ -49,22 +49,20 @@ function ThemeFacetTree({ facets, selected, onToggle, codedCount }) {
                   {sub.groups.map((group) => (
                     <div key={group.id} className="facet-group">
                       <div className="facet-group-label">{group.label}</div>
-                      {group.codes.map((c) => (
-                        <label key={c.code} className="filter-option facet-code">
-                          <input
-                            type="checkbox"
-                            checked={(selected[dimKey] || []).includes(c.code)}
-                            onChange={(e) => onToggle(dimKey, c.code, e.target.checked)}
-                          />
-                          <span className="filter-label">
-                            <span>
-                              <span className="facet-dot" style={{ background: subDimensionColor(sub.id) }} />
-                              {c.label}
+                      {group.codes.map((c) => {
+                        const sel = (selected[dimKey] || []).includes(c.code);
+                        const zero = c.count === 0 && !sel;
+                        return (
+                          <label key={c.code} className={`filter-option facet-code ${zero ? 'is-zero' : ''}`}>
+                            <input type="checkbox" disabled={zero} checked={sel}
+                              onChange={(e) => onToggle(dimKey, c.code, e.target.checked)} />
+                            <span className="filter-label">
+                              <span><span className="facet-dot" style={{ background: subDimensionColor(sub.id) }} />{c.label}</span>
+                              <span className="filter-count">({c.count})</span>
                             </span>
-                            <span className="filter-count">({c.count})</span>
-                          </span>
-                        </label>
-                      ))}
+                          </label>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>

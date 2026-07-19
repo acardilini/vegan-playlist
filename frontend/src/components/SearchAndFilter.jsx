@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { spotifyService } from '../api/spotifyService';
 import GenreFilterTree from './GenreFilterTree';
 import ThemeFacetTree from './ThemeFacetTree';
@@ -27,22 +27,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
   useEffect(() => {
     if (initialQuery && initialQuery !== searchQuery) setSearchQuery(initialQuery);
   }, [initialQuery]);
-
-  // Load filter options + facet tree once.
-  useEffect(() => {
-    (async () => {
-      try {
-        const [opts, fac] = await Promise.all([
-          spotifyService.getFilterOptions(),
-          spotifyService.getFacets(),
-        ]);
-        setFilterOptions(opts || {});
-        setFacets(fac || {});
-      } catch (error) {
-        console.error('Error loading filter options:', error);
-      }
-    })();
-  }, []);
 
   const performSearch = useCallback(async (searchParams) => {
     try {
@@ -79,6 +63,25 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     const t = setTimeout(() => performSearch(params), 300);
     return () => clearTimeout(t);
   }, [buildSearchParams, performSearch]);
+
+  // Dynamic (cross-filtered) sidebar counts: refetch on every filter change, debounced
+  // and stale-guarded. Page-less params — facets don't depend on page/limit.
+  const facetsReq = useRef(0);
+  useEffect(() => {
+    const { page: _page, limit: _limit, ...facetParams } = buildSearchParams();
+    const token = ++facetsReq.current;
+    const t = setTimeout(async () => {
+      const data = await spotifyService.getBrowseFacets(facetParams);
+      if (token !== facetsReq.current) return; // stale — a newer request superseded this
+      setFilterOptions({
+        genre_tree: data.genre_tree, year_range: data.year_range,
+        languages: data.languages, length_buckets: data.length_buckets,
+        availability: data.availability,
+      });
+      setFacets(data.facets || {});
+    }, 300);
+    return () => clearTimeout(t);
+  }, [buildSearchParams]);
 
   useEffect(() => {
     if (onPageReset && currentPage !== 1) onPageReset();
