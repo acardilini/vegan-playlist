@@ -197,7 +197,7 @@ async function getWorkbench(db, id) {
   const cover = hasArt(s.album_images);
   const play_link = !!(s.spotify_url || s.bandcamp_url || s.soundcloud_url || videos.length > 0);
   return {
-    id: s.id, title: s.title, status: s.status, published: s.published, language: s.language,
+    id: s.id, title: s.title, status: s.status, published: s.published, featured: s.featured, language: s.language,
     spotify_id: s.spotify_id, spotify_url: s.spotify_url, bandcamp_url: s.bandcamp_url, soundcloud_url: s.soundcloud_url,
     lyrics_status: s.lyrics_status, lyrics_url: s.lyrics_url, lyrics_source: s.lyrics_source,
     lyrics_highlights: s.lyrics_highlights, status_notes: s.status_notes,
@@ -282,6 +282,14 @@ async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_stat
   return getWorkbench(db, id);
 }
 
+async function setFeatured(db, id, featured) {
+  await assertSong(db, id);
+  const r = await db.query(
+    `UPDATE songs SET featured=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1
+     RETURNING id, title, featured`, [id, !!featured]);
+  return r.rows[0];
+}
+
 async function saveHighlights(db, id, { lyrics_highlights } = {}) {
   await assertSong(db, id);
   await db.query(`UPDATE songs SET lyrics_highlights=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
@@ -336,4 +344,4 @@ async function quickCapture(db, { title, artist } = {}) {
 
 module.exports = { DEFAULT_MODEL, PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture };
+  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture, setFeatured };

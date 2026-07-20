@@ -1725,6 +1725,28 @@ router.post('/songs/:id/unpublish', async (req, res) => {
   }
 });
 
+router.post('/songs/:id/feature', async (req, res) => {
+  try {
+    const song = await curation.setFeatured(pool, parseInt(req.params.id), true);
+    res.json({ success: true, song, message: `Featured: ${song.title}` });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    console.error('feature error:', e);
+    res.status(500).json({ error: 'Failed to feature song', details: e.message });
+  }
+});
+
+router.post('/songs/:id/unfeature', async (req, res) => {
+  try {
+    const song = await curation.setFeatured(pool, parseInt(req.params.id), false);
+    res.json({ success: true, song, message: `Unfeatured: ${song.title}` });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    console.error('unfeature error:', e);
+    res.status(500).json({ error: 'Failed to unfeature song', details: e.message });
+  }
+});
+
 // ---- Session 1.4 staging queue ----
 router.get('/staging', async (req, res) => {
   try {
