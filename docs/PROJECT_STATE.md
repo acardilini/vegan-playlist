@@ -187,8 +187,8 @@ Newest first. Each entry: date · decision · why.
   `PUT /update-song/:id` featured path untouched (out of scope); (4) **drop the added-date from
   `SongCard`** (shown only for playlist songs — inconsistent) uniformly across all card surfaces; (5)
   **keep the mood chip as-is** (shows only when `custom_mood` exists — real metadata, not a bug). Verified
-  with backend 89/89 (+`setFeatured` test) and an API smoke on a temp :5001 backend (cycle/​recency-fill/​
-  routes/​404), original featured set restored. Spec/plan:
+  with backend 89/89 (+`setFeatured` test) and an API smoke on a temp :5001 backend (cycle/recency-fill/
+  routes/404), original featured set restored. Spec/plan:
   `specs/2026-07-21-triage-3-featured-redesign-design.md`, `plans/2026-07-21-triage-3-featured-redesign.md`.
 
 - **2026-07-20 — Triage 2: browse state persisted in the URL (built, pending merge).** The homepage
