@@ -309,7 +309,7 @@ of `analysis.DEFAULT_MODEL` → `gemma4:key_focus_pipeline` (NOT the assumed spl
 identical across tiers), and the **scalar-attribute browse filters are deferred to the pipeline** (scalar
 data is free-text, not the taxonomy enums); (2) ☑ **persist browse sort/filter state across navigation —
 BUILT+merged** (`bf2f1da`, URL query params via `useSearchParams` + a sessionStorage layer for Home);
-(3) ☑ **featured-songs redesign — BUILT** (`session-triage-3-featured`, pending merge): curated pins +
+(3) ☑ **featured-songs redesign — DONE, merged `6718cec`** (⚠ pending curator smoke): curated pins +
 recency fill, cycle a random 4 when >4 pinned, restored workbench Featured toggle, dropped the card date;
 (4) browse/search polish (sidebar scroll + bidirectional sort — **extends item 2's URL-state model**); (5) lyric highlights from the translation + multi-language `songs.language`; then
 **B4** (with vector "You might also like"); then (6) About analysis-explainer + AI-disclosure page. _(1b

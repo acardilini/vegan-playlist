@@ -37,7 +37,7 @@ also like") → **6** About analysis-explainer + AI disclosure.
 
 ### ☐ Unresolved — captured for future rounds
 
-**Featured songs** — ✅ **RESOLVED (triage 3, 2026-07-21 — built on `session-triage-3-featured`)**
+**Featured songs** — ✅ **RESOLVED (triage 3, 2026-07-21 — merged `6718cec`; ⚠ pending curator smoke)**
 - ✅ **How featured songs are determined / the missing "select feature" option.** Featured is now
   curated pins with a **deterministic recency fill** (`ORDER BY COALESCE(playlist_added_at, date_added)
   DESC`) instead of random-from-catalogue, and the pinned query **cycles a random 4 when >4 are pinned**
