@@ -88,9 +88,19 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     return () => clearTimeout(t);
   }, [buildSearchParams]);
 
+  // Reset to page 1 when the query/filters actually change — but NOT on mount, or
+  // the reset would wipe a page hydrated from the URL (?page=N) before it renders.
+  // Compare against the previous value (not a mount flag) so StrictMode's double
+  // mount-invoke, which sees an unchanged signature both times, never triggers a reset.
+  const prevFilterSig = useRef(null);
   useEffect(() => {
-    if (onPageReset && currentPage !== 1) onPageReset();
-  }, [searchQuery, JSON.stringify(filters)]);
+    const sig = searchQuery + '|' + JSON.stringify(filters);
+    if (prevFilterSig.current === null) { prevFilterSig.current = sig; return; }
+    if (prevFilterSig.current !== sig) {
+      prevFilterSig.current = sig;
+      if (onPageReset && currentPage !== 1) onPageReset();
+    }
+  }, [searchQuery, filters]);
 
   // --- mutation helpers ---
   const toggleInArray = (key, value, checked) => setFilters(prev => ({
