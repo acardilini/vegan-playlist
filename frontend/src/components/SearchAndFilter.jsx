@@ -1,25 +1,17 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
+import { readBrowseState, applyFilterState, writeStoredBrowseState, EMPTY_FILTERS } from '../utils/browseUrlState';
 import GenreFilterTree from './GenreFilterTree';
 import ThemeFacetTree from './ThemeFacetTree';
 import FilterChips from './FilterChips';
 
 const DIM_KEYS = ['themes', 'targets', 'actions', 'tactics', 'moral_frames'];
 
-const EMPTY_FILTERS = {
-  genres: [], parent_genres: [],
-  year_from: '', year_to: '',
-  lengths: [],
-  has_youtube: false, has_analysis: false, on_spotify: false,
-  languages: [],
-  themes: [], targets: [], actions: [], tactics: [], moral_frames: [],
-  facet_groups: [], facet_subdims: [],
-  sort_by: 'year',
-};
-
 function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', currentPage = 1, onPageReset, children }) {
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(() => readBrowseState(searchParams).searchQuery || initialQuery);
+  const [filters, setFilters] = useState(() => readBrowseState(searchParams).filters);
   const [filterOptions, setFilterOptions] = useState({});
   const [facets, setFacets] = useState({});
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -67,6 +59,21 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     return () => clearTimeout(t);
   }, [buildSearchParams, performSearch]);
 
+  // Mirror browse state into the URL (single source of truth for restore + sharing).
+  // Functional updater + applyFilterState clone => the page writer's `page` key is preserved.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearchParams(prev => applyFilterState(prev, { searchQuery, filters }), { replace: true });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery, filters, setSearchParams]);
+
+  // Persist the full browse state (incl. page) for the visit, so a param-less nav to '/'
+  // (the Home link / site title) restores it. Single writer — uses the currentPage prop.
+  useEffect(() => {
+    writeStoredBrowseState({ searchQuery, filters, page: currentPage });
+  }, [searchQuery, filters, currentPage]);
+
   // Dynamic (cross-filtered) sidebar counts: refetch on every filter change, debounced
   // and stale-guarded. Page-less params — facets don't depend on page/limit.
   const facetsReq = useRef(0);
@@ -87,9 +94,19 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     return () => clearTimeout(t);
   }, [buildSearchParams]);
 
+  // Reset to page 1 when the query/filters actually change — but NOT on mount, or
+  // the reset would wipe a page hydrated from the URL (?page=N) before it renders.
+  // Compare against the previous value (not a mount flag) so StrictMode's double
+  // mount-invoke, which sees an unchanged signature both times, never triggers a reset.
+  const prevFilterSig = useRef(null);
   useEffect(() => {
-    if (onPageReset && currentPage !== 1) onPageReset();
-  }, [searchQuery, JSON.stringify(filters)]);
+    const sig = searchQuery + '|' + JSON.stringify(filters);
+    if (prevFilterSig.current === null) { prevFilterSig.current = sig; return; }
+    if (prevFilterSig.current !== sig) {
+      prevFilterSig.current = sig;
+      if (onPageReset && currentPage !== 1) onPageReset();
+    }
+  }, [searchQuery, filters]);
 
   // --- mutation helpers ---
   const toggleInArray = (key, value, checked) => setFilters(prev => ({

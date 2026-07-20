@@ -10,37 +10,37 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Fixes Round 1 — curator-reported data-integrity & UX fixes (2026-07-20, branch
-  `session-fixes-round-1`).** A triage of curator-noticed issues became a bug-fix round (executed via
-  subagent-driven development; two clean opus reviews, 0 Critical/0 Important). **#1 (active data loss):**
-  `saveLyrics` no longer wipes `source_url`/`translation` when a lyrics-only autosave omits them; clearing
-  lyrics keeps the row (`''` sentinel — `song_lyrics.lyrics` is NOT NULL); "has lyrics" now means non-empty
-  everywhere in `curation.js`. **#2 (data loss, found in planning):** `setProcessing` updates only provided
-  fields (was clobbering park/snooze/note on every single-field save); the workbench Park control is now
-  controlled — reflects/persists the chosen reason. **#3:** duplicate detector gated on **title AND artist**
-  (extracted to pure `services/duplicates.js`) — 0 cross-artist false groups on the real 1,778-song
-  catalogue; plus a persistent **"Not a duplicate"** reject (migration 008 `duplicate_dismissals` +
-  `POST /duplicate-dismiss`, whole-group). **#5:** an **All songs** catalogue-wide search scope in the admin
-  Songs area (reaches any song regardless of status → fixed song 1's Rickroll video). **UX polish:** homepage
-  Sort-by beside the search box; filter chips moved to the top of the results column; redundant "Filters
-  applied:" summary removed. Backend **88/88**; frontend build + eslint clean; live read-only smoke
-  (queueCounts.all 1778, All-songs reaches song 1, 22 dup groups / 0 cross-artist); **curator smoke-confirmed**.
-  Merged no-ff to `main`; **pushed**. Prior: B3 merged 2026-07-20 (merge `5ec1566`)._
-- **Next session:** **Triage item 1 — `key_focus_pipeline` split-read + scalar-attribute browse
-  filters** (curator reprioritised 2026-07-20: triage items 1–5 now run **before** B4). Read the
-  code dimensions from `gemma4:key_focus_pipeline` (refined 1–3 codes/dim) and the six scalar metadata
-  components (Perspective/Tone/Intensity/Clarity/Focus/Emotions) from `gemma4:deep_pipeline` — a
-  **two-tier read** in `getSongAnalysis`, NOT a one-constant flip of `analysis.js` `DEFAULT_MODEL`;
-  then add browse facets/filters for the six scalars (deep tier). **Verify the deep-tier scalar
-  columns before flipping anything.** Full scope + allowed enum values:
-  [`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md). Start with a brainstorm.
-- **Reprioritised order (2026-07-20):** triage **1** (key_focus + scalar filters) → **2** (persist
-  browse state) → **3** (featured redesign) → **4** (browse/search polish: sidebar scroll +
-  bidirectional sort) → **5** (lyric highlights from translation + multi-language) → **B4** (Explore
-  vector map, with the vector "You might also like") → triage **6** (About analysis-explainer + AI
-  disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-20 _(curator-triage review + capture; then reprioritised — triage items
-  1–5 moved ahead of B4. No code changed.)_
+- **Current session:** _**Curator-triage build session (2026-07-20)** — two items advanced while the
+  curator cleans the DB. **Triage 1a (`key_focus_pipeline` adoption) — spec + plan written, EXECUTION
+  PARKED** pending the curator's DB-cleaning signal (branch `session-triage-1a-key-focus`; spec+plan
+  `faf1818`/`0e15bc9`). A pre-design DB check invalidated the handoff's premises: the six scalars are
+  populated **identically across all tiers** and are **free-text, not the taxonomy enums**
+  (intensity/focus_amount **0/637** match) — so the planned two-tier "split read" is **unnecessary**
+  (key_focus already carries everything) and the **scalar browse filters (1b) can't be built as
+  specced** (deferred + kicked to the analysis pipeline). Scope narrowed to a one-constant flip
+  `analysis.DEFAULT_MODEL` → `gemma4:key_focus_pipeline` (clean 1–3 codes/dim; the code dims are
+  near-perfectly clean in key_focus vs noisy prompt-leak codes in `gemma4:latest`; ~23 live songs lose
+  their analysis section, no fallback — accepted). **Triage 2 (persist browse state) — BUILT** (branch
+  `session-triage-2-browse-state`, **pending curator review/merge**): homepage browse
+  filters/sort/search/page now live in the URL (react-router v7 `useSearchParams`; hydrate-on-mount +
+  mirror-on-change with `replace`; new pure `utils/browseUrlState.js`) — shareable/bookmarkable.
+  Headless (puppeteer) smoke **10/10**, including a StrictMode page-reset bug caught and fixed
+  (value-signature ref, not a mount flag). Also committed a refreshed `vector_space.json` (key-focus
+  coding, B4 input, `2a22e37`). Prior: Fixes Round 1 merged to `main` 2026-07-20 (merge `2a07339`)._
+- **Next session:** **Merge triage 2** (curator review of `session-triage-2-browse-state`), then
+  continue the DB-independent items: triage **3** (featured-songs redesign) → **4** (browse/search
+  polish — extends item 2's URL-state model with bidirectional sort + independent sidebar scroll) →
+  **5**. **Triage 1a stays PARKED until the curator confirms DB cleaning is done** — re-run the
+  tier/coverage/enum verification then; the cleaning may **reactivate 1b** (scalar filters) if it
+  normalizes the scalars to the taxonomy enums, in which case fold 1b back in rather than deferring.
+  See `memory/triage-1a-db-cleaning-gate.md`.
+- **Reprioritised order (2026-07-20):** triage **1** (_PARKED — DB-cleaning gate_) · **2** (persist
+  browse state — _BUILT, pending merge_) → **3** (featured redesign) → **4** (browse/search polish:
+  sidebar scroll + bidirectional sort) → **5** (lyric highlights from translation + multi-language) →
+  **B4** (Explore vector map, with the vector "You might also like") → triage **6** (About
+  analysis-explainer + AI disclosure) → sub-projects **C–F**.
+- **Last updated:** 2026-07-20 _(triage-2 built + smoke-passed on its branch, pending merge; triage-1a
+  spec+plan written but parked on the DB-cleaning gate.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -164,6 +164,46 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-20 — Triage 2: browse state persisted in the URL (built, pending merge).** The homepage
+  browse reset filters/sort on navigation because all state lived in `SearchAndFilter`'s `useState`
+  (+ `currentPage` in `HomePage`), which unmount on route change. **Decision:** the URL query string is
+  the single source of truth (curator's prior "prefer URL params" call — shareable + bookmarkable),
+  implemented as **hydrate-on-mount + mirror-on-change** (react-router v7 `useSearchParams`, `replace`
+  writes) rather than a context/`sessionStorage` store. A new pure `frontend/src/utils/browseUrlState.js`
+  (`readFilterState`/`applyFilterState`, defaults omitted) is the isolated serialization unit; page is
+  persisted by a **second, disjoint URL writer** in `SearchSection` (only the `page` key) so the two
+  writers never clobber. Removed `SearchSection`'s redundant initial mount-fetch. **Verified by headless
+  puppeteer smoke (10/10)** — which caught a real bug: the "reset page to 1 on filter change" effect
+  fired on mount and wiped a URL-hydrated `?page=N`; a boolean skip-mount ref then failed under
+  **StrictMode's double mount-invoke**, so the fix compares the query/filters **signature** against a ref
+  (both mount-invokes see no change → no reset). `parent_genres` persisted explicitly (not reconstructed
+  from the async genre tree). **Follow-up (curator smoke):** a param-less nav to `/` (the **Home** link /
+  site title) still reset filters (Back worked; Home didn't, because a clean `/` has no params). Fixed by
+  layering **sessionStorage under the URL** — the URL wins when it carries any browse param (deep
+  link/share/Back), else a clean `/` restores the last state saved this visit and repopulates the URL;
+  "Clear all" stores empty state so Home stays fresh (the deliberate path to a clean home). Live-smoke-only
+  (no frontend test runner — consistent with Phase 3/B2/B3); headless smoke **15/15**.
+  Scope: HomePage browse only (Artists browse + `/search` + admin untouched). Spec/plan:
+  `specs/2026-07-20-triage-2-persist-browse-state-design.md`, `plans/2026-07-20-triage-2-persist-browse-state.md`.
+
+- **2026-07-20 — Triage 1a: the `key_focus_pipeline` adoption is a ONE-CONSTANT flip, not a split read;
+  scalar browse filters (1b) are blocked by free-text data and kicked to the pipeline.** A pre-design DB
+  check (read-only) overturned the handoff's two premises. (1) **The six scalars are NOT deep-only** —
+  they are populated in every tier and are **byte-identical** between `key_focus` and `deep` for the same
+  song (8/8 sampled), so `getSongAnalysis` needs no two-tier merge; `key_focus_pipeline` already carries
+  both the refined code dims and the scalars. (2) **The scalars are free-text, not the `taxonomy.json`
+  enums** (`intensity`/`focus_amount` **0/637** exact match; perspective 15/637; hundreds of distinct
+  values; one `emotions` mojibake row), so enum facets as specced would match ~nothing → **item 1b
+  deferred and kicked to the analysis pipeline** (emit clean enum scalars or ship a mapping first). (3) The
+  **code dimensions are the real win**: `key_focus` is near-perfectly clean (0–1 stray codes/dim, ~1–3
+  codes/dim) vs `gemma4:latest` which leaks prompt-garbage codes (`clarity_levels`, `N/A`,
+  `…summary_note_to_user`) and averages ~5 themes/song. So the change is a single flip of
+  `analysis.DEFAULT_MODEL` → `gemma4:key_focus_pipeline` (all consumers follow). **Accepted:** live coverage
+  `latest` 640 → `key_focus` 617, i.e. ~23 live songs lose their analysis section, **no fallback** (one
+  tier everywhere, fully consistent). Scalar **display** kept as-is (free-text). **EXECUTION PARKED** until
+  the curator confirms DB cleaning (may reactivate 1b). Spec/plan:
+  `specs/2026-07-20-triage-1a-key-focus-adoption-design.md`, `plans/2026-07-20-triage-1a-key-focus-adoption.md`.
 
 - **2026-07-20 — Curator-triage review: the `key_focus_pipeline` adoption is a SPLIT read, and
   the six scalar metadata components come from the DEEP tier.** A curator issue batch was reviewed
@@ -617,6 +657,21 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-20 (Curator-triage build session — triage 2 built, triage 1a parked)** — Two items advanced
+  while the curator cleans the DB. **Triage 2 (persist browse state) — BUILT** on
+  `session-triage-2-browse-state` (pending curator review/merge): homepage browse filters/sort/search/page
+  now persist in the URL (react-router `useSearchParams`, hydrate-on-mount + mirror-on-change with
+  `replace`; new pure `frontend/src/utils/browseUrlState.js`; page via a disjoint second writer; removed
+  `SearchSection`'s redundant initial fetch). Headless puppeteer smoke **10/10**; caught + fixed a
+  StrictMode page-reset bug (value-signature ref). Frontend build + eslint clean (0 errors). **Triage 1a
+  (`key_focus_pipeline` adoption) — spec + plan written, EXECUTION PARKED** on `session-triage-1a-key-focus`
+  pending the DB-cleaning signal: a read-only DB check showed the six scalars are identical across tiers
+  and free-text (not the taxonomy enums, intensity/focus 0/637), so the "split read" is unnecessary and
+  the scalar filters (1b) are deferred to the pipeline; scope narrowed to a one-constant flip of
+  `analysis.DEFAULT_MODEL` → `gemma4:key_focus_pipeline`. Also committed a refreshed
+  `frontend/public/vector_space.json` (key-focus coding, B4 input, `2a22e37`). Neither triage branch is
+  merged yet.
 
 - **2026-07-20 (Curator-triage review + capture — docs only, no code changed)** — Reviewed a batch of
   curator-reported issues against the current code and captured them in a new

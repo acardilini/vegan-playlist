@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
+import { readBrowseState } from '../utils/browseUrlState';
 import SearchAndFilter from '../components/SearchAndFilter';
 import SongCard from '../components/SongCard';
 import PaginationControls from '../components/PaginationControls';
@@ -122,33 +123,24 @@ function SearchSection({ initialSearchQuery = '' }) {
   const [loading, setLoading] = useState(true); // Start with loading true to load initial songs
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(true); // Start with true to show results immediately
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentPage, setCurrentPage] = useState(() => readBrowseState(searchParams).page);
 
-  // Load initial songs when component mounts
+  // Mirror the results page into the URL. Touches only the `page` key (disjoint from
+  // SearchAndFilter's filter/query/sort keys), so the two URL writers never clobber.
+  // Runs on mount too, so a page restored from sessionStorage on a param-less '/' is
+  // republished to the URL (keeping it shareable/consistent with the shown results).
   useEffect(() => {
-    const loadInitialSongs = async () => {
-      try {
-        setLoading(true);
-        // Load first 20 songs with default sorting (popularity)
-        const results = await spotifyService.searchSongs({
-          q: initialSearchQuery, // Use initial query if provided
-          page: 1,
-          limit: 20,
-          sort_by: 'year'
-        });
-        setSearchResults(results);
-        setHasSearched(true);
-      } catch (err) {
-        console.error('Error loading initial songs:', err);
-        setError('Failed to load songs');
-        setHasSearched(true);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (currentPage > 1) p.set('page', String(currentPage)); else p.delete('page');
+      return p;
+    }, { replace: true });
+  }, [currentPage, setSearchParams]);
 
-    loadInitialSongs();
-  }, []); // Run only on mount, not when initialSearchQuery changes
+  // No mount-fetch: SearchAndFilter's own debounced effect performs the initial,
+  // URL-hydrated search. `loading`/`hasSearched` start true so "Loading songs…"
+  // shows until that first search resolves.
 
   const handleResults = useCallback((results) => {
     // Store the full API response object including pagination info
