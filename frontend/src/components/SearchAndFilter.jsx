@@ -336,24 +336,26 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
   return (
     <div className="browse">
       <div className="browse-top">
-        <div className="search-container">
-          <input type="text" className="search-input" placeholder="Search songs, artists, albums..."
-            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-          <button className="filter-toggle drawer-toggle" onClick={() => setDrawerOpen(true)}>
-            Filters {activeCount > 0 && <span className="filter-badge">{activeCount}</span>}
-          </button>
-          {activeCount > 0 && (
-            <button className="clear-filters" onClick={clearAllFilters}>Clear all</button>
-          )}
-        </div>
-        <div className="sort-container">
-          <label>Sort by:</label>
-          <select value={filters.sort_by} onChange={(e) => setScalar('sort_by', e.target.value)}>
-            <option value="title">Title</option>
-            <option value="artist">Artist</option>
-            <option value="year">Year</option>
-            <option value="date_added">Date added</option>
-          </select>
+        <div className="browse-search-row">
+          <div className="search-container">
+            <input type="text" className="search-input" placeholder="Search songs, artists, albums..."
+              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <button className="filter-toggle drawer-toggle" onClick={() => setDrawerOpen(true)}>
+              Filters {activeCount > 0 && <span className="filter-badge">{activeCount}</span>}
+            </button>
+            {activeCount > 0 && (
+              <button className="clear-filters" onClick={clearAllFilters}>Clear all</button>
+            )}
+          </div>
+          <div className="sort-container">
+            <label>Sort by:</label>
+            <select value={filters.sort_by} onChange={(e) => setScalar('sort_by', e.target.value)}>
+              <option value="title">Title</option>
+              <option value="artist">Artist</option>
+              <option value="year">Year</option>
+              <option value="date_added">Date added</option>
+            </select>
+          </div>
         </div>
         <FilterChips chips={chips} onRemove={removeChip} />
       </div>
