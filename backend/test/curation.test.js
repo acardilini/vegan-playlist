@@ -165,6 +165,12 @@ test('queueCounts returns a number for every queue key', async () => {
   }
 });
 
+test('queueCounts includes an all-catalogue total', async () => {
+  const c = await curation.queueCounts(pool);
+  assert.equal(typeof c.all, 'number');
+  assert.ok(c.all >= c.live, 'all songs >= live songs');
+});
+
 test('catalogueStats returns integer totals by status', async () => {
   const s0 = await curation.catalogueStats(pool);
   assert.equal(typeof s0.total, 'number');

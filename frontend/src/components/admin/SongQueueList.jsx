@@ -7,7 +7,8 @@ const PAGE_SIZE = 50;
 const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
   'needs-video': 'Needs video', 'awaiting-community': 'Awaiting community',
-  'remind-later': 'Remind me later', 'to-finalise': 'To finalise', 'live': 'Live',
+  'remind-later': 'Remind me later', 'to-finalise': 'To finalise',
+  'live': 'Live', 'all': 'All songs',
 };
 
 function coverStyle(row) {
@@ -56,7 +57,7 @@ function SongQueueList({ queue, refreshKey }) {
     <div className="songs-main" style={{ flex: 1, minWidth: 0 }}>
       <div className="queue-toolbar">
         <h2>{QUEUE_LABELS[queue] || queue}</h2>
-        <input className="input input-pill" placeholder="Search this queue…"
+        <input className="input input-pill" placeholder={queue === 'all' ? 'Search all songs…' : 'Search this queue…'}
           value={search} onChange={(e) => { setPage(0); setSearch(e.target.value); }}
           style={{ width: 220 }} />
       </div>

@@ -10,6 +10,7 @@ const GROUPS = [
   ]],
   ['Parked', [['awaiting-community', 'Awaiting community', false], ['remind-later', 'Remind me later', false]]],
   ['Publish', [['to-finalise', 'To finalise', false], ['live', 'Live', false]]],
+  ['Everything', [['all', 'All songs', false]]],
 ];
 
 function QueueRail({ counts, activeQueue, onSelect }) {

@@ -128,7 +128,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
 
 async function queueCounts(db) {
   const keys = ['to-process','awaiting-community','remind-later','needs-lyrics',
-    'needs-cover','needs-video','needs-analysis','to-finalise','live'];
+    'needs-cover','needs-video','needs-analysis','to-finalise','live','all'];
   const out = {};
   for (const queue of keys) {
     const r = await db.query(`
