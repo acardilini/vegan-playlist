@@ -20,27 +20,28 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   specced** (deferred + kicked to the analysis pipeline). Scope narrowed to a one-constant flip
   `analysis.DEFAULT_MODEL` → `gemma4:key_focus_pipeline` (clean 1–3 codes/dim; the code dims are
   near-perfectly clean in key_focus vs noisy prompt-leak codes in `gemma4:latest`; ~23 live songs lose
-  their analysis section, no fallback — accepted). **Triage 2 (persist browse state) — BUILT** (branch
-  `session-triage-2-browse-state`, **pending curator review/merge**): homepage browse
-  filters/sort/search/page now live in the URL (react-router v7 `useSearchParams`; hydrate-on-mount +
-  mirror-on-change with `replace`; new pure `utils/browseUrlState.js`) — shareable/bookmarkable.
-  Headless (puppeteer) smoke **10/10**, including a StrictMode page-reset bug caught and fixed
-  (value-signature ref, not a mount flag). Also committed a refreshed `vector_space.json` (key-focus
-  coding, B4 input, `2a22e37`). Prior: Fixes Round 1 merged to `main` 2026-07-20 (merge `2a07339`)._
-- **Next session:** **Merge triage 2** (curator review of `session-triage-2-browse-state`), then
-  continue the DB-independent items: triage **3** (featured-songs redesign) → **4** (browse/search
-  polish — extends item 2's URL-state model with bidirectional sort + independent sidebar scroll) →
-  **5**. **Triage 1a stays PARKED until the curator confirms DB cleaning is done** — re-run the
+  their analysis section, no fallback — accepted). **Triage 2 (persist browse state) — DONE, merged to
+  `main` (merge `bf2f1da`), curator-confirmed:** homepage browse filters/sort/search/page now live in the
+  URL (react-router v7 `useSearchParams`; hydrate-on-mount + mirror-on-change with `replace`; new pure
+  `utils/browseUrlState.js`) — shareable/bookmarkable — with a **sessionStorage layer under the URL** so a
+  param-less nav to `/` (the Home link/site title) restores the last browse state (curator-caught).
+  Headless (puppeteer) smoke **15/15**; caught + fixed a StrictMode page-reset bug (value-signature ref).
+  Also committed a refreshed `vector_space.json` (key-focus coding, B4 input, `2a22e37`). Prior: Fixes
+  Round 1 merged to `main` 2026-07-20 (merge `2a07339`)._
+- **Next session:** **Triage 3 — featured-songs redesign** (starting). Then the remaining DB-independent
+  items: **4** (browse/search polish — extends item 2's URL-state model with bidirectional sort +
+  independent sidebar scroll) → **5**. **Triage 1a stays PARKED until the curator confirms DB cleaning is
+  done** — re-run the
   tier/coverage/enum verification then; the cleaning may **reactivate 1b** (scalar filters) if it
   normalizes the scalars to the taxonomy enums, in which case fold 1b back in rather than deferring.
   See `memory/triage-1a-db-cleaning-gate.md`.
 - **Reprioritised order (2026-07-20):** triage **1** (_PARKED — DB-cleaning gate_) · **2** (persist
-  browse state — _BUILT, pending merge_) → **3** (featured redesign) → **4** (browse/search polish:
-  sidebar scroll + bidirectional sort) → **5** (lyric highlights from translation + multi-language) →
-  **B4** (Explore vector map, with the vector "You might also like") → triage **6** (About
-  analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-20 _(triage-2 built + smoke-passed on its branch, pending merge; triage-1a
-  spec+plan written but parked on the DB-cleaning gate.)_
+  browse state — ☑ **DONE, merged `bf2f1da`**) → **3** (featured redesign — _in progress_) → **4**
+  (browse/search polish: sidebar scroll + bidirectional sort) → **5** (lyric highlights from translation +
+  multi-language) → **B4** (Explore vector map, with the vector "You might also like") → triage **6**
+  (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
+- **Last updated:** 2026-07-20 _(triage-2 merged to `main` + curator-confirmed; starting triage-3;
+  triage-1a spec+plan written but parked on the DB-cleaning gate.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
