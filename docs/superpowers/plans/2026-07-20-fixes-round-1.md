@@ -583,3 +583,376 @@ Load the public song page for id 1 and confirm the correct video renders.
 - **Type consistency:** `findDuplicateGroups`/`isDuplicatePair` names match between service, tests, and route wiring. `saveLyrics`/`setProcessing`/`queueCounts` signatures unchanged for callers.
 - **has-lyrics consistency:** the row-persistence change in Task 1 is matched by the four "non-empty" edits in the same task, plus the `needs-analysis` queue — no other `song_lyrics` existence check remains in `curation.js`.
 - **Deviation from spec:** Task 2 fixes a backend data-loss bug the spec labeled "display-only." Flagged for the curator; the fix pattern mirrors Task 1.
+
+---
+
+# Follow-up (post-smoke, same branch) — Tasks 7–9
+
+Curator smoke (2026-07-20) confirmed #1/#2/#3 working and fixed song 1's video via the new All-songs path (Task 6 done). Two follow-ups surfaced: (A) the duplicate detector still shows same-artist false positives and needs a persistent **"Not a duplicate"** reject; (B) the homepage **Sort by** control crowds the search box and should sit to its right. Curator decisions: whole-group one-click reject; reject-only (no heuristic tightening now).
+
+## Task 7: Duplicate rejection — persistence + detector + endpoints
+
+**Files:**
+- Create: `backend/database/migrations/008_duplicate_dismissals.sql`
+- Create: `backend/services/duplicateDismissals.js`
+- Modify: `backend/services/duplicates.js` — add `pairKey`, extend `findDuplicateGroups`
+- Modify: `backend/routes/admin.js` — `GET /duplicate-songs` wiring + new `POST /duplicate-dismiss`
+- Test: `backend/test/duplicates.test.js` (pure, dismissed-pair case) + `backend/test/duplicateDismissals.test.js` (DB, ZZZDUP sentinel)
+
+**Interfaces:**
+- Produces: `pairKey(a,b)` → canonical `"min:max"` string. `findDuplicateGroups(songs, dismissedKeys = new Set())` — skips any pair whose `pairKey` is in the set. `getDismissedPairKeys(db)` → `Set<string>`. `dismissGroup(db, songIds)` → records all unordered pairs, returns count of ids.
+
+- [ ] **Step 1: Write the migration**
+
+Create `backend/database/migrations/008_duplicate_dismissals.sql`:
+```sql
+-- Curator-rejected duplicate pairs. The /duplicate-songs detector excludes any
+-- pair recorded here, so a "Not a duplicate" decision persists across scans.
+CREATE TABLE IF NOT EXISTS duplicate_dismissals (
+  id           SERIAL PRIMARY KEY,
+  song_id_a    INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+  song_id_b    INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+  dismissed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT duplicate_dismissals_order CHECK (song_id_a < song_id_b),
+  CONSTRAINT duplicate_dismissals_unique UNIQUE (song_id_a, song_id_b)
+);
+```
+
+- [ ] **Step 2: Apply the migration to the DB**
+
+There is no migration runner script; apply via the pool (avoids needing psql on PATH). From the repo root:
+```bash
+cd backend && node -e "const fs=require('fs');const p=require('./database/db');p.query(fs.readFileSync('./database/migrations/008_duplicate_dismissals.sql','utf8')).then(()=>{console.log('008 applied');return p.end();}).catch(e=>{console.error(e.message);return p.end();})"
+```
+Expected: `008 applied`. (Idempotent — `CREATE TABLE IF NOT EXISTS`.)
+
+- [ ] **Step 3: Write the failing pure test (dismissed pair not grouped)**
+
+Add to `backend/test/duplicates.test.js`:
+```js
+const { pairKey } = require('../services/duplicates');
+
+test('a dismissed pair is not grouped even when title+artist match', () => {
+  const songs = [
+    { id: 10, title: 'Hurt', artists: 'Johnny Cash', created_at: '2020-01-01', popularity: 50 },
+    { id: 11, title: 'Hurt (Live)', artists: 'Johnny Cash', created_at: '2021-01-01', popularity: 40 },
+  ];
+  assert.equal(findDuplicateGroups(songs).length, 1); // still a dup without dismissal
+  const dismissed = new Set([pairKey(10, 11)]);
+  assert.equal(findDuplicateGroups(songs, dismissed).length, 0); // dismissed → not grouped
+});
+
+test('pairKey is canonical (order-independent)', () => {
+  assert.equal(pairKey(11, 10), pairKey(10, 11));
+  assert.equal(pairKey(10, 11), '10:11');
+});
+```
+(`findDuplicateGroups`/`assert`/`test` are already imported at the top of the file from Task 4.)
+
+- [ ] **Step 4: Run it to confirm it fails**
+
+Run: `cd backend && node --test test/duplicates.test.js`
+Expected: FAIL — `pairKey` is not exported yet / `findDuplicateGroups` ignores the second arg.
+
+- [ ] **Step 5: Extend `duplicates.js`**
+
+In `backend/services/duplicates.js`, add `pairKey` and thread `dismissedKeys` through:
+```js
+function pairKey(a, b) {
+  const x = Number(a), y = Number(b);
+  return x < y ? `${x}:${y}` : `${y}:${x}`;
+}
+```
+Change the signature and the inner-loop guard of `findDuplicateGroups`:
+```js
+function findDuplicateGroups(songs, dismissedKeys = new Set()) {
+```
+and in the inner loop replace the condition:
+```js
+      if (isDuplicatePair(songs[i], songs[j])) { dupes.push(songs[j]); processed.add(songs[j].id); }
+```
+with:
+```js
+      if (isDuplicatePair(songs[i], songs[j]) && !dismissedKeys.has(pairKey(songs[i].id, songs[j].id))) {
+        dupes.push(songs[j]); processed.add(songs[j].id);
+      }
+```
+Add `pairKey` to `module.exports`.
+
+- [ ] **Step 6: Run the pure test to confirm green**
+
+Run: `cd backend && node --test test/duplicates.test.js`
+Expected: PASS.
+
+- [ ] **Step 7: Create the dismissals service**
+
+Create `backend/services/duplicateDismissals.js`:
+```js
+// Persistence for curator-rejected duplicate pairs (migration 008).
+const { pairKey } = require('./duplicates');
+
+async function getDismissedPairKeys(db) {
+  const r = await db.query('SELECT song_id_a, song_id_b FROM duplicate_dismissals');
+  return new Set(r.rows.map((x) => `${x.song_id_a}:${x.song_id_b}`)); // rows already stored a<b
+}
+
+// Records every unordered pair among songIds as dismissed. Returns the count of
+// distinct valid ids considered.
+async function dismissGroup(db, songIds) {
+  const ids = [...new Set((songIds || []).map(Number))].filter(Number.isInteger);
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = Math.min(ids[i], ids[j]);
+      const b = Math.max(ids[i], ids[j]);
+      await db.query(
+        'INSERT INTO duplicate_dismissals (song_id_a, song_id_b) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+        [a, b]);
+    }
+  }
+  return ids.length;
+}
+
+module.exports = { getDismissedPairKeys, dismissGroup, pairKey };
+```
+
+- [ ] **Step 8: Write the DB test for the dismissals service**
+
+Create `backend/test/duplicateDismissals.test.js`:
+```js
+const { test, after } = require('node:test');
+const assert = require('node:assert');
+const pool = require('../database/db');
+const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDismissals');
+
+// ZZZDUP sentinel — duplicate_dismissals has FKs to songs, so we insert real songs.
+async function mkSong(title) {
+  return (await pool.query(
+    `INSERT INTO songs (title, status, published, data_source) VALUES ($1,'pending',false,'manual') RETURNING id`,
+    [title])).rows[0].id;
+}
+
+test('dismissGroup records all pairs canonically and getDismissedPairKeys returns them', async () => {
+  const a = await mkSong('ZZZDUP One');
+  const b = await mkSong('ZZZDUP Two');
+  const c = await mkSong('ZZZDUP Three');
+  const n = await dismissGroup(pool, [c, a, b]); // deliberately unordered
+  assert.equal(n, 3);
+  const keys = await getDismissedPairKeys(pool);
+  const [x, y, z] = [a, b, c].sort((m, n) => m - n);
+  assert.ok(keys.has(`${x}:${y}`));
+  assert.ok(keys.has(`${x}:${z}`));
+  assert.ok(keys.has(`${y}:${z}`));
+});
+
+test('dismissGroup is idempotent (ON CONFLICT DO NOTHING)', async () => {
+  const a = await mkSong('ZZZDUP Ida');
+  const b = await mkSong('ZZZDUP Idb');
+  await dismissGroup(pool, [a, b]);
+  await dismissGroup(pool, [a, b]); // no throw
+  const keys = await getDismissedPairKeys(pool);
+  const [x, y] = [a, b].sort((m, n) => m - n);
+  assert.ok(keys.has(`${x}:${y}`));
+});
+
+after(async () => {
+  await pool.query(`DELETE FROM duplicate_dismissals WHERE song_id_a IN (SELECT id FROM songs WHERE title LIKE 'ZZZDUP%') OR song_id_b IN (SELECT id FROM songs WHERE title LIKE 'ZZZDUP%')`);
+  await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZDUP%'`);
+  await pool.end();
+});
+```
+
+- [ ] **Step 9: Run the dismissals test**
+
+Run: `cd backend && node --test test/duplicateDismissals.test.js`
+Expected: PASS (2/2). (Requires Step 2's migration applied.)
+
+- [ ] **Step 10: Wire the routes in `admin.js`**
+
+Near the top requires, add:
+```js
+const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDismissals');
+```
+In `GET /duplicate-songs`, change the detection line to load and pass dismissals:
+```js
+    const dismissed = await getDismissedPairKeys(pool);
+    const duplicateGroups = findDuplicateGroups(songsResult.rows, dismissed);
+```
+Add a new route next to it:
+```js
+// Record a curator "not a duplicate" decision for a whole group (all pairs).
+router.post('/duplicate-dismiss', async (req, res) => {
+  try {
+    const { songIds } = req.body || {};
+    if (!Array.isArray(songIds) || songIds.length < 2) {
+      return res.status(400).json({ error: 'songIds must be an array of at least two song ids' });
+    }
+    const n = await dismissGroup(pool, songIds);
+    res.json({ success: true, dismissed: n });
+  } catch (error) {
+    console.error('Error dismissing duplicate group:', error);
+    res.status(500).json({ error: 'Failed to dismiss duplicate group', details: error.message });
+  }
+});
+```
+
+- [ ] **Step 11: Full suite + commit**
+
+Run: `cd backend && npm test` → all green (was 84; +4 new).
+```bash
+git add backend/database/migrations/008_duplicate_dismissals.sql backend/services/duplicateDismissals.js backend/services/duplicates.js backend/routes/admin.js backend/test/duplicates.test.js backend/test/duplicateDismissals.test.js
+git commit -m "feat(fixes-1): persist duplicate 'not a duplicate' rejections (migration 008 + dismiss endpoint)"
+```
+
+## Task 8: Duplicate Manager — "Not a duplicate" button
+
+**Files:**
+- Modify: `frontend/src/components/admin/../DuplicateManager.jsx` (path: `frontend/src/components/DuplicateManager.jsx`)
+
+**Interfaces:**
+- Consumes: `POST /api/admin/duplicate-dismiss` `{ songIds }` from Task 7.
+
+- [ ] **Step 1: Add the dismiss handler**
+
+In `DuplicateManager.jsx`, add alongside `removeSong`:
+```js
+  const dismissGroup = async (group) => {
+    setLoading(true);
+    try {
+      const response = await adminFetch('/api/admin/duplicate-dismiss', {
+        method: 'POST',
+        body: { songIds: group.songs.map((s) => s.id) },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setMessage('Marked as not a duplicate. It will not be flagged again.');
+        loadDuplicates();
+        setTimeout(() => setMessage(''), 5000);
+      } else {
+        setError(data.error || 'Failed to dismiss');
+        setTimeout(() => setError(''), 5000);
+      }
+    } catch (err) {
+      setError('Failed to dismiss group');
+      console.error('Error dismissing duplicate group:', err);
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
+```
+
+- [ ] **Step 2: Add the button to the group header**
+
+In `renderDuplicatesTab`, change the `group-header` block so the recommendation and a dismiss button sit together:
+```jsx
+          <div className="group-header">
+            <h4>
+              Duplicate Group #{group.groupId}
+              <span className={`confidence ${group.confidence}`}>
+                {group.confidence} confidence
+              </span>
+            </h4>
+            <div className="group-header-row">
+              <p className="recommendation">{group.recommendedAction}</p>
+              <button className="dismiss-btn" onClick={() => dismissGroup(group)} disabled={loading}>
+                Not a duplicate
+              </button>
+            </div>
+          </div>
+```
+
+- [ ] **Step 3: Add scoped styles**
+
+In the component's `<style jsx>` block, add near `.recommendation`:
+```css
+        .group-header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .dismiss-btn {
+          background: #607d8b;
+          color: white;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+
+        .dismiss-btn:hover { background: #455a64; }
+        .dismiss-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+```
+
+- [ ] **Step 4: Verify + commit**
+
+Run: `cd frontend && npm run build && npx eslint src/` → clean.
+```bash
+git add frontend/src/components/DuplicateManager.jsx
+git commit -m "feat(fixes-1): 'Not a duplicate' button in the Duplicate Manager"
+```
+
+## Task 9: Homepage sort-by beside the search box
+
+**Files:**
+- Modify: `frontend/src/components/SearchAndFilter.jsx` — wrap search + sort in one row
+- Modify: `frontend/src/styles/components.css` — `.browse-search-row` + let `.search-container` grow
+
+**Interfaces:** none (layout only).
+
+- [ ] **Step 1: Wrap the two controls in a flex row**
+
+In `SearchAndFilter.jsx`, change the `browse-top` block so `.search-container` and `.sort-container` share one row and the chips stay below:
+```jsx
+      <div className="browse-top">
+        <div className="browse-search-row">
+          <div className="search-container">
+            <input type="text" className="search-input" placeholder="Search songs, artists, albums..."
+              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <button className="filter-toggle drawer-toggle" onClick={() => setDrawerOpen(true)}>
+              Filters {activeCount > 0 && <span className="filter-badge">{activeCount}</span>}
+            </button>
+            {activeCount > 0 && (
+              <button className="clear-filters" onClick={clearAllFilters}>Clear all</button>
+            )}
+          </div>
+          <div className="sort-container">
+            <label>Sort by:</label>
+            <select value={filters.sort_by} onChange={(e) => setScalar('sort_by', e.target.value)}>
+              <option value="title">Title</option>
+              <option value="artist">Artist</option>
+              <option value="year">Year</option>
+              <option value="date_added">Date added</option>
+            </select>
+          </div>
+        </div>
+        <FilterChips chips={chips} onRemove={removeChip} />
+      </div>
+```
+
+- [ ] **Step 2: Add the row CSS and let the search box grow**
+
+In `frontend/src/styles/components.css`, add after the `.search-container` rule (around line 672):
+```css
+.browse-search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.browse-search-row .search-container { flex: 1 1 320px; }
+.browse-search-row .sort-container { margin-left: auto; }
+```
+(`.search-container` keeps its `max-width: 640px`; `flex: 1 1 320px` lets it grow to that then the sort control sits to its right. `margin-left: auto` pins sort right; on a narrow viewport `flex-wrap` drops it below.)
+
+- [ ] **Step 3: Verify + commit**
+
+Run: `cd frontend && npm run build && npx eslint src/` → clean.
+```bash
+git add frontend/src/components/SearchAndFilter.jsx frontend/src/styles/components.css
+git commit -m "fix(fixes-1): homepage Sort by sits beside the search box"
+```

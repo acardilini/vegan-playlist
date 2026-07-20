@@ -99,9 +99,14 @@ agreement**, so two different bands sharing a title get grouped.
 
 **Fix:** make artist agreement a **gate**, not a weighted addend — a pair is only a duplicate
 candidate when normalised **title AND artist** both match (same conservative rule the 1.2/1.3
-dedup used). Keep duration/album as tie-break/confidence signals, but never enough to flag
-without artist agreement. Preserve the existing response shape
+dedup used). Preserve the existing response shape
 (`duplicateGroups`/`confidence`/`recommendedAction`) so the Data-quality UI is unchanged.
+
+_As built (2026-07-20): duration/album were **dropped entirely** rather than kept as
+tie-break signals. This is behaviour-preserving — the old code already set `confidence`
+purely by group size (`length > 2 ? 'high' : 'medium'`), and duration/album only contributed
+to the score that the title-AND-artist gate now replaces. YAGNI: no caller consumed a
+duration/album-derived confidence._
 
 **Verification:** two same-title / different-artist rows no longer group; a real duplicate
 (same title + same artist) still groups; endpoint response shape unchanged.
@@ -138,6 +143,22 @@ unchanged.
 Thematic `key_focus_pipeline` switch; browse/search polish (sidebar scroll, sort overlap,
 bidirectional sort, analysis-dimension filters); featured-songs redesign + card chip/date
 inconsistencies; About/AI-disclosure page; B4 Explore map + vector "You might also like".
+
+## Follow-up (post-smoke, 2026-07-20) — duplicate reject + sort-by layout
+
+Curator smoke confirmed #1/#2/#3 and completed #6. Two follow-ups (same branch, Tasks 7–9):
+
+- **Duplicate "Not a duplicate" reject (#4 completion).** The gate fix (title AND artist) removed
+  cross-band false positives but same-artist false positives remain, and the detector is stateless
+  so a rejection can't persist. Add a `duplicate_dismissals` table (migration 008; canonical `a<b`,
+  `ON DELETE CASCADE`), thread a dismissed-pairs set through the pure `findDuplicateGroups`, and add
+  a `POST /duplicate-dismiss` endpoint + a **"Not a duplicate"** button per group in the Duplicate
+  Manager. **Decision: whole-group, one click** (dismisses all pairs in the group). **Decision:
+  reject-only** — no heuristic tightening now (only 22 groups total; revisit if noisy). This is the
+  first schema change of the round (additive table; the no-migration constraint applied to the
+  original five tasks).
+- **Homepage Sort-by layout.** `Sort by` stacked under the search box and crowded it; move it onto
+  the same row, pinned to the right of the search input, chips wrapping below. Layout-only.
 
 ## Dataset-safety note
 Every change is curator-data-protective by construction: #1 and #2 both stop active data loss
