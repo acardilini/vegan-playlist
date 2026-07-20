@@ -357,7 +357,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             </select>
           </div>
         </div>
-        <FilterChips chips={chips} onRemove={removeChip} />
       </div>
 
       <div className="browse-body">
@@ -370,6 +369,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         </aside>
         {drawerOpen && <div className="drawer-scrim" onClick={() => setDrawerOpen(false)} />}
         <div className="browse-results">
+          <FilterChips chips={chips} onRemove={removeChip} />
           {loading && <div className="search-loading">Searching...</div>}
           {children}
         </div>
