@@ -11,7 +11,15 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
 - **Current session:** _**Curator-triage build session (2026-07-20 → 07-21)** — advancing DB-independent
-  triage items while the curator cleans the DB. **Triage 3 (featured-songs redesign) — DONE, merged to
+  triage items while the curator cleans the DB. **Triage 4 (browse/search polish) — BUILT + verified,
+  pending curator review/merge** (branch `session-triage-4-browse-polish`): **bidirectional sort** via a
+  whitelisted `dir` param + a pure `browseFilters.buildOrderBy(sort_by, dir)` (replaces the inline
+  `/search` switch, drops the dead audio-feature sorts); a frontend **direction toggle** with contextual
+  labels (A–Z/Z–A, Oldest/Newest) that resets on sort-field change; `dir` persisted in the URL (item-2
+  model); and the **filter sidebar now scrolls independently** (`max-height: calc(100vh - space-4*2)` +
+  `overflow-y:auto`). Backend **92/92** (3 new pure `buildOrderBy` tests); full-stack smoke all-pass
+  (backend `dir` reverses order on a temp :5001; headless :5173 toggle→URL `dir` + field-reset + sidebar
+  overflow 10/10). **Triage 3 (featured-songs redesign) — DONE, merged to
   `main` (merge `6718cec`); ⚠ AWAITING CURATOR IN-BROWSER SMOKE** (see the pending-smoke note below —
   curator was away from the computer at merge): featured model is now curated pins with a
   deterministic recency fill (`ORDER BY COALESCE(playlist_added_at, date_added) DESC`) instead of
@@ -44,22 +52,28 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   persists on reload; **(b)** a featured song **leads** the homepage Featured section; **(c)** with **>4**
   featured, the homepage shows a **random 4 that reshuffles** across reloads; with **<4**, the fill is the
   **most-recently-added** and is **stable**; **(d)** song **cards show no added-date**, and the mood chip
-  still appears only where a mood exists. (Triage 2 was already curator-confirmed; automated coverage for
-  3: backend 89/89 + featured API smoke all-pass, but the admin UI toggle + homepage were verified only at
-  the API/DOM level, not by a human click.)
-- **Next session:** **Triage 4 — browse/search polish** (independent sidebar scroll + bidirectional
-  sort; the sort direction drops into item 2's URL-state model), then **5** (lyric highlights from
-  translation + multi-language). **Triage 1a stays PARKED until the curator confirms DB cleaning is
-  done** — re-run the tier/coverage/enum verification then; the cleaning may **reactivate 1b** (scalar
-  filters) if it normalizes the scalars to the taxonomy enums, in which case fold 1b back in rather than
-  deferring. See `memory/triage-1a-db-cleaning-gate.md`.
+  still appears only where a mood exists. **Triage 4** (`session-triage-4-browse-polish`, not yet merged):
+  **(e)** the Sort-by control has a **direction toggle** (A–Z/Z–A, Oldest/Newest) that reverses results
+  and persists/shares via the URL, resetting to the field default when the sort field changes; **(f)** the
+  **filter sidebar scrolls independently** (tall filter stack fully reachable while pinned). (Triage 2 was
+  curator-confirmed; 3 and 4 have strong automated coverage — 3: backend 89/89 + featured API smoke; 4:
+  backend 92/92 + full-stack sort/sidebar smoke — but the visual/interaction was verified at the API/DOM
+  level, not by a human click.)
+- **Next session:** **Merge triage 4** (curator review of `session-triage-4-browse-polish`), then **Triage
+  5 — lyric highlights from the translation + multi-language `songs.language`** (needs a brainstorm).
+  **Triage 1a stays PARKED until the curator confirms DB cleaning is done** — re-run the tier/coverage/enum
+  verification then; the cleaning may **reactivate 1b** (scalar filters) if it normalizes the scalars to
+  the taxonomy enums, in which case fold 1b back in rather than deferring. See
+  `memory/triage-1a-db-cleaning-gate.md`.
 - **Reprioritised order (2026-07-20):** triage **1** (_PARKED — DB-cleaning gate_) · **2** (persist
   browse state — ☑ **DONE, merged `bf2f1da`**) · **3** (featured redesign — ☑ **DONE, merged `6718cec`**
-  — ⚠ pending curator smoke) → **4** (browse/search polish: sidebar scroll + bidirectional sort) → **5**
-  (lyric highlights from translation + multi-language) → **B4** (Explore vector map, with the vector "You
-  might also like") → triage **6** (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-21 _(triage-3 featured redesign merged to `main` `6718cec`, ⚠ pending
-  curator in-browser smoke; triage-2 merged; triage-1a spec+plan parked on the DB-cleaning gate.)_
+  — ⚠ pending curator smoke) · **4** (browse/search polish — ☑ **BUILT, pending merge** — sidebar scroll +
+  bidirectional sort) → **5** (lyric highlights from translation + multi-language) → **B4** (Explore
+  vector map, with the vector "You might also like") → triage **6** (About analysis-explainer + AI
+  disclosure) → sub-projects **C–F**.
+- **Last updated:** 2026-07-21 _(triage-4 browse/search polish built + verified on its branch, pending
+  merge; triage-3 merged `6718cec` ⚠ pending curator smoke; triage-2 merged; triage-1a parked on the
+  DB-cleaning gate.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -183,6 +197,24 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-21 — Triage 4: bidirectional sort via a whitelisted `dir` + a pure `buildOrderBy`; sidebar
+  scrolls independently (built, pending merge).** The Sort-by control was single-direction and the sticky
+  filter sidebar (no bounded height) hid its own overflow. Decisions: (1) sort direction is a whitelisted
+  `dir` (`asc`/`desc`, else the field default) threaded through the URL → `/search`; the ORDER BY moved
+  out of an inline `switch` into a **pure, unit-tested `services/browseFilters.buildOrderBy(sortBy, dir)`**
+  (which also **dropped the dead `energy`/`danceability`/`valence` sort cases** — audio features are NULL
+  and the UI never offered them; unknown fields fall back to the popularity default). (2) A **direction
+  toggle** beside the select shows the *effective* direction with **contextual labels** (A–Z/Z–A for
+  text fields, Oldest/Newest for date fields) and flips `filters.dir`; **changing the sort field resets
+  `dir`** to that field's natural default (least-surprising). (3) `dir` rides item 2's URL-state model
+  (added to `EMPTY_FILTERS`/`STRING_KEYS`) so direction is shareable/restored. (4) The sidebar gets
+  `max-height: calc(100vh - space-4*2)` + `overflow-y:auto` so it scrolls internally while staying pinned
+  (the app-header isn't sticky, so viewport-bounding is safe); the mobile drawer rule is untouched.
+  Verified: backend 92/92 (3 new pure tests); full-stack smoke all-pass (temp :5001 `dir` reverses order;
+  headless :5173 toggle→URL + field-reset + sidebar overflow 10/10). Scope: homepage browse only (the
+  Artists page keeps its own separate sort — deferred, as in B3). Spec/plan:
+  `specs/2026-07-21-triage-4-browse-search-polish-design.md`, `plans/2026-07-21-triage-4-browse-search-polish.md`.
 
 - **2026-07-21 — Triage 3: featured = curated pins with a deterministic recency fill, cycling a large
   pin set; restored a workbench Featured toggle; dropped the card date.** The homepage Featured filled
@@ -693,6 +725,14 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-21 (Triage 4 — browse/search polish, built + verified, pending merge)** — On
+  `session-triage-4-browse-polish`: bidirectional sort via a whitelisted `dir` param + a pure
+  `browseFilters.buildOrderBy` (replaced the inline `/search` switch, dropped the dead audio-feature
+  sorts); a frontend direction toggle with contextual labels that resets on sort-field change; `dir`
+  persisted in the URL (item-2 model); and an independently-scrolling filter sidebar (`max-height` +
+  `overflow-y:auto`). Backend 92/92 (3 new `buildOrderBy` tests); full-stack smoke all-pass (temp :5001
+  `dir` reverses order; headless :5173 sort/sidebar 10/10). Not yet merged.
 
 - **2026-07-21 (Triage 3 — featured-songs redesign, merged `6718cec`; ⚠ pending curator smoke)** — On
   `session-triage-3-featured` (merged no-ff to `main`): featured fill switched from random-from-catalogue to deterministic
