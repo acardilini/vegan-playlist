@@ -104,6 +104,31 @@ function DuplicateManager() {
     }
   };
 
+  const dismissGroup = async (group) => {
+    setLoading(true);
+    try {
+      const response = await adminFetch('/api/admin/duplicate-dismiss', {
+        method: 'POST',
+        body: { songIds: group.songs.map((s) => s.id) },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setMessage('Marked as not a duplicate. It will not be flagged again.');
+        loadDuplicates();
+        setTimeout(() => setMessage(''), 5000);
+      } else {
+        setError(data.error || 'Failed to dismiss');
+        setTimeout(() => setError(''), 5000);
+      }
+    } catch (err) {
+      setError('Failed to dismiss group');
+      console.error('Error dismissing duplicate group:', err);
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatDuration = (ms) => {
     if (!ms) return 'Unknown';
     const minutes = Math.floor(ms / 60000);
@@ -156,7 +181,12 @@ function DuplicateManager() {
                 {group.confidence} confidence
               </span>
             </h4>
-            <p className="recommendation">{group.recommendedAction}</p>
+            <div className="group-header-row">
+              <p className="recommendation">{group.recommendedAction}</p>
+              <button className="dismiss-btn" onClick={() => dismissGroup(group)} disabled={loading}>
+                Not a duplicate
+              </button>
+            </div>
           </div>
 
           <div className="songs-list">
@@ -440,6 +470,28 @@ function DuplicateManager() {
           color: #666;
           font-style: italic;
         }
+
+        .group-header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .dismiss-btn {
+          background: #607d8b;
+          color: white;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+
+        .dismiss-btn:hover { background: #455a64; }
+        .dismiss-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .songs-list {
           background: white;
