@@ -48,14 +48,16 @@ function queueWhere(queue) {
     case 'remind-later':
       return `sp.snooze_until IS NOT NULL AND sp.snooze_until > CURRENT_DATE`;
     case 'needs-lyrics':
-      return `s.status='included' AND NOT EXISTS (SELECT 1 FROM song_lyrics sl WHERE sl.song_id=s.id)`;
+      return `s.status='included' AND NOT EXISTS (SELECT 1 FROM song_lyrics sl
+              WHERE sl.song_id=s.id AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '')`;
     case 'needs-cover':
       return `s.status='included' AND NOT ${ARTWORK_SQL}`;
     case 'needs-video':
       return `s.status='included' AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
     case 'needs-analysis':
       return `s.status='included'
-              AND EXISTS (SELECT 1 FROM song_lyrics sl WHERE sl.song_id=s.id)
+              AND EXISTS (SELECT 1 FROM song_lyrics sl
+                          WHERE sl.song_id=s.id AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '')
               AND NOT EXISTS (SELECT 1 FROM song_lyric_analysis sa
                               WHERE sa.song_id=s.id AND sa.model_used=${MODEL_LITERAL})`;
     case 'to-finalise':
@@ -103,7 +105,8 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
            EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id) AS has_youtube,
-           EXISTS (SELECT 1 FROM song_lyrics sl WHERE sl.song_id=s.id) AS has_lyrics,
+           EXISTS (SELECT 1 FROM song_lyrics sl WHERE sl.song_id=s.id
+                   AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '') AS has_lyrics,
            sp.snooze_until, sp.park_reason
     FROM songs s
     LEFT JOIN albums al ON al.id=s.album_id
@@ -195,11 +198,11 @@ async function getWorkbench(db, id) {
     lyrics_highlights: s.lyrics_highlights, status_notes: s.status_notes,
     album: { name: s.album_name, images: s.album_images, release_date: s.album_release_date },
     artists, videos,
-    lyrics: lyricsRow ? lyricsRow.lyrics : null,
+    lyrics: (lyricsRow && lyricsRow.lyrics) ? lyricsRow.lyrics : null,
     lyrics_source_url: lyricsRow ? lyricsRow.source_url : null,
     translation: lyricsRow ? lyricsRow.translation : null,
     processing, analysed, analysis: analysisObj,
-    completeness: { lyrics: !!lyricsRow, cover, video: videos.length > 0, play_link, analysis: analysed },
+    completeness: { lyrics: !!(lyricsRow && lyricsRow.lyrics && lyricsRow.lyrics.trim()), cover, video: videos.length > 0, play_link, analysis: analysed },
   };
 }
 
@@ -230,16 +233,34 @@ async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_stat
   if (lyrics_status != null && !LYRICS_STATUSES.includes(lyrics_status)) {
     const e = new Error('invalid lyrics_status'); e.code = 'BAD_INPUT'; throw e;
   }
+  // NULL param = "not provided" → COALESCE keeps the stored value; an empty
+  // string is an explicit clear. Never overwrite source_url/translation just
+  // because a lyrics-text save omitted them.
+  const srcParam = source_url === undefined ? null : source_url;
+  const transParam = translation === undefined ? null : translation;
   if (lyrics !== undefined) {
     if (lyrics == null || lyrics === '') {
-      await db.query('DELETE FROM song_lyrics WHERE song_id=$1', [id]);
+      // Clearing the lyrics text keeps the row so source_url + translation
+      // survive (curator decision 2026-07-20); only blank the lyrics column.
+      // song_lyrics.lyrics is TEXT NOT NULL (migration 001) and this task makes
+      // no schema change, so the "no lyrics" sentinel is '' rather than NULL —
+      // every has-lyrics check below and in getWorkbench() treats '' the same
+      // as NULL (IS NOT NULL AND btrim(...) <> '' / a truthiness check), so the
+      // externally-visible "has lyrics" semantics are unaffected.
+      await db.query(
+        `UPDATE song_lyrics SET lyrics='',
+           source_url  = COALESCE($2, source_url),
+           translation = COALESCE($3, translation)
+         WHERE song_id=$1`, [id, srcParam, transParam]);
     } else {
       await db.query(`
         INSERT INTO song_lyrics (song_id, lyrics, source_url, translation)
         VALUES ($1,$2,$3,$4)
         ON CONFLICT (song_id) DO UPDATE SET
-          lyrics=EXCLUDED.lyrics, source_url=EXCLUDED.source_url, translation=EXCLUDED.translation`,
-        [id, lyrics, source_url || null, translation || null]);
+          lyrics=EXCLUDED.lyrics,
+          source_url  = COALESCE($3, song_lyrics.source_url),
+          translation = COALESCE($4, song_lyrics.translation)`,
+        [id, lyrics, srcParam, transParam]);
     }
   } else if (translation !== undefined || source_url !== undefined) {
     await db.query(`
@@ -247,7 +268,7 @@ async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_stat
         translation = COALESCE($2, translation),
         source_url  = COALESCE($3, source_url)
       WHERE song_id=$1`,
-      [id, translation === undefined ? null : translation, source_url === undefined ? null : source_url]);
+      [id, transParam, srcParam]);
   }
   const sets = [], params = [id];
   const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };

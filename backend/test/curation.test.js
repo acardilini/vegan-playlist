@@ -46,6 +46,38 @@ test('getWorkbench includes the full analysis object when coded', async () => {
   assert.equal(wb.analysis.themes[0].label, 'Compassion');
 });
 
+test('saveLyrics with only lyrics preserves existing source_url and translation', async () => {
+  const id = await mkSong({ title: 'ZZZCUR PreserveURL' });
+  await curation.saveLyrics(pool, id, { lyrics: 'first', source_url: 'http://src.example/x', translation: 'trad' });
+  await curation.saveLyrics(pool, id, { lyrics: 'edited lyrics only' });
+  const row = (await pool.query('SELECT lyrics, source_url, translation FROM song_lyrics WHERE song_id=$1', [id])).rows[0];
+  assert.equal(row.lyrics, 'edited lyrics only');
+  assert.equal(row.source_url, 'http://src.example/x');
+  assert.equal(row.translation, 'trad');
+});
+
+test('saveLyrics can still explicitly clear source_url', async () => {
+  const id = await mkSong({ title: 'ZZZCUR ClearURL' });
+  await curation.saveLyrics(pool, id, { lyrics: 'x', source_url: 'http://src.example/y' });
+  await curation.saveLyrics(pool, id, { lyrics: 'x', source_url: '' });
+  const row = (await pool.query('SELECT source_url FROM song_lyrics WHERE song_id=$1', [id])).rows[0];
+  assert.ok(row.source_url === null || row.source_url === '');
+});
+
+test('clearing lyrics keeps the row and its source_url/translation; song reads as needing lyrics', async () => {
+  const id = await mkSong({ title: 'ZZZCUR ClearLyrics', status: 'included', published: true });
+  await curation.saveLyrics(pool, id, { lyrics: 'words', source_url: 'http://s/z', translation: 'tr' });
+  await curation.saveLyrics(pool, id, { lyrics: '' });
+  const row = (await pool.query('SELECT lyrics, source_url, translation FROM song_lyrics WHERE song_id=$1', [id])).rows[0];
+  assert.ok(row, 'row still exists');
+  assert.equal(row.source_url, 'http://s/z');
+  assert.equal(row.translation, 'tr');
+  const wb = await curation.getWorkbench(pool, id);
+  assert.equal(wb.completeness.lyrics, false);
+  const needsIds = (await curation.listCurationQueue(pool, { queue: 'needs-lyrics' })).rows.map(r => r.id);
+  assert.ok(needsIds.includes(id), 'a lyrics-cleared included song appears in needs-lyrics');
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
   await pool.query(`DELETE FROM song_processing WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
