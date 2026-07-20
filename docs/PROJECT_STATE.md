@@ -178,7 +178,12 @@ Newest first. Each entry: date · decision · why.
   fired on mount and wiped a URL-hydrated `?page=N`; a boolean skip-mount ref then failed under
   **StrictMode's double mount-invoke**, so the fix compares the query/filters **signature** against a ref
   (both mount-invokes see no change → no reset). `parent_genres` persisted explicitly (not reconstructed
-  from the async genre tree). Live-smoke-only (no frontend test runner — consistent with Phase 3/B2/B3).
+  from the async genre tree). **Follow-up (curator smoke):** a param-less nav to `/` (the **Home** link /
+  site title) still reset filters (Back worked; Home didn't, because a clean `/` has no params). Fixed by
+  layering **sessionStorage under the URL** — the URL wins when it carries any browse param (deep
+  link/share/Back), else a clean `/` restores the last state saved this visit and repopulates the URL;
+  "Clear all" stores empty state so Home stays fresh (the deliberate path to a clean home). Live-smoke-only
+  (no frontend test runner — consistent with Phase 3/B2/B3); headless smoke **15/15**.
   Scope: HomePage browse only (Artists browse + `/search` + admin untouched). Spec/plan:
   `specs/2026-07-20-triage-2-persist-browse-state-design.md`, `plans/2026-07-20-triage-2-persist-browse-state.md`.
 

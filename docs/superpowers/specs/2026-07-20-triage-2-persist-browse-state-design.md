@@ -84,6 +84,26 @@ seed share one definition.
   `q` from the URL itself); simplify but keep `initialQuery` as a harmless fallback so a
   `/?q=…` deep link still works if arrived at before hydration.
 
+### 4. Within-visit persistence — Home/logo restore (added 2026-07-20 after smoke)
+
+The URL alone can't cover a **param-less** navigation to `/` — the "Home" nav link
+(`NavigationMenu` → `navigate('/')`) and the site title (`Link to="/"`) go to a clean `/`, so
+`readFilterState` sees no params and resets. Browser Back works (it restores the full URL);
+Home did not. To meet the goal ("state maintained for the duration of the visit"), a
+**sessionStorage layer sits under the URL** (curator-approved):
+
+- `browseUrlState.js` adds `hasBrowseParams`, `readStoredBrowseState`, `writeStoredBrowseState`,
+  and `readBrowseState(searchParams)` = **URL when it carries any browse param** (deep link /
+  share / Back wins), **else** the last state saved this visit (sessionStorage), **else** empty.
+- `SearchAndFilter` seeds from `readBrowseState` and is the **single store writer** (an effect
+  writing `{ searchQuery, filters, page }` using the `currentPage` prop, so one writer owns the
+  whole object — no split-writer race). `SearchSection` seeds its page from `readBrowseState` and
+  mirrors `page` → URL via an effect (so a page restored from the store also republishes to the
+  URL, keeping results and URL consistent).
+- On a param-less `/`, the restored state is mirrored back into the URL, so it stays shareable.
+- **"Clear all" stores empty state**, so Home stays fresh afterwards — the intended way to a clean
+  home. (No explicit store-clear needed; empty stored state == fresh.)
+
 ## URL contract
 
 Keys: `q`, `sort_by`, `page`, and the filter keys listed above (arrays as repeated keys).
