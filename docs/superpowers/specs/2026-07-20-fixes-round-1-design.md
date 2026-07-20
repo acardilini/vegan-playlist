@@ -64,17 +64,26 @@ the data-loss whatever the trigger, so this is confirmation, not a second root c
 
 ---
 
-## #2 — Park reason doesn't reflect in the UI after selecting 🟠 (display only)
+## #2 — Park reason doesn't reflect after selecting 🟠 (display **+ a backend data-loss sibling**)
 
-**Root cause (confirmed):** the park **persists** correctly (`setProcessing()` sets
-`park_reason`). But `frontend/src/components/admin/WorkbenchTopBar.jsx` renders an
-action-style `<select>` that resets to the "Park…" placeholder immediately after a pick
-(`e.target.value = ''`), and the "Parked: …" banner lives in `NotesPanel`, which isn't
-refreshed after the save. So the save succeeds while the screen shows no change.
+**Root cause — display half (confirmed):** `frontend/src/components/admin/WorkbenchTopBar.jsx`
+renders an action-style `<select>` that resets to the "Park…" placeholder immediately after a
+pick (`e.target.value = ''`), so the control never shows what you chose; the "Parked: …" banner
+lives in the distant `NotesPanel`.
 
-**Fix (frontend only):** after a successful park, reflect the active parked state without a
-reload — refresh the processing object that feeds `NotesPanel` (and/or show the current park
-reason next to the control). Keep the `SaveTag` feedback. No backend change.
+**Root cause — backend half (found during planning):** `setProcessing()` (`curation.js`) has the
+**same partial-update data-loss bug as #1**. Only `lyrics_tried` is COALESCE'd; `snooze_until`,
+`park_reason`, and `processing_note` are overwritten from `EXCLUDED.*` on every call. So a
+single-field save clobbers the others — e.g. toggling a "lyrics avenue tried" nulls the park
+reason and the processing note; parking nulls a pending snooze and note. This is very likely why
+a park "doesn't stick": park it, toggle an avenue, park is gone.
+
+**Fix:**
+- **Backend:** rewrite `setProcessing` to update only the fields actually provided (the same
+  provided-fields-only pattern as #1), with explicit-clear support (`park_reason: ''` clears).
+- **Frontend:** make the Park `<select>` controlled on `wb.processing.park_reason` (shows the
+  current reason, with a "Not parked" option to clear) and the Remind date input controlled on
+  `snooze_until`, so the parked state is visible at the point of action.
 
 **Verification:** park a song as "Listened — unclear" → the active reason is visible on the
 workbench without reloading; re-opening the song still shows it.
@@ -131,7 +140,7 @@ bidirectional sort, analysis-dimension filters); featured-songs redesign + card 
 inconsistencies; About/AI-disclosure page; B4 Explore map + vector "You might also like".
 
 ## Dataset-safety note
-Every change is curator-data-protective by construction: #1 stops active data loss and adds
-tests proving preservation; #3 makes the detector more conservative (fewer false merges);
-#2 is display-only; #4 adds a read path plus one manual data correction. No migration; no
-bulk writes.
+Every change is curator-data-protective by construction: #1 and #2 both stop active data loss
+(partial-update clobbering) and add tests proving preservation; #3 makes the detector more
+conservative (fewer false merges); #4 adds a read path plus one manual data correction. No
+migration; no bulk writes.
