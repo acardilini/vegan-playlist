@@ -11,7 +11,7 @@ const DEFAULT_QUEUE = 'to-process';
 // 'inbox'. Guard against a stale/typo'd ?queue= landing on one of them.
 const SELECTABLE_QUEUES = [
   'to-process', 'needs-lyrics', 'needs-cover', 'needs-video',
-  'awaiting-community', 'remind-later', 'to-finalise', 'live',
+  'awaiting-community', 'remind-later', 'to-finalise', 'live', 'all',
 ];
 
 function SongsArea() {

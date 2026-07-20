@@ -294,6 +294,15 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
 - ☐ **F — Spotify push.** Website→Spotify: paste Spotify URL → one button adds to the playlist
   (needs a one-time write-auth Spotify OAuth connection).
 
+_**Fixes Round 1** (curator-triage bug round, 2026-07-20, branch `session-fixes-round-1`, merged to
+`main`) landed between B3 and B4 — a cross-cutting fix round, not a Phase-4 sub-project: data-integrity
+fixes (`saveLyrics`/`setProcessing` partial-update data loss; duplicate detection gated on title+artist
+with a persistent "Not a duplicate" reject — migration 008 `duplicate_dismissals`), an admin **All songs**
+search scope, and browse UX polish (Sort-by beside search, chips relocated, redundant summary removed).
+Backend 88/88; curator smoke-confirmed. Spec: [`specs/2026-07-20-fixes-round-1-design.md`](./superpowers/specs/2026-07-20-fixes-round-1-design.md).
+Remaining curator-triage backlog (sequenced after B4): thematic `key_focus_pipeline` switch, browse/search
+polish, featured-songs redesign, About/AI-disclosure page._
+
 ## Phase 5 — Deployment Hardening
 **Goal:** Ship it, cheaply, from GitHub.
 **Exit criteria:** Live deployment; secrets managed; DB hosted; documented deploy process.

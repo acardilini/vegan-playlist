@@ -46,6 +46,38 @@ test('getWorkbench includes the full analysis object when coded', async () => {
   assert.equal(wb.analysis.themes[0].label, 'Compassion');
 });
 
+test('saveLyrics with only lyrics preserves existing source_url and translation', async () => {
+  const id = await mkSong({ title: 'ZZZCUR PreserveURL' });
+  await curation.saveLyrics(pool, id, { lyrics: 'first', source_url: 'http://src.example/x', translation: 'trad' });
+  await curation.saveLyrics(pool, id, { lyrics: 'edited lyrics only' });
+  const row = (await pool.query('SELECT lyrics, source_url, translation FROM song_lyrics WHERE song_id=$1', [id])).rows[0];
+  assert.equal(row.lyrics, 'edited lyrics only');
+  assert.equal(row.source_url, 'http://src.example/x');
+  assert.equal(row.translation, 'trad');
+});
+
+test('saveLyrics can still explicitly clear source_url', async () => {
+  const id = await mkSong({ title: 'ZZZCUR ClearURL' });
+  await curation.saveLyrics(pool, id, { lyrics: 'x', source_url: 'http://src.example/y' });
+  await curation.saveLyrics(pool, id, { lyrics: 'x', source_url: '' });
+  const row = (await pool.query('SELECT source_url FROM song_lyrics WHERE song_id=$1', [id])).rows[0];
+  assert.ok(row.source_url === null || row.source_url === '');
+});
+
+test('clearing lyrics keeps the row and its source_url/translation; song reads as needing lyrics', async () => {
+  const id = await mkSong({ title: 'ZZZCUR ClearLyrics', status: 'included', published: true });
+  await curation.saveLyrics(pool, id, { lyrics: 'words', source_url: 'http://s/z', translation: 'tr' });
+  await curation.saveLyrics(pool, id, { lyrics: '' });
+  const row = (await pool.query('SELECT lyrics, source_url, translation FROM song_lyrics WHERE song_id=$1', [id])).rows[0];
+  assert.ok(row, 'row still exists');
+  assert.equal(row.source_url, 'http://s/z');
+  assert.equal(row.translation, 'tr');
+  const wb = await curation.getWorkbench(pool, id);
+  assert.equal(wb.completeness.lyrics, false);
+  const needsIds = (await curation.listCurationQueue(pool, { queue: 'needs-lyrics' })).rows.map(r => r.id);
+  assert.ok(needsIds.includes(id), 'a lyrics-cleared included song appears in needs-lyrics');
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
   await pool.query(`DELETE FROM song_processing WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
@@ -71,6 +103,24 @@ test('setProcessing upserts and validates park_reason', async () => {
   assert.equal(r.park_reason, 'awaiting_community');
   assert.deepEqual(r.lyrics_tried, ['google','genius']);
   await assert.rejects(curation.setProcessing(pool, id, { park_reason: 'bogus' }), e => e.code === 'BAD_INPUT');
+});
+
+test('setProcessing updates only provided fields (toggling avenues keeps park reason + note)', async () => {
+  const id = await mkSong({ title: 'ZZZCUR ProcPreserve' });
+  await curation.setProcessing(pool, id, { park_reason: 'listened_unclear', processing_note: 'keep me' });
+  await curation.setProcessing(pool, id, { lyrics_tried: ['google'] });
+  const p = await curation.getProcessing(pool, id);
+  assert.equal(p.park_reason, 'listened_unclear');
+  assert.equal(p.processing_note, 'keep me');
+  assert.deepEqual(p.lyrics_tried, ['google']);
+});
+
+test('setProcessing can explicitly clear the park reason', async () => {
+  const id = await mkSong({ title: 'ZZZCUR ProcClear' });
+  await curation.setProcessing(pool, id, { park_reason: 'listened_unclear' });
+  await curation.setProcessing(pool, id, { park_reason: '' });
+  const p = await curation.getProcessing(pool, id);
+  assert.equal(p.park_reason, null);
 });
 
 test('setProcessing throws NOT_FOUND for missing song', async () => {
@@ -113,6 +163,12 @@ test('queueCounts returns a number for every queue key', async () => {
   for (const k of ['to-process','awaiting-community','remind-later','needs-lyrics','needs-cover','needs-video','needs-analysis','to-finalise','inbox','live']) {
     assert.equal(typeof c[k], 'number', `count for ${k}`);
   }
+});
+
+test('queueCounts includes an all-catalogue total', async () => {
+  const c = await curation.queueCounts(pool);
+  assert.equal(typeof c.all, 'number');
+  assert.ok(c.all >= c.live, 'all songs >= live songs');
 });
 
 test('catalogueStats returns integer totals by status', async () => {

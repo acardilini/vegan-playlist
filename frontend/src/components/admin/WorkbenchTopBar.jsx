@@ -65,12 +65,14 @@ function WorkbenchTopBar({ wb, onAction, onPark, nav }) {
           <button className="btn btn-primary btn-sm" onClick={() => onAction('include')}>Include</button>
           <button className="btn btn-primary btn-sm" onClick={() => onAction('include-publish')}>Include &amp; publish</button>
           <button className="btn btn-secondary btn-sm" onClick={() => onAction('reject')}>Reject</button>
-          <select className="select" defaultValue="" onChange={(e) => { if (e.target.value) { park({ park_reason: e.target.value }); e.target.value = ''; } }}>
-            <option value="">Park…</option>
+          <select className="select" value={wb.processing?.park_reason || ''}
+            onChange={(e) => park({ park_reason: e.target.value })}>
+            <option value="">Not parked</option>
             {PARK_REASONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
           <input className="input" type="date" title="Remind me later"
-            onChange={(e) => { if (e.target.value) park({ snooze_until: e.target.value }); }} style={{ width: 175 }} />
+            value={wb.processing?.snooze_until ? String(wb.processing.snooze_until).slice(0, 10) : ''}
+            onChange={(e) => park({ snooze_until: e.target.value })} style={{ width: 175 }} />
           <SaveTag status={parkSave} />
         </>}
         {isIncluded && !wb.published && <button className="btn btn-primary btn-sm" onClick={() => onAction('publish')}>Publish</button>}

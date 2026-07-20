@@ -671,6 +671,15 @@
   max-width: 640px;
 }
 
+.browse-search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.browse-search-row .search-container { flex: 1 1 320px; }
+.browse-search-row .sort-container { margin-left: auto; }
+
 .search-input {
   flex: 1;
   min-width: 0;
@@ -2266,6 +2275,9 @@
 .sidebar-groups { display: flex; flex-direction: column; gap: var(--space-5); }
 .sidebar-drawer-head { display: none; }
 .browse-results { min-width: 0; }
+/* Chips live at the top of the results column (right of the sidebar, above the
+   count + cards), so drop the search-row top gap and space them from the cards. */
+.browse-results .filter-chips { margin-top: 0; margin-bottom: var(--space-4); }
 .drawer-toggle { display: none; }
 .drawer-scrim { display: none; }
 

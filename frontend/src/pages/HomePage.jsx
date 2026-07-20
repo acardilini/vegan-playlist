@@ -205,24 +205,8 @@ function SearchSection({ initialSearchQuery = '' }) {
                     )}
                   </h3>
 
-                  {/* Applied filters summary */}
-                  {Object.values(searchResults.filters_applied || {}).some(isActiveFilterValue) && (
-                    <div className="applied-filters">
-                      <span>Filters applied:</span>
-                      {searchResults.filters_applied.genres && searchResults.filters_applied.genres.length > 0 && (
-                        <span className="applied-filter">
-                          Genre: {Array.isArray(searchResults.filters_applied.genres)
-                            ? searchResults.filters_applied.genres.join(', ')
-                            : searchResults.filters_applied.genres}
-                        </span>
-                      )}
-                      {searchResults.filters_applied.year_range && (searchResults.filters_applied.year_range.from || searchResults.filters_applied.year_range.to) && (
-                        <span className="applied-filter">
-                          Year: {searchResults.filters_applied.year_range.from || '?'} - {searchResults.filters_applied.year_range.to || '?'}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {/* Applied-filter summary removed — the removable chips at the top of
+                      the results column are the single source of truth for active filters. */}
 
                   <div className="songs-grid">
                     {searchResults.songs.map((song) => (
