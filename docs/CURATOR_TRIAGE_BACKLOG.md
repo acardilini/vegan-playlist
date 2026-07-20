@@ -70,12 +70,13 @@ also like") → **6** About analysis-explainer + AI disclosure.
   data-update section below** (Reference — the six scalar metadata components). **These attributes live
   in `gemma4:deep_pipeline`** (not key-focus), so their facets/filters must read the **deep** tier —
   coordinate with the split-read switch below.
-- **Persist sort & filter state across navigation.** On the homepage, moving to another page and
-  coming back **resets** the sort + all active filters. The curator wants the browse state maintained
-  for the duration of the visit. Root cause: `SearchAndFilter` holds filter/sort in component
-  `useState` that unmounts on navigation. Fix: lift the state to persist across route changes
-  (e.g. URL query params — also makes browse states shareable/bookmarkable — or a shared store /
-  `sessionStorage`). URL-param approach is preferred (shareable + back-button friendly).
+- ✅ **RESOLVED (triage 2, 2026-07-20 — built on `session-triage-2-browse-state`, pending merge).**
+  **Persist sort & filter state across navigation.** On the homepage, moving to another page and
+  coming back **reset** the sort + all active filters (root cause: `SearchAndFilter` held filter/sort in
+  component `useState` that unmounts on navigation). Fixed by making the URL query string the single
+  source of truth — hydrate-on-mount + mirror-on-change (`useSearchParams`, `replace`), new pure
+  `utils/browseUrlState.js`; page persisted via a disjoint second writer. Shareable/bookmarkable.
+  Headless smoke 10/10.
 - **Filter sidebar won't scroll until the page bottom.** The sidebar is sticky and only the results
   column scrolls; the curator wants to scroll the sidebar independently at any time. Root cause:
   sticky `.browse-sidebar` with no independent scroll region. Fix: give the sidebar its own
