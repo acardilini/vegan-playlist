@@ -2199,15 +2199,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--space-2);
   width: 100%;
   background: none;
   border: none;
   color: var(--text-primary);
   font: var(--text-body);
   font-weight: 700;
+  text-align: left;
   cursor: pointer;
   padding: var(--space-2) 0;
 }
+/* label takes the row width and stays left; count sits at the right */
+.facet-dim-header > span:first-child { flex: 1; min-width: 0; }
 .facet-sub { margin: var(--space-1) 0 var(--space-2); }
 /* Nested left rails show the level nesting (sub-dimension rail takes its colour, inline) */
 .facet-rail {
