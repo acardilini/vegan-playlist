@@ -15,26 +15,6 @@ function SongCard({ song, songId }) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Format playlist add date
-  const formatPlaylistAddDate = (dateString) => {
-    if (!dateString) return null;
-
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 30) {
-      return `Added ${diffDays} days ago`;
-    } else if (diffDays < 365) {
-      const months = Math.floor(diffDays / 30);
-      return `Added ${months} month${months > 1 ? 's' : ''} ago`;
-    } else {
-      const years = Math.floor(diffDays / 365);
-      return `Added ${years} year${years > 1 ? 's' : ''} ago`;
-    }
-  };
-
   // Get album artwork (null → striped placeholder, never a blank box)
   const getArtwork = () => {
     if (song.album_images && song.album_images.length > 0) {
@@ -141,9 +121,6 @@ function SongCard({ song, songId }) {
             {song.release_date ? new Date(song.release_date).getFullYear() : 'Unknown'}
           </span>
           <span className="song-duration">{formatDuration(song.duration_ms)}</span>
-          {song.playlist_added_at && (
-            <span className="song-added">{formatPlaylistAddDate(song.playlist_added_at)}</span>
-          )}
         </div>
       </div>
     </div>
