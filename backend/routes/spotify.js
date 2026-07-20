@@ -288,33 +288,8 @@ router.get('/search', async (req, res) => {
     const whereClause = whereConditions.length > 0 ?
       `WHERE ${whereConditions.join(' AND ')}` : '';
 
-    // Sorting options
-    let orderBy = 'ORDER BY s.popularity DESC, s.title';
-    switch (sort_by) {
-      case 'title':
-        orderBy = 'ORDER BY s.title ASC';
-        break;
-      case 'year':
-        orderBy = 'ORDER BY al.release_date DESC NULLS LAST, s.title ASC';
-        break;
-      case 'artist':
-        orderBy = 'ORDER BY MIN(a.name) ASC, s.title ASC';
-        break;
-      case 'energy':
-        orderBy = 'ORDER BY s.energy DESC NULLS LAST, s.title ASC';
-        break;
-      case 'danceability':
-        orderBy = 'ORDER BY s.danceability DESC NULLS LAST, s.title ASC';
-        break;
-      case 'valence':
-        orderBy = 'ORDER BY s.valence DESC NULLS LAST, s.title ASC';
-        break;
-      case 'date_added':
-        orderBy = 'ORDER BY COALESCE(s.playlist_added_at, s.date_added) DESC NULLS LAST, s.title ASC';
-        break;
-      default:
-        orderBy = 'ORDER BY s.popularity DESC, s.title ASC';
-    }
+    // Sorting (whitelisted field + direction; see services/browseFilters.buildOrderBy)
+    const orderBy = browse.buildOrderBy(sort_by, req.query.dir);
 
     // Pagination
     const offset = (parseInt(page) - 1) * parseInt(limit);

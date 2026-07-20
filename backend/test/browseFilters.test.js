@@ -53,3 +53,24 @@ test('joinSql emits only the needed joins', () => {
   assert.ok(b.joinSql({ effectiveGenre: true }).includes('LATERAL'));
   assert.ok(b.joinSql({ analysis: true }).includes('song_lyric_analysis sa'));
 });
+
+test('buildOrderBy: field defaults', () => {
+  assert.equal(b.buildOrderBy('title'), 'ORDER BY s.title ASC');
+  assert.equal(b.buildOrderBy('artist'), 'ORDER BY MIN(a.name) ASC, s.title ASC');
+  assert.equal(b.buildOrderBy('year'), 'ORDER BY al.release_date DESC NULLS LAST, s.title ASC');
+  assert.equal(b.buildOrderBy('date_added'),
+    'ORDER BY COALESCE(s.playlist_added_at, s.date_added) DESC NULLS LAST, s.title ASC');
+});
+
+test('buildOrderBy: explicit direction flips the primary column', () => {
+  assert.equal(b.buildOrderBy('title', 'desc'), 'ORDER BY s.title DESC');
+  assert.equal(b.buildOrderBy('year', 'asc'), 'ORDER BY al.release_date ASC NULLS LAST, s.title ASC');
+  assert.equal(b.buildOrderBy('date_added', 'asc'),
+    'ORDER BY COALESCE(s.playlist_added_at, s.date_added) ASC NULLS LAST, s.title ASC');
+});
+
+test('buildOrderBy: unknown field falls back to popularity; bogus dir uses field default', () => {
+  assert.equal(b.buildOrderBy('popularity'), 'ORDER BY s.popularity DESC, s.title ASC');
+  assert.equal(b.buildOrderBy('nonsense'), 'ORDER BY s.popularity DESC, s.title ASC');
+  assert.equal(b.buildOrderBy('title', 'sideways'), 'ORDER BY s.title ASC');
+});
