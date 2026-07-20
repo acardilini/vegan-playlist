@@ -10,28 +10,34 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**B2 — Song page + workbench panel + mock-UI deletion (2026-07-19).**
-  Executed the 7-task B2 plan on branch `session-B2-song-page-analysis`. **Delivered:** the new
-  **`LyricalAnalysis`** component (Option-C: compact attributes card + all chips **colour-coded by
-  sub-dimension** with an inline mini-legend; explanation + per-code evidence behind a "Show evidence"
-  toggle), consumed on the **public song page** (`SongDetailPage`, replacing the mock advocacy section)
-  and **read-only in the admin workbench Analysis panel**; **enriched** `getSongAnalysis` /
-  `/api/analysis/song/:id` with per-code `definition` + resolved scalar **attribute labels**
-  (`attributes[{label,value}]`) + `analysis.test.js`; a shared **dataviz-validated sub-dimension colour
-  palette** (`styles/subDimensionPalette.js`); the **DataDashboard theme chart** labelled from the real
-  `analytics/vegan-themes` (dead theme filter removed); and **deleted the mock categorisation UI**
-  (`CategorizationFields`, `BulkCategorizationWorkflow`, `BulkEditModal`) + all remaining mock-array
-  reads (HomePage/DataDashboard/ArtistDetailPage/SearchAndFilter). Backend **56/56**; frontend build +
-  lint clean (0 errors); **live smoke passed** — enriched `/api/analysis/song/1`, workbench `analysis`,
-  real `vegan-themes` (suffering 446/killing 358/brutality 306), mock UI gone with zero references, and
-  the **curator visually confirmed all three surfaces**. Merged no-ff to `main`; **pushed**.
-  (This session also verified the DB + repo survived an improper shutdown intact.)_
-- **Next session:** **B3 — hierarchical faceted browse.** Build the collapsible
-  `Dimension→Sub-dimension→Group→Code` facet tree UI over B1's `facetTree` (distinct-song rollup counts)
-  + `/search` analysis-facet AND filtering, with a visible only-coded note; sub-dimension colouring reuses
-  B2's shared palette. Deferred from B1: add a 2-codes-same-group `facetTree` test in B3. Then **B4**
-  (Explore vector map, 2D+3D). B1's endpoints + B2's palette are live for B3–B4 to consume.
-- **Last updated:** 2026-07-19 _(B2 done, merged to `main` + pushed; B3 next)._
+- **Current session:** _**B3 — Browse & Search overhaul (2026-07-19 → 2026-07-20; four rounds on branch
+  `session-B3-browse-search`).** Grew well past the original "faceted browse" scope into a full
+  browse/search rebuild, driven by curator smoke feedback each round. **Round 1 (overhaul):** the
+  **effective-genre fix** — genre facet counts + `/search` genre filter now use `COALESCE(songs.genre,
+  primary artist's first genre)` computed at query time (coverage 492 → ~1,003 live songs; a "329 have no
+  genre" note), killing the hardcoded frontend `GENRE_HIERARCHY`; the **thematic facet tree** over B1's
+  `facetTree`; new filters (**song length**, **has-YouTube/on-Spotify**, **has-analysis**, **language**);
+  **removable chips**; year-range input sizing; + the deferred 2-codes-same-group `facetTree` test.
+  **Round 2 (rework):** filters moved into a **left sidebar** (mobile drawer) — results no longer pushed
+  down; **dynamic exclude-self counts** (a new `GET /api/spotify/browse-facets` recomputes every group's
+  counts against the *other* filters, so picking "death metal" narrows theme/length/etc. while genre stays
+  widenable) built on a shared `services/browseFilters.buildWhere` (one filter source for `/search` +
+  browse-facets); Popularity sort dropped (default → Year). **Round 3:** **selectable sub-dimensions &
+  groups** in the theme tree — a code = exact AND-term, a group/sub-dimension = an OR-term over its codes,
+  all AND across (`facetSelectionClauses`); ancestor-covers-descendants UX; a **Date-added sort**. **Round
+  4:** theme-tree **colour-forward hierarchy restyle** (nested rails, level-distinct type, bigger text) +
+  the dimension-header left-align fix; **date sort** `COALESCE(playlist_added_at, date_added)` so the
+  ~534-song Apr-2026 batch (no Spotify-playlist date) surfaces by import date. **Executed via
+  subagent-driven development** (fresh implementer + two-stage review per task; opus final review per
+  round — all clean; round-4 polish done inline). Backend **75/75**; frontend build + eslint clean;
+  live exclude-self smoke consistent; **curator smoke-confirmed all four rounds**. Merged no-ff to `main`;
+  **pushed**._
+- **Next session:** **B4 — Explore vector map.** The new top-nav "Explore" page: 2D + 3D scatter over
+  `frontend/public/vector_space.json` (+ `song_embeddings`), space toggle (semantic/thematic/acoustic),
+  colour-by dominant-theme (reusing B2's sub-dimension palette), theme/animal spotlight filter, hover/click
+  to the song. See `docs/LYRICS_VECTOR_ANALYSIS_INTEGRATION.md` + the B design spec. Then sub-projects
+  C–F (submissions/Inbox, YouTube, lyrics, Spotify push).
+- **Last updated:** 2026-07-20 _(B3 done — all four rounds merged to `main` + pushed; B4 next)._
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -40,17 +46,17 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    Dashboard — action tiles → Songs queues, catalogue-health line, recent-activity feed → workbench,
    Add-a-song; read-only `GET /curation/catalogue-stats` + `/curation/recent`; deleted the old admin
    `DataCompletionDashboard` + `/completion-stats` route + `DashboardStub`.
-2. **Sub-project B — Analysis integration (in progress). ~~B1~~ + ~~B2~~ DONE.** B1
-   (`session-B1-analysis-backend`, merged `4d5d6ee`, 2026-07-18): backend foundation — `services/analysis.js`,
-   public `/api/analysis` router, `/search` facet filtering, `getWorkbench` analysis, `analytics/vegan-themes`
-   repoint, migration 007 dropping the 5 mock columns + dead view. **B2** (`session-B2-song-page-analysis`,
-   merged 2026-07-19): the `LyricalAnalysis` Option-C component (sub-dimension-coloured chips + inline
-   mini-legend + evidence toggle) on the public song page + read-only admin workbench; enriched analysis
-   payload (per-code definitions + scalar attribute labels); shared `subDimensionPalette.js`; DataDashboard
-   theme chart on real `vegan-themes`; **mock categorisation UI deleted**. **Next: B3 — hierarchical
-   faceted browse** (facet-tree UI over B1's `facetTree` + `/search` AND filtering; reuses B2's palette;
-   add the deferred 2-codes-same-group `facetTree` test). Then **B4** (Explore vector map). Plans consume
-   B1's live endpoints + B2's palette. Design spec:
+2. **Sub-project B — Analysis integration (in progress). ~~B1~~ + ~~B2~~ + ~~B3~~ DONE.** B1
+   (`session-B1-analysis-backend`, merged `4d5d6ee`, 2026-07-18): backend foundation. **B2**
+   (`session-B2-song-page-analysis`, merged 2026-07-19): `LyricalAnalysis` on the song page + workbench;
+   `subDimensionPalette.js`; mock categorisation UI deleted. **B3 — Browse & Search overhaul**
+   (`session-B3-browse-search`, merged 2026-07-20, four rounds): effective-genre fix (492→~1,003 coverage),
+   thematic facet tree with **selectable groups/sub-dimensions** (AND-of-terms via `facetSelectionClauses`),
+   new filters (length/availability/analysis/language), removable chips, **left-sidebar layout** (mobile
+   drawer), **dynamic exclude-self counts** (`/api/spotify/browse-facets` + shared
+   `services/browseFilters.buildWhere`), Date-added sort (`COALESCE(playlist_added_at, date_added)`),
+   colour-forward theme-tree hierarchy restyle; Popularity sort dropped. **Next: B4 — Explore vector map**
+   (2D/3D scatter over `vector_space.json`, space/colour toggles, spotlight filter). Design spec:
    [`specs/2026-07-17-B-analysis-integration-design.md`](./superpowers/specs/2026-07-17-B-analysis-integration-design.md).
 3. **Remaining sub-projects:** C (submissions moderation / Inbox — the dashboard's disabled **Inbox**
    tile lights up here), D (YouTube search), E (lyrics fetch), F (Spotify push). Design:
@@ -142,6 +148,33 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-20 — B3 grew into a four-round browse/search rebuild via live curator smoke; several
+  cross-filter/semantics decisions locked in.** The planned "faceted browse" became a full overhaul because
+  each smoke round reshaped it. Key decisions: (1) **Genre is an "effective genre"** =
+  `COALESCE(songs.genre, primary artist's first genre)`, computed **at query time** (no stored migration —
+  protects the dataset invariant), because only 492/1,332 live songs had a song-level genre but ~1,003 have
+  one via their artist; facet counts and the `/search` filter share the exact same expression so a count
+  always equals what clicking returns (hardened later with `TRIM` + a short-length lower bound for parity).
+  (2) **Filters live in a left sidebar** (curator rejected the two-column drop-panel as "breaks up the
+  page"), collapsing to a mobile drawer. (3) **Dynamic counts are exclude-self** (each group's counts apply
+  all *other* filters but not its own, so a group stays widenable) — a new `/api/spotify/browse-facets`
+  endpoint + a shared `services/browseFilters.buildWhere` that both `/search` and the counts use, so
+  filtering and counts can never drift. (4) **Theme facet logic stays AND for individual codes** (curator
+  kept narrowing), but a **group or sub-dimension is a single OR-term** over its codes (any code inside),
+  all terms AND across — the "act like genres" ask realised without flipping the whole dimension to OR;
+  ancestor-select covers+clears descendants. (5) **Date-added sort** uses
+  `COALESCE(playlist_added_at, date_added)` (Spotify curation date first, else import date) so the ~534
+  Apr-2026 batch that was never on the Spotify playlist still surfaces as recent. (6) **Popularity sort
+  removed** (already display-suppressed since Phase 3). (7) The theme tree was **restyled colour-forward**
+  (nested rails, level-distinct type) after two alignment-bug rounds — the real cause was `<button>`
+  dimension headers defaulting to `text-align:center` (flex positioned the label but not its inner text);
+  the earlier "still broken" smoke was a **stale-HMR artifact** (a full component + CSS-deletion rewrite
+  doesn't hot-reload cleanly — restart the dev server fresh after such changes). Deferred (non-blocking):
+  `ArtistSearchAndFilter.jsx` still has its own hardcoded genre hierarchy (different endpoint, a later
+  backend-driven pass); the now-unused public `getFilterOptions`/`getFacets` service methods (kept, later
+  removal); a cosmetic parent-genre-checkbox-stays-checked-on-single-subgenre-untick. Specs/plans:
+  `specs/2026-07-19-B3-browse-search-design.md` (+ rework, facet-selection, restyle specs) and their plans.
 
 - **2026-07-18 — B1 executed; taxonomy went hierarchical mid-flight; migration had to drop a dead
   view; several self-referential plan bugs caught by review.** (1) **The curator restructured
@@ -522,6 +555,33 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-20 (B3 — Browse & Search overhaul; four rounds; merged to `main`)** — Branch
+  `session-B3-browse-search` (base `bd33ab2`), 33 commits, +2,999/−610 across 19 files, executed via
+  subagent-driven development (fresh implementer + spec/quality review per task; opus whole-branch review
+  per round — all clean; round-4 polish inline). **Round 1 — overhaul** (10 tasks): `services/genres.js`
+  effective-genre + length helpers; `/filter-options` + `/search` rebuilt onto effective genre (492→~1,003
+  coverage); thematic facet tree; length/availability/analysis/language filters; removable chips; year-range
+  sizing; deferred 2-codes-same-group `facetTree` test; + a parity fix (`LOWER(TRIM(...))` on the genre
+  expr, short-length `>=1` bound) so counts always equal filter results. **Round 2 — sidebar + dynamic
+  counts** (8 tasks): shared `services/browseFilters.buildWhere` (tagged clauses); `/search` refactored onto
+  it (dead audio-feature/`parent_genres` branches dropped); `facetTree` optional constraint;
+  `GET /api/spotify/browse-facets` exclude-self counts; `getBrowseFacets`; left-sidebar layout +
+  mobile drawer (SearchAndFilter takes results as `children`); dynamic-count wiring (debounced +
+  stale-guard) + zero-count greying; Popularity sort dropped (default → Year); fix wave (scrim token,
+  last-good facet guard, greying parity). **Round 3 — selectable facet groups** (5 tasks):
+  `analysis.facetSelectionClauses` (code=exact term, group/sub-dimension=OR-term over its codes, AND
+  across) + taxonomy reverse maps; `buildWhere` consumes `facet_groups`/`facet_subdims`; `/search`
+  `date_added` sort; `ThemeFacetTree` three-level checkbox rows (ancestor-covers-descendants);
+  SearchAndFilter wiring (ancestor-select clears descendants, group/subdim chips). **Round 4 — restyle +
+  date fallback**: colour-forward theme-tree hierarchy (nested rails, level-distinct type, bigger text) +
+  dimension-header left-align fix (button `text-align:center` was the root cause); date sort →
+  `COALESCE(playlist_added_at, date_added)`. **Verification:** backend `node --test` **75/75**; frontend
+  `npm run build` + `npx eslint src/` clean; live exclude-self smoke consistent (genre sum 1,003, killing
+  358 ≤ violence group 473 ≤ cruelty sub-dim 540, browse-facets self-exclusion holds); **curator
+  smoke-confirmed every round** (final: theme hierarchy + dimension alignment). Two whole-branch opus
+  reviews returned "ready to merge = yes". Merged no-ff to `main`; pushed. **B4 (Explore map) + C–F
+  remain.**
 
 - **2026-07-19 (B2 — Song page + workbench panel + mock-UI deletion; merged to `main`)** — Resumed after
   an improper machine shutdown (battery reset). **First verified nothing was lost:** `git fsck` clean

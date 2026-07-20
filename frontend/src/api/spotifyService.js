@@ -167,4 +167,34 @@ export const spotifyService = {
       return null;
     }
   },
+
+  // Get the analysis facet tree for browse filters. Relative URL — Vite proxies /api.
+  getFacets: async () => {
+    try {
+      const response = await fetch('/api/analysis/facets');
+      if (!response.ok) throw new Error('Failed to fetch facets');
+      return await response.json();
+    } catch (error) {
+      console.warn('Could not load facets:', error);
+      return {};
+    }
+  },
+
+  // Dynamic cross-filtered facet counts for the browse sidebar. Relative URL (Vite proxy).
+  getBrowseFacets: async (filters = {}) => {
+    try {
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v === null || v === undefined || v === '') return;
+        if (Array.isArray(v)) v.forEach(x => params.append(k, x));
+        else params.append(k, v);
+      });
+      const res = await fetch(`/api/spotify/browse-facets?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch browse facets');
+      return await res.json();
+    } catch (error) {
+      console.warn('Could not load browse facets:', error);
+      return {};
+    }
+  },
 };

@@ -133,6 +133,99 @@ test('themeCounts aggregates real themes from song_lyric_analysis', async () => 
   assert.ok(rows.length <= 15);
 });
 
+test('facetTree rolls up two codes in the same group with distinct-song counts', async () => {
+  // Song A: both violence codes; Song B: only killing. Group "violence" = 2 distinct songs.
+  const a = (await pool.query(
+    `INSERT INTO songs (title, status, published, data_source)
+     VALUES ('ZZZANL TwoCode A', 'included', true, 'manual') RETURNING id`)).rows[0];
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, 'gemma4:latest', $2::jsonb, '[]', '[]', '[]', '[]')`,
+    [a.id, JSON.stringify([{ code: 'killing', evidence: 'x' }, { code: 'brutality', evidence: 'y' }])]);
+  const b = (await pool.query(
+    `INSERT INTO songs (title, status, published, data_source)
+     VALUES ('ZZZANL TwoCode B', 'included', true, 'manual') RETURNING id`)).rows[0];
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, 'gemma4:latest', $2::jsonb, '[]', '[]', '[]', '[]')`,
+    [b.id, JSON.stringify([{ code: 'killing', evidence: 'z' }])]);
+
+  const t = await analysis.facetTree(pool);
+  const cruelty = t.themes.sub_dimensions.find(s => s.id === 'cruelty_suffering');
+  const violence = cruelty.groups.find(g => g.id === 'violence');
+  const killing = violence.codes.find(c => c.code === 'killing');
+  const brutality = violence.codes.find(c => c.code === 'brutality');
+  // Distinct-song rollup: killing in A+B, brutality in A only, group = 2 distinct songs.
+  assert.ok(killing.count >= 2, 'killing counts both songs');
+  assert.ok(brutality.count >= 1, 'brutality counts song A');
+  // Discriminating: the violence group's count is the UNION of its codes' distinct songs.
+  // A buggy occurrence-SUM rollup would instead give killing.count + brutality.count.
+  assert.ok(violence.count >= killing.count, 'group >= any single code (distinct-song union property)');
+  assert.ok(violence.count < killing.count + brutality.count, 'group count is NOT occurrence sum of codes');
+});
+
+test('facetTree accepts a constraint that narrows the counted set', async () => {
+  // One coded song with theme killing; constrain to a non-matching language -> zero counts.
+  const s = (await pool.query(
+    `INSERT INTO songs (title, status, published, data_source, language)
+     VALUES ('ZZZANL Constrained', 'included', true, 'manual', 'English') RETURNING id`)).rows[0];
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, 'gemma4:latest', $2::jsonb, '[]', '[]', '[]', '[]')`,
+    [s.id, JSON.stringify([{ code: 'killing', evidence: 'x' }])]);
+
+  // Constrain to a language that no coded song has -> killing count unaffected by our new row.
+  const constrained = await analysis.facetTree(pool, {
+    joinSql: '', where: [`s.language = $2`], params: ['ZZZ-NoSuchLang'],
+  });
+  // themes dimension should have no 'killing' contribution from our English song under this constraint
+  const cruelty = (constrained.themes.sub_dimensions || []).find(sd => sd.id === 'cruelty_suffering');
+  const killing = cruelty && cruelty.groups.find(g => g.id === 'violence')?.codes.find(c => c.code === 'killing');
+  const constrainedCount = killing ? killing.count : 0;
+
+  const unconstrained = await analysis.facetTree(pool);
+  const uKilling = unconstrained.themes.sub_dimensions.find(sd => sd.id === 'cruelty_suffering')
+    .groups.find(g => g.id === 'violence').codes.find(c => c.code === 'killing');
+  assert.ok(uKilling.count > constrainedCount, 'constraint reduces the counted set');
+});
+
+test('facetSelectionClauses: a group is one OR-term over its codes', () => {
+  const { clauses, params, needsJoin } = analysis.facetSelectionClauses(
+    { groups: ['themes:violence'] }, 1);
+  assert.equal(needsJoin, true);
+  assert.equal(clauses.length, 1, 'one term = one clause');
+  // violence group = killing, brutality, systemic_violence (3 codes) -> parenthesised OR
+  assert.match(clauses[0], /^\(sa\.themes @> \$1::jsonb OR sa\.themes @> \$2::jsonb OR sa\.themes @> \$3::jsonb\)$/);
+  assert.equal(params.length, 3);
+  const codes = params.map(p => JSON.parse(p)[0].code).sort();
+  assert.deepEqual(codes, ['brutality', 'killing', 'systemic_violence']);
+});
+
+test('facetSelectionClauses: a sub-dimension ORs all its codes in one term', () => {
+  const { clauses, params } = analysis.facetSelectionClauses(
+    { subdims: ['themes:cruelty_suffering'] }, 1);
+  assert.equal(clauses.length, 1);
+  assert.ok(clauses[0].startsWith('(') && clauses[0].includes(' OR '));
+  assert.ok(params.length > 3, 'cruelty_suffering spans several codes');
+});
+
+test('facetSelectionClauses: codes AND with a group term, indices sequential', () => {
+  const { clauses, params, needsJoin } = analysis.facetSelectionClauses(
+    { codes: { targets: ['cows'] }, groups: ['themes:violence'] }, 5);
+  assert.equal(needsJoin, true);
+  assert.equal(clauses.length, 2, 'one code term + one group term');
+  assert.ok(clauses.includes('sa.topics @> $5::jsonb'), 'code term first, at startIndex');
+  assert.ok(clauses.some(c => c.startsWith('(sa.themes @> $6::jsonb OR')), 'group term continues numbering');
+  assert.equal(params.length, 4); // cows + 3 violence codes
+});
+
+test('facetSelectionClauses: empty selection needs no join', () => {
+  const r = analysis.facetSelectionClauses({}, 1);
+  assert.equal(r.needsJoin, false);
+  assert.deepEqual(r.clauses, []);
+  assert.deepEqual(r.params, []);
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);

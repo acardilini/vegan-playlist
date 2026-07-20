@@ -1,0 +1,70 @@
+// Shared browse filter builder. buildWhere returns per-group-tagged WHERE clauses so
+// /search (all groups) and /browse-facets (all groups minus one, for exclude-self counts)
+// share one source and can never drift. `where` omits the status/published clause — each
+// caller prepends it. Booleans arrive as the string 'true'.
+const genres_svc = require('./genres');
+const analysis = require('./analysis');
+
+function asList(v) { return v == null ? [] : (Array.isArray(v) ? v : [v]); }
+
+function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
+  const where = [];
+  const params = [];
+  let idx = startIndex;
+  const joins = { albums: false, artists: false, effectiveGenre: false, analysis: false };
+  const inc = (g) => g !== exclude;
+
+  const q = (filters.q || '').trim();
+  if (q) {
+    where.push(`(LOWER(s.title) LIKE LOWER($${idx}) OR LOWER(a.name) LIKE LOWER($${idx}) OR LOWER(al.name) LIKE LOWER($${idx}) OR LOWER(s.your_review) LIKE LOWER($${idx}))`);
+    params.push(`%${q}%`); idx++;
+    joins.albums = true; joins.artists = true;
+  }
+  if (filters.year_from) { where.push(`EXTRACT(YEAR FROM al.release_date) >= $${idx}`); params.push(parseInt(filters.year_from)); idx++; joins.albums = true; }
+  if (filters.year_to)   { where.push(`EXTRACT(YEAR FROM al.release_date) <= $${idx}`); params.push(parseInt(filters.year_to)); idx++; joins.albums = true; }
+
+  if (inc('genre') && asList(filters.genres).length) {
+    const gf = genres_svc.genreFilterClause(filters.genres, idx);
+    if (gf) { where.push(gf.clause); params.push(...gf.params); idx += gf.params.length; joins.effectiveGenre = true; }
+  }
+  if (inc('length') && asList(filters.lengths).length) {
+    const lc = genres_svc.lengthFilterClause(filters.lengths);
+    if (lc) where.push(lc);
+  }
+  if (inc('available')) {
+    if (filters.on_spotify === 'true') where.push(`s.spotify_id IS NOT NULL AND s.spotify_id <> ''`);
+    if (filters.has_youtube === 'true') where.push(`EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = s.id)`);
+  }
+  if (inc('analysis_toggle') && filters.has_analysis === 'true') {
+    where.push(`EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${analysis.DEFAULT_MODEL}')`);
+  }
+  if (inc('language') && asList(filters.languages).length) {
+    where.push(`s.language = ANY($${idx}::text[])`); params.push(asList(filters.languages)); idx++;
+  }
+  if (inc('analysis')) {
+    const sel = {
+      codes: {
+        themes: filters.themes, targets: filters.targets, actions: filters.actions,
+        tactics: filters.tactics, moral_frames: filters.moral_frames,
+      },
+      groups: filters.facet_groups,
+      subdims: filters.facet_subdims,
+    };
+    const f = analysis.facetSelectionClauses(sel, idx);
+    if (f.needsJoin) { where.push(...f.clauses); params.push(...f.params); idx += f.params.length; joins.analysis = true; }
+  }
+
+  return { where, params, nextIndex: idx, joins };
+}
+
+// FROM-clause joins for a browse-facets COUNT query. /search keeps its own fixed FROM.
+function joinSql(joins) {
+  let s = '';
+  if (joins.albums) s += ` LEFT JOIN albums al ON s.album_id = al.id`;
+  if (joins.artists) s += ` JOIN song_artists sart ON s.id = sart.song_id JOIN artists a ON sart.artist_id = a.id`;
+  if (joins.effectiveGenre) s += ` ${genres_svc.EFFECTIVE_GENRE_JOIN}`;
+  if (joins.analysis) s += ` JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.DEFAULT_MODEL}'`;
+  return s;
+}
+
+module.exports = { buildWhere, joinSql };

@@ -940,7 +940,7 @@
 
 .range-inputs input {
   flex: 1;
-  max-width: 90px;
+  min-width: 0;
   padding: 6px 10px;
   background: var(--bg-surface-raised);
   border: 1px solid var(--border-hairline);
@@ -2186,3 +2186,101 @@
 .la-evidence-list li { display: flex; flex-direction: column; gap: 2px; }
 .la-evidence-tag { font-size: 0.75rem; color: var(--text-muted); }
 .la-evidence-quote { color: var(--text-secondary); font-style: italic; }
+
+/* B3 — thematic facet tree (colour-forward hierarchy) */
+.theme-facet-tree .filter-options.scrollable { max-height: 360px; }
+.filter-note {
+  color: var(--text-muted);
+  font: var(--text-body-sm);
+  margin: var(--space-1) 0 var(--space-2);
+}
+/* Dimension: bold header row with expand caret */
+.facet-dim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font: var(--text-body);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--space-2) 0;
+}
+/* label takes the row width and stays left; count sits at the right */
+.facet-dim-header > span:first-child { flex: 1; min-width: 0; }
+.facet-sub { margin: var(--space-1) 0 var(--space-2); }
+/* Nested left rails show the level nesting (sub-dimension rail takes its colour, inline) */
+.facet-rail {
+  border-left: 2px solid var(--border-hairline);
+  margin-left: var(--space-2);
+  padding-left: var(--space-2);
+}
+.facet-rail-neutral { border-left-color: var(--border-hairline); }
+/* Rows: bigger, left-aligned, level-distinct typography */
+.theme-facet-tree .filter-option .filter-label { font: var(--text-body-sm); }
+.facet-subdim .filter-label { font: var(--text-body); font-weight: 600; }
+.facet-subdim-label { display: inline-flex; align-items: center; }
+.facet-group-label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font: var(--text-meta);
+  color: var(--text-secondary);
+}
+.facet-code .filter-label { color: var(--text-primary); }
+.facet-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: var(--space-1); vertical-align: middle; flex-shrink: 0; }
+
+/* B3 — active filter chips (below the filters panel) */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-full, 999px);
+  color: var(--text-secondary);
+  font: var(--text-body-sm);
+  padding: 2px var(--space-2);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.filter-chip:hover { border-color: var(--accent-ember-60); color: var(--text-primary); }
+.filter-chip:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.filter-chip-x { color: var(--text-muted); font-size: 0.8em; }
+
+/* B3 rework — browse sidebar layout */
+.browse-top { margin-bottom: var(--space-4); }
+.browse-body { display: grid; grid-template-columns: 260px 1fr; gap: var(--space-6); align-items: start; }
+.browse-sidebar { display: flex; flex-direction: column; gap: var(--space-5);
+  background: var(--bg-surface); border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md); padding: var(--space-4); position: sticky; top: var(--space-4); }
+.sidebar-groups { display: flex; flex-direction: column; gap: var(--space-5); }
+.sidebar-drawer-head { display: none; }
+.browse-results { min-width: 0; }
+.drawer-toggle { display: none; }
+.drawer-scrim { display: none; }
+
+@media (max-width: 900px) {
+  .browse-body { grid-template-columns: 1fr; }
+  .drawer-toggle { display: inline-flex; }
+  .browse-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
+    width: min(320px, 85vw); transform: translateX(-100%); transition: transform var(--duration-fast) var(--ease-standard);
+    overflow-y: auto; border-radius: 0; }
+  .browse-sidebar.open { transform: translateX(0); }
+  .sidebar-drawer-head { display: flex; justify-content: space-between; align-items: center; }
+  .drawer-close { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; }
+  .drawer-scrim { display: block; position: fixed; inset: 0; z-index: 40; background: var(--bg-overlay); }
+}
+
+/* B3 rework — zero-count (unavailable under current filters) */
+.filter-option.is-zero { opacity: 0.4; cursor: not-allowed; }
+.filter-option.is-zero input { cursor: not-allowed; }

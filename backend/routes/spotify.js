@@ -1,8 +1,10 @@
 const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const pool = require('../database/db');
-const { getParentGenres, getAllSubgenres, getSubgenres } = require('../utils/genreMapping');
+const { getSubgenres } = require('../utils/genreMapping');
 const analysis = require('../services/analysis');
+const genres_svc = require('../services/genres');
+const browse = require('../services/browseFilters');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -269,123 +271,24 @@ router.get('/songs/:id', async (req, res) => {
 router.get('/search', async (req, res) => {
   try {
     console.log('🔍 Search endpoint hit with query:', req.query);
-    const { 
-      q: query,
-      year_from,
-      year_to,
-      energy_min,
-      energy_max,
-      danceability_min,
-      danceability_max,
-      valence_min,
-      valence_max,
-      genres,
-      parent_genres,
-      themes: fThemes,
-      targets: fTargets,
-      actions: fActions,
-      tactics: fTactics,
-      moral_frames: fMoralFrames,
+    const {
+      q,
       page = 1,
       limit = 20,
       sort_by = 'popularity'
     } = req.query;
 
-    let whereConditions = [`s.status = 'included' AND s.published = true`];
-    let queryParams = [];
-    let paramIndex = 1;
-
-    // Text search
-    if (query && query.trim()) {
-      const searchTerm = `%${query.trim()}%`;
-      whereConditions.push(`(
-        LOWER(s.title) LIKE LOWER($${paramIndex}) OR
-        LOWER(a.name) LIKE LOWER($${paramIndex}) OR
-        LOWER(al.name) LIKE LOWER($${paramIndex}) OR
-        LOWER(s.your_review) LIKE LOWER($${paramIndex})
-      )`);
-      queryParams.push(searchTerm);
-      paramIndex++;
-    }
-
-    // Year range filter
-    if (year_from) {
-      whereConditions.push(`EXTRACT(YEAR FROM al.release_date) >= $${paramIndex}`);
-      queryParams.push(parseInt(year_from));
-      paramIndex++;
-    }
-    if (year_to) {
-      whereConditions.push(`EXTRACT(YEAR FROM al.release_date) <= $${paramIndex}`);
-      queryParams.push(parseInt(year_to));
-      paramIndex++;
-    }
-
-    // Audio feature filters
-    if (energy_min !== undefined) {
-      whereConditions.push(`s.energy >= $${paramIndex}`);
-      queryParams.push(parseFloat(energy_min));
-      paramIndex++;
-    }
-    if (energy_max !== undefined) {
-      whereConditions.push(`s.energy <= $${paramIndex}`);
-      queryParams.push(parseFloat(energy_max));
-      paramIndex++;
-    }
-    if (danceability_min !== undefined) {
-      whereConditions.push(`s.danceability >= $${paramIndex}`);
-      queryParams.push(parseFloat(danceability_min));
-      paramIndex++;
-    }
-    if (danceability_max !== undefined) {
-      whereConditions.push(`s.danceability <= $${paramIndex}`);
-      queryParams.push(parseFloat(danceability_max));
-      paramIndex++;
-    }
-    if (valence_min !== undefined) {
-      whereConditions.push(`s.valence >= $${paramIndex}`);
-      queryParams.push(parseFloat(valence_min));
-      paramIndex++;
-    }
-    if (valence_max !== undefined) {
-      whereConditions.push(`s.valence <= $${paramIndex}`);
-      queryParams.push(parseFloat(valence_max));
-      paramIndex++;
-    }
-
-    // Genre filtering (specific subgenres) - Use songs.genre field
-    if (genres) {
-      const genreList = Array.isArray(genres) ? genres : [genres];
-      whereConditions.push(`s.genre = ANY($${paramIndex}::text[])`);
-      queryParams.push(genreList);
-      paramIndex++;
-    }
-    
-    // Parent genre filtering - Use songs.parent_genre field
-    if (parent_genres) {
-      const parentGenreList = Array.isArray(parent_genres) ? parent_genres : [parent_genres];
-      whereConditions.push(`s.parent_genre = ANY($${paramIndex}::text[])`);
-      queryParams.push(parentGenreList);
-      paramIndex++;
-    }
-
-    // Analysis facet filters (AND logic; joins song_lyric_analysis when any is set)
-    const facet = analysis.facetFilterConditions(
-      { themes: fThemes, targets: fTargets, actions: fActions, tactics: fTactics, moral_frames: fMoralFrames },
-      paramIndex);
-    if (facet.needsJoin) {
-      whereConditions.push(...facet.clauses);
-      queryParams.push(...facet.params);
-      paramIndex += facet.params.length;
-    }
-    // facetFilterConditions() emits clauses against alias `sa` for song_lyric_analysis;
-    // this handler already uses `sa` for song_artists below, so that join is aliased
-    // `sart` in this query only to avoid a collision.
-    const facetJoin = facet.needsJoin
+    const bw = browse.buildWhere(req.query, { startIndex: 1 });
+    const whereConditions = [`s.status = 'included' AND s.published = true`, ...bw.where];
+    const queryParams = [...bw.params];
+    let paramIndex = bw.nextIndex;
+    const effectiveGenreJoin = bw.joins.effectiveGenre ? genres_svc.EFFECTIVE_GENRE_JOIN : '';
+    const facetJoin = bw.joins.analysis
       ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.DEFAULT_MODEL}'`
       : '';
 
     // Build WHERE clause
-    const whereClause = whereConditions.length > 0 ? 
+    const whereClause = whereConditions.length > 0 ?
       `WHERE ${whereConditions.join(' AND ')}` : '';
 
     // Sorting options
@@ -409,6 +312,9 @@ router.get('/search', async (req, res) => {
       case 'valence':
         orderBy = 'ORDER BY s.valence DESC NULLS LAST, s.title ASC';
         break;
+      case 'date_added':
+        orderBy = 'ORDER BY COALESCE(s.playlist_added_at, s.date_added) DESC NULLS LAST, s.title ASC';
+        break;
       default:
         orderBy = 'ORDER BY s.popularity DESC, s.title ASC';
     }
@@ -418,7 +324,7 @@ router.get('/search', async (req, res) => {
     queryParams.push(parseInt(limit), offset);
 
     const searchQuery = `
-      SELECT 
+      SELECT
         s.id,
         s.spotify_id,
         s.title,
@@ -438,6 +344,7 @@ router.get('/search', async (req, res) => {
       JOIN song_artists sart ON s.id = sart.song_id
       JOIN artists a ON sart.artist_id = a.id
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
+      ${effectiveGenreJoin}
       ${facetJoin}
       ${whereClause}
       GROUP BY s.id, al.id
@@ -454,6 +361,7 @@ router.get('/search', async (req, res) => {
       LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sart ON s.id = sart.song_id
       JOIN artists a ON sart.artist_id = a.id
+      ${effectiveGenreJoin}
       ${facetJoin}
       ${whereClause}
     `;
@@ -470,13 +378,9 @@ router.get('/search', async (req, res) => {
         pages: Math.ceil(total / parseInt(limit))
       },
       filters_applied: {
-        query: query || null,
-        year_range: { from: year_from || null, to: year_to || null },
-        energy_range: { min: energy_min || null, max: energy_max || null },
-        danceability_range: { min: danceability_min || null, max: danceability_max || null },
-        valence_range: { min: valence_min || null, max: valence_max || null },
-        genres: genres ? (Array.isArray(genres) ? genres : [genres]) : null,
-        parent_genres: parent_genres ? (Array.isArray(parent_genres) ? parent_genres : [parent_genres]) : null,
+        query: q || null,
+        genres: req.query.genres ? (Array.isArray(req.query.genres) ? req.query.genres : [req.query.genres]) : null,
+        year_range: { from: req.query.year_from || null, to: req.query.year_to || null },
         sort_by
       }
     });
@@ -486,83 +390,139 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// Get filter options and counts
+// Get filter options and counts for the browse UI.
 router.get('/filter-options', async (req, res) => {
   try {
-    // Get all unique filter values with counts
-    // Use song-level genres to match the filtering logic
-    const genresQuery = `
-      SELECT
-        s.genre as value,
-        COUNT(*) as count
-      FROM songs s
-      WHERE s.genre IS NOT NULL AND s.genre != '' AND s.status = 'included' AND s.published = true
-      GROUP BY s.genre
-      ORDER BY count DESC, value ASC
-    `;
+    const LIVE = `s.status = 'included' AND s.published = true`;
 
-    // Calculate parent genres from song-level parent_genre field to match filtering
-    const parentGenresQuery = `
-      SELECT
-        s.parent_genre as value,
-        COUNT(*) as count
+    // Effective genre per live song (song genre, else primary artist's first genre).
+    const effectiveGenreQuery = `
+      SELECT ${genres_svc.EFFECTIVE_GENRE_EXPR} AS effective_genre
       FROM songs s
-      WHERE s.parent_genre IS NOT NULL AND s.parent_genre != '' AND s.status = 'included' AND s.published = true
-      GROUP BY s.parent_genre
-      ORDER BY count DESC, value ASC
-    `;
+      ${genres_svc.EFFECTIVE_GENRE_JOIN}
+      WHERE ${LIVE}`;
 
     const yearRangeQuery = `
-      SELECT
-        MIN(EXTRACT(YEAR FROM release_date)) as min_year,
-        MAX(EXTRACT(YEAR FROM release_date)) as max_year
+      SELECT MIN(EXTRACT(YEAR FROM release_date)) AS min_year,
+             MAX(EXTRACT(YEAR FROM release_date)) AS max_year
       FROM albums
       WHERE release_date IS NOT NULL
-        AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)
-    `;
+        AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)`;
 
-    const audioFeaturesQuery = `
-      SELECT
-        MIN(energy) as min_energy, MAX(energy) as max_energy,
-        MIN(danceability) as min_danceability, MAX(danceability) as max_danceability,
-        MIN(valence) as min_valence, MAX(valence) as max_valence
+    const languagesQuery = `
+      SELECT language AS value, COUNT(*)::int AS count
       FROM songs
-      WHERE (energy IS NOT NULL OR danceability IS NOT NULL OR valence IS NOT NULL)
-        AND status = 'included' AND published = true
-    `;
+      WHERE status = 'included' AND published = true AND language IS NOT NULL AND language <> ''
+      GROUP BY language
+      ORDER BY count DESC, value ASC`;
 
-    const [
-      genres,
-      parentGenres,
-      yearRange,
-      audioFeatures
-    ] = await Promise.all([
-      pool.query(genresQuery),
-      pool.query(parentGenresQuery),
+    const lengthCountsQuery = `
+      SELECT
+        COUNT(*) FILTER (WHERE duration_ms < 120000)::int AS short,
+        COUNT(*) FILTER (WHERE duration_ms >= 120000 AND duration_ms < 240000)::int AS medium,
+        COUNT(*) FILTER (WHERE duration_ms >= 240000)::int AS long
+      FROM songs
+      WHERE status = 'included' AND published = true AND duration_ms > 0`;
+
+    const availabilityQuery = `
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE spotify_id IS NOT NULL AND spotify_id <> '')::int AS on_spotify,
+        COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = songs.id))::int AS has_youtube,
+        COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = songs.id AND la.model_used = $1))::int AS has_analysis
+      FROM songs
+      WHERE status = 'included' AND published = true`;
+
+    const [effGenres, yearRange, languages, lengthCounts, availability] = await Promise.all([
+      pool.query(effectiveGenreQuery),
       pool.query(yearRangeQuery),
-      pool.query(audioFeaturesQuery)
+      pool.query(languagesQuery),
+      pool.query(lengthCountsQuery),
+      pool.query(availabilityQuery, [analysis.DEFAULT_MODEL]),
     ]);
 
-    console.log('Parent genres query result:', parentGenres.rows?.length, 'rows');
-    console.log('DEBUG: About to send response with parent_genres');
-
+    const lc = lengthCounts.rows[0] || {};
     res.json({
-      // Legacy support for existing genre filter
-      genres: genres.rows,
-      // New hierarchical genre data
-      subgenres: genres.rows,
-      parent_genres: parentGenres.rows.length > 0 ? parentGenres.rows : getParentGenres().map(pg => ({ value: pg, count: 0 })),
+      genre_tree: genres_svc.buildGenreTree(effGenres.rows),
       year_range: yearRange.rows[0] || { min_year: null, max_year: null },
-      audio_features: audioFeatures.rows[0] || { 
-        min_energy: null, max_energy: null,
-        min_danceability: null, max_danceability: null,
-        min_valence: null, max_valence: null
-      }
+      languages: languages.rows,
+      length_buckets: genres_svc.LENGTH_BUCKETS.map(b => ({ value: b.value, label: b.label, count: lc[b.value] || 0 })),
+      availability: availability.rows[0] || { total: 0, on_spotify: 0, has_youtube: 0, has_analysis: 0 },
     });
   } catch (error) {
     console.error('Error fetching filter options:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to fetch filter options', details: error.message });
+  }
+});
+
+// Dynamic, cross-filtered facet counts (exclude-self). Same params as /search.
+router.get('/browse-facets', async (req, res) => {
+  try {
+    const f = req.query;
+    const LIVE = `s.status = 'included' AND s.published = true`;
+    const whereSql = (bw) => 'WHERE ' + [LIVE, ...bw.where].join(' AND ');
+    const MODEL = analysis.DEFAULT_MODEL;
+
+    const bwG = browse.buildWhere(f, { exclude: 'genre' });
+    const genreSql = `SELECT DISTINCT s.id, ${genres_svc.EFFECTIVE_GENRE_EXPR} AS effective_genre
+      FROM songs s${browse.joinSql({ ...bwG.joins, effectiveGenre: true })} ${whereSql(bwG)}`;
+
+    const bwL = browse.buildWhere(f, { exclude: 'length' });
+    const lengthSql = `SELECT
+        COUNT(DISTINCT s.id) FILTER (WHERE s.duration_ms >= 1 AND s.duration_ms < 120000)::int AS short,
+        COUNT(DISTINCT s.id) FILTER (WHERE s.duration_ms >= 120000 AND s.duration_ms < 240000)::int AS medium,
+        COUNT(DISTINCT s.id) FILTER (WHERE s.duration_ms >= 240000)::int AS long
+      FROM songs s${browse.joinSql(bwL.joins)} ${whereSql(bwL)}`;
+
+    const bwA = browse.buildWhere(f, { exclude: 'available' });
+    const availSql = `SELECT
+        COUNT(DISTINCT s.id) FILTER (WHERE s.spotify_id IS NOT NULL AND s.spotify_id <> '')::int AS on_spotify,
+        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = s.id))::int AS has_youtube
+      FROM songs s${browse.joinSql(bwA.joins)} ${whereSql(bwA)}`;
+
+    const bwT = browse.buildWhere(f, { exclude: 'analysis_toggle' });
+    const toggleSql = `SELECT
+        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${MODEL}'))::int AS has_analysis
+      FROM songs s${browse.joinSql(bwT.joins)} ${whereSql(bwT)}`;
+
+    const bwLang = browse.buildWhere(f, { exclude: 'language' });
+    const langSql = `SELECT s.language AS value, COUNT(DISTINCT s.id)::int AS count
+      FROM songs s${browse.joinSql(bwLang.joins)} ${whereSql(bwLang)} AND s.language IS NOT NULL AND s.language <> ''
+      GROUP BY s.language ORDER BY count DESC, value ASC`;
+
+    const bwAn = browse.buildWhere(f, { exclude: 'analysis', startIndex: 2 });
+    const constraint = { joinSql: browse.joinSql(bwAn.joins), where: bwAn.where, params: bwAn.params };
+
+    const yearSql = `SELECT MIN(EXTRACT(YEAR FROM release_date)) AS min_year, MAX(EXTRACT(YEAR FROM release_date)) AS max_year
+      FROM albums WHERE release_date IS NOT NULL
+        AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)`;
+
+    const [gR, lR, aR, tR, langR, facets, yR] = await Promise.all([
+      pool.query(genreSql, bwG.params),
+      pool.query(lengthSql, bwL.params),
+      pool.query(availSql, bwA.params),
+      pool.query(toggleSql, bwT.params),
+      pool.query(langSql, bwLang.params),
+      analysis.facetTree(pool, constraint),
+      pool.query(yearSql),
+    ]);
+
+    const lc = lR.rows[0] || {};
+    res.json({
+      genre_tree: genres_svc.buildGenreTree(gR.rows),
+      facets,
+      length_buckets: genres_svc.LENGTH_BUCKETS.map(b => ({ value: b.value, label: b.label, count: lc[b.value] || 0 })),
+      availability: {
+        on_spotify: aR.rows[0]?.on_spotify || 0,
+        has_youtube: aR.rows[0]?.has_youtube || 0,
+        has_analysis: tR.rows[0]?.has_analysis || 0,
+      },
+      languages: langR.rows,
+      year_range: yR.rows[0] || { min_year: null, max_year: null },
+    });
+  } catch (error) {
+    console.error('Error in browse-facets:', error);
+    res.status(500).json({ error: 'Failed to load browse facets', details: error.message });
   }
 });
 

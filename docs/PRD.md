@@ -309,8 +309,13 @@ keep/rebuild/drop/defer decisions are recorded in
 | `/admin` | Admin Interface | ✅ | Private content-management console (no auth yet — see 11.5) |
 
 ### 11.2 Public Features
-- **Search & discovery:** full-text search; filter options endpoint; faceted filtering;
-  sorting; pagination. ✅
+- **Search & discovery:** full-text search; **left-sidebar faceted filters** with **dynamic
+  exclude-self counts** (each group's counts reflect the other active filters; `/api/spotify/browse-facets`);
+  **effective-genre** tree (song genre, else primary artist's genre — ~1,003 live songs covered);
+  **thematic analysis facet tree** with selectable codes / groups / sub-dimensions (AND-of-terms, a
+  group/sub-dimension matches any code inside it); song-length / availability (Spotify·YouTube) /
+  has-analysis / language filters; removable filter chips; sorting (Title/Artist/Year/Date-added);
+  pagination. ✅ _(B3, 2026-07-20.)_
 - **Featured songs:** curated highlighting on the homepage (`featured` field). ✅
 - **Song detail:** coding categories, platform links, similar-songs navigation. ✅
 - **YouTube integration:** per-song video embeds with a primary-video concept. ✅
