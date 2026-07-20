@@ -3,7 +3,9 @@ const { pairKey } = require('./duplicates');
 
 async function getDismissedPairKeys(db) {
   const r = await db.query('SELECT song_id_a, song_id_b FROM duplicate_dismissals');
-  return new Set(r.rows.map((x) => `${x.song_id_a}:${x.song_id_b}`)); // rows already stored a<b
+  // Route through pairKey so the detector and this reader share one canonical
+  // key format — dismissals can't silently no-op if the storage convention shifts.
+  return new Set(r.rows.map((x) => pairKey(x.song_id_a, x.song_id_b)));
 }
 
 // Records every unordered pair among songIds as dismissed. Returns the count of
