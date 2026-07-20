@@ -833,6 +833,18 @@
   background-position: right 12px center;
 }
 
+.sort-dir-toggle {
+  background-color: var(--bg-surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font: var(--text-body-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sort-dir-toggle:hover { border-color: var(--accent-ember); }
+
 /* Filters panel */
 .filters-panel {
   width: 100%;

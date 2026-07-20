@@ -8,6 +8,14 @@ import FilterChips from './FilterChips';
 
 const DIM_KEYS = ['themes', 'targets', 'actions', 'tactics', 'moral_frames'];
 
+const DEFAULT_DIR = { title: 'asc', artist: 'asc', year: 'desc', date_added: 'desc' };
+const DIR_LABELS = {
+  title:      { asc: 'A–Z', desc: 'Z–A' },
+  artist:     { asc: 'A–Z', desc: 'Z–A' },
+  year:       { asc: 'Oldest', desc: 'Newest' },
+  date_added: { asc: 'Oldest', desc: 'Newest' },
+};
+
 function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', currentPage = 1, onPageReset, children }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(() => readBrowseState(searchParams).searchQuery || initialQuery);
@@ -39,6 +47,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
   // Only send booleans when true (keeps the query string clean); arrays/strings pass through.
   const buildSearchParams = useCallback(() => {
     const p = { q: searchQuery, page: currentPage, limit: 20, sort_by: filters.sort_by };
+    if (filters.dir) p.dir = filters.dir;
     if (filters.genres.length) p.genres = filters.genres;
     if (filters.year_from) p.year_from = filters.year_from;
     if (filters.year_to) p.year_to = filters.year_to;
@@ -366,12 +375,25 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
           </div>
           <div className="sort-container">
             <label>Sort by:</label>
-            <select value={filters.sort_by} onChange={(e) => setScalar('sort_by', e.target.value)}>
+            <select value={filters.sort_by}
+              onChange={(e) => setFilters(prev => ({ ...prev, sort_by: e.target.value, dir: '' }))}>
               <option value="title">Title</option>
               <option value="artist">Artist</option>
               <option value="year">Year</option>
               <option value="date_added">Date added</option>
             </select>
+            {(() => {
+              const eff = filters.dir || DEFAULT_DIR[filters.sort_by] || 'asc';
+              const label = (DIR_LABELS[filters.sort_by] || {})[eff] || (eff === 'asc' ? 'Asc' : 'Desc');
+              return (
+                <button type="button" className="sort-dir-toggle"
+                  onClick={() => setScalar('dir', eff === 'asc' ? 'desc' : 'asc')}
+                  title={`Sorted ${label} — click to reverse`}
+                  aria-label={`Sort direction: ${label}. Click to reverse.`}>
+                  {label} <span aria-hidden="true">{eff === 'asc' ? '↑' : '↓'}</span>
+                </button>
+              );
+            })()}
           </div>
         </div>
       </div>

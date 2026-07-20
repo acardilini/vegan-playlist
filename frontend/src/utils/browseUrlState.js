@@ -9,7 +9,7 @@ export const EMPTY_FILTERS = {
   languages: [],
   themes: [], targets: [], actions: [], tactics: [], moral_frames: [],
   facet_groups: [], facet_subdims: [],
-  sort_by: 'year',
+  sort_by: 'year', dir: '',
 };
 
 const ARRAY_KEYS = [
@@ -17,7 +17,7 @@ const ARRAY_KEYS = [
   'themes', 'targets', 'actions', 'tactics', 'moral_frames',
   'facet_groups', 'facet_subdims',
 ];
-const STRING_KEYS = ['year_from', 'year_to'];
+const STRING_KEYS = ['year_from', 'year_to', 'dir'];
 const BOOL_KEYS = ['has_youtube', 'has_analysis', 'on_spotify'];
 const DEFAULT_SORT = 'year';
 
