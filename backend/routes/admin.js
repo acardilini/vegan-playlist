@@ -7,6 +7,7 @@ const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/g
 const staging = require('../services/staging');
 const curation = require('../services/curation');
 const videos = require('../services/videos');
+const { findDuplicateGroups } = require('../services/duplicates');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
@@ -1246,119 +1247,15 @@ router.get('/duplicate-songs', async (req, res) => {
       ORDER BY s.title, s.created_at
     `);
     
-    const songs = songsResult.rows;
-    const duplicateGroups = [];
-    const processed = new Set();
-    
-    // Helper function to normalize text for comparison
-    const normalize = (text) => {
-      if (!text) return '';
-      return text.toLowerCase()
-        .replace(/[^\w\s]/g, '') // Remove punctuation
-        .replace(/\s+/g, ' ')     // Normalize whitespace
-        .trim();
-    };
-    
-    // Helper function to calculate similarity score
-    const calculateSimilarity = (song1, song2) => {
-      let score = 0;
-      
-      // Title similarity (weighted heavily)
-      const title1 = normalize(song1.title);
-      const title2 = normalize(song2.title);
-      
-      if (title1 === title2) {
-        score += 50; // Exact title match
-      } else if (title1.includes(title2) || title2.includes(title1)) {
-        score += 30; // One title contains the other
-      } else {
-        // Check for significant word overlap
-        const words1 = title1.split(' ').filter(w => w.length > 2);
-        const words2 = title2.split(' ').filter(w => w.length > 2);
-        const commonWords = words1.filter(w => words2.includes(w));
-        if (commonWords.length > 0 && words1.length > 0) {
-          score += (commonWords.length / Math.max(words1.length, words2.length)) * 25;
-        }
-      }
-      
-      // Artist similarity
-      const artists1 = normalize(song1.artists || '');
-      const artists2 = normalize(song2.artists || '');
-      
-      if (artists1 === artists2) {
-        score += 30; // Same artists
-      } else if (artists1.includes(artists2) || artists2.includes(artists1)) {
-        score += 20; // One artist list contains the other
-      }
-      
-      // Duration similarity (within 5 seconds)
-      if (song1.duration_ms && song2.duration_ms) {
-        const durationDiff = Math.abs(song1.duration_ms - song2.duration_ms);
-        if (durationDiff <= 5000) { // Within 5 seconds
-          score += 15;
-        } else if (durationDiff <= 10000) { // Within 10 seconds
-          score += 10;
-        }
-      }
-      
-      // Album similarity
-      const album1 = normalize(song1.album_name || '');
-      const album2 = normalize(song2.album_name || '');
-      
-      if (album1 && album2 && album1 === album2) {
-        score += 10; // Same album
-      }
-      
-      return score;
-    };
-    
-    // Find potential duplicates
-    for (let i = 0; i < songs.length; i++) {
-      if (processed.has(songs[i].id)) continue;
-      
-      const currentSong = songs[i];
-      const potentialDuplicates = [currentSong];
-      
-      for (let j = i + 1; j < songs.length; j++) {
-        if (processed.has(songs[j].id)) continue;
-        
-        const compareSong = songs[j];
-        const similarity = calculateSimilarity(currentSong, compareSong);
-        
-        // Consider songs with similarity score >= 60 as potential duplicates
-        if (similarity >= 60) {
-          potentialDuplicates.push(compareSong);
-          processed.add(compareSong.id);
-        }
-      }
-      
-      if (potentialDuplicates.length > 1) {
-        // Sort by creation date (oldest first) and popularity (highest first)
-        potentialDuplicates.sort((a, b) => {
-          if (a.created_at !== b.created_at) {
-            return new Date(a.created_at) - new Date(b.created_at);
-          }
-          return (b.popularity || 0) - (a.popularity || 0);
-        });
-        
-        duplicateGroups.push({
-          groupId: duplicateGroups.length + 1,
-          songs: potentialDuplicates,
-          confidence: potentialDuplicates.length > 2 ? 'high' : 'medium',
-          recommendedAction: `Keep "${potentialDuplicates[0].title}" by ${potentialDuplicates[0].artists} (oldest/most popular)`
-        });
-      }
-      
-      processed.add(currentSong.id);
-    }
-    
+    const duplicateGroups = findDuplicateGroups(songsResult.rows);
+
     console.log(`Found ${duplicateGroups.length} potential duplicate groups`);
-    
+
     res.json({
       success: true,
       duplicateGroups,
       summary: {
-        totalSongs: songs.length,
+        totalSongs: songsResult.rows.length,
         duplicateGroups: duplicateGroups.length,
         songsInDuplicates: duplicateGroups.reduce((sum, group) => sum + group.songs.length, 0)
       }
