@@ -12,6 +12,12 @@ A batch of curator-noticed issues. **Fixes Round 1** (branch `session-fixes-roun
 rounds. Each item notes the **root cause** found during review so a future session can pick it
 up cold.
 
+**Order (reprioritised 2026-07-20 by curator):** the unresolved items run **before B4** in this
+sequence — **1** `key_focus_pipeline` split-read + scalar-attribute filters → **2** persist browse
+state → **3** featured redesign → **4** browse/search polish (sidebar scroll + bidirectional sort) →
+**5** lyric highlights from translation + multi-language → **B4** Explore map (with vector "You might
+also like") → **6** About analysis-explainer + AI disclosure.
+
 ### ✅ Resolved (Fixes Round 1)
 
 - **Admin — editing lyrics stripped the lyrics URL** (also on `+ Add selection`). Fixed:

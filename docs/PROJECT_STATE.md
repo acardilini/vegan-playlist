@@ -26,13 +26,21 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   applied:" summary removed. Backend **88/88**; frontend build + eslint clean; live read-only smoke
   (queueCounts.all 1778, All-songs reaches song 1, 22 dup groups / 0 cross-artist); **curator smoke-confirmed**.
   Merged no-ff to `main`; **pushed**. Prior: B3 merged 2026-07-20 (merge `5ec1566`)._
-- **Next session:** **B4 — Explore vector map.** The new top-nav "Explore" page: 2D + 3D scatter over
-  `frontend/public/vector_space.json` (+ `song_embeddings`), space toggle (semantic/thematic/acoustic),
-  colour-by dominant-theme (reusing B2's sub-dimension palette), theme/animal spotlight filter, hover/click
-  to the song. See `docs/LYRICS_VECTOR_ANALYSIS_INTEGRATION.md` + the B design spec. Then sub-projects
-  C–F (submissions/Inbox, YouTube, lyrics, Spotify push).
-- **Last updated:** 2026-07-20 _(curator-triage review + capture session — no code changed;
-  `CURATOR_TRIAGE_BACKLOG.md` created. B4 remains next.)_
+- **Next session:** **Triage item 1 — `key_focus_pipeline` split-read + scalar-attribute browse
+  filters** (curator reprioritised 2026-07-20: triage items 1–5 now run **before** B4). Read the
+  code dimensions from `gemma4:key_focus_pipeline` (refined 1–3 codes/dim) and the six scalar metadata
+  components (Perspective/Tone/Intensity/Clarity/Focus/Emotions) from `gemma4:deep_pipeline` — a
+  **two-tier read** in `getSongAnalysis`, NOT a one-constant flip of `analysis.js` `DEFAULT_MODEL`;
+  then add browse facets/filters for the six scalars (deep tier). **Verify the deep-tier scalar
+  columns before flipping anything.** Full scope + allowed enum values:
+  [`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md). Start with a brainstorm.
+- **Reprioritised order (2026-07-20):** triage **1** (key_focus + scalar filters) → **2** (persist
+  browse state) → **3** (featured redesign) → **4** (browse/search polish: sidebar scroll +
+  bidirectional sort) → **5** (lyric highlights from translation + multi-language) → **B4** (Explore
+  vector map, with the vector "You might also like") → triage **6** (About analysis-explainer + AI
+  disclosure) → sub-projects **C–F**.
+- **Last updated:** 2026-07-20 _(curator-triage review + capture; then reprioritised — triage items
+  1–5 moved ahead of B4. No code changed.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -50,9 +58,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    new filters (length/availability/analysis/language), removable chips, **left-sidebar layout** (mobile
    drawer), **dynamic exclude-self counts** (`/api/spotify/browse-facets` + shared
    `services/browseFilters.buildWhere`), Date-added sort (`COALESCE(playlist_added_at, date_added)`),
-   colour-forward theme-tree hierarchy restyle; Popularity sort dropped. **Next: B4 — Explore vector map**
-   (2D/3D scatter over `vector_space.json`, space/colour toggles, spotlight filter). Design spec:
-   [`specs/2026-07-17-B-analysis-integration-design.md`](./superpowers/specs/2026-07-17-B-analysis-integration-design.md).
+   colour-forward theme-tree hierarchy restyle; Popularity sort dropped. **B4 — Explore vector map**
+   (2D/3D scatter over `vector_space.json`, space/colour toggles, spotlight filter) is the last B build,
+   but is now sequenced **after** curator-triage items 1–5 (see the reprioritised order above). Design
+   spec: [`specs/2026-07-17-B-analysis-integration-design.md`](./superpowers/specs/2026-07-17-B-analysis-integration-design.md).
 3. **Remaining sub-projects:** C (submissions moderation / Inbox — the dashboard's disabled **Inbox**
    tile lights up here), D (YouTube search), E (lyrics fetch), F (Spotify push). Design:
    [`specs/2026-07-12-admin-workbench-design.md`](./superpowers/specs/2026-07-12-admin-workbench-design.md).
@@ -61,14 +70,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    `http://localhost:5000` (deployment breaks them until proxied/env-based),
    submissions-admin auth, real admin auth.
 **Curator-triage backlog** (detailed, with root causes): see
-[`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md) — the 2026-07-20 batch reviewed
-2026-07-20 (Fixes Round 1 + the sort-overlap fix resolved 5). Remaining, sequenced after B4:
-the **`key_focus_pipeline` data switch** (repoint `analysis.js` `DEFAULT_MODEL` to
-`gemma4:key_focus_pipeline` — surface the refined 1–3 codes/dimension), scalar-attribute browse
-filters (Perspective/Tone/Intensity/Clarity/Focus/Emotions), persist sort/filter state across
-navigation, featured-songs redesign, browse/search polish (sidebar scroll, bidirectional sort),
-lyrics-translation highlights + multi-language, About/AI-disclosure page, and the vector
-"You might also like".
+[`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md) — the 2026-07-20 batch (Fixes Round 1 +
+the sort-overlap fix resolved 5). **Reprioritised 2026-07-20 — items 1–5 run before B4:**
+1. **`key_focus_pipeline` split-read** (code dims ← key-focus; six scalar components ← deep tier;
+   two-tier `getSongAnalysis`) **+ scalar-attribute browse filters** (deep tier).
+2. **Persist browse sort/filter state** across navigation (lift out of component `useState`; prefer
+   URL params).
+3. **Featured-songs redesign** (restore a set-featured control; rethink the random-fill).
+4. **Browse/search polish** — independent sidebar scroll + bidirectional sort.
+5. **Lyric highlights from the translation** + multi-value/bilingual `songs.language`.
+_Then **B4** (with vector "You might also like"), then_ **6. About analysis-explainer + AI disclosure.**
 
 **Still-open optional curator to-dos** (non-blocking, carried forward):
 
@@ -617,7 +628,8 @@ Newest first. What actually happened each session.
   persist browse state across navigation; featured-songs redesign; browse/search polish (sidebar
   scroll, bidirectional sort); lyric highlights from the translation + multi-language `songs.language`;
   About analysis-explainer + AI-disclosure page; vector "You might also like". No smoke test (no code).
-  **Next: B4 — Explore vector map.**
+  **Curator then reprioritised: triage items 1–5 run before B4. Next: triage item 1 —
+  `key_focus_pipeline` split-read + scalar-attribute browse filters.**
 
 - **2026-07-20 (Fixes Round 1 — curator data-integrity & UX fixes; merged to `main`)** — Branch
   `session-fixes-round-1` (base `5ec1566`), executed via subagent-driven development (fresh implementer +

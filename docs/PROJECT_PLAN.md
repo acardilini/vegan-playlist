@@ -286,6 +286,8 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     (`2026-07-19-B3-browse-search*`, `2026-07-19-B3-rework-*`, `2026-07-20-B3-facet-selection-*`,
     `2026-07-20-B3-theme-tree-restyle-*`).
   - ☐ **B4 — Explore vector map.** 2D + 3D scatter, space/colour toggles, spotlight filter, hover/click.
+    _(with the vector "You might also like" rework). **Now sequenced after curator-triage items 1–5** —
+    see the reprioritised order in the Fixes Round 1 note below and `CURATOR_TRIAGE_BACKLOG.md`._
 - ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
   To-be-processed / spam. Reuses `staging.addSubmissionAsPending`.
 - ☐ **D — YouTube assist.** Search YouTube from the workbench, present candidates, pick best.
@@ -300,8 +302,13 @@ fixes (`saveLyrics`/`setProcessing` partial-update data loss; duplicate detectio
 with a persistent "Not a duplicate" reject — migration 008 `duplicate_dismissals`), an admin **All songs**
 search scope, and browse UX polish (Sort-by beside search, chips relocated, redundant summary removed).
 Backend 88/88; curator smoke-confirmed. Spec: [`specs/2026-07-20-fixes-round-1-design.md`](./superpowers/specs/2026-07-20-fixes-round-1-design.md).
-Remaining curator-triage backlog (sequenced after B4): thematic `key_focus_pipeline` switch, browse/search
-polish, featured-songs redesign, About/AI-disclosure page._
+Remaining curator-triage backlog captured in [`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md).
+**Reprioritised 2026-07-20 — items 1–5 run BEFORE B4:** (1) `key_focus_pipeline` split-read (code dims ←
+key-focus, six scalar metadata components ← deep tier) + scalar-attribute browse filters; (2) persist
+browse sort/filter state across navigation; (3) featured-songs redesign; (4) browse/search polish
+(sidebar scroll + bidirectional sort); (5) lyric highlights from the translation + multi-language
+`songs.language`; then **B4** (with vector "You might also like"); then (6) About analysis-explainer +
+AI-disclosure page._
 
 ## Phase 5 — Deployment Hardening
 **Goal:** Ship it, cheaply, from GitHub.
