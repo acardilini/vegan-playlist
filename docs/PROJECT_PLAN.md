@@ -1,6 +1,6 @@
 # The Vegan Playlist — Modernisation Project Plan
 
-_Last updated: 2026-07-19_
+_Last updated: 2026-07-20_
 
 This is the phased roadmap for modernising the prototype into a clean, branded, deployable
 product. See [`PROJECT_OVERVIEW.md`](./PROJECT_OVERVIEW.md) for the philosophy and
@@ -274,7 +274,17 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     mock categorisation UI deleted (`CategorizationFields`/`BulkCategorizationWorkflow`/`BulkEditModal`).
     _Smoke ✅: backend 56/56; build + lint clean; live smoke of all 3 surfaces, curator-confirmed._ Plan:
     [`superpowers/plans/2026-07-18-B2-song-page-analysis.md`](./superpowers/plans/2026-07-18-B2-song-page-analysis.md).
-  - ☐ **B3 — Faceted browse.** Full facet groups, all-AND, coded-only note, per-code counts.
+  - ☑ **B3 — Browse & Search overhaul** _(done 2026-07-20, branch `session-B3-browse-search` merged to
+    `main`, pushed; grew to four curator-smoke rounds)._ Effective-genre fix (`COALESCE(songs.genre,
+    primary artist's first genre)`, query-time, 492→~1,003 coverage); thematic facet tree with
+    **selectable sub-dimensions/groups** (AND-of-terms — code=exact, group/sub-dim=OR over its codes);
+    new filters (length/availability/analysis/language); removable chips; **left-sidebar layout** + mobile
+    drawer; **dynamic exclude-self counts** (`/api/spotify/browse-facets` + shared
+    `services/browseFilters.buildWhere`); Date-added sort (`COALESCE(playlist_added_at, date_added)`);
+    colour-forward theme-tree hierarchy restyle; Popularity sort dropped. Backend 75/75; two clean opus
+    whole-branch reviews; curator-confirmed all four rounds. Specs/plans under `superpowers/`
+    (`2026-07-19-B3-browse-search*`, `2026-07-19-B3-rework-*`, `2026-07-20-B3-facet-selection-*`,
+    `2026-07-20-B3-theme-tree-restyle-*`).
   - ☐ **B4 — Explore vector map.** 2D + 3D scatter, space/colour toggles, spotlight filter, hover/click.
 - ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
   To-be-processed / spam. Reuses `staging.addSubmissionAsPending`.
