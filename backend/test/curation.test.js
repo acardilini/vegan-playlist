@@ -105,6 +105,24 @@ test('setProcessing upserts and validates park_reason', async () => {
   await assert.rejects(curation.setProcessing(pool, id, { park_reason: 'bogus' }), e => e.code === 'BAD_INPUT');
 });
 
+test('setProcessing updates only provided fields (toggling avenues keeps park reason + note)', async () => {
+  const id = await mkSong({ title: 'ZZZCUR ProcPreserve' });
+  await curation.setProcessing(pool, id, { park_reason: 'listened_unclear', processing_note: 'keep me' });
+  await curation.setProcessing(pool, id, { lyrics_tried: ['google'] });
+  const p = await curation.getProcessing(pool, id);
+  assert.equal(p.park_reason, 'listened_unclear');
+  assert.equal(p.processing_note, 'keep me');
+  assert.deepEqual(p.lyrics_tried, ['google']);
+});
+
+test('setProcessing can explicitly clear the park reason', async () => {
+  const id = await mkSong({ title: 'ZZZCUR ProcClear' });
+  await curation.setProcessing(pool, id, { park_reason: 'listened_unclear' });
+  await curation.setProcessing(pool, id, { park_reason: '' });
+  const p = await curation.getProcessing(pool, id);
+  assert.equal(p.park_reason, null);
+});
+
 test('setProcessing throws NOT_FOUND for missing song', async () => {
   await assert.rejects(curation.setProcessing(pool, -12345, { processing_note: 'x' }), e => e.code === 'NOT_FOUND');
 });

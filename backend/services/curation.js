@@ -17,18 +17,23 @@ async function setProcessing(db, songId, { snooze_until, park_reason, lyrics_tri
   if (park_reason != null && park_reason !== '' && !PARK_REASONS.includes(park_reason)) {
     const e = new Error('invalid park_reason'); e.code = 'BAD_INPUT'; throw e;
   }
-  const tried = lyrics_tried === undefined ? null : JSON.stringify(Array.isArray(lyrics_tried) ? lyrics_tried : []);
-  const r = await db.query(`
-    INSERT INTO song_processing (song_id, snooze_until, park_reason, lyrics_tried, processing_note, updated_at)
-    VALUES ($1,$2,$3,COALESCE($4::jsonb,'[]'::jsonb),$5,CURRENT_TIMESTAMP)
-    ON CONFLICT (song_id) DO UPDATE SET
-      snooze_until    = EXCLUDED.snooze_until,
-      park_reason     = EXCLUDED.park_reason,
-      lyrics_tried    = COALESCE($4::jsonb, song_processing.lyrics_tried),
-      processing_note = EXCLUDED.processing_note,
-      updated_at      = CURRENT_TIMESTAMP
-    RETURNING song_id, snooze_until, park_reason, lyrics_tried, processing_note`,
-    [songId, snooze_until || null, (park_reason || null), tried, (processing_note ?? null)]);
+  // Ensure a row exists, then update only the fields actually provided — a
+  // single-field save must never null the others.
+  await db.query(
+    `INSERT INTO song_processing (song_id, updated_at) VALUES ($1, CURRENT_TIMESTAMP)
+     ON CONFLICT (song_id) DO NOTHING`, [songId]);
+  const sets = [], params = [songId];
+  const add = (col, val, cast = '') => { params.push(val); sets.push(`${col}=$${params.length}${cast}`); };
+  if (snooze_until !== undefined) add('snooze_until', snooze_until || null);
+  if (park_reason !== undefined) add('park_reason', park_reason || null);
+  if (processing_note !== undefined) add('processing_note', processing_note ?? null);
+  if (lyrics_tried !== undefined) add('lyrics_tried', JSON.stringify(Array.isArray(lyrics_tried) ? lyrics_tried : []), '::jsonb');
+  if (sets.length) {
+    await db.query(`UPDATE song_processing SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE song_id=$1`, params);
+  }
+  const r = await db.query(
+    `SELECT song_id, snooze_until, park_reason, lyrics_tried, processing_note
+     FROM song_processing WHERE song_id=$1`, [songId]);
   return r.rows[0];
 }
 
