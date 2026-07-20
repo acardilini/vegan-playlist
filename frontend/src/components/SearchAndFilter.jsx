@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
-import { readFilterState, applyFilterState, EMPTY_FILTERS } from '../utils/browseUrlState';
+import { readBrowseState, applyFilterState, writeStoredBrowseState, EMPTY_FILTERS } from '../utils/browseUrlState';
 import GenreFilterTree from './GenreFilterTree';
 import ThemeFacetTree from './ThemeFacetTree';
 import FilterChips from './FilterChips';
@@ -10,8 +10,8 @@ const DIM_KEYS = ['themes', 'targets', 'actions', 'tactics', 'moral_frames'];
 
 function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', currentPage = 1, onPageReset, children }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(() => readFilterState(searchParams).searchQuery || initialQuery);
-  const [filters, setFilters] = useState(() => readFilterState(searchParams).filters);
+  const [searchQuery, setSearchQuery] = useState(() => readBrowseState(searchParams).searchQuery || initialQuery);
+  const [filters, setFilters] = useState(() => readBrowseState(searchParams).filters);
   const [filterOptions, setFilterOptions] = useState({});
   const [facets, setFacets] = useState({});
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -67,6 +67,12 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     }, 300);
     return () => clearTimeout(t);
   }, [searchQuery, filters, setSearchParams]);
+
+  // Persist the full browse state (incl. page) for the visit, so a param-less nav to '/'
+  // (the Home link / site title) restores it. Single writer — uses the currentPage prop.
+  useEffect(() => {
+    writeStoredBrowseState({ searchQuery, filters, page: currentPage });
+  }, [searchQuery, filters, currentPage]);
 
   // Dynamic (cross-filtered) sidebar counts: refetch on every filter change, debounced
   // and stale-guarded. Page-less params — facets don't depend on page/limit.

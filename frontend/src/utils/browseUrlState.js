@@ -62,3 +62,45 @@ export function applyFilterState(prevParams, { searchQuery, filters }) {
   if (filters.sort_by && filters.sort_by !== DEFAULT_SORT) p.set('sort_by', filters.sort_by);
   return p;
 }
+
+// --- within-visit persistence (survives param-less nav to '/', e.g. the Home link) ---
+// The URL stays the source of truth whenever it carries any browse param; sessionStorage
+// is the fallback only for a clean '/' so filters aren't lost on a Home/logo click.
+
+const STORAGE_KEY = 'vp:browseState';
+const BROWSE_KEYS = ['q', 'sort_by', 'page', ...ARRAY_KEYS, ...STRING_KEYS, ...BOOL_KEYS];
+
+export function hasBrowseParams(searchParams) {
+  return BROWSE_KEYS.some(k => searchParams.has(k));
+}
+
+export function readStoredBrowseState() {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      return {
+        searchQuery: s.searchQuery || '',
+        filters: { ...structuredClone(EMPTY_FILTERS), ...(s.filters || {}) },
+        page: s.page || 1,
+      };
+    }
+  } catch { /* sessionStorage unavailable or corrupt — fall through to empty */ }
+  return { searchQuery: '', filters: structuredClone(EMPTY_FILTERS), page: 1 };
+}
+
+export function writeStoredBrowseState({ searchQuery, filters, page }) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ searchQuery, filters, page }));
+  } catch { /* sessionStorage unavailable — non-fatal */ }
+}
+
+// Initial browse state for a mounting browse view: the URL when it carries browse params
+// (deep link / shared URL / back-nav), otherwise the last state saved this visit.
+export function readBrowseState(searchParams) {
+  if (hasBrowseParams(searchParams)) {
+    const { searchQuery, filters } = readFilterState(searchParams);
+    return { searchQuery, filters, page: parseInt(searchParams.get('page'), 10) || 1 };
+  }
+  return readStoredBrowseState();
+}

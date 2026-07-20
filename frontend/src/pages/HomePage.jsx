@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
+import { readBrowseState } from '../utils/browseUrlState';
 import SearchAndFilter from '../components/SearchAndFilter';
 import SongCard from '../components/SongCard';
 import PaginationControls from '../components/PaginationControls';
@@ -123,18 +124,19 @@ function SearchSection({ initialSearchQuery = '' }) {
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(true); // Start with true to show results immediately
   const [searchParams, setSearchParams] = useSearchParams();
-  const [currentPage, setCurrentPage] = useState(() => parseInt(searchParams.get('page'), 10) || 1);
+  const [currentPage, setCurrentPage] = useState(() => readBrowseState(searchParams).page);
 
-  // Persist the results page in the URL. Touches only the `page` key (disjoint from
+  // Mirror the results page into the URL. Touches only the `page` key (disjoint from
   // SearchAndFilter's filter/query/sort keys), so the two URL writers never clobber.
-  const changePage = useCallback((page) => {
-    setCurrentPage(page);
+  // Runs on mount too, so a page restored from sessionStorage on a param-less '/' is
+  // republished to the URL (keeping it shareable/consistent with the shown results).
+  useEffect(() => {
     setSearchParams(prev => {
       const p = new URLSearchParams(prev);
-      if (page > 1) p.set('page', String(page)); else p.delete('page');
+      if (currentPage > 1) p.set('page', String(currentPage)); else p.delete('page');
       return p;
     }, { replace: true });
-  }, [setSearchParams]);
+  }, [currentPage, setSearchParams]);
 
   // No mount-fetch: SearchAndFilter's own debounced effect performs the initial,
   // URL-hydrated search. `loading`/`hasSearched` start true so "Loading songs…"
@@ -168,7 +170,7 @@ function SearchSection({ initialSearchQuery = '' }) {
           onLoading={handleLoading}
           onError={handleError}
           currentPage={currentPage}
-          onPageReset={() => changePage(1)}
+          onPageReset={() => setCurrentPage(1)}
           initialQuery={initialSearchQuery}
         >
           {/* Song Results */}
@@ -213,7 +215,7 @@ function SearchSection({ initialSearchQuery = '' }) {
                     <PaginationControls
                       currentPage={searchResults.pagination.page}
                       totalPages={searchResults.pagination.pages}
-                      onPageChange={changePage}
+                      onPageChange={setCurrentPage}
                     />
                   )}
                 </div>
