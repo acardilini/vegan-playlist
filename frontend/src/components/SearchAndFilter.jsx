@@ -1,25 +1,17 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
+import { readFilterState, applyFilterState, EMPTY_FILTERS } from '../utils/browseUrlState';
 import GenreFilterTree from './GenreFilterTree';
 import ThemeFacetTree from './ThemeFacetTree';
 import FilterChips from './FilterChips';
 
 const DIM_KEYS = ['themes', 'targets', 'actions', 'tactics', 'moral_frames'];
 
-const EMPTY_FILTERS = {
-  genres: [], parent_genres: [],
-  year_from: '', year_to: '',
-  lengths: [],
-  has_youtube: false, has_analysis: false, on_spotify: false,
-  languages: [],
-  themes: [], targets: [], actions: [], tactics: [], moral_frames: [],
-  facet_groups: [], facet_subdims: [],
-  sort_by: 'year',
-};
-
 function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', currentPage = 1, onPageReset, children }) {
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(() => readFilterState(searchParams).searchQuery || initialQuery);
+  const [filters, setFilters] = useState(() => readFilterState(searchParams).filters);
   const [filterOptions, setFilterOptions] = useState({});
   const [facets, setFacets] = useState({});
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -66,6 +58,15 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     const t = setTimeout(() => performSearch(params), 300);
     return () => clearTimeout(t);
   }, [buildSearchParams, performSearch]);
+
+  // Mirror browse state into the URL (single source of truth for restore + sharing).
+  // Functional updater + applyFilterState clone => the page writer's `page` key is preserved.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearchParams(prev => applyFilterState(prev, { searchQuery, filters }), { replace: true });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery, filters, setSearchParams]);
 
   // Dynamic (cross-filtered) sidebar counts: refetch on every filter change, debounced
   // and stale-guarded. Page-less params — facets don't depend on page/limit.
