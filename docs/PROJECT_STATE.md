@@ -10,8 +10,17 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Curator-triage build session (2026-07-20)** — two items advanced while the
-  curator cleans the DB. **Triage 1a (`key_focus_pipeline` adoption) — spec + plan written, EXECUTION
+- **Current session:** _**Curator-triage build session (2026-07-20 → 07-21)** — advancing DB-independent
+  triage items while the curator cleans the DB. **Triage 3 (featured-songs redesign) — BUILT + verified,
+  pending merge** (branch `session-triage-3-featured`): featured model is now curated pins with a
+  deterministic recency fill (`ORDER BY COALESCE(playlist_added_at, date_added) DESC`) instead of
+  random-from-catalogue, and **cycles a random 4 when >4 are pinned** (pinned query `ORDER BY RANDOM()
+  LIMIT 4`); restored a **"Featured" toggle** in the workbench top bar (`curation.setFeatured` +
+  `POST /songs/:id/feature|unfeature`, mirroring publish/unpublish; `getWorkbench` returns `featured`);
+  **dropped the inconsistent added-date from `SongCard`** (mood chip kept as-is per decision). Backend
+  **89/89** (new `setFeatured` node:test); featured-endpoint + routes smoke all-pass (ran a temp backend
+  on :5001 against the same DB, original featured set restored); card-date puppeteer check 0/24. **Triage
+  1a (`key_focus_pipeline` adoption) — spec + plan written, EXECUTION
   PARKED** pending the curator's DB-cleaning signal (branch `session-triage-1a-key-focus`; spec+plan
   `faf1818`/`0e15bc9`). A pre-design DB check invalidated the handoff's premises: the six scalars are
   populated **identically across all tiers** and are **free-text, not the taxonomy enums**
@@ -28,20 +37,19 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Headless (puppeteer) smoke **15/15**; caught + fixed a StrictMode page-reset bug (value-signature ref).
   Also committed a refreshed `vector_space.json` (key-focus coding, B4 input, `2a22e37`). Prior: Fixes
   Round 1 merged to `main` 2026-07-20 (merge `2a07339`)._
-- **Next session:** **Triage 3 — featured-songs redesign** (starting). Then the remaining DB-independent
-  items: **4** (browse/search polish — extends item 2's URL-state model with bidirectional sort +
-  independent sidebar scroll) → **5**. **Triage 1a stays PARKED until the curator confirms DB cleaning is
-  done** — re-run the
-  tier/coverage/enum verification then; the cleaning may **reactivate 1b** (scalar filters) if it
-  normalizes the scalars to the taxonomy enums, in which case fold 1b back in rather than deferring.
-  See `memory/triage-1a-db-cleaning-gate.md`.
+- **Next session:** **Triage 4 — browse/search polish** (independent sidebar scroll + bidirectional
+  sort; the sort direction drops into item 2's URL-state model), then **5** (lyric highlights from
+  translation + multi-language). **Triage 1a stays PARKED until the curator confirms DB cleaning is
+  done** — re-run the tier/coverage/enum verification then; the cleaning may **reactivate 1b** (scalar
+  filters) if it normalizes the scalars to the taxonomy enums, in which case fold 1b back in rather than
+  deferring. See `memory/triage-1a-db-cleaning-gate.md`.
 - **Reprioritised order (2026-07-20):** triage **1** (_PARKED — DB-cleaning gate_) · **2** (persist
-  browse state — ☑ **DONE, merged `bf2f1da`**) → **3** (featured redesign — _in progress_) → **4**
-  (browse/search polish: sidebar scroll + bidirectional sort) → **5** (lyric highlights from translation +
-  multi-language) → **B4** (Explore vector map, with the vector "You might also like") → triage **6**
-  (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-20 _(triage-2 merged to `main` + curator-confirmed; starting triage-3;
-  triage-1a spec+plan written but parked on the DB-cleaning gate.)_
+  browse state — ☑ **DONE, merged `bf2f1da`**) · **3** (featured redesign — ☑ **BUILT, pending merge**)
+  → **4** (browse/search polish: sidebar scroll + bidirectional sort) → **5** (lyric highlights from
+  translation + multi-language) → **B4** (Explore vector map, with the vector "You might also like") →
+  triage **6** (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
+- **Last updated:** 2026-07-21 _(triage-3 featured redesign built + verified on its branch, pending
+  merge; triage-2 merged; triage-1a spec+plan parked on the DB-cleaning gate.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -165,6 +173,23 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-21 — Triage 3: featured = curated pins with a deterministic recency fill, cycling a large
+  pin set; restored a workbench Featured toggle; dropped the card date.** The homepage Featured filled
+  empty slots with `ORDER BY RANDOM()` over the whole catalogue ("the rest look random"), and the
+  Phase-4 admin rebuild had deleted the featured toggle with no replacement. Decisions (curator):
+  (1) **fill by recency** — `ORDER BY COALESCE(playlist_added_at, date_added) DESC NULLS LAST` — so
+  under-pinned slots are the most-recently-added, deterministic; (2) **cycle when over-pinned** — the
+  pinned query becomes `ORDER BY RANDOM() LIMIT 4`, so >4 pins rotate a random 4 per load (random
+  *within the curated set* is wanted; random from the catalogue was the problem); (3) **restore the
+  toggle** in the workbench top bar via `curation.setFeatured` + `POST /songs/:id/feature|unfeature`
+  (mirrors publish/unpublish; `getWorkbench` now returns `featured`) — kept the messy legacy
+  `PUT /update-song/:id` featured path untouched (out of scope); (4) **drop the added-date from
+  `SongCard`** (shown only for playlist songs — inconsistent) uniformly across all card surfaces; (5)
+  **keep the mood chip as-is** (shows only when `custom_mood` exists — real metadata, not a bug). Verified
+  with backend 89/89 (+`setFeatured` test) and an API smoke on a temp :5001 backend (cycle/​recency-fill/​
+  routes/​404), original featured set restored. Spec/plan:
+  `specs/2026-07-21-triage-3-featured-redesign-design.md`, `plans/2026-07-21-triage-3-featured-redesign.md`.
 
 - **2026-07-20 — Triage 2: browse state persisted in the URL (built, pending merge).** The homepage
   browse reset filters/sort on navigation because all state lived in `SearchAndFilter`'s `useState`
@@ -658,6 +683,14 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-21 (Triage 3 — featured-songs redesign, built + verified, pending merge)** — On
+  `session-triage-3-featured`: featured fill switched from random-from-catalogue to deterministic
+  most-recently-added, with the pinned query cycling a random 4 when >4 are pinned; restored a "Featured"
+  toggle in the workbench top bar (`curation.setFeatured` + `POST /songs/:id/feature|unfeature`;
+  `getWorkbench` returns `featured`); dropped the inconsistent added-date from `SongCard` (mood chip kept).
+  Backend 89/89 (new `setFeatured` test); featured endpoint + routes smoke all-pass on a temp :5001
+  backend (original `songs.featured` set restored); card-date puppeteer 0/24. Not yet merged.
 
 - **2026-07-20 (Curator-triage build session — triage 2 built, triage 1a parked)** — Two items advanced
   while the curator cleans the DB. **Triage 2 (persist browse state) — BUILT** on
