@@ -77,6 +77,15 @@ function WorkbenchTopBar({ wb, onAction, onPark, nav }) {
         </>}
         {isIncluded && !wb.published && <button className="btn btn-primary btn-sm" onClick={() => onAction('publish')}>Publish</button>}
         {isIncluded && wb.published && <button className="btn btn-secondary btn-sm" onClick={() => onAction('unpublish')}>Unpublish</button>}
+        {isIncluded && (
+          <button
+            className={`btn btn-sm ${wb.featured ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => onAction(wb.featured ? 'unfeature' : 'feature')}
+            title={wb.published ? 'Feature on the homepage' : 'Featured only appears once the song is published'}
+          >
+            {wb.featured ? 'Featured' : 'Feature'}
+          </button>
+        )}
         {wb.status === 'rejected' && <button className="btn btn-primary btn-sm" onClick={() => onAction('include')}>Re-include</button>}
       </div>
     </div>

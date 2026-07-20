@@ -37,25 +37,16 @@ also like") → **6** About analysis-explainer + AI disclosure.
 
 ### ☐ Unresolved — captured for future rounds
 
-**Featured songs** _(→ "featured-songs redesign" round)_
-- **How featured songs are determined / the missing "select feature" option.** Root cause found:
-  `GET /api/spotify/songs/featured` returns songs with `songs.featured = true` (currently **2** songs,
-  ordered by `playlist_added_at DESC`), then **fills the remaining slots up to 4 with random**
-  included+published songs — hence "two always show, the rest look random." The `featured` DB column
-  and backend still work, but **there is no admin UI to set it anymore** — the Phase 4 admin rebuild
-  deleted the old Manage Songs tab (which had the featured toggle) and no control replaced it
-  (confirmed: no `featured` reference anywhere in `frontend/src/components/admin/`). **Decision needed:**
-  the featured model (curated pins vs. rotation vs. hybrid) + restore a pin control (natural home: the
-  workbench top bar or Details panel).
-- **Chip in the top-left of some featured cards but not all.** Root cause: that chip is the
-  **MoodBadge** (`SongCard.jsx` → `.mood-badge-overlay`), which renders only when the song has a mood
-  (~654 of ~1,800 songs). It's the same on every song card, not just featured — it just looks
-  featured-specific. **Decision needed:** consistent treatment (always show a placeholder, or only when
-  present, or drop it).
-- **Date-added shown on some cards but not all.** Root cause: `SongCard` shows
-  `song.playlist_added_at` when present; only songs that came from the Spotify playlist have it — the
-  ~534 Apr-2026 batch and manual-only songs don't. **Decision needed:** fall back to `date_added`
-  (import date), or show nothing, consistently.
+**Featured songs** — ✅ **RESOLVED (triage 3, 2026-07-21 — built on `session-triage-3-featured`)**
+- ✅ **How featured songs are determined / the missing "select feature" option.** Featured is now
+  curated pins with a **deterministic recency fill** (`ORDER BY COALESCE(playlist_added_at, date_added)
+  DESC`) instead of random-from-catalogue, and the pinned query **cycles a random 4 when >4 are pinned**
+  (`ORDER BY RANDOM() LIMIT 4`). Restored a **"Featured" toggle** in the workbench top bar
+  (`curation.setFeatured` + `POST /songs/:id/feature|unfeature`; `getWorkbench` returns `featured`).
+- ✅ **Chip in the top-left of some cards but not all (MoodBadge).** Decision: **keep as-is** — it's real
+  metadata that shows only when `custom_mood` exists; not a bug. No code change.
+- ✅ **Date-added shown on some cards but not all.** Decision: **drop the added-date from `SongCard`**
+  entirely (uniform across all card surfaces), rather than a fallback.
 
 **Filter & search** _(→ "browse/search polish" round)_
 - **Filter by the lyrical-analysis attribute dimensions.** _(curator clarified 2026-07-20)_ The

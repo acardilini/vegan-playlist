@@ -271,3 +271,15 @@ test('recentlyEdited clamps limit into [1,50]', async () => {
   assert.equal((await curation.recentlyEdited(pool, 0)).length <= 1, true);
   assert.ok((await curation.recentlyEdited(pool, 9999)).length <= 50);
 });
+
+test('setFeatured toggles the featured flag and 404s on a missing song', async () => {
+  const id = await mkSong({ title: 'ZZZCUR Featurable', status: 'included', published: true });
+  const on = await curation.setFeatured(pool, id, true);
+  assert.equal(on.featured, true);
+  assert.equal(on.id, id);
+  const off = await curation.setFeatured(pool, id, false);
+  assert.equal(off.featured, false);
+  const wb = await curation.getWorkbench(pool, id);
+  assert.equal(wb.featured, false);
+  await assert.rejects(curation.setFeatured(pool, 999999999, true), e => e.code === 'NOT_FOUND');
+});

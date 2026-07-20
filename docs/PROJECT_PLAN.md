@@ -308,9 +308,10 @@ done, EXECUTION PARKED** on the curator's DB-cleaning gate. A DB check showed it
 of `analysis.DEFAULT_MODEL` → `gemma4:key_focus_pipeline` (NOT the assumed split read — scalars are
 identical across tiers), and the **scalar-attribute browse filters are deferred to the pipeline** (scalar
 data is free-text, not the taxonomy enums); (2) ☑ **persist browse sort/filter state across navigation —
-BUILT** (`session-triage-2-browse-state`, URL query params via `useSearchParams`, pending merge); (3)
-featured-songs redesign; (4) browse/search polish (sidebar scroll + bidirectional sort — **extends item 2's
-URL-state model**); (5) lyric highlights from the translation + multi-language `songs.language`; then
+BUILT+merged** (`bf2f1da`, URL query params via `useSearchParams` + a sessionStorage layer for Home);
+(3) ☑ **featured-songs redesign — BUILT** (`session-triage-3-featured`, pending merge): curated pins +
+recency fill, cycle a random 4 when >4 pinned, restored workbench Featured toggle, dropped the card date;
+(4) browse/search polish (sidebar scroll + bidirectional sort — **extends item 2's URL-state model**); (5) lyric highlights from the translation + multi-language `songs.language`; then
 **B4** (with vector "You might also like"); then (6) About analysis-explainer + AI-disclosure page. _(1b
 scalar filters may reactivate here if DB cleaning normalizes the scalars to the enums.)_ _
 

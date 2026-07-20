@@ -71,6 +71,8 @@ function Workbench() {
       'reject': ['reject', undefined],
       'publish': ['publish', undefined],
       'unpublish': ['unpublish', undefined],
+      'feature': ['feature', undefined],
+      'unfeature': ['unfeature', undefined],
     };
     const [path, body] = map[kind];
     try {

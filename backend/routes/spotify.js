@@ -124,8 +124,8 @@ router.get('/songs/featured', async (req, res) => {
     // SIMPLIFIED: Just get manually featured songs first, then fill with random
     let featuredSongs = [];
     
-    // 1. Get manually pinned songs (simple query)
-    console.log('DEBUG: Looking for featured songs with limit:', limit);
+    // 1. Get manually pinned songs. RANDOM() cycles the set when more than `limit`
+    //    are pinned (a rotation through the curated pins on each load).
     const pinnedResult = await pool.query(`
       SELECT 
         s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
@@ -142,12 +142,10 @@ router.get('/songs/featured', async (req, res) => {
       GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
                s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
                al.name, al.release_date, al.images
-      ORDER BY s.playlist_added_at DESC
+      ORDER BY RANDOM()
       LIMIT $1
     `, [limit]);
-    
-    console.log('DEBUG: Pinned songs found:', pinnedResult.rows.length);
-    console.log('DEBUG: Pinned songs:', pinnedResult.rows.map(s => ({ id: s.id, title: s.title })));
+
     featuredSongs = pinnedResult.rows;
     
     // 2. If we need more songs, fill with random ones
@@ -178,10 +176,10 @@ router.get('/songs/featured', async (req, res) => {
       }
       
       randomQuery += `
-        GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url, 
+        GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
                  s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
                  al.name, al.release_date, al.images
-        ORDER BY RANDOM()
+        ORDER BY COALESCE(s.playlist_added_at, s.date_added) DESC NULLS LAST
         LIMIT $${queryParams.length + 1}
       `;
       
@@ -191,7 +189,6 @@ router.get('/songs/featured', async (req, res) => {
       featuredSongs.push(...randomResult.rows);
     }
     
-    console.log('DEBUG: Final response:', featuredSongs.length, 'songs');
     res.json(featuredSongs);
   } catch (error) {
     console.error('Error fetching enhanced featured songs:', error);
