@@ -8,6 +8,7 @@ const staging = require('../services/staging');
 const curation = require('../services/curation');
 const videos = require('../services/videos');
 const { findDuplicateGroups } = require('../services/duplicates');
+const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDismissals');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
@@ -1247,7 +1248,8 @@ router.get('/duplicate-songs', async (req, res) => {
       ORDER BY s.title, s.created_at
     `);
     
-    const duplicateGroups = findDuplicateGroups(songsResult.rows);
+    const dismissed = await getDismissedPairKeys(pool);
+    const duplicateGroups = findDuplicateGroups(songsResult.rows, dismissed);
 
     console.log(`Found ${duplicateGroups.length} potential duplicate groups`);
 
@@ -1260,13 +1262,28 @@ router.get('/duplicate-songs', async (req, res) => {
         songsInDuplicates: duplicateGroups.reduce((sum, group) => sum + group.songs.length, 0)
       }
     });
-    
+
   } catch (error) {
     console.error('Error detecting duplicate songs:', error);
-    res.status(500).json({ 
-      error: 'Failed to detect duplicate songs', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to detect duplicate songs',
+      details: error.message
     });
+  }
+});
+
+// Record a curator "not a duplicate" decision for a whole group (all pairs).
+router.post('/duplicate-dismiss', async (req, res) => {
+  try {
+    const { songIds } = req.body || {};
+    if (!Array.isArray(songIds) || songIds.length < 2) {
+      return res.status(400).json({ error: 'songIds must be an array of at least two song ids' });
+    }
+    const n = await dismissGroup(pool, songIds);
+    res.json({ success: true, dismissed: n });
+  } catch (error) {
+    console.error('Error dismissing duplicate group:', error);
+    res.status(500).json({ error: 'Failed to dismiss duplicate group', details: error.message });
   }
 });
 

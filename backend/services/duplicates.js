@@ -29,7 +29,12 @@ function isDuplicatePair(s1, s2) {
   return titlesMatch(s1.title, s2.title) && artistsMatch(s1.artists, s2.artists);
 }
 
-function findDuplicateGroups(songs) {
+function pairKey(a, b) {
+  const x = Number(a), y = Number(b);
+  return x < y ? `${x}:${y}` : `${y}:${x}`;
+}
+
+function findDuplicateGroups(songs, dismissedKeys = new Set()) {
   const groups = [];
   const processed = new Set();
   for (let i = 0; i < songs.length; i++) {
@@ -37,7 +42,9 @@ function findDuplicateGroups(songs) {
     const dupes = [songs[i]];
     for (let j = i + 1; j < songs.length; j++) {
       if (processed.has(songs[j].id)) continue;
-      if (isDuplicatePair(songs[i], songs[j])) { dupes.push(songs[j]); processed.add(songs[j].id); }
+      if (isDuplicatePair(songs[i], songs[j]) && !dismissedKeys.has(pairKey(songs[i].id, songs[j].id))) {
+        dupes.push(songs[j]); processed.add(songs[j].id);
+      }
     }
     if (dupes.length > 1) {
       dupes.sort((a, b) => {
@@ -56,4 +63,4 @@ function findDuplicateGroups(songs) {
   return groups;
 }
 
-module.exports = { normalizeText, titlesMatch, artistsMatch, isDuplicatePair, findDuplicateGroups };
+module.exports = { normalizeText, titlesMatch, artistsMatch, isDuplicatePair, findDuplicateGroups, pairKey };
