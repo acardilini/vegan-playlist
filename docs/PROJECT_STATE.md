@@ -10,34 +10,28 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**B3 — Browse & Search overhaul (2026-07-19 → 2026-07-20; four rounds on branch
-  `session-B3-browse-search`).** Grew well past the original "faceted browse" scope into a full
-  browse/search rebuild, driven by curator smoke feedback each round. **Round 1 (overhaul):** the
-  **effective-genre fix** — genre facet counts + `/search` genre filter now use `COALESCE(songs.genre,
-  primary artist's first genre)` computed at query time (coverage 492 → ~1,003 live songs; a "329 have no
-  genre" note), killing the hardcoded frontend `GENRE_HIERARCHY`; the **thematic facet tree** over B1's
-  `facetTree`; new filters (**song length**, **has-YouTube/on-Spotify**, **has-analysis**, **language**);
-  **removable chips**; year-range input sizing; + the deferred 2-codes-same-group `facetTree` test.
-  **Round 2 (rework):** filters moved into a **left sidebar** (mobile drawer) — results no longer pushed
-  down; **dynamic exclude-self counts** (a new `GET /api/spotify/browse-facets` recomputes every group's
-  counts against the *other* filters, so picking "death metal" narrows theme/length/etc. while genre stays
-  widenable) built on a shared `services/browseFilters.buildWhere` (one filter source for `/search` +
-  browse-facets); Popularity sort dropped (default → Year). **Round 3:** **selectable sub-dimensions &
-  groups** in the theme tree — a code = exact AND-term, a group/sub-dimension = an OR-term over its codes,
-  all AND across (`facetSelectionClauses`); ancestor-covers-descendants UX; a **Date-added sort**. **Round
-  4:** theme-tree **colour-forward hierarchy restyle** (nested rails, level-distinct type, bigger text) +
-  the dimension-header left-align fix; **date sort** `COALESCE(playlist_added_at, date_added)` so the
-  ~534-song Apr-2026 batch (no Spotify-playlist date) surfaces by import date. **Executed via
-  subagent-driven development** (fresh implementer + two-stage review per task; opus final review per
-  round — all clean; round-4 polish done inline). Backend **75/75**; frontend build + eslint clean;
-  live exclude-self smoke consistent; **curator smoke-confirmed all four rounds**. Merged no-ff to `main`;
-  **pushed**._
+- **Current session:** _**Fixes Round 1 — curator-reported data-integrity & UX fixes (2026-07-20, branch
+  `session-fixes-round-1`).** A triage of curator-noticed issues became a bug-fix round (executed via
+  subagent-driven development; two clean opus reviews, 0 Critical/0 Important). **#1 (active data loss):**
+  `saveLyrics` no longer wipes `source_url`/`translation` when a lyrics-only autosave omits them; clearing
+  lyrics keeps the row (`''` sentinel — `song_lyrics.lyrics` is NOT NULL); "has lyrics" now means non-empty
+  everywhere in `curation.js`. **#2 (data loss, found in planning):** `setProcessing` updates only provided
+  fields (was clobbering park/snooze/note on every single-field save); the workbench Park control is now
+  controlled — reflects/persists the chosen reason. **#3:** duplicate detector gated on **title AND artist**
+  (extracted to pure `services/duplicates.js`) — 0 cross-artist false groups on the real 1,778-song
+  catalogue; plus a persistent **"Not a duplicate"** reject (migration 008 `duplicate_dismissals` +
+  `POST /duplicate-dismiss`, whole-group). **#5:** an **All songs** catalogue-wide search scope in the admin
+  Songs area (reaches any song regardless of status → fixed song 1's Rickroll video). **UX polish:** homepage
+  Sort-by beside the search box; filter chips moved to the top of the results column; redundant "Filters
+  applied:" summary removed. Backend **88/88**; frontend build + eslint clean; live read-only smoke
+  (queueCounts.all 1778, All-songs reaches song 1, 22 dup groups / 0 cross-artist); **curator smoke-confirmed**.
+  Merged no-ff to `main`; **pushed**. Prior: B3 merged 2026-07-20 (merge `5ec1566`)._
 - **Next session:** **B4 — Explore vector map.** The new top-nav "Explore" page: 2D + 3D scatter over
   `frontend/public/vector_space.json` (+ `song_embeddings`), space toggle (semantic/thematic/acoustic),
   colour-by dominant-theme (reusing B2's sub-dimension palette), theme/animal spotlight filter, hover/click
   to the song. See `docs/LYRICS_VECTOR_ANALYSIS_INTEGRATION.md` + the B design spec. Then sub-projects
   C–F (submissions/Inbox, YouTube, lyrics, Spotify push).
-- **Last updated:** 2026-07-20 _(B3 done — all four rounds merged to `main` + pushed; B4 next)._
+- **Last updated:** 2026-07-20 _(Fixes Round 1 merged to `main` + pushed after B3; B4 next)._
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -148,6 +142,29 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-20 — Fixes Round 1: a curator-triage bug round found a second data-loss bug and settled the
+  duplicate-reject model.** A batch of curator-reported issues was triaged into a sequenced backlog
+  (bug-fix round first; then thematic `key_focus_pipeline`, browse/search polish, featured redesign,
+  About/AI page, B4); the first round shipped four fixes + UX polish. Key decisions/findings: (1) the
+  reported lyrics-URL loss (#1) was `saveLyrics`'s `ON CONFLICT` null-clobbering `source_url`/`translation`
+  on a lyrics-only save; the fix writes only provided fields, and **clearing lyrics now keeps the row**
+  (curator choice — preserves URL/translation) using `lyrics=''` because the column is `NOT NULL`, so
+  every "has lyrics" check became non-empty (`btrim<>''`). (2) **Planning surfaced a second, unreported
+  data-loss bug of the same class:** `setProcessing` overwrote park/snooze/note from `EXCLUDED` on every
+  call, so toggling a lyrics-avenue silently wiped a park reason — the spec's "display-only #2" was
+  expanded to fix it. (3) **Duplicate detection gates on title AND artist** (not a weighted score that
+  title could dominate) — behaviour-preserving extraction to pure `services/duplicates.js`; duration/album
+  signals dropped (confidence was already group-size only). (4) Because no heuristic is perfect, added a
+  **persistent whole-group "Not a duplicate" reject** (migration 008 `duplicate_dismissals`, canonical
+  `a<b`; the pure detector takes a dismissed-pair set; `getDismissedPairKeys` routed through the same
+  `pairKey` so the key format has one source of truth) — curator chose whole-group + reject-only (no
+  heuristic tightening; only 22 groups total). (5) The stateless "reach any song" gap (song 1 had a
+  Rickroll video) was closed by exposing the **already-existing** backend `queue='all'` scope in the Songs
+  UI + a `queueCounts.all` total. (6) UX: Sort-by beside the search box; filter chips relocated to the top
+  of the results column; the redundant HomePage "Filters applied:" summary deleted (chips are the single
+  source of truth). Spec/plan: `specs/2026-07-20-fixes-round-1-design.md`,
+  `plans/2026-07-20-fixes-round-1.md`.
 
 - **2026-07-20 — B3 grew into a four-round browse/search rebuild via live curator smoke; several
   cross-filter/semantics decisions locked in.** The planned "faceted browse" became a full overhaul because
@@ -555,6 +572,25 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-20 (Fixes Round 1 — curator data-integrity & UX fixes; merged to `main`)** — Branch
+  `session-fixes-round-1` (base `5ec1566`), executed via subagent-driven development (fresh implementer +
+  spec/quality review per task; two opus whole-branch reviews — both "ready to merge = yes", 0 Critical/0
+  Important). **Backend:** `saveLyrics` writes only provided fields (stops wiping `source_url`/`translation`;
+  clearing lyrics keeps the row via `lyrics=''`; all has-lyrics checks → non-empty); `setProcessing` writes
+  only provided fields (stops clobbering park/snooze/note); duplicate detector extracted to pure
+  `services/duplicates.js` gated on title AND artist; migration **008** `duplicate_dismissals` +
+  `services/duplicateDismissals.js` + `POST /api/admin/duplicate-dismiss` (whole-group reject) with the
+  detector skipping dismissed pairs; `queueCounts` gained an `all` total. **Frontend:** workbench Park
+  control controlled (reflects/persists reason); DuplicateManager **"Not a duplicate"** button; Songs area
+  **"All songs"** scope; homepage Sort-by beside the search box; filter chips moved to the top of the results
+  column; redundant "Filters applied:" summary removed. **Data:** curator fixed song 1's video
+  (`dQw4w9WgXcQ` Rickroll → `RbvTfvUaBxM`) via the new All-songs path. **Verification:** backend
+  `npm test` **88/88**; frontend build + eslint clean; live read-only smoke (queueCounts.all 1778, song 1
+  reachable, 22 dup groups / 0 cross-artist across 1,778 songs); **curator smoke-confirmed** #1/#2/#3/#5 +
+  the reject button + all three UX tweaks. Merged no-ff to `main`; pushed. **Next: B4 — Explore vector map**
+  (then the rest of the triaged queue: thematic `key_focus_pipeline`, browse/search polish, featured
+  redesign, About/AI page).
 
 - **2026-07-20 (B3 — Browse & Search overhaul; four rounds; merged to `main`)** — Branch
   `session-B3-browse-search` (base `bd33ab2`), 33 commits, +2,999/−610 across 19 files, executed via
