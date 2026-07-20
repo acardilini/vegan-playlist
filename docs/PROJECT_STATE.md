@@ -31,7 +31,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   colour-by dominant-theme (reusing B2's sub-dimension palette), theme/animal spotlight filter, hover/click
   to the song. See `docs/LYRICS_VECTOR_ANALYSIS_INTEGRATION.md` + the B design spec. Then sub-projects
   C–F (submissions/Inbox, YouTube, lyrics, Spotify push).
-- **Last updated:** 2026-07-20 _(Fixes Round 1 merged to `main` + pushed after B3; B4 next)._
+- **Last updated:** 2026-07-20 _(curator-triage review + capture session — no code changed;
+  `CURATOR_TRIAGE_BACKLOG.md` created. B4 remains next.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -59,6 +60,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
    validation, admin access control. Known items in Watch-outs: public pages hardcode
    `http://localhost:5000` (deployment breaks them until proxied/env-based),
    submissions-admin auth, real admin auth.
+**Curator-triage backlog** (detailed, with root causes): see
+[`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md) — the 2026-07-20 batch reviewed
+2026-07-20 (Fixes Round 1 + the sort-overlap fix resolved 5). Remaining, sequenced after B4:
+the **`key_focus_pipeline` data switch** (repoint `analysis.js` `DEFAULT_MODEL` to
+`gemma4:key_focus_pipeline` — surface the refined 1–3 codes/dimension), scalar-attribute browse
+filters (Perspective/Tone/Intensity/Clarity/Focus/Emotions), persist sort/filter state across
+navigation, featured-songs redesign, browse/search polish (sidebar scroll, bidirectional sort),
+lyrics-translation highlights + multi-language, About/AI-disclosure page, and the vector
+"You might also like".
+
 **Still-open optional curator to-dos** (non-blocking, carried forward):
 
 - The **Bandcamp/Website artist button** ships empty — populate `artists.website_url` per
@@ -142,6 +153,29 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-20 — Curator-triage review: the `key_focus_pipeline` adoption is a SPLIT read, and
+  the six scalar metadata components come from the DEEP tier.** A curator issue batch was reviewed
+  against the code and captured in [`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md).
+  Key findings/decisions: (1) The new 2-stage analysis (`song_lyric_analysis.model_used`) means the
+  site should read the **five code dimensions** (targets/actions/tactics/moral_frames/themes) from the
+  refined **`gemma4:key_focus_pipeline`** (1–3 codes/dimension, analogy/satire noise filtered), but the
+  **six scalar metadata components** (`perspective`/`lyrical_tone`/`intensity`/`clarity`/`focus_amount`/
+  `emotions`) live **only in `gemma4:deep_pipeline`** — so `getSongAnalysis` must become a two-tier
+  read, NOT a one-constant flip of `analysis.js` `DEFAULT_MODEL` (`gemma4:latest`). **No deep-dive/
+  exhaustive-quote view** (curator: not needed — the deep tier is only the scalar source). The
+  ~685→672 coverage change is attributed to recent playlist edits, not a bug. (2) "Filter by lyrical
+  analysis" is **not** done: the theme facet tree (B3) covers the five code dimensions, but the **six
+  scalar attributes are display-only** on the song page and need their own browse facets/filters
+  (read from the deep tier) — the allowed enum values are recorded in the backlog. (3) New captured
+  requests: **persist browse sort/filter state across navigation** (lift out of component `useState`,
+  prefer URL params); **add lyric highlights from the English translation**; **multi-value/bilingual
+  `songs.language`**; **featured-songs redesign** (backend still fills to 4 with random after 2
+  `featured=true` pins — and the "set featured" admin UI was removed in the Phase-4 rebuild, no
+  replacement); **card chip = MoodBadge** (only when a mood exists) and **date-added** (only when
+  `playlist_added_at` exists) inconsistencies; **About analysis-explainer + AI disclosure** page;
+  **vector "You might also like"** (current `/similar` is genre + dead NULL audio-features). All
+  sequenced after B4. Fixes Round 1 + the sort-overlap fix resolved 5 of the batch.
 
 - **2026-07-20 — Fixes Round 1: a curator-triage bug round found a second data-loss bug and settled the
   duplicate-reject model.** A batch of curator-reported issues was triaged into a sequenced backlog
@@ -572,6 +606,18 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-20 (Curator-triage review + capture — docs only, no code changed)** — Reviewed a batch of
+  curator-reported issues against the current code and captured them in a new
+  [`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md) (with per-item root causes), plus a pointer
+  from this file. Confirmed **5 already resolved** (Fixes Round 1's lyrics-URL strip, Park-reason
+  persistence, title+artist duplicate gate, All-songs admin search; and the sort-overlap layout).
+  Remaining items scoped + sequenced after B4: the **`key_focus_pipeline` split-read** switch (code
+  dims from key-focus, six scalar components from the deep tier) **+** scalar-attribute browse filters;
+  persist browse state across navigation; featured-songs redesign; browse/search polish (sidebar
+  scroll, bidirectional sort); lyric highlights from the translation + multi-language `songs.language`;
+  About analysis-explainer + AI-disclosure page; vector "You might also like". No smoke test (no code).
+  **Next: B4 — Explore vector map.**
 
 - **2026-07-20 (Fixes Round 1 — curator data-integrity & UX fixes; merged to `main`)** — Branch
   `session-fixes-round-1` (base `5ec1566`), executed via subagent-driven development (fresh implementer +
