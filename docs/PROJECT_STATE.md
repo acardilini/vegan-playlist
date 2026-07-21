@@ -11,7 +11,15 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
 - **Current session:** _**Curator-triage build session (2026-07-20 → 07-21)** — advancing DB-independent
-  triage items while the curator cleans the DB. **Triage 3 (featured-songs redesign) — DONE, merged to
+  triage items while the curator cleans the DB. **Triage 3b (Featured management view) — BUILT + verified,
+  pending merge** (branch `session-triage-3b-featured-manage`; a follow-up to triage 3 from the curator's
+  smoke): a **"Featured" scope** in the admin Songs area (rail item + count + Dashboard tile) listing every
+  `featured=true` song, each with a **quick "Unfeature" button** (reuses `POST /songs/:id/unfeature`), plus
+  a **Featured badge** on rows in any scope — so the curator can see the whole featured set and rotate it
+  without opening each workbench (curator chose unfeature-only; turning on stays in the workbench). Backend
+  **90/90** (new featured-queue test); backend API smoke all-pass (counts/scope/row-field/unfeature/badge
+  on a temp :5001, original featured set restored); admin UI click-through left for curator smoke.
+  **Triage 3 (featured-songs redesign) — DONE, merged to
   `main` (merge `6718cec`); ⚠ AWAITING CURATOR IN-BROWSER SMOKE** (see the pending-smoke note below —
   curator was away from the computer at merge): featured model is now curated pins with a
   deterministic recency fill (`ORDER BY COALESCE(playlist_added_at, date_added) DESC`) instead of
@@ -183,6 +191,18 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-21 — Triage 3b: a Featured management view (admin scope + quick unfeature), unfeature-only
+  (built, pending merge).** The curator's triage-3 smoke surfaced that the per-song workbench toggle gave
+  no catalogue-wide view of the featured set, making rotation tedious. Decision: reuse the derived-queue
+  system — a **`featured` scope** (`queueWhere` `s.featured=true`, added to `QUEUE_NAMES`/`queueCounts`;
+  `listCurationQueue` returns a per-row `featured`) surfaced as a rail item + a `/admin` Dashboard tile,
+  with a **per-row quick Unfeature** button (reusing `POST /songs/:id/unfeature`) and a **Featured badge**
+  on rows in any scope. Curator chose **unfeature-only** (no inline Feature toggle in other scopes —
+  turning songs *on* stays in the workbench) — YAGNI. The list row was refactored into a flex wrapper so
+  the action isn't a nested `<button>`. Verified: backend 90/90 (1 new test) + API smoke all-pass
+  (counts/scope/row/unfeature/badge; original featured set restored). Spec/plan:
+  `specs/2026-07-21-triage-3b-featured-management-design.md`, `plans/2026-07-21-triage-3b-featured-management.md`.
 
 - **2026-07-21 — Triage 3: featured = curated pins with a deterministic recency fill, cycling a large
   pin set; restored a workbench Featured toggle; dropped the card date.** The homepage Featured filled
@@ -693,6 +713,13 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-21 (Triage 3b — Featured management view, built + verified, pending merge)** — On
+  `session-triage-3b-featured-manage` (follow-up to triage 3 from the curator's smoke): an admin **Featured
+  scope** (rail + count + Dashboard tile) lists every featured song with a **quick Unfeature** button
+  (reuses `/unfeature`), plus a **Featured badge** on rows in any scope. Backend `featured` queue +
+  `queueCounts.featured` + per-row `featured` field. Curator-chosen unfeature-only. Backend 90/90 (1 new
+  test); API smoke all-pass (counts/scope/row/unfeature/badge; featured set restored). Not yet merged.
 
 - **2026-07-21 (Triage 3 — featured-songs redesign, merged `6718cec`; ⚠ pending curator smoke)** — On
   `session-triage-3-featured` (merged no-ff to `main`): featured fill switched from random-from-catalogue to deterministic

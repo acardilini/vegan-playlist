@@ -47,6 +47,11 @@ also like") → **6** About analysis-explainer + AI disclosure.
   metadata that shows only when `custom_mood` exists; not a bug. No code change.
 - ✅ **Date-added shown on some cards but not all.** Decision: **drop the added-date from `SongCard`**
   entirely (uniform across all card surfaces), rather than a fallback.
+- ✅ **Follow-up — hard to see which songs are Featured (triage 3b, 2026-07-21, built on
+  `session-triage-3b-featured-manage`, pending merge).** From the triage-3 smoke: added an admin **Featured
+  scope** (rail + count + Dashboard tile) that lists all featured songs with a **quick Unfeature** button,
+  plus a **Featured badge** on rows in any scope — so the featured set is visible and rotatable without
+  opening each workbench. Unfeature-only (turning on stays in the workbench).
 
 **Filter & search** _(→ "browse/search polish" round)_
 - **Filter by the lyrical-analysis attribute dimensions.** _(curator clarified 2026-07-20)_ The
