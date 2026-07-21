@@ -11,8 +11,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
 - **Current session:** _**Curator-triage build session (2026-07-20 → 07-21)** — advancing DB-independent
-  triage items while the curator cleans the DB. **Triage 3b (Featured management view) — BUILT + verified,
-  pending merge** (branch `session-triage-3b-featured-manage`; a follow-up to triage 3 from the curator's
+  triage items while the curator cleans the DB. **Triage 3b (Featured management view) — DONE, merged to
+  `main` (merge `f3936b1`), curator-confirmed working** (branch `session-triage-3b-featured-manage`; a
+  follow-up to triage 3 from the curator's
   smoke): a **"Featured" scope** in the admin Songs area (rail item + count + Dashboard tile) listing every
   `featured=true` song, each with a **quick "Unfeature" button** (reuses `POST /songs/:id/unfeature`), plus
   a **Featured badge** on rows in any scope — so the curator can see the whole featured set and rotate it
@@ -20,8 +21,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   **90/90** (new featured-queue test); backend API smoke all-pass (counts/scope/row-field/unfeature/badge
   on a temp :5001, original featured set restored); admin UI click-through left for curator smoke.
   **Triage 3 (featured-songs redesign) — DONE, merged to
-  `main` (merge `6718cec`); ⚠ AWAITING CURATOR IN-BROWSER SMOKE** (see the pending-smoke note below —
-  curator was away from the computer at merge): featured model is now curated pins with a
+  `main` (merge `6718cec`), curator-confirmed working** (smoke-tested with triage 3b): featured model is
+  now curated pins with a
   deterministic recency fill (`ORDER BY COALESCE(playlist_added_at, date_added) DESC`) instead of
   random-from-catalogue, and **cycles a random 4 when >4 are pinned** (pinned query `ORDER BY RANDOM()
   LIMIT 4`); restored a **"Featured" toggle** in the workbench top bar (`curation.setFeatured` +
@@ -46,28 +47,27 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Headless (puppeteer) smoke **15/15**; caught + fixed a StrictMode page-reset bug (value-signature ref).
   Also committed a refreshed `vector_space.json` (key-focus coding, B4 input, `2a22e37`). Prior: Fixes
   Round 1 merged to `main` 2026-07-20 (merge `2a07339`)._
-- **⚠ PENDING CURATOR SMOKE-TEST (this session's deliverables):** the curator was away from the computer
-  and has **not yet in-browser smoke-tested triage 3** (merged `6718cec`). Check when back: **(a)** admin
-  workbench top bar shows a **Feature/Featured toggle** beside Publish on a published song, and it
-  persists on reload; **(b)** a featured song **leads** the homepage Featured section; **(c)** with **>4**
-  featured, the homepage shows a **random 4 that reshuffles** across reloads; with **<4**, the fill is the
-  **most-recently-added** and is **stable**; **(d)** song **cards show no added-date**, and the mood chip
-  still appears only where a mood exists. (Triage 2 was already curator-confirmed; automated coverage for
-  3: backend 89/89 + featured API smoke all-pass, but the admin UI toggle + homepage were verified only at
-  the API/DOM level, not by a human click.)
-- **Next session:** **Triage 4 — browse/search polish** (independent sidebar scroll + bidirectional
-  sort; the sort direction drops into item 2's URL-state model), then **5** (lyric highlights from
-  translation + multi-language). **Triage 1a stays PARKED until the curator confirms DB cleaning is
-  done** — re-run the tier/coverage/enum verification then; the cleaning may **reactivate 1b** (scalar
-  filters) if it normalizes the scalars to the taxonomy enums, in which case fold 1b back in rather than
-  deferring. See `memory/triage-1a-db-cleaning-gate.md`.
-- **Reprioritised order (2026-07-20):** triage **1** (_PARKED — DB-cleaning gate_) · **2** (persist
-  browse state — ☑ **DONE, merged `bf2f1da`**) · **3** (featured redesign — ☑ **DONE, merged `6718cec`**
-  — ⚠ pending curator smoke) → **4** (browse/search polish: sidebar scroll + bidirectional sort) → **5**
+- **⚠ PENDING CURATOR SMOKE + MERGE — triage 4 only:** triages 2, 3, 3b are all merged +
+  curator-confirmed. **Triage 4 (browse/search polish)** remains BUILT on the unmerged, pushed branch
+  **`session-triage-4-browse-polish`** (backend 92/92 + full-stack sort/sidebar smoke all-pass), awaiting
+  the curator's in-browser smoke + merge: **(e)** the Sort-by **direction toggle** (A–Z/Z–A, Oldest/Newest)
+  reverses results, shows in the URL, and resets on sort-field change; **(f)** the **filter sidebar scrolls
+  independently** while pinned.
+- **Next session:** **Smoke + merge triage 4** (`session-triage-4-browse-polish`), then **Triage 5 —
+  lyric highlights from the translation + multi-language `songs.language`** (needs a brainstorm). **Triage
+  1a stays PARKED until the curator confirms the metadata reanalysis / DB cleaning is done** — re-run the
+  tier/coverage/enum verification then; the cleaning may **reactivate 1b** (scalar filters) if it
+  normalizes the scalars to the taxonomy enums, in which case fold 1b back in rather than deferring. See
+  `memory/triage-1a-db-cleaning-gate.md`.
+- **Reprioritised order (2026-07-20):** triage **1** (_PARKED — reanalysis gate_) · **2** (persist
+  browse state — ☑ **merged `bf2f1da`**) · **3** (featured redesign — ☑ **merged `6718cec`**, confirmed) ·
+  **3b** (Featured management view — ☑ **merged `f3936b1`**, confirmed) · **4** (browse/search polish — ☑
+  **BUILT, pending merge**) → **5**
   (lyric highlights from translation + multi-language) → **B4** (Explore vector map, with the vector "You
   might also like") → triage **6** (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-21 _(triage-3 featured redesign merged to `main` `6718cec`, ⚠ pending
-  curator in-browser smoke; triage-2 merged; triage-1a spec+plan parked on the DB-cleaning gate.)_
+- **Last updated:** 2026-07-21 _(triage-3b Featured management view merged `f3936b1` + curator-confirmed;
+  triages 2/3/3b all merged & confirmed; triage-4 built on its branch, pending curator smoke + merge;
+  triage-1a parked on the metadata-reanalysis gate.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
