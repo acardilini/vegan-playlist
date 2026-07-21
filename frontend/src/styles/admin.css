@@ -32,6 +32,11 @@
 .song-row .song-title { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .song-row .song-artist { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .song-row .miss-chips { display: flex; gap: var(--space-1); flex-wrap: wrap; justify-content: flex-end; max-width: 260px; }
+/* Featured scope: row + inline Unfeature action live in a flex wrapper (no nested buttons). */
+.song-row-wrap { display: flex; align-items: center; gap: var(--space-2); border-bottom: 1px solid var(--border-hairline); }
+.song-row-wrap .song-row { flex: 1; width: auto; border-bottom: none; }
+.song-row-action { flex-shrink: 0; margin-right: var(--space-2); }
+.featured-badge { display: inline-flex; align-items: center; padding: 1px var(--space-2); border-radius: var(--radius-pill); font-size: 0.68rem; font-weight: 600; white-space: nowrap; background: var(--accent-ember-60); color: var(--text-on-accent); }
 .miss-chip { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); background: var(--bg-surface-raised); color: var(--text-muted); border: 1px solid var(--border-hairline); white-space: nowrap; }
 .miss-chip.warn { color: var(--accent-ember-60); border-color: var(--accent-ember-40); }
 .queue-status { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); font-weight: 600; }
