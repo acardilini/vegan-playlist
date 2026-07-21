@@ -8,7 +8,7 @@ const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
   'needs-video': 'Needs video', 'awaiting-community': 'Awaiting community',
   'remind-later': 'Remind me later', 'to-finalise': 'To finalise',
-  'live': 'Live', 'all': 'All songs',
+  'live': 'Live', 'all': 'All songs', 'featured': 'Featured',
 };
 
 function coverStyle(row) {
@@ -45,6 +45,13 @@ function SongQueueList({ queue, refreshKey }) {
       .finally(() => setLoading(false));
   }, [queue, search, page]);
 
+  const unfeature = useCallback(async (id) => {
+    try {
+      const r = await adminFetch(`/api/admin/songs/${id}/unfeature`, { method: 'POST' });
+      if (r.ok) load(); else window.alert('Failed to unfeature');
+    } catch { window.alert('Request failed'); }
+  }, [load]);
+
   // Debounce search; immediate on queue/page change.
   useEffect(() => {
     const t = setTimeout(load, 250);
@@ -68,21 +75,28 @@ function SongQueueList({ queue, refreshKey }) {
         <div className="queue-empty">Nothing here right now.</div>
       ) : (
         rows.map(row => (
-          <button key={row.id} className="song-row" onClick={() => navigate(`/admin/song/${row.id}`, {
-            state: { from: queue, ids: rows.map((r) => r.id), index: rows.findIndex((r) => r.id === row.id) },
-          })}>
-            <span className={`cover ${row.has_art ? '' : 'placeholder'}`} style={coverStyle(row)} />
-            <span className="song-meta">
-              <span className="song-title">{row.title}</span>
-              <span className="song-artist">{row.artists || '—'}</span>
-            </span>
-            <span className={`queue-status ${statusClass(row)}`}>{statusLabel(row)}</span>
-            <span className="miss-chips">
-              {(row.missing || []).map(m => (
-                <span key={m} className="miss-chip warn">no {m}</span>
-              ))}
-            </span>
-          </button>
+          <div key={row.id} className="song-row-wrap">
+            <button className="song-row" onClick={() => navigate(`/admin/song/${row.id}`, {
+              state: { from: queue, ids: rows.map((r) => r.id), index: rows.findIndex((r) => r.id === row.id) },
+            })}>
+              <span className={`cover ${row.has_art ? '' : 'placeholder'}`} style={coverStyle(row)} />
+              <span className="song-meta">
+                <span className="song-title">{row.title}</span>
+                <span className="song-artist">{row.artists || '—'}</span>
+              </span>
+              <span className={`queue-status ${statusClass(row)}`}>{statusLabel(row)}</span>
+              {row.featured && <span className="featured-badge">Featured</span>}
+              <span className="miss-chips">
+                {(row.missing || []).map(m => (
+                  <span key={m} className="miss-chip warn">no {m}</span>
+                ))}
+              </span>
+            </button>
+            {queue === 'featured' && (
+              <button className="btn btn-secondary btn-sm song-row-action"
+                onClick={() => unfeature(row.id)}>Unfeature</button>
+            )}
+          </div>
         ))
       )}
 

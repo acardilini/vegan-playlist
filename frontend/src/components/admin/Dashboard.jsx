@@ -10,6 +10,7 @@ const TILES = [
   ['needs-cover', 'Needs cover', false],
   ['needs-video', 'Needs video', false],
   ['to-finalise', 'To finalise', false],
+  ['featured', 'Featured', false],
   ['inbox', 'Inbox', true],
 ];
 
