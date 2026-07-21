@@ -40,7 +40,7 @@ async function setProcessing(db, songId, { snooze_until, park_reason, lyrics_tri
 const ARTWORK_SQL = `(al.images IS NOT NULL AND al.images::text NOT IN ('null','[]',''))`;
 const MODEL_LITERAL = `'${DEFAULT_MODEL.replace(/'/g, "''")}'`; // controlled constant, safe to inline
 const QUEUE_NAMES = ['to-process','awaiting-community','remind-later','needs-lyrics',
-  'needs-cover','needs-video','needs-analysis','to-finalise','live','all'];
+  'needs-cover','needs-video','needs-analysis','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
@@ -71,6 +71,8 @@ function queueWhere(queue) {
       return `s.status='included' AND s.published=true`;
     case 'all':
       return `TRUE`;
+    case 'featured':
+      return `s.featured=true`;
     default: { const e = new Error('unknown queue'); e.code = 'BAD_QUEUE'; throw e; }
   }
 }
@@ -89,6 +91,7 @@ function mapQueueRow(r) {
   if (!has_play_link) missing.push('play link');
   return {
     id: r.id, title: r.title, artists: r.artists, status: r.status, published: r.published,
+    featured: r.featured,
     language: r.language, has_art: r.has_art, has_lyrics: r.has_lyrics, has_youtube: r.has_youtube,
     has_play_link, play_link_kinds: kinds, snooze_until: r.snooze_until, park_reason: r.park_reason, missing,
   };
@@ -105,7 +108,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
       WHERE sa2.song_id=s.id AND a2.name ILIKE $${params.length}))`;
   }
   let sql = `
-    SELECT s.id, s.title, s.status, s.published, s.language,
+    SELECT s.id, s.title, s.status, s.published, s.featured, s.language,
            s.spotify_url, s.bandcamp_url, s.soundcloud_url,
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
@@ -128,7 +131,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
 
 async function queueCounts(db) {
   const keys = ['to-process','awaiting-community','remind-later','needs-lyrics',
-    'needs-cover','needs-video','needs-analysis','to-finalise','live','all'];
+    'needs-cover','needs-video','needs-analysis','to-finalise','live','all','featured'];
   const out = {};
   for (const queue of keys) {
     const r = await db.query(`

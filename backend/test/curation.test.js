@@ -283,3 +283,17 @@ test('setFeatured toggles the featured flag and 404s on a missing song', async (
   assert.equal(wb.featured, false);
   await assert.rejects(curation.setFeatured(pool, 999999999, true), e => e.code === 'NOT_FOUND');
 });
+
+test('featured queue lists featured songs and queueCounts.featured tracks them', async () => {
+  const f = await mkSong({ title: 'ZZZCUR Feat On', status: 'included', published: true });
+  const n = await mkSong({ title: 'ZZZCUR Feat Off', status: 'included', published: true });
+  await curation.setFeatured(pool, f, true);
+  const before = (await curation.queueCounts(pool)).featured;
+  const list = await curation.listCurationQueue(pool, { queue: 'featured' });
+  const ids = list.rows.map(r => r.id);
+  assert.ok(ids.includes(f), 'featured song present');
+  assert.ok(!ids.includes(n), 'non-featured excluded');
+  assert.equal(list.rows.find(r => r.id === f).featured, true, 'row carries featured');
+  await curation.setFeatured(pool, n, true);
+  assert.equal((await curation.queueCounts(pool)).featured, before + 1, 'count increments');
+});
