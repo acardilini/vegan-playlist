@@ -58,8 +58,8 @@ Run before ending every working session:
 ## Architecture
 
 ### Backend Structure (`backend/`)
-- **server.js**: Main Express server; mounts 6 routers: `/api/spotify`, `/api/admin`,
-  `/api/playlists`, `/api/youtube`, `/api/submissions`, `/api/analytics`
+- **server.js**: Main Express server; mounts 7 routers: `/api/spotify`, `/api/admin`,
+  `/api/playlists`, `/api/youtube`, `/api/submissions`, `/api/analytics`, `/api/analysis`
 - **routes/**: `spotify.js` (public site API), `admin.js` (~2,200 lines, password-protected
   curation API — 29 routes in six banner-named domains: Songs/curation · Enrichment ·
   Data quality · Sync (import-only) · Artists · Staging/lifecycle; see

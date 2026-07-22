@@ -63,8 +63,8 @@ function queueWhere(queue) {
       return `s.status='included'
               AND EXISTS (SELECT 1 FROM song_lyrics sl
                           WHERE sl.song_id=s.id AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '')
-              AND NOT EXISTS (SELECT 1 FROM song_lyric_analysis sa
-                              WHERE sa.song_id=s.id AND sa.model_used IN (${ANY_TIER_LITERAL}))`;
+              AND NOT EXISTS (SELECT 1 FROM song_lyric_analysis sla
+                              WHERE sla.song_id=s.id AND sla.model_used IN (${ANY_TIER_LITERAL}))`;
     case 'to-finalise':
       return `s.status='included' AND s.published=false`;
     case 'live':

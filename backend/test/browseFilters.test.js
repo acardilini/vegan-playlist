@@ -84,3 +84,10 @@ test('joinSql emits the scalar-tier join under a distinct alias', () => {
   assert.ok(s.includes('song_lyric_analysis sa '), 'code tier keeps alias sa');
   assert.ok(s.includes('song_lyric_analysis sca '), 'scalar tier uses alias sca');
 });
+
+test('buildWhere scalar clauses respect a non-1 startIndex', () => {
+  const r = b.buildWhere({ themes: ['killing'], perspective: ['MORAL_ACCUSER_JUDGE'] },
+                         { exclude: 'analysis', startIndex: 2 });
+  assert.ok(r.where.some(c => c.includes('sca.perspective = ANY($2::text[])')));
+  assert.equal(r.nextIndex, 3);
+});

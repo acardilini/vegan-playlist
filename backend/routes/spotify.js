@@ -484,7 +484,8 @@ router.get('/browse-facets', async (req, res) => {
 
     const bwT = browse.buildWhere(f, { exclude: 'analysis_toggle' });
     const toggleSql = `SELECT
-        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used IN (${analysis.ANY_TIER_SQL})))::int AS has_analysis
+        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used IN (${analysis.ANY_TIER_SQL})))::int AS has_analysis,
+        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${analysis.CODE_MODEL}'))::int AS coded_count
       FROM songs s${browse.joinSql(bwT.joins)} ${whereSql(bwT)}`;
 
     const bwLang = browse.buildWhere(f, { exclude: 'language' });
@@ -529,6 +530,7 @@ router.get('/browse-facets', async (req, res) => {
         on_spotify: aR.rows[0]?.on_spotify || 0,
         has_youtube: aR.rows[0]?.has_youtube || 0,
         has_analysis: tR.rows[0]?.has_analysis || 0,
+        coded_count: tR.rows[0]?.coded_count || 0,
       },
       languages: langR.rows,
       year_range: yR.rows[0] || { min_year: null, max_year: null },

@@ -95,6 +95,10 @@ async function getSongAnalysis(db, songId) {
     .filter(e => e && !codebook.isSuppressed(e))
     .map(e => codebook.codeLabel('emotions', e));
 
+  // NOTE mixed representation: `emotions` below is display labels (mapped via codebook),
+  // while perspective/lyrical_tone/intensity/clarity/focus_amount/target_audience are raw
+  // enum codes — the display surface for those is `attributes` above. Intended, but do not
+  // assume any of these top-level fields are codes you can match against the codebook.
   return {
     perspective: a.perspective, intensity: a.intensity, clarity: a.clarity,
     focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone,
@@ -112,6 +116,8 @@ async function getSongAnalysis(db, songId) {
 // DB column -> public dimension name used in API output (facetTree, etc.).
 const PUBLIC_DIMS = { themes: 'themes', topics: 'targets', advocacy: 'actions', tactics: 'tactics', moral_frames: 'moral_frames' };
 
+// Parameter base: constraint.where/params must be built with startIndex: 2 — this function
+// prepends CODE_MODEL as $1 in every per-dimension query, so constraint params start at $2.
 async function facetTree(db, constraint = null) {
   const out = {};
   const extraJoin = constraint ? (constraint.joinSql || '') : '';
@@ -167,6 +173,9 @@ async function facetTree(db, constraint = null) {
 // { [componentKey]: { joinSql, where: string[], params: any[] } } — each built with that
 // component excluded, so a group's own selection never shrinks its own options.
 // Lives here (not in metadataCodebook) so that module stays DB-free.
+// Parameter base: each constraint's where/params must be built with startIndex: 1 — this
+// function appends SCALAR_MODEL at $(cParams.length + 1) per component, so constraint
+// params start at $1 and the model param comes last, not first.
 async function scalarFacets(db, constraints = {}) {
   const out = {};
   for (const c of codebook.COMPONENTS) {
