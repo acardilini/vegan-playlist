@@ -303,17 +303,21 @@ with a persistent "Not a duplicate" reject — migration 008 `duplicate_dismissa
 search scope, and browse UX polish (Sort-by beside search, chips relocated, redundant summary removed).
 Backend 88/88; curator smoke-confirmed. Spec: [`specs/2026-07-20-fixes-round-1-design.md`](./superpowers/specs/2026-07-20-fixes-round-1-design.md).
 Remaining curator-triage backlog captured in [`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md).
-**Reprioritised 2026-07-20 — items 1–5 run BEFORE B4:** (1) ◐ `key_focus_pipeline` adoption — **spec+plan
-done, EXECUTION PARKED** on the curator's DB-cleaning gate. A DB check showed it's a **one-constant flip**
-of `analysis.DEFAULT_MODEL` → `gemma4:key_focus_pipeline` (NOT the assumed split read — scalars are
-identical across tiers), and the **scalar-attribute browse filters are deferred to the pipeline** (scalar
-data is free-text, not the taxonomy enums); (2) ☑ **persist browse sort/filter state across navigation —
+**Reprioritised 2026-07-20 — items 1–5 run BEFORE B4:** (1) ☑ **analysis tiers + scalar browse filters —
+BUILT 2026-07-22** on `session-triage-1a1b-analysis-tiers` (pending curator smoke + merge). The curator's
+reanalysis closed the DB-cleaning gate and changed the shape of the work: it is a **two-tier split read** —
+code dimensions from `gemma4:key_focus_pipeline`, the seven scalar components from the new, enum-clean
+`gemini-3.5-flash-lite` — with `DEFAULT_MODEL` removed in favour of `CODE_MODEL`/`SCALAR_MODEL`, "has
+analysis" measured across either tier (640 → 665 live), and **item 1b un-deferred and shipped**: all seven
+components are browse filters (OR within, AND across) with exclude-self counts. Backend 112/112. Spec:
+[`specs/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters-design.md`](./superpowers/specs/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters-design.md); (2) ☑ **persist browse sort/filter state across navigation —
 BUILT+merged** (`bf2f1da`, URL query params via `useSearchParams` + a sessionStorage layer for Home);
 (3) ☑ **featured-songs redesign — DONE, merged `6718cec`** (⚠ pending curator smoke): curated pins +
 recency fill, cycle a random 4 when >4 pinned, restored workbench Featured toggle, dropped the card date;
 (4) browse/search polish (sidebar scroll + bidirectional sort — **extends item 2's URL-state model**); (5) lyric highlights from the translation + multi-language `songs.language`; then
 **B4** (with vector "You might also like"); then (6) About analysis-explainer + AI-disclosure page. _(1b
-scalar filters may reactivate here if DB cleaning normalizes the scalars to the enums.)_ _
+scalar filters did reactivate — the reanalysis normalized the scalars to codebook enums, so they shipped
+with 1a on 2026-07-22.)_ _
 
 ## Phase 5 — Deployment Hardening
 **Goal:** Ship it, cheaply, from GitHub.
