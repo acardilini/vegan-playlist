@@ -98,3 +98,8 @@ test('scalarSelectionClauses: alias is configurable', () => {
   const r = cb.scalarSelectionClauses({ clarity: ['SYSTEMIC_COMMODIFICATION_CRITIQUE'] }, 1, 'x');
   assert.deepEqual(r.clauses, ['x.clarity = ANY($1::text[])']);
 });
+
+test('componentDescription returns the codebook one-liner, empty for unknown', () => {
+  assert.match(cb.componentDescription('perspective'), /narrative voice/i);
+  assert.equal(cb.componentDescription('not_a_component'), '');
+});

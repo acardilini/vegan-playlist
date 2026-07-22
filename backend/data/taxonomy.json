@@ -1092,6 +1092,7 @@
   "hierarchy": {
     "targets": {
       "label": "Targets & Species",
+      "description": "Who or what the song is about: particular animals, the industries that use them, and the systems and roles that keep it running.",
       "sub_dimensions": {
         "farmed_domesticated": {
           "label": "Farmed & Domesticated Animal Species",
@@ -1131,6 +1132,7 @@
     },
     "actions": {
       "label": "Actions & Advocacy",
+      "description": "What the song calls for or depicts being done — from direct intervention and rescue to public advocacy and personal practice.",
       "sub_dimensions": {
         "direct_intervention": {
           "label": "Direct Intervention & Resistance",
@@ -1158,6 +1160,7 @@
     },
     "tactics": {
       "label": "Tactics & Protest Methods",
+      "description": "How that action is carried out: confrontation and rescue, protest and organising, cultural critique and consumer pressure.",
       "sub_dimensions": {
         "confrontational_tactics": {
           "label": "Confrontational & Direct Actions",
@@ -1186,6 +1189,7 @@
     },
     "moral_frames": {
       "label": "Moral Frames & Ethical Justifications",
+      "description": "The moral reasoning the song argues from — rights and justice, compassion and duty, systemic critique, or environmental stewardship.",
       "sub_dimensions": {
         "rights_justice": {
           "label": "Rights, Justice & Autonomy",
@@ -1220,6 +1224,7 @@
     },
     "themes": {
       "label": "Core Sentiments & Themes",
+      "description": "What the song is about at its core — the harm it describes, the indifference it names, and the hope or defiance it reaches for.",
       "sub_dimensions": {
         "cruelty_suffering": {
           "label": "Bodily Harm, Confinement & Suffering",

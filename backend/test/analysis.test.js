@@ -348,6 +348,33 @@ test('scalarFacets applies a per-component constraint', async () => {
   assert.equal(only.count, 1, 'only the constrained song counts');
 });
 
+test('facetTree carries a description for every dimension', async () => {
+  await mkCodedSong();
+  const t = await analysis.facetTree(pool);
+  for (const dim of ['themes', 'targets', 'actions', 'tactics', 'moral_frames']) {
+    if (!t[dim]) continue; // dimension absent from this dataset — nothing to describe
+    assert.equal(typeof t[dim].description, 'string');
+    assert.ok(t[dim].description.length > 20, `${dim} has a real description`);
+  }
+});
+
+test('scalarFacets carries a description for every component', async () => {
+  const f = await analysis.scalarFacets(pool, {});
+  for (const key of Object.keys(f)) {
+    assert.ok(f[key].description.length > 20, `${key} has a real description`);
+  }
+});
+
+test('getSongAnalysis exposes component and dimension descriptions for tooltips', async () => {
+  const id = await mkCodedSong();
+  const a = await analysis.getSongAnalysis(pool, id);
+  const persp = a.attributes.find(x => x.label === 'Perspective');
+  assert.ok(persp.component_description.length > 20, 'component description for the label tooltip');
+  assert.notEqual(persp.component_description, persp.definition, 'component text differs from the code definition');
+  assert.equal(typeof a.dimension_descriptions.themes, 'string');
+  assert.ok(a.dimension_descriptions.moral_frames.length > 20);
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);

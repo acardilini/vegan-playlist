@@ -93,6 +93,7 @@ async function getSongAnalysis(db, songId) {
       label: c.heading,
       value: codebook.codeLabel(c.key, v),
       definition: codebook.codeDefinition(c.key, v),
+      component_description: codebook.componentDescription(c.key),
     });
   }
   const emotions = codebook.cleanSelection('emotions', a.emotions)
@@ -113,11 +114,21 @@ async function getSongAnalysis(db, songId) {
     tactics: mapDim('tactics', a.tactics),
     moral_frames: mapDim('moral_frames', a.moral_frames),
     attributes,
+    dimension_descriptions: DIM_DESCRIPTIONS,
   };
 }
 
 // DB column -> public dimension name used in API output (facetTree, etc.).
 const PUBLIC_DIMS = { themes: 'themes', topics: 'targets', advocacy: 'actions', tactics: 'tactics', moral_frames: 'moral_frames' };
+
+// Public dimension name -> the curator's one-line description (taxonomy.json hierarchy).
+// Read at call time by getSongAnalysis, which is declared above — safe at module scope.
+const DIM_DESCRIPTIONS = Object.fromEntries(
+  Object.entries(PUBLIC_DIMS).map(([col, pub]) => {
+    const h = (taxonomy.hierarchy || {})[DIM_TO_TAXONOMY[col]] || {};
+    return [pub, h.description || ''];
+  })
+);
 
 // Parameter base: constraint.where/params must be built with startIndex: 2 — this function
 // prepends CODE_MODEL as $1 in every per-dimension query, so constraint params start at $2.
@@ -167,7 +178,7 @@ async function facetTree(db, constraint = null) {
       if (groups.length === 0) continue;
       subDimensions.push({ id: subId, label: sub.label, count: (subSongs.get(subId) || new Set()).size, groups });
     }
-    out[pub] = { label: h.label, count: dimSongs.size, sub_dimensions: subDimensions };
+    out[pub] = { label: h.label, description: h.description || '', count: dimSongs.size, sub_dimensions: subDimensions };
   }
   return out;
 }
@@ -207,6 +218,7 @@ async function scalarFacets(db, constraints = {}) {
       key: c.key,
       heading: c.heading,
       multi: c.multi,
+      description: codebook.componentDescription(c.key),
       options: codebook.optionsFor(c.key).map(o => ({ ...o, count: counts.get(o.code) || 0 })),
     };
   }
