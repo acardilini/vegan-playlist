@@ -309,7 +309,7 @@ reanalysis closed the DB-cleaning gate and changed the shape of the work: it is 
 code dimensions from `gemma4:key_focus_pipeline`, the seven scalar components from the new, enum-clean
 `gemini-3.5-flash-lite` — with `DEFAULT_MODEL` removed in favour of `CODE_MODEL`/`SCALAR_MODEL`, "has
 analysis" measured across either tier (640 → 665 live), and **item 1b un-deferred and shipped**: all seven
-components are browse filters (OR within, AND across) with exclude-self counts. Backend 112/112. Spec:
+components are browse filters (OR within, AND across) with exclude-self counts. Backend 113/113. Spec:
 [`specs/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters-design.md`](./superpowers/specs/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters-design.md); (2) ☑ **persist browse sort/filter state across navigation —
 BUILT+merged** (`bf2f1da`, URL query params via `useSearchParams` + a sessionStorage layer for Home);
 (3) ☑ **featured-songs redesign — DONE, merged `6718cec`** (⚠ pending curator smoke): curated pins +

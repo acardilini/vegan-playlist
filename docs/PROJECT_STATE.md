@@ -23,8 +23,12 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   components as browse filters** (OR within a component, AND across) with exclude-self counts via
   `analysis.scalarFacets` + a `scalar_facets` block on `/browse-facets`; seven collapsed sidebar groups
   riding the existing URL/sessionStorage state; the song-page attributes card gaining an **Audience** row,
-  codebook labels and definition tooltips. **"Has analysis" is now either-tier: 640 → 665 live songs.**
-  Backend **112/112**; frontend lint/build clean; live puppeteer smoke on the sidebar (129→203 OR, →87 AND)
+  codebook labels and definition tooltips. **"Has analysis" is now either-tier: 640 → 665 live songs** —
+  a net figure, not a pure gain: **+32 songs gain a section and 7 lose one** (they had a `gemma4:latest`
+  row but are in neither new tier). The final review checked all seven: every one is an empty row — zero
+  codes in all five dimensions, explanation _"No lyrics were provided for analysis."_ — so their
+  disappearance is a correction, not a loss (ids 4846, 5493, 5539, 5540, 5541, 5570, 5571).
+  Backend **113/113**; frontend lint/build clean; live puppeteer smoke on the sidebar (129→203 OR, →87 AND)
   and on all three coverage cases of the song page. Prior session: **Triage 3b (Featured management view) —
   DONE, merged to
   `main` (merge `f3936b1`), curator-confirmed working** (branch `session-triage-3b-featured-manage`; a
@@ -228,7 +232,11 @@ Newest first. Each entry: date · decision · why.
   new pure `services/metadataCodebook.js`); labels reach the frontend through the API, and the codebook's
   emoji `short_tag`s are never used (brand voice). `taxonomy.json`'s now-dead scalar lists stay in the file
   but `scalarLabel` was deleted. **Observed, not worked around:** 321/679 rows (47%) have an **empty
-  `emotions` array** — reported to the curator as a pipeline signal. Verified: backend **112/112**;
+  `emotions` array** — reported to the curator as a pipeline signal. **Caught by the final review:** the
+  theme facet tree's caption was fed the either-tier count (665) while the tree itself counts only
+  code-tier songs, overstating its own set by ~61 and contradicting the number rendered directly below it;
+  `/browse-facets` now returns a separate `coded_count` (617) for that caption. Verified: backend
+  **113/113**;
   reviewers independently re-ran the suite, mutation-tested the facet-count parameter arithmetic (removing
   a `+1` makes both tests fail), and re-hit the live endpoints; puppeteer smoke on the sidebar (129→203 OR,
   →87 AND) and all three song-page coverage cases. Spec/plan:
@@ -769,7 +777,7 @@ Newest first. What actually happened each session.
   seven collapsed sidebar groups on the existing URL/sessionStorage state; the song-page attributes card
   with an Audience row, codebook labels and definition tooltips. Also fixed a stale admin string
   (`AnalysisPanel.jsx` still said "Coded with gemma4:latest"), found by a reviewer outside the plan's
-  scope. Backend **112/112** (+22 over the branch); frontend lint 0 errors + clean build; `has_analysis`
+  scope. Backend **113/113** (+23 over the branch); frontend lint 0 errors + clean build; `has_analysis`
   640 → **665**. Not yet merged — and it overlaps triage 4's branch in `SearchAndFilter.jsx` /
   `browseUrlState.js`.
 
