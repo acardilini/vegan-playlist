@@ -26,7 +26,6 @@ function ThemeFacetTree({ facets, selected, onToggle, selectedGroups = [], selec
             <FilterSection
               key={dimKey}
               title={`${dim.label} (${dim.count})`}
-              description={dim.description}
             >
               {dim.sub_dimensions.map((sub) => {
                 const hue = subDimensionColor(sub.id);

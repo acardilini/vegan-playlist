@@ -888,16 +888,6 @@
   cursor: pointer;
 }
 
-/* Heading row: the toggle takes the width, the "i" sits beside it. The icon is a sibling
-   rather than a child because a <button> may not contain a <button>. */
-.filter-section-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.filter-section-head .filter-title-toggle { flex: 1; min-width: 0; }
-
 .filter-section-body {
   display: flex;
   flex-direction: column;
@@ -2248,9 +2238,6 @@
 .la-attr-value { color: var(--text-primary); }
 .la-dimension { display: flex; flex-direction: column; gap: var(--space-2); }
 .la-dim-heading { margin: 0; color: var(--text-primary); }
-.la-legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
-.la-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
-.la-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
 .la-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .la-chip {
   display: inline-flex; align-items: center; gap: 6px;
@@ -2373,15 +2360,6 @@
 /* ---- InfoTip: hover/focus tooltip replacing the native `title` ---- */
 .infotip { position: relative; display: inline-flex; align-items: center; gap: 4px; }
 .infotip-trigger { cursor: help; }
-
-.infotip-icon {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 1.05rem; height: 1.05rem; padding: 0;
-  border: 1px solid var(--border-hairline); border-radius: 50%;
-  background: none; color: var(--text-secondary);
-  font-size: 0.7rem; font-style: italic; line-height: 1; cursor: help;
-}
-.infotip-icon:hover, .infotip-icon:focus-visible { color: var(--text-primary); }
 
 .infotip-bubble {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;

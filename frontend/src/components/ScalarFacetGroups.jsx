@@ -14,7 +14,7 @@ function ScalarFacetGroups({ groups, selected, onToggle }) {
         const g = groups[key];
         const sel = selected[key] || [];
         return (
-          <FilterSection key={key} title={g.heading} count={sel.length} description={g.description}>
+          <FilterSection key={key} title={g.heading} count={sel.length}>
             <div className="filter-options">
               {g.options.map(o => {
                 const isSel = sel.includes(o.code);

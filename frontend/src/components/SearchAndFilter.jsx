@@ -283,7 +283,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
   const filterGroups = (
     <div className="sidebar-groups">
       <FilterSection title="Genre & style" count={filters.parent_genres.length + filters.genres.length} defaultOpen
-        description="Browse by musical genre."
         note="Picking a parent selects everything inside it.">
         <GenreFilterTree
           tree={filterOptions.genre_tree}
@@ -297,7 +296,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       <FilterSection
         title="Themes & advocacy"
         count={DIM_KEYS.reduce((n, k) => n + filters[k].length, 0) + filters.facet_groups.length + filters.facet_subdims.length}
-        description="What the lyrics are about, coded from the analysis."
         note={`Only songs with lyrics analysis (${filterOptions.availability?.coded_count || 0}) are counted here. Pick a group or sub-dimension for any code inside it; picks narrow together.`}
       >
         <ThemeFacetTree
@@ -314,7 +312,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       <FilterSection
         title="Lyric metadata"
         count={SCALAR_KEYS.reduce((n, k) => n + filters[k].length, 0)}
-        description="How the song speaks: its voice, tone, intensity and emotional register."
       >
         <ScalarFacetGroups
           groups={scalarFacets}
@@ -323,8 +320,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         />
       </FilterSection>
 
-      <FilterSection title="Year range" count={(filters.year_from || filters.year_to) ? 1 : 0}
-        description="Filter by the release year of the song's album.">
+      <FilterSection title="Year range" count={(filters.year_from || filters.year_to) ? 1 : 0}>
         <div className="range-inputs">
           <input type="number" placeholder={yr.min_year ? `From ${yr.min_year}` : 'From'}
             value={filters.year_from} onChange={(e) => setScalar('year_from', e.target.value)}
@@ -337,7 +333,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       </FilterSection>
 
       <FilterSection title="Song length" count={filters.lengths.length}
-        description="Filter by how long the track runs."
         note="Short is under 2 minutes, long is over 4.">
         <div className="filter-options">
           {(filterOptions.length_buckets || []).map(b => {
@@ -354,8 +349,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         </div>
       </FilterSection>
 
-      <FilterSection title="Available on" count={(filters.on_spotify ? 1 : 0) + (filters.has_youtube ? 1 : 0)}
-        description="Where you can listen to the song.">
+      <FilterSection title="Available on" count={(filters.on_spotify ? 1 : 0) + (filters.has_youtube ? 1 : 0)}>
         <div className="filter-options">
           <label className={`filter-option ${(filterOptions.availability?.on_spotify || 0) === 0 && !filters.on_spotify ? 'is-zero' : ''}`}>
             <input type="checkbox" checked={filters.on_spotify}
@@ -373,7 +367,6 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       </FilterSection>
 
       <FilterSection title="Analysis" count={filters.has_analysis ? 1 : 0}
-        description="Whether the song has been through the lyric analysis."
         note="Not every song has been analysed yet.">
         <div className="filter-options">
           <label className={`filter-option ${(filterOptions.availability?.has_analysis || 0) === 0 && !filters.has_analysis ? 'is-zero' : ''}`}>
@@ -386,8 +379,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       </FilterSection>
 
       {(filterOptions.languages?.length > 0) && (
-        <FilterSection title="Language" count={filters.languages.length}
-          description="The language the song is sung in.">
+        <FilterSection title="Language" count={filters.languages.length}>
           <div className="filter-options">
             {filterOptions.languages.map(l => {
               const selected = filters.languages.includes(l.value);
