@@ -316,17 +316,22 @@ BUILT+merged** (`bf2f1da`, URL query params via `useSearchParams` + a sessionSto
 recency fill, cycle a random 4 when >4 pinned, restored workbench Featured toggle, dropped the card date;
 (4) ☑ **browse/search polish — merged `d3887ad`, curator-confirmed**: bidirectional
 sort via a pure `buildOrderBy` + `dir` URL param, sidebar independent scroll; (5) lyric highlights from the translation + multi-language `songs.language`; then
-**B4** (with vector "You might also like"); then (6) About analysis-explainer + AI-disclosure page. _(1b
+**B4** (with vector "You might also like"); then (6) About analysis-explainer + AI-disclosure page —
+**now has concrete content waiting for it:** the seven component and five dimension descriptions are
+served by the API and deliberately not shown in the browse UI (curator removed them twice), so this
+page is where they land. _(1b
 scalar filters did reactivate — the reanalysis normalized the scalars to codebook enums, so they shipped
 with 1a on 2026-07-22.)_
 
-_**Filter/analysis presentation batch** (2026-07-22, branch `session-presentation-polish`, BUILT +
-pending curator smoke) follows the triage backlog: it came out of the curator's 1a+1b smoke rather than
-the original backlog. Two new shared primitives — `FilterSection` (every sidebar group collapses the same
-way and carries a description; nests, so the five theme dimensions and seven metadata components read as
-one family) and `InfoTip` (~120ms tooltip replacing the native `title`'s ~1s delay) — plus API-served
-description text (five new dimension descriptions written into `taxonomy.json`), emotions on one line,
-and a two-up song-page dimension layout. Backend 121/121. Spec:
+_**Filter/analysis presentation batch** (2026-07-22, ☑ **merged**) follows the triage backlog: it came
+out of the curator's 1a+1b smoke rather than the original backlog. Two new shared primitives —
+`FilterSection` (every sidebar group collapses the same way; nests, so the five theme dimensions and
+seven metadata components read as one family) and `InfoTip` (~120ms tooltip replacing the native
+`title`'s ~1s delay) — plus API-served description text (five new dimension descriptions written into
+`taxonomy.json`), emotions on one line, and a two-up song-page dimension layout. **Two rounds of curator
+smoke subtracted UI:** the always-on group descriptions went to hover, then the "i" icons and the song
+page's colour legends were removed outright — the description copy stays on the API for the **About
+pages** (item 6), which is now where it belongs. Backend 121/121. Spec:
 [`specs/2026-07-22-filter-and-analysis-presentation-design.md`](./superpowers/specs/2026-07-22-filter-and-analysis-presentation-design.md)._ _
 
 ## Phase 5 — Deployment Hardening

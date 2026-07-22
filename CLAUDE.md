@@ -96,10 +96,14 @@ Run before ending every working session:
   Songs and Bulk Categorization). Song intake/sync lives in the Staging tab
   (Add candidates + import-only Sync + mismatch report); Duplicate Manager is
   data-quality only. **Two shared presentation primitives:** `FilterSection` — every
-  browse-sidebar group is one, so they all collapse identically and carry a description;
-  it nests, which is how the five theme dimensions and seven metadata components read as
-  the same unit. `InfoTip` — the tooltip used instead of the native `title` attribute
-  (which waits ~1s and can't be styled); use it for any new hover help. **Public playlists are read-only (browse-only)** — Session 3.3
+  browse-sidebar group is one, so they all collapse identically; it nests, which is how the
+  five theme dimensions and seven metadata components read as the same unit. Its `note` is
+  **usage help only** (caveats, what the options mean): the curator twice rejected
+  definitional copy in the sidebar, so "what this filter is" text belongs on the About
+  pages, not here — the API serves it (`scalarFacets`/`facetTree` `description`) but the
+  browse UI deliberately ignores it. `InfoTip` — the tooltip used instead of the native
+  `title` attribute (which waits ~1s and can't be styled); wraps its trigger, no icon
+  variant (icons were removed as clutter). Use it for any new hover help. **Public playlists are read-only (browse-only)** — Session 3.3
   deleted `AddToPlaylistModal` and the create/remove-song UI (curator decision, no auth
   story yet); the backend playlist routes are untouched and still serve the admin
   Manage Playlists tab. Playlist creation returns to the public site in Phase 4+ once
