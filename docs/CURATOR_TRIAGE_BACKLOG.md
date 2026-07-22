@@ -73,15 +73,13 @@ also like") → **6** About analysis-explainer + AI disclosure.
   source of truth — hydrate-on-mount + mirror-on-change (`useSearchParams`, `replace`), new pure
   `utils/browseUrlState.js`; page persisted via a disjoint second writer. Shareable/bookmarkable.
   Headless smoke 10/10.
-- **Filter sidebar won't scroll until the page bottom.** The sidebar is sticky and only the results
-  column scrolls; the curator wants to scroll the sidebar independently at any time. Root cause:
-  sticky `.browse-sidebar` with no independent scroll region. Fix: give the sidebar its own
-  `overflow-y:auto` + a bounded height (e.g. `max-height: calc(100vh - <header>)`), or make it a
-  non-sticky column.
-- **Bidirectional sort.** The Sort-by select has 4 options (Title / Artist / Year / Date added), each
-  **single-direction** only. Curator wants both directions (A–Z / Z–A, Newest / Oldest). Needs a
-  direction toggle in the UI + an `order`/`dir` param threaded through `/search` (backend
-  `services/browseFilters` / the `/search` ORDER BY).
+- ✅ **RESOLVED (triage 4, 2026-07-21 — built on `session-triage-4-browse-polish`, pending merge).**
+  **Filter sidebar won't scroll until the page bottom.** Fixed: `.browse-sidebar` gets
+  `max-height: calc(100vh - space-4*2)` + `overflow-y:auto`, so it scrolls internally while staying pinned.
+- ✅ **RESOLVED (triage 4, 2026-07-21 — built on `session-triage-4-browse-polish`, pending merge).**
+  **Bidirectional sort.** Fixed: a whitelisted `dir` (`asc`/`desc`) param threaded through the URL →
+  `/search`, via a pure `browseFilters.buildOrderBy(sort_by, dir)`; a UI direction toggle with contextual
+  labels (A–Z/Z–A, Oldest/Newest) that resets on sort-field change; `dir` persisted in the URL.
 
 **Admin song dashboard** _(→ workbench / lyrics enhancements)_
 - **Add a lyrics highlight from the English translation.** Today the highlights picker

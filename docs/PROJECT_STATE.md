@@ -70,19 +70,19 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Headless (puppeteer) smoke **15/15**; caught + fixed a StrictMode page-reset bug (value-signature ref).
   Also committed a refreshed `vector_space.json` (key-focus coding, B4 input, `2a22e37`). Prior: Fixes
   Round 1 merged to `main` 2026-07-20 (merge `2a07339`)._
-- **⚠ ONE BRANCH PENDING CURATOR SMOKE + MERGE — triage 4 only:** triages 2, 3, 3b and now 1a+1b are
-  merged + curator-confirmed. **Triage 4 (browse/search polish)** remains on
-  **`session-triage-4-browse-polish`** (backend 92/92 + full-stack sort/sidebar smoke all-pass), never
-  yet clicked through by the curator: **(e)** the Sort-by **direction toggle** (A–Z/Z–A, Oldest/Newest)
-  reverses results, shows in the URL, and resets on sort-field change; **(f)** the **filter sidebar
-  scrolls independently** while pinned.
-  **Merging it into today's `main` conflicts in exactly three files** (measured with `git merge-tree`,
-  not guessed): `frontend/src/utils/browseUrlState.js` (both branches add keys to
-  `ARRAY_KEYS`/`EMPTY_FILTERS`), `backend/test/browseFilters.test.js` (both append tests), and
-  `docs/PROJECT_STATE.md`. **`SearchAndFilter.jsx` and `components.css` auto-merge** — an earlier note
-  here claimed otherwise; git disagrees.
-  _Curator note during the 1a+1b smoke: the sidebar's independent scroll reads as "broken" on `main`.
-  It is not a regression — that CSS ships with triage 4 and returns when it merges._
+- **⚠ AWAITING CURATOR SMOKE — triage 4, on the integration branch:** triages 2, 3, 3b and 1a+1b are
+  merged + curator-confirmed. **Triage 4 (browse/search polish)** was never clicked through by the
+  curator and could not be smoked from `main` (it wasn't there). Rather than smoke a stale branch, the
+  merge was performed on **`integration-triage-4`** (= `main` + `session-triage-4-browse-polish`) so the
+  curator smokes **exactly what will land**: **(e)** the Sort-by **direction toggle** (A–Z/Z–A,
+  Oldest/Newest) reverses results, shows in the URL, and resets on sort-field change; **(f)** the
+  **filter sidebar scrolls independently** while pinned — the behaviour that reads as "broken" on `main`
+  today, which was never a regression, only an unmerged fix.
+  The three conflicts (measured with `git merge-tree`, not guessed) were all **additive and resolved by
+  keeping both sides**: `frontend/src/utils/browseUrlState.js` (triage 4's `dir` string key alongside
+  1a+1b's seven array keys), `backend/test/browseFilters.test.js` (both suites appended), and this file.
+  `SearchAndFilter.jsx` and `components.css` auto-merged. **On the curator's OK this branch
+  fast-forwards into `main`.**
 - **Next session:** **Smoke + merge triage 4**, then execute the **filter/analysis presentation batch**
   (spec + plan already written: `specs/2026-07-22-filter-and-analysis-presentation-design.md`,
   `plans/2026-07-22-filter-and-analysis-presentation.md`) on a fresh branch off `main` — it is
@@ -265,6 +265,24 @@ Newest first. Each entry: date · decision · why.
   `specs/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters-design.md`,
   `plans/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters.md`. **Supersedes** the parked
   2026-07-20 triage-1a spec and its branch `session-triage-1a-key-focus`, now abandoned.
+
+- **2026-07-21 — Triage 4: bidirectional sort via a whitelisted `dir` + a pure `buildOrderBy`; sidebar
+  scrolls independently (merged).** The Sort-by control was single-direction and the sticky
+  filter sidebar (no bounded height) hid its own overflow. Decisions: (1) sort direction is a whitelisted
+  `dir` (`asc`/`desc`, else the field default) threaded through the URL → `/search`; the ORDER BY moved
+  out of an inline `switch` into a **pure, unit-tested `services/browseFilters.buildOrderBy(sortBy, dir)`**
+  (which also **dropped the dead `energy`/`danceability`/`valence` sort cases** — audio features are NULL
+  and the UI never offered them; unknown fields fall back to the popularity default). (2) A **direction
+  toggle** beside the select shows the *effective* direction with **contextual labels** (A–Z/Z–A for
+  text fields, Oldest/Newest for date fields) and flips `filters.dir`; **changing the sort field resets
+  `dir`** to that field's natural default (least-surprising). (3) `dir` rides item 2's URL-state model
+  (added to `EMPTY_FILTERS`/`STRING_KEYS`) so direction is shareable/restored. (4) The sidebar gets
+  `max-height: calc(100vh - space-4*2)` + `overflow-y:auto` so it scrolls internally while staying pinned
+  (the app-header isn't sticky, so viewport-bounding is safe); the mobile drawer rule is untouched.
+  Verified: backend 92/92 (3 new pure tests); full-stack smoke all-pass (temp :5001 `dir` reverses order;
+  headless :5173 toggle→URL + field-reset + sidebar overflow 10/10). Scope: homepage browse only (the
+  Artists page keeps its own separate sort — deferred, as in B3). Spec/plan:
+  `specs/2026-07-21-triage-4-browse-search-polish-design.md`, `plans/2026-07-21-triage-4-browse-search-polish.md`.
 
 - **2026-07-21 — Triage 3b: a Featured management view (admin scope + quick unfeature), unfeature-only
   (built, pending merge).** The curator's triage-3 smoke surfaced that the per-song workbench toggle gave
@@ -808,6 +826,14 @@ Newest first. What actually happened each session.
   the filters use, so the public page can only render a value you could also filter by. The smoke's two
   UI follow-ups (uniform collapsible sidebar sections with descriptions; faster tooltips) became their
   own spec + plan rather than scope creep, gated on triage 4 merging first.
+
+- **2026-07-21 (Triage 4 — browse/search polish, MERGED)** — On
+  `session-triage-4-browse-polish`: bidirectional sort via a whitelisted `dir` param + a pure
+  `browseFilters.buildOrderBy` (replaced the inline `/search` switch, dropped the dead audio-feature
+  sorts); a frontend direction toggle with contextual labels that resets on sort-field change; `dir`
+  persisted in the URL (item-2 model); and an independently-scrolling filter sidebar (`max-height` +
+  `overflow-y:auto`). Backend 92/92 (3 new `buildOrderBy` tests); full-stack smoke all-pass (temp :5001
+  `dir` reverses order; headless :5173 sort/sidebar 10/10). Merged to `main` with triage 1a+1b already in place; the three-file conflict (browseUrlState keys, browseFilters tests, this file) was additive and resolved by keeping both sides.
 
 - **2026-07-21 (Triage 3b — Featured management view, built + verified, pending merge)** — On
   `session-triage-3b-featured-manage` (follow-up to triage 3 from the curator's smoke): an admin **Featured

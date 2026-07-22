@@ -314,7 +314,8 @@ components are browse filters (OR within, AND across) with exclude-self counts. 
 BUILT+merged** (`bf2f1da`, URL query params via `useSearchParams` + a sessionStorage layer for Home);
 (3) ☑ **featured-songs redesign — DONE, merged `6718cec`** (⚠ pending curator smoke): curated pins +
 recency fill, cycle a random 4 when >4 pinned, restored workbench Featured toggle, dropped the card date;
-(4) browse/search polish (sidebar scroll + bidirectional sort — **extends item 2's URL-state model**); (5) lyric highlights from the translation + multi-language `songs.language`; then
+(4) ☑ **browse/search polish — BUILT** (`session-triage-4-browse-polish`, pending merge): bidirectional
+sort via a pure `buildOrderBy` + `dir` URL param, sidebar independent scroll; (5) lyric highlights from the translation + multi-language `songs.language`; then
 **B4** (with vector "You might also like"); then (6) About analysis-explainer + AI-disclosure page. _(1b
 scalar filters did reactivate — the reanalysis normalized the scalars to codebook enums, so they shipped
 with 1a on 2026-07-22.)_ _

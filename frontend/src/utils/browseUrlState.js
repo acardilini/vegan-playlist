@@ -18,7 +18,7 @@ export const EMPTY_FILTERS = {
   facet_groups: [], facet_subdims: [],
   perspective: [], lyrical_tone: [], intensity: [], clarity: [],
   focus_amount: [], target_audience: [], emotions: [],
-  sort_by: 'year',
+  sort_by: 'year', dir: '',
 };
 
 const ARRAY_KEYS = [
@@ -27,7 +27,7 @@ const ARRAY_KEYS = [
   'facet_groups', 'facet_subdims',
   ...SCALAR_KEYS,
 ];
-const STRING_KEYS = ['year_from', 'year_to'];
+const STRING_KEYS = ['year_from', 'year_to', 'dir'];
 const BOOL_KEYS = ['has_youtube', 'has_analysis', 'on_spotify'];
 const DEFAULT_SORT = 'year';
 

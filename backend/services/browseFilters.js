@@ -84,4 +84,21 @@ function joinSql(joins) {
   return s;
 }
 
-module.exports = { buildWhere, joinSql };
+const SORT_COLUMNS = {
+  title:      { expr: 's.title',                                    def: 'ASC',  nulls: '' },
+  artist:     { expr: 'MIN(a.name)',                                def: 'ASC',  nulls: '' },
+  year:       { expr: 'al.release_date',                            def: 'DESC', nulls: ' NULLS LAST' },
+  date_added: { expr: 'COALESCE(s.playlist_added_at, s.date_added)', def: 'DESC', nulls: ' NULLS LAST' },
+};
+
+// Pure ORDER BY builder. `dir` is whitelisted to asc/desc; anything else uses the
+// field default. Unknown fields fall back to the popularity default.
+function buildOrderBy(sortBy, dir) {
+  const col = SORT_COLUMNS[sortBy];
+  if (!col) return 'ORDER BY s.popularity DESC, s.title ASC';
+  const d = dir === 'asc' ? 'ASC' : dir === 'desc' ? 'DESC' : col.def;
+  const tiebreak = sortBy === 'title' ? '' : ', s.title ASC';
+  return `ORDER BY ${col.expr} ${d}${col.nulls}${tiebreak}`;
+}
+
+module.exports = { buildWhere, joinSql, buildOrderBy };
