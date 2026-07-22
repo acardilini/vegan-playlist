@@ -2343,3 +2343,29 @@
 /* B3 rework — zero-count (unavailable under current filters) */
 .filter-option.is-zero { opacity: 0.4; cursor: not-allowed; }
 .filter-option.is-zero input { cursor: not-allowed; }
+
+/* ---- InfoTip: hover/focus tooltip replacing the native `title` ---- */
+.infotip { position: relative; display: inline-flex; align-items: center; gap: 4px; }
+.infotip-trigger { cursor: help; }
+
+.infotip-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.05rem; height: 1.05rem; padding: 0;
+  border: 1px solid var(--border-hairline); border-radius: 50%;
+  background: none; color: var(--text-secondary);
+  font-size: 0.7rem; font-style: italic; line-height: 1; cursor: help;
+}
+.infotip-icon:hover, .infotip-icon:focus-visible { color: var(--text-primary); }
+
+.infotip-bubble {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+  width: max-content; max-width: 28rem;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-hairline); border-radius: var(--radius-sm);
+  color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4;
+  text-align: left; white-space: normal; pointer-events: none;
+  /* The bubble is nested inside its trigger, so it inherits label styling —
+     .la-attr-label is uppercase+tracked, which turned a sentence into shouting. */
+  text-transform: none; letter-spacing: normal; font-weight: 400; font-style: normal;
+}

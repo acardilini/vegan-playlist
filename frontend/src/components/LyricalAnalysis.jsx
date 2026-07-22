@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { subDimensionColor } from '../styles/subDimensionPalette';
+import InfoTip from './InfoTip';
 
 // Dimension render order + display headings.
 const DIMENSIONS = [
@@ -30,6 +31,7 @@ function LyricalAnalysis({ analysis }) {
 
   const attributes = analysis.attributes || [];
   const emotions = analysis.emotions || [];
+  const dimDescriptions = analysis.dimension_descriptions || {};
   const dims = DIMENSIONS
     .map(([key, heading]) => [key, heading, analysis[key] || []])
     .filter(([, , codes]) => codes.length > 0);
@@ -44,9 +46,14 @@ function LyricalAnalysis({ analysis }) {
       {(attributes.length > 0 || emotions.length > 0) && (
         <div className="la-attributes">
           {attributes.map(a => (
-            <div key={a.label} className="la-attr" title={a.definition || undefined}>
-              <span className="la-attr-label">{a.label}</span>
-              <span className="la-attr-value">{a.value}</span>
+            <div key={a.label} className="la-attr">
+              <span className="la-attr-label">
+                {a.label}
+                <InfoTip icon text={a.component_description} label={`About ${a.label}`} />
+              </span>
+              <InfoTip text={a.definition}>
+                <span className="la-attr-value">{a.value}</span>
+              </InfoTip>
             </div>
           ))}
           {emotions.length > 0 && (
@@ -62,7 +69,10 @@ function LyricalAnalysis({ analysis }) {
         const legend = legendFor(codes);
         return (
           <div key={key} className="la-dimension">
-            <h4 className="la-dim-heading">{heading}</h4>
+            <h4 className="la-dim-heading">
+              {heading}
+              <InfoTip icon text={dimDescriptions[key]} label={`About ${heading}`} />
+            </h4>
             {legend.length > 0 && (
               <div className="la-legend">
                 {legend.map(sd => (
@@ -75,15 +85,15 @@ function LyricalAnalysis({ analysis }) {
             )}
             <div className="la-chips">
               {codes.map((c, i) => (
-                <span
-                  key={`${c.code}-${i}`}
-                  className="la-chip"
-                  style={{ borderColor: subDimensionColor(c.sub_dimension) }}
-                  title={c.definition || undefined}
-                >
-                  <span className="la-chip-dot" style={{ backgroundColor: subDimensionColor(c.sub_dimension) }} />
-                  {c.label}
-                </span>
+                <InfoTip key={`${c.code}-${i}`} text={c.definition}>
+                  <span
+                    className="la-chip"
+                    style={{ borderColor: subDimensionColor(c.sub_dimension) }}
+                  >
+                    <span className="la-chip-dot" style={{ backgroundColor: subDimensionColor(c.sub_dimension) }} />
+                    {c.label}
+                  </span>
+                </InfoTip>
               ))}
             </div>
           </div>
