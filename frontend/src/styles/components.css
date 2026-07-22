@@ -2218,6 +2218,22 @@
   border: 1px solid var(--border-hairline); border-radius: var(--radius-md, 8px);
 }
 .la-attr { display: flex; flex-direction: column; gap: 2px; }
+
+/* Emotions can carry three values; give the row the full grid width so it reads on one
+   line instead of wrapping inside a 160px column. */
+.la-attr-emotions { grid-column: 1 / -1; }
+
+/* Five dimension blocks stacked one-per-row made the page very long. */
+.la-dimensions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  .la-dimensions { grid-template-columns: 1fr; }
+}
 .la-attr-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
 .la-attr-value { color: var(--text-primary); }
 .la-dimension { display: flex; flex-direction: column; gap: var(--space-2); }

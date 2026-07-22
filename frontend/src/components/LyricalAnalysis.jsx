@@ -59,12 +59,13 @@ function LyricalAnalysis({ analysis }) {
           {emotions.length > 0 && (
             <div className="la-attr la-attr-emotions">
               <span className="la-attr-label">Emotions</span>
-              <span className="la-attr-value">{emotions.join(', ')}</span>
+              <span className="la-attr-value">{emotions.join('; ')}</span>
             </div>
           )}
         </div>
       )}
 
+      <div className="la-dimensions">
       {dims.map(([key, heading, codes]) => {
         const legend = legendFor(codes);
         return (
@@ -99,6 +100,7 @@ function LyricalAnalysis({ analysis }) {
           </div>
         );
       })}
+      </div>
 
       {hasEvidence && (
         <div className="la-evidence-wrap">
