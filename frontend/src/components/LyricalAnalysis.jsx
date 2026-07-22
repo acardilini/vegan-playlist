@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { subDimensionColor } from '../styles/subDimensionPalette';
+import InfoTip from './InfoTip';
 
 // Dimension render order + display headings.
 const DIMENSIONS = [
@@ -10,19 +11,9 @@ const DIMENSIONS = [
   ['moral_frames', 'Moral frames'],
 ];
 
-const titleCase = (s) =>
-  String(s || '').split('_').map(w => (w ? w[0].toUpperCase() + w.slice(1) : w)).join(' ');
-
-// Distinct sub-dimensions present in a dimension's codes, in first-appearance order.
-function legendFor(codes) {
-  const seen = new Map();
-  for (const c of codes) {
-    if (c.sub_dimension && !seen.has(c.sub_dimension)) {
-      seen.set(c.sub_dimension, c.sub_dimension_label || titleCase(c.sub_dimension));
-    }
-  }
-  return [...seen.entries()].map(([id, label]) => ({ id, label }));
-}
+// The per-dimension sub-dimension legend (swatch + label rows) was removed as clutter
+// (curator, 2026-07-22). The chips keep their sub-dimension colour on border and dot, so
+// the colour coding survives without a key above every dimension.
 
 function LyricalAnalysis({ analysis }) {
   const [showEvidence, setShowEvidence] = useState(false);
@@ -44,51 +35,44 @@ function LyricalAnalysis({ analysis }) {
       {(attributes.length > 0 || emotions.length > 0) && (
         <div className="la-attributes">
           {attributes.map(a => (
-            <div key={a.label} className="la-attr" title={a.definition || undefined}>
+            <div key={a.label} className="la-attr">
               <span className="la-attr-label">{a.label}</span>
-              <span className="la-attr-value">{a.value}</span>
+              <InfoTip text={a.definition}>
+                <span className="la-attr-value">{a.value}</span>
+              </InfoTip>
             </div>
           ))}
           {emotions.length > 0 && (
             <div className="la-attr la-attr-emotions">
               <span className="la-attr-label">Emotions</span>
-              <span className="la-attr-value">{emotions.join(', ')}</span>
+              <span className="la-attr-value">{emotions.join('; ')}</span>
             </div>
           )}
         </div>
       )}
 
+      <div className="la-dimensions">
       {dims.map(([key, heading, codes]) => {
-        const legend = legendFor(codes);
         return (
           <div key={key} className="la-dimension">
             <h4 className="la-dim-heading">{heading}</h4>
-            {legend.length > 0 && (
-              <div className="la-legend">
-                {legend.map(sd => (
-                  <span key={sd.id} className="la-legend-item">
-                    <span className="la-swatch" style={{ backgroundColor: subDimensionColor(sd.id) }} />
-                    {sd.label}
-                  </span>
-                ))}
-              </div>
-            )}
             <div className="la-chips">
               {codes.map((c, i) => (
-                <span
-                  key={`${c.code}-${i}`}
-                  className="la-chip"
-                  style={{ borderColor: subDimensionColor(c.sub_dimension) }}
-                  title={c.definition || undefined}
-                >
-                  <span className="la-chip-dot" style={{ backgroundColor: subDimensionColor(c.sub_dimension) }} />
-                  {c.label}
-                </span>
+                <InfoTip key={`${c.code}-${i}`} text={c.definition}>
+                  <span
+                    className="la-chip"
+                    style={{ borderColor: subDimensionColor(c.sub_dimension) }}
+                  >
+                    <span className="la-chip-dot" style={{ backgroundColor: subDimensionColor(c.sub_dimension) }} />
+                    {c.label}
+                  </span>
+                </InfoTip>
               ))}
             </div>
           </div>
         );
       })}
+      </div>
 
       {hasEvidence && (
         <div className="la-evidence-wrap">

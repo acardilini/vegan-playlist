@@ -49,6 +49,11 @@ function codeLabel(key, code) {
   return (e && e.label) || titleCase(code);
 }
 
+// The codebook's one-line description of a whole component (not of an individual code).
+function componentDescription(key) {
+  return (codebook[key] && codebook[key].description) || '';
+}
+
 function codeDefinition(key, code) {
   const e = CODES[key] && CODES[key].get(code);
   return (e && e.definition) || '';
@@ -90,6 +95,6 @@ function scalarSelectionClauses(sel, startIndex, alias = 'sca') {
 
 module.exports = {
   COMPONENTS, COMPONENT_KEYS, SUPPRESSED,
-  isSuppressed, codeLabel, codeDefinition, optionsFor, cleanSelection,
+  isSuppressed, codeLabel, codeDefinition, componentDescription, optionsFor, cleanSelection,
   scalarSelectionClauses,
 };

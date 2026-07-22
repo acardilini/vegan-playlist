@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { subDimensionColor } from '../styles/subDimensionPalette';
+import FilterSection from './FilterSection';
 
 const DIM_ORDER = ['themes', 'targets', 'actions', 'tactics', 'moral_frames'];
 const keyOf = (dimKey, id) => `${dimKey}:${id}`;
@@ -9,35 +9,25 @@ const keyOf = (dimKey, id) => `${dimKey}:${id}`;
 // read distinctly. A code = exact term; a group/sub-dimension = OR-term over its codes;
 // all AND together (logic lives in the backend). Selecting an ancestor covers
 // (checked+disabled) its descendants.
-function ThemeFacetTree({ facets, selected, onToggle, codedCount, selectedGroups = [], selectedSubdims = [], onToggleGroup, onToggleSubdim }) {
-  const [open, setOpen] = useState(new Set(['themes']));
+function ThemeFacetTree({ facets, selected, onToggle, selectedGroups = [], selectedSubdims = [], onToggleGroup, onToggleSubdim }) {
   const dims = DIM_ORDER.filter(k => facets && facets[k] && facets[k].sub_dimensions?.length);
   if (dims.length === 0) return null;
 
-  const toggleOpen = (k) => { const n = new Set(open); n.has(k) ? n.delete(k) : n.add(k); setOpen(n); };
   const subSel = (dimKey, id) => selectedSubdims.includes(keyOf(dimKey, id));
   const grpSel = (dimKey, id) => selectedGroups.includes(keyOf(dimKey, id));
   const codeSel = (dimKey, code) => (selected[dimKey] || []).includes(code);
 
   return (
-    <div className="filter-section theme-facet-tree">
-      <h3 className="filter-title">Themes &amp; advocacy</h3>
-      <p className="filter-note">
-        Only songs with lyrics analysis ({codedCount}) are counted here. Pick a group or sub-dimension for any code inside it; picks narrow together.
-      </p>
-
-      <div className="filter-options scrollable">
+    <div className="theme-facet-tree">
+      <div className="filter-options">
         {dims.map((dimKey) => {
           const dim = facets[dimKey];
-          const isOpen = open.has(dimKey);
           return (
-            <div key={dimKey} className="facet-dim">
-              <button type="button" className="facet-dim-header" aria-expanded={isOpen} onClick={() => toggleOpen(dimKey)}>
-                <span>{isOpen ? '▼' : '▶'} {dim.label}</span>
-                <span className="filter-count">({dim.count})</span>
-              </button>
-
-              {isOpen && dim.sub_dimensions.map((sub) => {
+            <FilterSection
+              key={dimKey}
+              title={`${dim.label} (${dim.count})`}
+            >
+              {dim.sub_dimensions.map((sub) => {
                 const hue = subDimensionColor(sub.id);
                 const subOn = subSel(dimKey, sub.id);
                 const subZero = sub.count === 0 && !subOn;
@@ -94,7 +84,7 @@ function ThemeFacetTree({ facets, selected, onToggle, codedCount, selectedGroups
                   </div>
                 );
               })}
-            </div>
+            </FilterSection>
           );
         })}
       </div>

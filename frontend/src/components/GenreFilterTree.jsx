@@ -20,9 +20,7 @@ function GenreFilterTree({ tree, selectedGenres, selectedParents, onToggleParent
   };
 
   return (
-    <div className="filter-section hierarchical-genre-filter">
-      <h3 className="filter-title">Genre</h3>
-
+    <div className="hierarchical-genre-filter">
       <div className="filter-search">
         <input
           type="text"

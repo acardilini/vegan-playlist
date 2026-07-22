@@ -314,10 +314,26 @@ keep/rebuild/drop/defer decisions are recorded in
   **effective-genre** tree (song genre, else primary artist's genre — ~1,003 live songs covered);
   **thematic analysis facet tree** with selectable codes / groups / sub-dimensions (AND-of-terms, a
   group/sub-dimension matches any code inside it); song-length / availability (Spotify·YouTube) /
-  has-analysis / language filters; removable filter chips; sorting (Title/Artist/Year/Date-added);
-  pagination. ✅ _(B3, 2026-07-20.)_
+  has-analysis / language filters; removable filter chips; sorting (Title/Artist/Year/Date-added)
+  **with a direction toggle**; pagination. ✅ _(B3, 2026-07-20; sort direction + independently
+  scrolling sidebar, triage 4, 2026-07-22.)_
+- **Lyric-metadata filters:** the seven scalar analysis components (Perspective, Tone, Intensity,
+  Clarity, Focus, Audience, Emotions) as browse filters — **OR within a component, AND across** —
+  with exclude-self counts, read from the enum-clean analysis tier. ✅ _(Triage 1b, 2026-07-22.)_
+- **Browse state in the URL:** filters, sort, direction, search and page are all query params, with a
+  sessionStorage layer so a param-less return to `/` restores the last browse. ✅ _(Triage 2.)_
+- **Sidebar presentation:** every filter group is a uniform collapsible section (only Genre & style
+  open by default), with the five theme dimensions and seven metadata components nested as the same
+  visual unit; visible help is usage-only (caveats, what the options mean). The definitional copy for
+  each dimension/component is served by the API but **deliberately not shown in the sidebar** — it is
+  destined for the About pages. ✅ _(Presentation batch, 2026-07-22.)_
 - **Featured songs:** curated highlighting on the homepage (`featured` field). ✅
 - **Song detail:** coding categories, platform links, similar-songs navigation. ✅
+- **Lyrical analysis on the song page:** an attributes card (the seven codebook components, resolved
+  to labels, with the code's definition on hover) plus theme chips per dimension, laid out two-up;
+  evidence quotes behind a toggle. Read from **two analysis tiers** — code dimensions from
+  `gemma4:key_focus_pipeline`, scalars from `gemini-3.5-flash-lite` — so a song shows whatever it has.
+  ✅ _(B2; two-tier read + Audience row, triage 1a, 2026-07-22.)_
 - **YouTube integration:** per-song video embeds with a primary-video concept. ✅
 - **Lyrics links:** lyrics lookup/links per song. ✅
 - **Artist pages:** stats, discography tracking, advocacy notes. ✅

@@ -6,6 +6,7 @@ import GenreFilterTree from './GenreFilterTree';
 import ThemeFacetTree from './ThemeFacetTree';
 import ScalarFacetGroups from './ScalarFacetGroups';
 import FilterChips from './FilterChips';
+import FilterSection from './FilterSection';
 
 const DIM_KEYS = ['themes', 'targets', 'actions', 'tactics', 'moral_frames'];
 
@@ -281,30 +282,45 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
 
   const filterGroups = (
     <div className="sidebar-groups">
-      <GenreFilterTree
-        tree={filterOptions.genre_tree}
-        selectedGenres={filters.genres}
-        selectedParents={filters.parent_genres}
-        onToggleGenre={onToggleGenre}
-        onToggleParent={onToggleParent}
-      />
-      <ThemeFacetTree
-        facets={facets}
-        selected={filters}
-        onToggle={onToggleFacet}
-        codedCount={filterOptions.availability?.coded_count || 0}
-        selectedGroups={filters.facet_groups}
-        selectedSubdims={filters.facet_subdims}
-        onToggleGroup={onToggleGroup}
-        onToggleSubdim={onToggleSubdim}
-      />
-      <ScalarFacetGroups
-        groups={scalarFacets}
-        selected={filters}
-        onToggle={(key, code, checked) => toggleInArray(key, code, checked)}
-      />
-      <div className="filter-section">
-        <h3 className="filter-title">Year range</h3>
+      <FilterSection title="Genre & style" count={filters.parent_genres.length + filters.genres.length} defaultOpen
+        note="Picking a parent selects everything inside it.">
+        <GenreFilterTree
+          tree={filterOptions.genre_tree}
+          selectedGenres={filters.genres}
+          selectedParents={filters.parent_genres}
+          onToggleGenre={onToggleGenre}
+          onToggleParent={onToggleParent}
+        />
+      </FilterSection>
+
+      <FilterSection
+        title="Themes & advocacy"
+        count={DIM_KEYS.reduce((n, k) => n + filters[k].length, 0) + filters.facet_groups.length + filters.facet_subdims.length}
+        note={`Only songs with lyrics analysis (${filterOptions.availability?.coded_count || 0}) are counted here. Pick a group or sub-dimension for any code inside it; picks narrow together.`}
+      >
+        <ThemeFacetTree
+          facets={facets}
+          selected={filters}
+          onToggle={onToggleFacet}
+          selectedGroups={filters.facet_groups}
+          selectedSubdims={filters.facet_subdims}
+          onToggleGroup={onToggleGroup}
+          onToggleSubdim={onToggleSubdim}
+        />
+      </FilterSection>
+
+      <FilterSection
+        title="Lyric metadata"
+        count={SCALAR_KEYS.reduce((n, k) => n + filters[k].length, 0)}
+      >
+        <ScalarFacetGroups
+          groups={scalarFacets}
+          selected={filters}
+          onToggle={(key, code, checked) => toggleInArray(key, code, checked)}
+        />
+      </FilterSection>
+
+      <FilterSection title="Year range" count={(filters.year_from || filters.year_to) ? 1 : 0}>
         <div className="range-inputs">
           <input type="number" placeholder={yr.min_year ? `From ${yr.min_year}` : 'From'}
             value={filters.year_from} onChange={(e) => setScalar('year_from', e.target.value)}
@@ -314,9 +330,10 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             value={filters.year_to} onChange={(e) => setScalar('year_to', e.target.value)}
             min={yr.min_year} max={yr.max_year} />
         </div>
-      </div>
-      <div className="filter-section">
-        <h3 className="filter-title">Song length</h3>
+      </FilterSection>
+
+      <FilterSection title="Song length" count={filters.lengths.length}
+        note="Short is under 2 minutes, long is over 4.">
         <div className="filter-options">
           {(filterOptions.length_buckets || []).map(b => {
             const selected = filters.lengths.includes(b.value);
@@ -330,9 +347,9 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             );
           })}
         </div>
-      </div>
-      <div className="filter-section">
-        <h3 className="filter-title">Available on</h3>
+      </FilterSection>
+
+      <FilterSection title="Available on" count={(filters.on_spotify ? 1 : 0) + (filters.has_youtube ? 1 : 0)}>
         <div className="filter-options">
           <label className={`filter-option ${(filterOptions.availability?.on_spotify || 0) === 0 && !filters.on_spotify ? 'is-zero' : ''}`}>
             <input type="checkbox" checked={filters.on_spotify}
@@ -347,9 +364,10 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             <span className="filter-label">Has YouTube<span className="filter-count">({filterOptions.availability?.has_youtube || 0})</span></span>
           </label>
         </div>
-      </div>
-      <div className="filter-section">
-        <h3 className="filter-title">Analysis</h3>
+      </FilterSection>
+
+      <FilterSection title="Analysis" count={filters.has_analysis ? 1 : 0}
+        note="Not every song has been analysed yet.">
         <div className="filter-options">
           <label className={`filter-option ${(filterOptions.availability?.has_analysis || 0) === 0 && !filters.has_analysis ? 'is-zero' : ''}`}>
             <input type="checkbox" checked={filters.has_analysis}
@@ -358,10 +376,10 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             <span className="filter-label">Has lyrics analysis<span className="filter-count">({filterOptions.availability?.has_analysis || 0})</span></span>
           </label>
         </div>
-      </div>
+      </FilterSection>
+
       {(filterOptions.languages?.length > 0) && (
-        <div className="filter-section">
-          <h3 className="filter-title">Language</h3>
+        <FilterSection title="Language" count={filters.languages.length}>
           <div className="filter-options">
             {filterOptions.languages.map(l => {
               const selected = filters.languages.includes(l.value);
@@ -375,7 +393,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
               );
             })}
           </div>
-        </div>
+        </FilterSection>
       )}
     </div>
   );

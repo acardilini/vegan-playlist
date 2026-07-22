@@ -81,14 +81,17 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   `SearchAndFilter.jsx` and `components.css` auto-merged. Merged `main`: backend **117/117**, lint 0
   errors, build clean. Branches `session-triage-4-browse-polish`, `session-triage-1a1b-analysis-tiers`
   and `integration-triage-4` deleted (local + remote).
-- **Next session:** execute the **filter/analysis presentation batch** on `session-presentation-polish`
-  (spec + plan written: `specs/2026-07-22-filter-and-analysis-presentation-design.md`,
-  `plans/2026-07-22-filter-and-analysis-presentation.md`). **Task 1 is already done** — the API now
-  serves a description per component and per dimension. Tasks 2–5 (the `FilterSection` primitive, the
-  uniform sidebar, `InfoTip`, the two-up song page) were deliberately gated on triage 4 landing, since
-  Task 3 drops the theme tree's inner scroll box in favour of the sidebar's own scroll — which only
-  exists now. Then **Triage 5 — lyric highlights from the translation + multi-language `songs.language`**
-  (needs a brainstorm).
+- **✅ NOTHING PENDING — the filter/analysis presentation batch is merged too.** Eight uniform
+  collapsible sidebar sections (only Genre & style open by default), the five theme dimensions and
+  seven metadata components nested as the same unit, fast `InfoTip` tooltips on attribute values and
+  chips, emotions on one line separated by `;`, and the five dimension blocks two-up. Two rounds of
+  curator smoke removed UI rather than adding it — first the always-on descriptions, then the "i"
+  icons and the song page's colour legends. Backend **121/121**, lint/build clean.
+- **Next session:** **Triage 5 — lyric highlights from the translation + multi-language
+  `songs.language`** (needs a brainstorm). After that: **B4 — Explore vector map** (with the vector
+  "You might also like"), then **triage 6 — the About analysis-explainer + AI-disclosure page**, which
+  now has a concrete job to do: the seven component and five dimension descriptions are already served
+  by the API and deliberately not shown in the browse UI, so that page is where they belong.
   _Triage 1a's DB-cleaning gate is closed — the reanalysis landed 2026-07-22 and 1b shipped with it._
 - **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **merged `a6eb05a`, confirmed
   2026-07-22**) · **2** (persist
@@ -99,8 +102,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   might also like") → triage **6** (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
 - **Last updated:** 2026-07-22 _(triage **1a+1b** merged `a6eb05a` and triage **4** merged `d3887ad`,
   both after curator smoke — **the curator-triage backlog 1–4 is now fully merged with no branches
-  pending**. Merged `main`: backend 117/117. Next up is the filter/analysis presentation batch on
-  `session-presentation-polish`, whose Task 1 (API-served descriptions) is already committed.)_
+  pending**, and the **filter/analysis presentation batch** merged after it — uniform collapsible
+  sidebar sections, fast tooltips, two-up song-page dimensions, with two rounds of curator smoke
+  removing UI (descriptions, then the "i" icons and colour legends) rather than adding it. Merged
+  `main`: backend **121/121**, lint/build clean, **no branches pending**. Next: triage 5.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -224,6 +229,47 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-22 — Filter/analysis presentation: two shared primitives rather than more one-off markup,
+  and the description text lives in the curator's own files.** The curator's 1a+1b smoke produced two UI
+  complaints — only some sidebar sections expanded, and tooltips took about a second to appear. Both had
+  the same root cause: no shared primitive. Every sidebar group built its own header (`GenreFilterTree`
+  and `ThemeFacetTree` each had an `<h3>`, four groups were inline `<div>`s, only `ScalarFacetGroups`
+  collapsed), and hover help was the native `title` attribute, whose ~1s delay is browser-controlled and
+  unstylable. Decisions: (1) one **`FilterSection`** — collapsible header, selected-count badge,
+  description revealed on expand — used by **all eight** top-level groups and, nested, by the five theme
+  dimensions and seven metadata components, so those two families finally read as the same unit;
+  (2) one **`InfoTip`** (~120ms hover, immediate on keyboard focus, Escape to dismiss) replacing every
+  native `title`; (3) **descriptions
+  are served by the API**, not hardcoded: component text from the codebook, and five new dimension
+  descriptions **written into `taxonomy.json`** as `hierarchy.<dim>.description` after curator approval,
+  keeping all vocabulary in the curator's artifacts; (4) **only Genre & style opens by default** — the
+  sidebar starts compact; (5) the theme tree's inner `scrollable` box was **dropped** — with every
+  dimension collapsible it nested a 200px scroll area inside the sidebar's own scroll (which triage 4
+  had just restored); (6) the tooltip bubble renders **below its trigger with no flip logic** — flipping
+  needs runtime measurement and a below-positioned bubble cannot collide with the viewport top.
+  **Refined twice by the curator's smoke of this batch, ending with less UI than it started with.**
+  Round 1: always-on descriptions under every expanded group read as clutter, so `FilterSection`
+  split **`description`** (what the filter *is*) onto a heading "i" tooltip from **`note`** (how to
+  *use* it — caveats, what the options mean) which stayed visible. Round 2: **the icons were clutter
+  too** — so every "i" trigger was removed from both the sidebar and the song page, along with the
+  song page's per-dimension colour **legends**. **Final state:** visible help is usage-only; the
+  chips keep their sub-dimension colour on border and dot, so the colour coding survives without a
+  key above each dimension; hover tooltips remain on attribute values and chips (they replaced the
+  native `title`, and are not icons). **The definitional copy is still served by the API and is
+  deliberately unused by these two surfaces — it is destined for the About pages** (triage 6), which
+  is why Task 1's backend work was kept rather than reverted. Dead code was removed rather than left
+  as unused branches: `InfoTip`'s icon mode and `label` prop, `.infotip-icon`/`.filter-section-head`/
+  `.la-legend`/`.la-swatch`, and `legendFor`/`titleCase`.
+  **Caught in the live check:** the bubble is nested inside its trigger, so inside the uppercase,
+  letter-spaced `.la-attr-label` it rendered a whole sentence as shouting; it now resets
+  `text-transform`/`letter-spacing`/weight/style. Song page also: emotions span the full attributes grid
+  joined with `; ` (they were wrapping inside a 160px cell), and the five dimension blocks sit two-up
+  above 700px. Verified: backend **121/121**; lint 0 errors; headless checks of the sidebar structure,
+  every tooltip surface, the two-up layout at both widths, and a full filter regression
+  (genre 1332→357, +perspective→47, sort direction coexisting, reload restoring, Clear all returning to
+  1332). Spec/plan: `specs/2026-07-22-filter-and-analysis-presentation-design.md`,
+  `plans/2026-07-22-filter-and-analysis-presentation.md`.
 
 - **2026-07-22 — Triage 1a+1b: the analysis read becomes a genuine two-tier split (a different split than
   the handoff assumed), and the scalar browse filters are un-deferred because the data got clean.** The
@@ -806,6 +852,21 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-22 (Filter/analysis presentation — built + verified, pending curator smoke)** — On
+  `session-presentation-polish`, six tasks from the curator's 1a+1b smoke follow-ups. New shared
+  `FilterSection` (every sidebar group collapses identically, with a description on expand) and
+  `InfoTip` (~120ms tooltip replacing the native `title`). The sidebar is now eight uniform top-level
+  sections — Genre & style, Themes & advocacy, Lyric metadata, Year range, Song length, Available on,
+  Analysis, Language — with the five theme dimensions and seven metadata components nested as the same
+  visual unit. Song page: emotions on one full-width line separated by `;`, and a two-column dimension
+  layout. Description text is API-served (component text from the codebook, five new dimension
+  descriptions added to `taxonomy.json`) — but **two rounds of curator smoke took it back out of these
+  screens**: first the always-on prose under each expanded group, then the "i" tooltips that had
+  replaced it, plus the song page's per-dimension colour legends. The copy is kept on the API for the
+  About pages; the chips' own colours carry the sub-dimension coding without a legend. Backend
+  **121/121** (4 new); lint 0 errors; headless verification of structure, tooltips, layout at two
+  widths, and a full filter regression. Merged to `main`.
 
 - **2026-07-22 (Triage 1a+1b — two-tier analysis read + scalar browse filters, MERGED `a6eb05a` after
   curator smoke)** — On `session-triage-1a1b-analysis-tiers`, seven tasks, subagent-driven with a review gate each.
