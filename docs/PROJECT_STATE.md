@@ -247,6 +247,14 @@ Newest first. Each entry: date · decision · why.
   dimension collapsible it nested a 200px scroll area inside the sidebar's own scroll (which triage 4
   had just restored); (6) the tooltip bubble renders **below its trigger with no flip logic** — flipping
   needs runtime measurement and a below-positioned bubble cannot collide with the viewport top.
+  **Refined after the curator's smoke of this batch:** always-on descriptions under every expanded
+  group read as clutter, so `FilterSection` now separates **`description`** (what the filter *is* —
+  hover-only, behind an "i" on the heading) from **`note`** (how to *use* it — caveats and what the
+  options mean, still visible). Every definitional sentence, including all twelve dimension/component
+  descriptions, moved to hover; the coded-count caveat, the group/sub-dimension instruction, the
+  parent-selects-children hint and the short/long definition stayed visible. The icon is a **sibling**
+  of the toggle button, not a child — a `<button>` inside a `<button>` is invalid, and this codebase
+  has shipped that bug before; verified 0 nested buttons.
   **Caught in the live check:** the bubble is nested inside its trigger, so inside the uppercase,
   letter-spaced `.la-attr-label` it rendered a whole sentence as shouting; it now resets
   `text-transform`/`letter-spacing`/weight/style. Song page also: emotions span the full attributes grid
@@ -848,7 +856,9 @@ Newest first. What actually happened each session.
   visual unit, each carrying its own description. Descriptions are API-served: component text from the
   codebook, five new dimension descriptions added to `taxonomy.json`. Song page gained "i" icons on the
   seven component labels and five dimension headings, emotions on one full-width line separated by `;`,
-  and a two-column dimension layout. Backend **121/121** (4 new); lint 0 errors; headless verification
+  and a two-column dimension layout. After the curator's smoke of the batch, sidebar descriptions moved to
+  hover ("i" on each heading) while usage notes stayed visible. Backend **121/121** (4 new); lint 0
+  errors; headless verification
   of structure, tooltips, layout at two widths, and a full filter regression. Not yet merged — awaiting
   the curator's look at the restructured sidebar.
 
