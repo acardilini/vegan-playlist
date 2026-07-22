@@ -44,7 +44,7 @@ function LyricalAnalysis({ analysis }) {
       {(attributes.length > 0 || emotions.length > 0) && (
         <div className="la-attributes">
           {attributes.map(a => (
-            <div key={a.label} className="la-attr">
+            <div key={a.label} className="la-attr" title={a.definition || undefined}>
               <span className="la-attr-label">{a.label}</span>
               <span className="la-attr-value">{a.value}</span>
             </div>
@@ -52,7 +52,7 @@ function LyricalAnalysis({ analysis }) {
           {emotions.length > 0 && (
             <div className="la-attr la-attr-emotions">
               <span className="la-attr-label">Emotions</span>
-              <span className="la-attr-value">{emotions.map(titleCase).join(', ')}</span>
+              <span className="la-attr-value">{emotions.join(', ')}</span>
             </div>
           )}
         </div>
