@@ -79,20 +79,23 @@ async function getSongAnalysis(db, songId) {
   const a = r.rows[0];
   if (!a || (!a.has_code && !a.has_scalar)) return null;
 
-  // Compact attributes card: the six single-valued components, suppressed/null dropped.
+  // Compact attributes card: the six single-valued components. cleanSelection drops null,
+  // suppressed AND off-codebook values in one pass — the same gate the filters use, so the
+  // page can only ever show a value you could also filter by. That matters: a pipeline re-run
+  // has shipped typo'd codes (VISVERAL_HORROR…) and template artifacts (EXACT_ENUM_CODE_KEY)
+  // into these columns before, and the label fallback would have rendered them as prose.
   const attributes = [];
   for (const c of codebook.COMPONENTS) {
     if (c.multi) continue;
-    const v = a[c.column];
-    if (!v || codebook.isSuppressed(v)) continue;
+    const [v] = codebook.cleanSelection(c.key, a[c.column]);
+    if (!v) continue;
     attributes.push({
       label: c.heading,
       value: codebook.codeLabel(c.key, v),
       definition: codebook.codeDefinition(c.key, v),
     });
   }
-  const emotions = (a.emotions || [])
-    .filter(e => e && !codebook.isSuppressed(e))
+  const emotions = codebook.cleanSelection('emotions', a.emotions)
     .map(e => codebook.codeLabel('emotions', e));
 
   // NOTE mixed representation: `emotions` below is display labels (mapped via codebook),

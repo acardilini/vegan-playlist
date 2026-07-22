@@ -143,6 +143,28 @@ test('getSongAnalysis drops suppressed scalar values', async () => {
   assert.ok(!labels.includes('Audience'), 'UNSPECIFIED suppressed');
 });
 
+// A pipeline re-run has previously written typo'd codes and prompt-template artifacts into
+// these columns. Display must drop them rather than Title-Case them onto a public page.
+test('getSongAnalysis drops off-codebook scalar values instead of showing them', async () => {
+  const id = await mkSong('ZZZANL OffCodebook');
+  await pool.query(
+    `INSERT INTO song_lyric_analysis
+       (song_id, model_used, perspective, intensity, clarity, emotions,
+        themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, $2, 'EXACT_ENUM_CODE_KEY', 'VISVERAL_HORROR_AND_ABJECTION',
+             'SYSTEMIC_COMMODIFICATION_CRITIQUE', ARRAY['MORAL_OUTRAGE','NOT_A_REAL_EMOTION'],
+             '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
+    [id, analysis.SCALAR_MODEL]);
+  const a = await analysis.getSongAnalysis(pool, id);
+  const labels = a.attributes.map(x => x.label);
+  assert.ok(!labels.includes('Perspective'), 'template artifact dropped, not title-cased');
+  assert.ok(!labels.includes('Intensity'), 'typo code dropped');
+  assert.ok(labels.includes('Clarity'), 'the valid sibling still renders');
+  assert.deepEqual(a.emotions, ['Moral Outrage'], 'unknown emotion dropped, valid one kept');
+  // nothing rendered may be raw or invented text
+  assert.ok(a.attributes.every(x => !/[A-Z]{2,}_/.test(x.value)));
+});
+
 test('facetTree returns the hierarchy with distinct-song counts', async () => {
   await mkCodedSong(); // themes:[killing] (cruelty_suffering/violence), targets:[cows] (farmed_domesticated/mammals)
   const t = await analysis.facetTree(pool);
