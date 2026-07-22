@@ -888,6 +888,16 @@
   cursor: pointer;
 }
 
+/* Heading row: the toggle takes the width, the "i" sits beside it. The icon is a sibling
+   rather than a child because a <button> may not contain a <button>. */
+.filter-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filter-section-head .filter-title-toggle { flex: 1; min-width: 0; }
+
 .filter-section-body {
   display: flex;
   flex-direction: column;
@@ -897,7 +907,7 @@
 
 /* A nested section (a dimension inside Themes & advocacy, a component inside Lyric
    metadata) reads one step quieter than its parent. */
-.filter-section .filter-section-body .filter-section > .filter-title-toggle {
+.filter-section .filter-section-body .filter-section .filter-title-toggle {
   font: var(--text-body-sm, var(--text-label));
   color: var(--text-secondary);
 }

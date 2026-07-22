@@ -283,7 +283,8 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
   const filterGroups = (
     <div className="sidebar-groups">
       <FilterSection title="Genre & style" count={filters.parent_genres.length + filters.genres.length} defaultOpen
-        description="Browse by musical genre. Picking a parent selects everything inside it.">
+        description="Browse by musical genre."
+        note="Picking a parent selects everything inside it.">
         <GenreFilterTree
           tree={filterOptions.genre_tree}
           selectedGenres={filters.genres}
@@ -296,7 +297,8 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       <FilterSection
         title="Themes & advocacy"
         count={DIM_KEYS.reduce((n, k) => n + filters[k].length, 0) + filters.facet_groups.length + filters.facet_subdims.length}
-        description={`What the lyrics are about, coded from the analysis. Only songs with lyrics analysis (${filterOptions.availability?.coded_count || 0}) are counted here. Pick a group or sub-dimension for any code inside it; picks narrow together.`}
+        description="What the lyrics are about, coded from the analysis."
+        note={`Only songs with lyrics analysis (${filterOptions.availability?.coded_count || 0}) are counted here. Pick a group or sub-dimension for any code inside it; picks narrow together.`}
       >
         <ThemeFacetTree
           facets={facets}
@@ -335,7 +337,8 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       </FilterSection>
 
       <FilterSection title="Song length" count={filters.lengths.length}
-        description="Short is under 2 minutes, long is over 4.">
+        description="Filter by how long the track runs."
+        note="Short is under 2 minutes, long is over 4.">
         <div className="filter-options">
           {(filterOptions.length_buckets || []).map(b => {
             const selected = filters.lengths.includes(b.value);
@@ -370,7 +373,8 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       </FilterSection>
 
       <FilterSection title="Analysis" count={filters.has_analysis ? 1 : 0}
-        description="Not every song has been through the lyric analysis yet.">
+        description="Whether the song has been through the lyric analysis."
+        note="Not every song has been analysed yet.">
         <div className="filter-options">
           <label className={`filter-option ${(filterOptions.availability?.has_analysis || 0) === 0 && !filters.has_analysis ? 'is-zero' : ''}`}>
             <input type="checkbox" checked={filters.has_analysis}
