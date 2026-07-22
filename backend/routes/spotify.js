@@ -5,6 +5,7 @@ const { getSubgenres } = require('../utils/genreMapping');
 const analysis = require('../services/analysis');
 const genres_svc = require('../services/genres');
 const browse = require('../services/browseFilters');
+const codebook = require('../services/metadataCodebook');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -494,11 +495,20 @@ router.get('/browse-facets', async (req, res) => {
     const bwAn = browse.buildWhere(f, { exclude: 'analysis', startIndex: 2 });
     const constraint = { joinSql: browse.joinSql(bwAn.joins), where: bwAn.where, params: bwAn.params };
 
+    // One exclude-self constraint per scalar component.
+    const scalarConstraints = {};
+    for (const c of codebook.COMPONENTS) {
+      const bwS = browse.buildWhere(f, { exclude: `scalar:${c.key}`, startIndex: 1 });
+      scalarConstraints[c.key] = {
+        joinSql: browse.joinSql(bwS.joins), where: bwS.where, params: bwS.params,
+      };
+    }
+
     const yearSql = `SELECT MIN(EXTRACT(YEAR FROM release_date)) AS min_year, MAX(EXTRACT(YEAR FROM release_date)) AS max_year
       FROM albums WHERE release_date IS NOT NULL
         AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)`;
 
-    const [gR, lR, aR, tR, langR, facets, yR] = await Promise.all([
+    const [gR, lR, aR, tR, langR, facets, yR, scalar_facets] = await Promise.all([
       pool.query(genreSql, bwG.params),
       pool.query(lengthSql, bwL.params),
       pool.query(availSql, bwA.params),
@@ -506,12 +516,14 @@ router.get('/browse-facets', async (req, res) => {
       pool.query(langSql, bwLang.params),
       analysis.facetTree(pool, constraint),
       pool.query(yearSql),
+      analysis.scalarFacets(pool, scalarConstraints),
     ]);
 
     const lc = lR.rows[0] || {};
     res.json({
       genre_tree: genres_svc.buildGenreTree(gR.rows),
       facets,
+      scalar_facets,
       length_buckets: genres_svc.LENGTH_BUCKETS.map(b => ({ value: b.value, label: b.label, count: lc[b.value] || 0 })),
       availability: {
         on_spotify: aR.rows[0]?.on_spotify || 0,

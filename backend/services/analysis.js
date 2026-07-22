@@ -163,6 +163,44 @@ async function facetTree(db, constraint = null) {
   return out;
 }
 
+// Per-component option counts for the sidebar. `constraints` is keyed by component:
+// { [componentKey]: { joinSql, where: string[], params: any[] } } — each built with that
+// component excluded, so a group's own selection never shrinks its own options.
+// Lives here (not in metadataCodebook) so that module stays DB-free.
+async function scalarFacets(db, constraints = {}) {
+  const out = {};
+  for (const c of codebook.COMPONENTS) {
+    const cn = constraints[c.key] || {};
+    const cParams = cn.params || [];
+    const extraJoin = cn.joinSql || '';
+    const extraWhere = (cn.where && cn.where.length) ? ' AND ' + cn.where.join(' AND ') : '';
+    const modelIdx = cParams.length + 1;
+    // c.column comes from the COMPONENTS whitelist — never user input.
+    const inner = c.multi
+      ? `SELECT DISTINCT s.id AS song_id, e.code AS code
+         FROM songs s${extraJoin}
+         JOIN song_lyric_analysis scf ON scf.song_id = s.id AND scf.model_used = $${modelIdx}
+         CROSS JOIN LATERAL unnest(scf.${c.column}) AS e(code)
+         WHERE s.status = 'included' AND s.published = true${extraWhere}`
+      : `SELECT DISTINCT s.id AS song_id, scf.${c.column} AS code
+         FROM songs s${extraJoin}
+         JOIN song_lyric_analysis scf ON scf.song_id = s.id AND scf.model_used = $${modelIdx}
+         WHERE s.status = 'included' AND s.published = true${extraWhere}`;
+    const rows = (await db.query(
+      `SELECT code, COUNT(DISTINCT song_id)::int AS count FROM (${inner}) t
+       WHERE code IS NOT NULL GROUP BY code`,
+      [...cParams, SCALAR_MODEL])).rows;
+    const counts = new Map(rows.map(r => [r.code, r.count]));
+    out[c.key] = {
+      key: c.key,
+      heading: c.heading,
+      multi: c.multi,
+      options: codebook.optionsFor(c.key).map(o => ({ ...o, count: counts.get(o.code) || 0 })),
+    };
+  }
+  return out;
+}
+
 const FACET_TO_COLUMN = { themes: 'themes', targets: 'topics', actions: 'advocacy', tactics: 'tactics', moral_frames: 'moral_frames' };
 
 // Reverse maps (built once): per facet dimension, group id -> [code ids] and sub-dimension id -> [code ids].
@@ -242,4 +280,4 @@ async function themeCounts(db, limit = 15) {
 
 module.exports = { CODE_MODEL, SCALAR_MODEL, ANY_TIER_SQL, EVIDENCE_DIMS, DIM_TO_TAXONOMY,
   taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree,
-  facetFilterConditions, facetSelectionClauses, themeCounts };
+  scalarFacets, facetFilterConditions, facetSelectionClauses, themeCounts };

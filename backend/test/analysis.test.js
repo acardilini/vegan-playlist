@@ -299,6 +299,33 @@ test('facetSelectionClauses: empty selection needs no join', () => {
   assert.deepEqual(r.params, []);
 });
 
+test('scalarFacets counts distinct live songs per code, in codebook order', async () => {
+  const id = await mkSong('ZZZANL Facet');
+  await addScalarTier(id); // perspective MORAL_ACCUSER_JUDGE, emotions [MORAL_OUTRAGE, SARDONIC_MOCKERY]
+  const f = await analysis.scalarFacets(pool, {});
+  assert.equal(f.perspective.heading, 'Perspective');
+  assert.equal(f.emotions.multi, true);
+  const persp = f.perspective.options.find(o => o.code === 'MORAL_ACCUSER_JUDGE');
+  assert.ok(persp && persp.count >= 1);
+  const emo = f.emotions.options.find(o => o.code === 'SARDONIC_MOCKERY');
+  assert.ok(emo && emo.count >= 1, 'array column is unnested for counting');
+  // zero-count options are kept so the group shape is stable
+  assert.ok(f.perspective.options.length > 1);
+  // suppressed codes never appear as options
+  assert.ok(!f.focus_amount.options.some(o => o.code === 'ABSENCE_OF_FOCUS'));
+});
+
+test('scalarFacets applies a per-component constraint', async () => {
+  const id = await mkSong('ZZZANL FacetConstrained');
+  await addScalarTier(id);
+  await pool.query(`UPDATE songs SET language = 'ZZZ-NoSuchLang' WHERE id = $1`, [id]);
+  const constrained = await analysis.scalarFacets(pool, {
+    perspective: { joinSql: '', where: [`s.language = $1`], params: ['ZZZ-NoSuchLang'] },
+  });
+  const only = constrained.perspective.options.find(o => o.code === 'MORAL_ACCUSER_JUDGE');
+  assert.equal(only.count, 1, 'only the constrained song counts');
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);
