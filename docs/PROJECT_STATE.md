@@ -70,36 +70,37 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Headless (puppeteer) smoke **15/15**; caught + fixed a StrictMode page-reset bug (value-signature ref).
   Also committed a refreshed `vector_space.json` (key-focus coding, B4 input, `2a22e37`). Prior: Fixes
   Round 1 merged to `main` 2026-07-20 (merge `2a07339`)._
-- **⚠ AWAITING CURATOR SMOKE — triage 4, on the integration branch:** triages 2, 3, 3b and 1a+1b are
-  merged + curator-confirmed. **Triage 4 (browse/search polish)** was never clicked through by the
-  curator and could not be smoked from `main` (it wasn't there). Rather than smoke a stale branch, the
-  merge was performed on **`integration-triage-4`** (= `main` + `session-triage-4-browse-polish`) so the
-  curator smokes **exactly what will land**: **(e)** the Sort-by **direction toggle** (A–Z/Z–A,
-  Oldest/Newest) reverses results, shows in the URL, and resets on sort-field change; **(f)** the
-  **filter sidebar scrolls independently** while pinned — the behaviour that reads as "broken" on `main`
-  today, which was never a regression, only an unmerged fix.
-  The three conflicts (measured with `git merge-tree`, not guessed) were all **additive and resolved by
-  keeping both sides**: `frontend/src/utils/browseUrlState.js` (triage 4's `dir` string key alongside
-  1a+1b's seven array keys), `backend/test/browseFilters.test.js` (both suites appended), and this file.
-  `SearchAndFilter.jsx` and `components.css` auto-merged. **On the curator's OK this branch
-  fast-forwards into `main`.**
-- **Next session:** **Smoke + merge triage 4**, then execute the **filter/analysis presentation batch**
-  (spec + plan already written: `specs/2026-07-22-filter-and-analysis-presentation-design.md`,
-  `plans/2026-07-22-filter-and-analysis-presentation.md`) on a fresh branch off `main` — it is
-  deliberately gated on triage 4 landing, since it must not touch the sidebar scroll rule. Then **Triage
-  5 — lyric highlights from the translation + multi-language `songs.language`** (needs a brainstorm).
+- **✅ NO BRANCHES PENDING — the whole triage backlog 1–4 is merged and curator-confirmed.** Triage 4
+  (browse/search polish) merged 2026-07-22 (`d3887ad`) and was smoke-confirmed on all three checks
+  (direction toggle, independent sidebar scroll, and the two branches coexisting). It could not be
+  smoked from `main` — it wasn't there — so rather than smoke a stale branch the merge was prepared on
+  an integration branch and the curator smoked **exactly what landed**; `main` then fast-forwarded.
+  The three conflicts were all **additive, resolved by keeping both sides**:
+  `frontend/src/utils/browseUrlState.js` (triage 4's `dir` string key alongside 1a+1b's seven array
+  keys), `backend/test/browseFilters.test.js` (both suites appended), and this file.
+  `SearchAndFilter.jsx` and `components.css` auto-merged. Merged `main`: backend **117/117**, lint 0
+  errors, build clean. Branches `session-triage-4-browse-polish`, `session-triage-1a1b-analysis-tiers`
+  and `integration-triage-4` deleted (local + remote).
+- **Next session:** execute the **filter/analysis presentation batch** on `session-presentation-polish`
+  (spec + plan written: `specs/2026-07-22-filter-and-analysis-presentation-design.md`,
+  `plans/2026-07-22-filter-and-analysis-presentation.md`). **Task 1 is already done** — the API now
+  serves a description per component and per dimension. Tasks 2–5 (the `FilterSection` primitive, the
+  uniform sidebar, `InfoTip`, the two-up song page) were deliberately gated on triage 4 landing, since
+  Task 3 drops the theme tree's inner scroll box in favour of the sidebar's own scroll — which only
+  exists now. Then **Triage 5 — lyric highlights from the translation + multi-language `songs.language`**
+  (needs a brainstorm).
   _Triage 1a's DB-cleaning gate is closed — the reanalysis landed 2026-07-22 and 1b shipped with it._
 - **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **merged `a6eb05a`, confirmed
   2026-07-22**) · **2** (persist
   browse state — ☑ **merged `bf2f1da`**) · **3** (featured redesign — ☑ **merged `6718cec`**, confirmed) ·
   **3b** (Featured management view — ☑ **merged `f3936b1`**, confirmed) · **4** (browse/search polish — ☑
-  **BUILT, pending merge**) → **5**
+  **merged `d3887ad`**, confirmed) → **5**
   (lyric highlights from translation + multi-language) → **B4** (Explore vector map, with the vector "You
   might also like") → triage **6** (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-22 _(triage 1a+1b MERGED to `main` (`a6eb05a`) after curator smoke: two-tier
-  analysis read + seven scalar browse filters; the reanalysis gate is closed and 1b un-deferred. Only
-  **triage 4** is now pending — never curator-smoked; its merge conflicts in three measured files. The
-  smoke's UI follow-ups are specced + planned as the presentation batch, gated on triage 4 landing.)_
+- **Last updated:** 2026-07-22 _(triage **1a+1b** merged `a6eb05a` and triage **4** merged `d3887ad`,
+  both after curator smoke — **the curator-triage backlog 1–4 is now fully merged with no branches
+  pending**. Merged `main`: backend 117/117. Next up is the filter/analysis presentation batch on
+  `session-presentation-polish`, whose Task 1 (API-served descriptions) is already committed.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
