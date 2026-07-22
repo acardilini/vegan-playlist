@@ -281,7 +281,7 @@ router.get('/search', async (req, res) => {
     let paramIndex = bw.nextIndex;
     const effectiveGenreJoin = bw.joins.effectiveGenre ? genres_svc.EFFECTIVE_GENRE_JOIN : '';
     const facetJoin = bw.joins.analysis
-      ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.DEFAULT_MODEL}'`
+      ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.CODE_MODEL}'`
       : '';
 
     // Build WHERE clause
@@ -426,7 +426,7 @@ router.get('/filter-options', async (req, res) => {
         COUNT(*)::int AS total,
         COUNT(*) FILTER (WHERE spotify_id IS NOT NULL AND spotify_id <> '')::int AS on_spotify,
         COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = songs.id))::int AS has_youtube,
-        COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = songs.id AND la.model_used = $1))::int AS has_analysis
+        COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = songs.id AND la.model_used IN (${analysis.ANY_TIER_SQL})))::int AS has_analysis
       FROM songs
       WHERE status = 'included' AND published = true`;
 
@@ -435,7 +435,7 @@ router.get('/filter-options', async (req, res) => {
       pool.query(yearRangeQuery),
       pool.query(languagesQuery),
       pool.query(lengthCountsQuery),
-      pool.query(availabilityQuery, [analysis.DEFAULT_MODEL]),
+      pool.query(availabilityQuery),
     ]);
 
     const lc = lengthCounts.rows[0] || {};
@@ -458,7 +458,6 @@ router.get('/browse-facets', async (req, res) => {
     const f = req.query;
     const LIVE = `s.status = 'included' AND s.published = true`;
     const whereSql = (bw) => 'WHERE ' + [LIVE, ...bw.where].join(' AND ');
-    const MODEL = analysis.DEFAULT_MODEL;
 
     const bwG = browse.buildWhere(f, { exclude: 'genre' });
     const genreSql = `SELECT DISTINCT s.id, ${genres_svc.EFFECTIVE_GENRE_EXPR} AS effective_genre
@@ -479,7 +478,7 @@ router.get('/browse-facets', async (req, res) => {
 
     const bwT = browse.buildWhere(f, { exclude: 'analysis_toggle' });
     const toggleSql = `SELECT
-        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${MODEL}'))::int AS has_analysis
+        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used IN (${analysis.ANY_TIER_SQL})))::int AS has_analysis
       FROM songs s${browse.joinSql(bwT.joins)} ${whereSql(bwT)}`;
 
     const bwLang = browse.buildWhere(f, { exclude: 'language' });

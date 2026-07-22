@@ -11,7 +11,7 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
   const where = [];
   const params = [];
   let idx = startIndex;
-  const joins = { albums: false, artists: false, effectiveGenre: false, analysis: false };
+  const joins = { albums: false, artists: false, effectiveGenre: false, analysis: false, scalarAnalysis: false };
   const inc = (g) => g !== exclude;
 
   const q = (filters.q || '').trim();
@@ -36,7 +36,8 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
     if (filters.has_youtube === 'true') where.push(`EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = s.id)`);
   }
   if (inc('analysis_toggle') && filters.has_analysis === 'true') {
-    where.push(`EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${analysis.DEFAULT_MODEL}')`);
+    where.push(`EXISTS (SELECT 1 FROM song_lyric_analysis la
+                        WHERE la.song_id = s.id AND la.model_used IN (${analysis.ANY_TIER_SQL}))`);
   }
   if (inc('language') && asList(filters.languages).length) {
     where.push(`s.language = ANY($${idx}::text[])`); params.push(asList(filters.languages)); idx++;
@@ -63,7 +64,7 @@ function joinSql(joins) {
   if (joins.albums) s += ` LEFT JOIN albums al ON s.album_id = al.id`;
   if (joins.artists) s += ` JOIN song_artists sart ON s.id = sart.song_id JOIN artists a ON sart.artist_id = a.id`;
   if (joins.effectiveGenre) s += ` ${genres_svc.EFFECTIVE_GENRE_JOIN}`;
-  if (joins.analysis) s += ` JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.DEFAULT_MODEL}'`;
+  if (joins.analysis) s += ` JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.CODE_MODEL}'`;
   return s;
 }
 

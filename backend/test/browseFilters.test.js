@@ -10,7 +10,7 @@ test('buildWhere with no filters is empty', () => {
   assert.deepEqual(r.where, []);
   assert.deepEqual(r.params, []);
   assert.equal(r.nextIndex, 1);
-  assert.deepEqual(r.joins, { albums: false, artists: false, effectiveGenre: false, analysis: false });
+  assert.deepEqual(r.joins, { albums: false, artists: false, effectiveGenre: false, analysis: false, scalarAnalysis: false });
 });
 
 test('buildWhere text search sets albums+artists joins and one param', () => {

@@ -34,16 +34,36 @@ test('quickCapture rejects blank title or artist', async () => {
 });
 
 test('getWorkbench includes the full analysis object when coded', async () => {
+  const { CODE_MODEL, SCALAR_MODEL } = require('../services/analysis');
   const id = await mkSong({ title: 'ZZZCUR Analysed', status: 'included', published: true });
+  // Code tier: themes/topics/advocacy/tactics/moral_frames + explanation.
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, $3, $2::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
+    [id, JSON.stringify([{ code: 'compassion', evidence: 'be kind' }]), CODE_MODEL]);
+  // Scalar tier: perspective/tone/.../emotions — a distinct (song_id, model_used) row.
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, perspective, emotions, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, 'gemma4:latest', 'human_observer', ARRAY['hope'],
-       $2::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
-    [id, JSON.stringify([{ code: 'compassion', evidence: 'be kind' }])]);
+     VALUES ($1, $2, 'human_observer', ARRAY['hope'], '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
+    [id, SCALAR_MODEL]);
   const wb = await curation.getWorkbench(pool, id);
   assert.equal(wb.analysed, true);
   assert.equal(wb.analysis.perspective, 'human_observer');
   assert.equal(wb.analysis.themes[0].label, 'Compassion');
+});
+
+test('hasAnalysis is true from a scalar-only row (either tier counts)', async () => {
+  const analysis = require('../services/analysis');
+  const s = (await pool.query(
+    `INSERT INTO songs (title, status, published, data_source)
+     VALUES ('ZZZCUR ScalarOnly', 'included', true, 'manual') RETURNING id`)).rows[0];
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, perspective,
+       themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, $2, 'MORAL_ACCUSER_JUDGE', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
+    [s.id, analysis.SCALAR_MODEL]);
+  const wb = await curation.getWorkbench(pool, s.id);
+  assert.ok(wb.analysis, 'workbench shows the scalar-only analysis');
 });
 
 test('saveLyrics with only lyrics preserves existing source_url and translation', async () => {

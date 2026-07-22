@@ -5,8 +5,12 @@ const analysis = require('../services/analysis');
 
 // Unique fixture sentinel per test file: ZZZANL.
 
-test('DEFAULT_MODEL is gemma4:latest', () => {
-  assert.equal(analysis.DEFAULT_MODEL, 'gemma4:latest');
+test('the two analysis tiers are the code and scalar models', () => {
+  assert.equal(analysis.CODE_MODEL, 'gemma4:key_focus_pipeline');
+  assert.equal(analysis.SCALAR_MODEL, 'gemini-3.5-flash-lite');
+  assert.equal(analysis.DEFAULT_MODEL, undefined, 'DEFAULT_MODEL is removed, not aliased');
+  assert.equal(analysis.ANY_TIER_SQL,
+    `'gemma4:key_focus_pipeline', 'gemini-3.5-flash-lite'`);
 });
 
 test('taxonomy exposes the five evidence dimensions with labels', () => {
@@ -19,30 +23,47 @@ test('taxonomy exposes the five evidence dimensions with labels', () => {
   assert.equal(analysis.label('themes', 'some_new_code'), 'Some New Code');
 });
 
-// Helper: insert a coded song with the ZZZANL sentinel.
-async function mkCodedSong() {
-  const s = (await pool.query(
+// Helpers: insert songs with the ZZZANL sentinel, coded in one or both tiers.
+async function mkSong(title) {
+  return (await pool.query(
     `INSERT INTO songs (title, status, published, data_source)
-     VALUES ('ZZZANL Coded', 'included', true, 'manual') RETURNING id`)).rows[0];
+     VALUES ($1, 'included', true, 'manual') RETURNING id`, [title])).rows[0].id;
+}
+
+async function addCodeTier(songId) {
   await pool.query(
     `INSERT INTO song_lyric_analysis
-      (song_id, model_used, perspective, intensity, clarity, focus_amount, lyrical_tone,
-       target_audience, emotions, explanation, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, 'gemma4:latest', 'animal_pov', 'high_confrontational', 'highly_explicit',
-       'central_focus', 'confrontational_militant', 'corporate_exploiters',
-       ARRAY['outrage'], 'Test explanation.',
-       $2::jsonb, $3::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
-    [s.id,
+       (song_id, model_used, explanation, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, $2, 'Test explanation.', $3::jsonb, $4::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
+    [songId, analysis.CODE_MODEL,
      JSON.stringify([{ code: 'killing', evidence: 'ground beef' }]),
      JSON.stringify([{ code: 'cows', evidence: 'Run cows run' }])]);
-  return s.id;
+}
+
+async function addScalarTier(songId) {
+  await pool.query(
+    `INSERT INTO song_lyric_analysis
+       (song_id, model_used, perspective, lyrical_tone, intensity, clarity, focus_amount,
+        target_audience, emotions, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, $2, 'MORAL_ACCUSER_JUDGE', 'CONDESCENDING_SNARK_AND_SATIRE',
+             'MORAL_OUTRAGE_AND_CONDEMNATION', 'SYSTEMIC_COMMODIFICATION_CRITIQUE',
+             'CENTRAL_THESIS', 'HYPOCRITES_AND_SELF_DECEIVERS',
+             ARRAY['MORAL_OUTRAGE','SARDONIC_MOCKERY'],
+             '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
+    [songId, analysis.SCALAR_MODEL]);
+}
+
+async function mkCodedSong() {
+  const id = await mkSong('ZZZANL Coded');
+  await addCodeTier(id);
+  await addScalarTier(id);
+  return id;
 }
 
 test('getSongAnalysis returns the full coding with display labels', async () => {
   const id = await mkCodedSong();
   const a = await analysis.getSongAnalysis(pool, id);
-  assert.equal(a.perspective, 'animal_pov');
-  assert.deepEqual(a.emotions, ['outrage']);
+  assert.equal(a.perspective, 'MORAL_ACCUSER_JUDGE'); // raw code still exposed
   assert.equal(a.themes[0].code, 'killing');
   assert.equal(a.themes[0].label, 'Killing');
   assert.equal(a.themes[0].evidence, 'ground beef');
@@ -64,17 +85,19 @@ test('getSongAnalysis enriches each code with its taxonomy definition', async ()
   assert.ok(a.themes[0].definition.length > 0, 'killing has a non-empty definition');
 });
 
-test('getSongAnalysis resolves scalar attributes to display labels', async () => {
+test('getSongAnalysis resolves scalar attributes to codebook labels with definitions', async () => {
   const id = await mkCodedSong();
   const a = await analysis.getSongAnalysis(pool, id);
-  assert.ok(Array.isArray(a.attributes));
-  // fixture: intensity 'high_confrontational', clarity 'highly_explicit', focus 'central_focus'
   const byLabel = Object.fromEntries(a.attributes.map(x => [x.label, x.value]));
-  assert.equal(byLabel['Intensity'], 'High/Confrontational');
-  assert.equal(byLabel['Clarity'], 'Highly Explicit');
-  assert.equal(byLabel['Focus'], 'Central Focus');
-  // no null/empty attributes leak in
-  assert.ok(a.attributes.every(x => x.value));
+  assert.equal(byLabel['Perspective'], 'Moral Accuser');
+  assert.equal(byLabel['Tone'], 'Satirical & Sarcastic');
+  assert.equal(byLabel['Focus'], 'Central Thesis');
+  assert.equal(byLabel['Audience'], 'Hypocritical Animal Lovers');
+  assert.ok(a.attributes.every(x => x.value), 'no null/empty attributes leak in');
+  const persp = a.attributes.find(x => x.label === 'Perspective');
+  assert.ok(persp.definition.length > 0, 'definition carried for the tooltip');
+  // emotions arrive as display labels, not raw codes
+  assert.deepEqual(a.emotions, ['Moral Outrage', 'Sardonic Mockery']);
 });
 
 test('getSongAnalysis returns null for an un-coded song', async () => {
@@ -82,6 +105,42 @@ test('getSongAnalysis returns null for an un-coded song', async () => {
     `INSERT INTO songs (title, status, published, data_source)
      VALUES ('ZZZANL Uncoded', 'included', true, 'manual') RETURNING id`)).rows[0];
   assert.equal(await analysis.getSongAnalysis(pool, s.id), null);
+});
+
+test('getSongAnalysis returns chips only when just the code tier exists', async () => {
+  const id = await mkSong('ZZZANL CodeOnly');
+  await addCodeTier(id);
+  const a = await analysis.getSongAnalysis(pool, id);
+  assert.equal(a.themes[0].code, 'killing');
+  assert.deepEqual(a.attributes, [], 'no scalar row -> no attributes');
+  assert.deepEqual(a.emotions, []);
+  assert.equal(a.explanation, 'Test explanation.');
+});
+
+test('getSongAnalysis returns attributes only when just the scalar tier exists', async () => {
+  const id = await mkSong('ZZZANL ScalarOnly');
+  await addScalarTier(id);
+  const a = await analysis.getSongAnalysis(pool, id);
+  assert.ok(a, 'scalar-only song still has an analysis');
+  assert.deepEqual(a.themes, [], 'no code row -> no chips');
+  assert.equal(a.explanation, null, 'explanation lives in the code tier only');
+  assert.equal(a.attributes.length, 6, 'all six single-valued components present');
+});
+
+test('getSongAnalysis drops suppressed scalar values', async () => {
+  const id = await mkSong('ZZZANL Suppressed');
+  await pool.query(
+    `INSERT INTO song_lyric_analysis
+       (song_id, model_used, perspective, focus_amount, target_audience, emotions,
+        themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, $2, 'MORAL_ACCUSER_JUDGE', 'ABSENCE_OF_FOCUS', 'UNSPECIFIED', ARRAY[]::text[],
+             '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
+    [id, analysis.SCALAR_MODEL]);
+  const a = await analysis.getSongAnalysis(pool, id);
+  const labels = a.attributes.map(x => x.label);
+  assert.ok(labels.includes('Perspective'));
+  assert.ok(!labels.includes('Focus'), 'ABSENCE_OF_FOCUS suppressed');
+  assert.ok(!labels.includes('Audience'), 'UNSPECIFIED suppressed');
 });
 
 test('facetTree returns the hierarchy with distinct-song counts', async () => {
@@ -134,34 +193,48 @@ test('themeCounts aggregates real themes from song_lyric_analysis', async () => 
 });
 
 test('facetTree rolls up two codes in the same group with distinct-song counts', async () => {
+  // Live CODE_MODEL data already has plenty of coverage for the violence group's other
+  // codes (e.g. systemic_violence), so we diff before/after our two fixture songs rather
+  // than asserting on raw totals — isolates the property from live-data composition.
+  const getViolence = async () => {
+    const t = await analysis.facetTree(pool);
+    const cruelty = t.themes.sub_dimensions.find(s => s.id === 'cruelty_suffering');
+    const violence = cruelty.groups.find(g => g.id === 'violence');
+    return {
+      violence: violence.count,
+      killing: (violence.codes.find(c => c.code === 'killing') || { count: 0 }).count,
+      brutality: (violence.codes.find(c => c.code === 'brutality') || { count: 0 }).count,
+    };
+  };
+  const before = await getViolence();
+
   // Song A: both violence codes; Song B: only killing. Group "violence" = 2 distinct songs.
   const a = (await pool.query(
     `INSERT INTO songs (title, status, published, data_source)
      VALUES ('ZZZANL TwoCode A', 'included', true, 'manual') RETURNING id`)).rows[0];
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, 'gemma4:latest', $2::jsonb, '[]', '[]', '[]', '[]')`,
-    [a.id, JSON.stringify([{ code: 'killing', evidence: 'x' }, { code: 'brutality', evidence: 'y' }])]);
+     VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
+    [a.id, JSON.stringify([{ code: 'killing', evidence: 'x' }, { code: 'brutality', evidence: 'y' }]), analysis.CODE_MODEL]);
   const b = (await pool.query(
     `INSERT INTO songs (title, status, published, data_source)
      VALUES ('ZZZANL TwoCode B', 'included', true, 'manual') RETURNING id`)).rows[0];
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, 'gemma4:latest', $2::jsonb, '[]', '[]', '[]', '[]')`,
-    [b.id, JSON.stringify([{ code: 'killing', evidence: 'z' }])]);
+     VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
+    [b.id, JSON.stringify([{ code: 'killing', evidence: 'z' }]), analysis.CODE_MODEL]);
 
-  const t = await analysis.facetTree(pool);
-  const cruelty = t.themes.sub_dimensions.find(s => s.id === 'cruelty_suffering');
-  const violence = cruelty.groups.find(g => g.id === 'violence');
-  const killing = violence.codes.find(c => c.code === 'killing');
-  const brutality = violence.codes.find(c => c.code === 'brutality');
+  const after = await getViolence();
+  const dKilling = after.killing - before.killing;
+  const dBrutality = after.brutality - before.brutality;
+  const dViolence = after.violence - before.violence;
   // Distinct-song rollup: killing in A+B, brutality in A only, group = 2 distinct songs.
-  assert.ok(killing.count >= 2, 'killing counts both songs');
-  assert.ok(brutality.count >= 1, 'brutality counts song A');
+  assert.equal(dKilling, 2, 'killing counts both new songs');
+  assert.equal(dBrutality, 1, 'brutality counts new song A only');
   // Discriminating: the violence group's count is the UNION of its codes' distinct songs.
-  // A buggy occurrence-SUM rollup would instead give killing.count + brutality.count.
-  assert.ok(violence.count >= killing.count, 'group >= any single code (distinct-song union property)');
-  assert.ok(violence.count < killing.count + brutality.count, 'group count is NOT occurrence sum of codes');
+  // A buggy occurrence-SUM rollup would instead add killing+brutality's occurrence deltas (3).
+  assert.equal(dViolence, 2, 'group counts 2 new distinct songs, not 3 new occurrences');
+  assert.ok(dViolence < dKilling + dBrutality, 'group delta is NOT occurrence sum of code deltas');
 });
 
 test('facetTree accepts a constraint that narrows the counted set', async () => {
@@ -171,8 +244,8 @@ test('facetTree accepts a constraint that narrows the counted set', async () => 
      VALUES ('ZZZANL Constrained', 'included', true, 'manual', 'English') RETURNING id`)).rows[0];
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, 'gemma4:latest', $2::jsonb, '[]', '[]', '[]', '[]')`,
-    [s.id, JSON.stringify([{ code: 'killing', evidence: 'x' }])]);
+     VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
+    [s.id, JSON.stringify([{ code: 'killing', evidence: 'x' }]), analysis.CODE_MODEL]);
 
   // Constrain to a language that no coded song has -> killing count unaffected by our new row.
   const constrained = await analysis.facetTree(pool, {
