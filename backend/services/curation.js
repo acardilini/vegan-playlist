@@ -1,6 +1,6 @@
 // Curation-workbench service. Functions take `db` (pool or client) first for testability.
 // Mirrors services/staging.js conventions.
-const { DEFAULT_MODEL, getSongAnalysis } = require('./analysis');
+const { CODE_MODEL, SCALAR_MODEL, ANY_TIER_SQL, getSongAnalysis } = require('./analysis');
 const PARK_REASONS = ['awaiting_community', 'needs_transcription', 'listened_unclear'];
 
 async function getProcessing(db, songId) {
@@ -38,7 +38,7 @@ async function setProcessing(db, songId, { snooze_until, park_reason, lyrics_tri
 }
 
 const ARTWORK_SQL = `(al.images IS NOT NULL AND al.images::text NOT IN ('null','[]',''))`;
-const MODEL_LITERAL = `'${DEFAULT_MODEL.replace(/'/g, "''")}'`; // controlled constant, safe to inline
+const ANY_TIER_LITERAL = ANY_TIER_SQL; // controlled constants, safe to inline
 const QUEUE_NAMES = ['to-process','awaiting-community','remind-later','needs-lyrics',
   'needs-cover','needs-video','needs-analysis','to-finalise','live','all','featured'];
 
@@ -63,8 +63,8 @@ function queueWhere(queue) {
       return `s.status='included'
               AND EXISTS (SELECT 1 FROM song_lyrics sl
                           WHERE sl.song_id=s.id AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '')
-              AND NOT EXISTS (SELECT 1 FROM song_lyric_analysis sa
-                              WHERE sa.song_id=s.id AND sa.model_used=${MODEL_LITERAL})`;
+              AND NOT EXISTS (SELECT 1 FROM song_lyric_analysis sla
+                              WHERE sla.song_id=s.id AND sla.model_used IN (${ANY_TIER_LITERAL}))`;
     case 'to-finalise':
       return `s.status='included' AND s.published=false`;
     case 'live':
@@ -194,7 +194,8 @@ async function getWorkbench(db, id) {
     `SELECT lyrics, source_url, translation FROM song_lyrics WHERE song_id=$1`, [id])).rows[0] || null;
   const processing = await getProcessing(db, id);
   const analysed = (await db.query(
-    `SELECT 1 FROM song_lyric_analysis WHERE song_id=$1 AND model_used=$2`, [id, DEFAULT_MODEL])).rows.length > 0;
+    `SELECT 1 FROM song_lyric_analysis WHERE song_id=$1 AND model_used IN (${ANY_TIER_LITERAL})`,
+    [id])).rows.length > 0;
   const analysisObj = analysed ? await getSongAnalysis(db, id) : null;
 
   const cover = hasArt(s.album_images);
@@ -345,6 +346,6 @@ async function quickCapture(db, { title, artist } = {}) {
   return { id: song.id };
 }
 
-module.exports = { DEFAULT_MODEL, PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
+module.exports = { CODE_MODEL, SCALAR_MODEL, PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
   saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture, setFeatured };

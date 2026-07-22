@@ -108,6 +108,16 @@ also like") → **6** About analysis-explainer + AI disclosure.
 
 ## Data update — 2-stage qualitative coding (`key_focus_pipeline`) — 2026-07-20
 
+> **☑ RESOLVED 2026-07-22 — and the analysis below is superseded by the data itself.** The curator's
+> reanalysis added a new tier, `gemini-3.5-flash-lite`, carrying all seven scalar components as clean
+> codebook enums (`backend/data/master_metadata_codebook.json`), and the site now reads **two** tiers:
+> code dimensions from `gemma4:key_focus_pipeline`, scalars from `gemini-3.5-flash-lite`. The
+> `deep_pipeline` scalar premise below is obsolete (its scalars were free-text, and identical to
+> key-focus's). **Item 1b — "filter by lyrical analysis" — shipped with it**: all seven components are
+> now browse filters. See
+> [`specs/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters-design.md`](./superpowers/specs/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters-design.md).
+> The section is kept as the record of what the handoff assumed.
+
 _Supersedes the terse "thematic `key_focus_pipeline` switch" backlog line. Handoff received from
 the analysis pipeline; goal: **surface the refined "key focus" analysis on the website.**_
 

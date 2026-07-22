@@ -58,8 +58,8 @@ Run before ending every working session:
 ## Architecture
 
 ### Backend Structure (`backend/`)
-- **server.js**: Main Express server; mounts 6 routers: `/api/spotify`, `/api/admin`,
-  `/api/playlists`, `/api/youtube`, `/api/submissions`, `/api/analytics`
+- **server.js**: Main Express server; mounts 7 routers: `/api/spotify`, `/api/admin`,
+  `/api/playlists`, `/api/youtube`, `/api/submissions`, `/api/analytics`, `/api/analysis`
 - **routes/**: `spotify.js` (public site API), `admin.js` (~2,200 lines, password-protected
   curation API — 29 routes in six banner-named domains: Songs/curation · Enrichment ·
   Data quality · Sync (import-only) · Artists · Staging/lifecycle; see
@@ -68,6 +68,13 @@ Run before ending every working session:
   Note: `/api/submissions/admin*` is currently unauthenticated (Phase 4 item)
 - **services/staging.js**: staging-queue service (queues, include/reject/publish, candidate
   intake, submissions→pending bridge); tests in `test/staging.test.js` (node:test)
+- **services/analysis.js + services/metadataCodebook.js**: the lyric-analysis read. It spans **two
+  tiers** of `song_lyric_analysis` — `CODE_MODEL` (`gemma4:key_focus_pipeline`) for the five code
+  dimensions, `explanation` and evidence, and `SCALAR_MODEL` (`gemini-3.5-flash-lite`) for the seven
+  scalar components. **Those two constants are the only place either model string may appear**, and
+  there is deliberately no `DEFAULT_MODEL`, so every consumer states its tier; "has analysis" means
+  either tier. `metadataCodebook.js` is pure (no DB) and owns `data/master_metadata_codebook.json` —
+  labels, definitions, the hidden absence codes, and the scalar filter clauses
 - **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
 - **scripts/**: 4 documented maintenance scripts (see `backend/scripts/README.md`);
   the ~37 one-off scripts were deleted in Session 2.3 (git history preserves them)

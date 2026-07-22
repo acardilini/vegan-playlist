@@ -141,7 +141,7 @@ router.get('/summary', async (req, res) => {
        WHERE al.release_date IS NOT NULL AND s.status = 'included' AND s.published = true`,
       `SELECT COUNT(DISTINCT sa.song_id) as songs_with_themes
        FROM song_lyric_analysis sa JOIN songs s ON s.id = sa.song_id
-       WHERE sa.model_used = '${analysis.DEFAULT_MODEL}' AND s.status = 'included' AND s.published = true`
+       WHERE sa.model_used = '${analysis.CODE_MODEL}' AND s.status = 'included' AND s.published = true`
     ];
 
     const results = await Promise.all(queries.map(query => pool.query(query)));

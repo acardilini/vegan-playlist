@@ -10,8 +10,27 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Curator-triage build session (2026-07-20 → 07-21)** — advancing DB-independent
-  triage items while the curator cleans the DB. **Triage 3b (Featured management view) — DONE, merged to
+- **Current session:** _**Triage 1a + 1b (2026-07-22) — two-tier analysis read + scalar browse filters —
+  BUILT on `session-triage-1a1b-analysis-tiers`, pending curator smoke + merge.** The DB-cleaning gate
+  that parked triage 1a is **resolved**: the curator's reanalysis added `gemini-3.5-flash-lite` (679 rows /
+  661 live), whose seven scalar components are **100% valid codebook enums** (0 unknown values), alongside a
+  vendored `backend/data/master_metadata_codebook.json`. That made the work a **genuine two-tier split** —
+  code dimensions from `gemma4:key_focus_pipeline`, scalars from `gemini-3.5-flash-lite` — and **un-deferred
+  item 1b**, which the 2026-07-20 spec had kicked back to the pipeline as unbuildable on free-text scalars.
+  Shipped: `DEFAULT_MODEL` split into `CODE_MODEL`/`SCALAR_MODEL` (removed, not aliased, so every consumer
+  states its tier); a new pure `services/metadataCodebook.js`; `getSongAnalysis` reading both tiers in one
+  query (returns whatever exists — 613 live songs have both, 4 code-only, 48 scalar-only); **all seven
+  components as browse filters** (OR within a component, AND across) with exclude-self counts via
+  `analysis.scalarFacets` + a `scalar_facets` block on `/browse-facets`; seven collapsed sidebar groups
+  riding the existing URL/sessionStorage state; the song-page attributes card gaining an **Audience** row,
+  codebook labels and definition tooltips. **"Has analysis" is now either-tier: 640 → 665 live songs** —
+  a net figure, not a pure gain: **+32 songs gain a section and 7 lose one** (they had a `gemma4:latest`
+  row but are in neither new tier). The final review checked all seven: every one is an empty row — zero
+  codes in all five dimensions, explanation _"No lyrics were provided for analysis."_ — so their
+  disappearance is a correction, not a loss (ids 4846, 5493, 5539, 5540, 5541, 5570, 5571).
+  Backend **114/114**; frontend lint/build clean; live puppeteer smoke on the sidebar (129→203 OR, →87 AND)
+  and on all three coverage cases of the song page. Prior session: **Triage 3b (Featured management view) —
+  DONE, merged to
   `main` (merge `f3936b1`), curator-confirmed working** (branch `session-triage-3b-featured-manage`; a
   follow-up to triage 3 from the curator's
   smoke): a **"Featured" scope** in the admin Songs area (rail item + count + Dashboard tile) listing every
@@ -47,27 +66,29 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Headless (puppeteer) smoke **15/15**; caught + fixed a StrictMode page-reset bug (value-signature ref).
   Also committed a refreshed `vector_space.json` (key-focus coding, B4 input, `2a22e37`). Prior: Fixes
   Round 1 merged to `main` 2026-07-20 (merge `2a07339`)._
-- **⚠ PENDING CURATOR SMOKE + MERGE — triage 4 only:** triages 2, 3, 3b are all merged +
-  curator-confirmed. **Triage 4 (browse/search polish)** remains BUILT on the unmerged, pushed branch
-  **`session-triage-4-browse-polish`** (backend 92/92 + full-stack sort/sidebar smoke all-pass), awaiting
-  the curator's in-browser smoke + merge: **(e)** the Sort-by **direction toggle** (A–Z/Z–A, Oldest/Newest)
-  reverses results, shows in the URL, and resets on sort-field change; **(f)** the **filter sidebar scrolls
-  independently** while pinned.
-- **Next session:** **Smoke + merge triage 4** (`session-triage-4-browse-polish`), then **Triage 5 —
-  lyric highlights from the translation + multi-language `songs.language`** (needs a brainstorm). **Triage
-  1a stays PARKED until the curator confirms the metadata reanalysis / DB cleaning is done** — re-run the
-  tier/coverage/enum verification then; the cleaning may **reactivate 1b** (scalar filters) if it
-  normalizes the scalars to the taxonomy enums, in which case fold 1b back in rather than deferring. See
-  `memory/triage-1a-db-cleaning-gate.md`.
-- **Reprioritised order (2026-07-20):** triage **1** (_PARKED — reanalysis gate_) · **2** (persist
+- **⚠ TWO BRANCHES PENDING CURATOR SMOKE + MERGE:** triages 2, 3, 3b are merged + curator-confirmed.
+  (1) **Triage 4 (browse/search polish)** on **`session-triage-4-browse-polish`** (backend 92/92 +
+  full-stack sort/sidebar smoke all-pass): **(e)** the Sort-by **direction toggle** (A–Z/Z–A,
+  Oldest/Newest) reverses results, shows in the URL, and resets on sort-field change; **(f)** the **filter
+  sidebar scrolls independently** while pinned. (2) **Triage 1a+1b** on
+  **`session-triage-1a1b-analysis-tiers`** (see Current session). _Note: both branches touch
+  `SearchAndFilter.jsx` and `browseUrlState.js` — merge one, then rebase/merge the other and re-smoke the
+  sidebar._
+- **Next session:** **Smoke + merge the two open branches** (triage 4, then triage 1a+1b — or the reverse;
+  see the merge-order note above), then **Triage 5 — lyric highlights from the translation + multi-language
+  `songs.language`** (needs a brainstorm). _Triage 1a's DB-cleaning gate is closed — the reanalysis landed
+  2026-07-22 and 1b shipped with it._
+- **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **BUILT
+  2026-07-22, pending merge**) · **2** (persist
   browse state — ☑ **merged `bf2f1da`**) · **3** (featured redesign — ☑ **merged `6718cec`**, confirmed) ·
   **3b** (Featured management view — ☑ **merged `f3936b1`**, confirmed) · **4** (browse/search polish — ☑
   **BUILT, pending merge**) → **5**
   (lyric highlights from translation + multi-language) → **B4** (Explore vector map, with the vector "You
   might also like") → triage **6** (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-21 _(triage-3b Featured management view merged `f3936b1` + curator-confirmed;
-  triages 2/3/3b all merged & confirmed; triage-4 built on its branch, pending curator smoke + merge;
-  triage-1a parked on the metadata-reanalysis gate.)_
+- **Last updated:** 2026-07-22 _(triage 1a+1b built on `session-triage-1a1b-analysis-tiers`: two-tier
+  analysis read + seven scalar browse filters; the reanalysis gate is closed and 1b un-deferred. Two
+  branches now pending curator smoke + merge — triage 4 and triage 1a+1b — and they overlap in
+  `SearchAndFilter.jsx`/`browseUrlState.js`.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -191,6 +212,48 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-22 — Triage 1a+1b: the analysis read becomes a genuine two-tier split (a different split than
+  the handoff assumed), and the scalar browse filters are un-deferred because the data got clean.** The
+  curator's reanalysis landed two new passes; a read-only DB check settled which to use.
+  `gemini-3.5-flash-lite` (679 rows / 661 live) carries all seven scalar components as **100% valid
+  codebook enums — zero unknown values** — but **empty code dimensions**; `gemini-flash-deductive` is a
+  dead run (378 null + 160 `ERROR` perspectives, also no code dims) and is **ignored, not deleted** (the
+  table is the curator's). Decisions: (1) **two constants, `CODE_MODEL` = `gemma4:key_focus_pipeline` and
+  `SCALAR_MODEL` = `gemini-3.5-flash-lite`; `DEFAULT_MODEL` removed rather than aliased**, so each of the
+  eight consumer sites must state its tier — a silent wrong-tier read becomes impossible. (2) **"Has
+  analysis" = either tier** (live 640 → **665**): 613 songs have both, 4 are code-only (chips, no
+  attributes card), 48 are scalar-only (card, no chips) — a song shows whatever it has. (3) **All seven
+  components become browse filters**, collapsed by default, **OR within a component, AND across** — six of
+  them are single-valued per song, so ANDing within would always return zero; `emotions` (the one `text[]`)
+  follows the same rule for consistency. (4) **The four absence codes are hidden everywhere, display and
+  filters** (`THEMATIC_ABSENCE`, `ABSENCE_OF_FOCUS`, `INSUFFICIENT_DATA`, `UNSPECIFIED`) — curator's call;
+  they read as bugs on a public page. (5) The codebook is vendored as the **backend-only** label source (a
+  new pure `services/metadataCodebook.js`); labels reach the frontend through the API, and the codebook's
+  emoji `short_tag`s are never used (brand voice). `taxonomy.json`'s now-dead scalar lists stay in the file
+  but `scalarLabel` was deleted. **(6) Display drops off-codebook values instead of Title-Casing them** —
+  added same-day after the pipeline proved it can emit them. The scalar tier was re-run twice on 2026-07-22:
+  the 11:25 pass fixed the empty-`emotions` problem (321/679 empty → **4**) but briefly shipped **10 rows
+  with values absent from the codebook** — typos of real codes (`VISVERAL_HORROR_AND_ABJECTION`,
+  `DETACHED_CYCINISM_AND_RESIGNATION`), a wrong stem (`VIOLENT_RETRIBUTION` for `…RETALIATION`), and prompt-
+  template artifacts (`EXACT_ENUM_CODE_KEY`, `EXCLUDED`) across perspective/intensity/target_audience. The
+  curator corrected all ten immediately (re-verified: **0 unknown across all seven components**), but the
+  episode exposed a real asymmetry: filters and counts are built from the codebook and silently ignored
+  those values, while the song page would have rendered them as prose ("Intensity — Detached Cycinism And
+  Resignation"). `getSongAnalysis` now gates display through the same `cleanSelection` the filters use, so
+  **the page can only show a value you could also filter by**. _Trade-off accepted: a code added to the DB
+  before the codebook JSON is updated will be invisible until the JSON catches up._ **Caught by the final
+  review:** the
+  theme facet tree's caption was fed the either-tier count (665) while the tree itself counts only
+  code-tier songs, overstating its own set by ~61 and contradicting the number rendered directly below it;
+  `/browse-facets` now returns a separate `coded_count` (617) for that caption. Verified: backend
+  **114/114**;
+  reviewers independently re-ran the suite, mutation-tested the facet-count parameter arithmetic (removing
+  a `+1` makes both tests fail), and re-hit the live endpoints; puppeteer smoke on the sidebar (129→203 OR,
+  →87 AND) and all three song-page coverage cases. Spec/plan:
+  `specs/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters-design.md`,
+  `plans/2026-07-22-triage-1a-1b-analysis-tiers-and-scalar-filters.md`. **Supersedes** the parked
+  2026-07-20 triage-1a spec and its branch `session-triage-1a-key-focus`, now abandoned.
 
 - **2026-07-21 — Triage 3b: a Featured management view (admin scope + quick unfeature), unfeature-only
   (built, pending merge).** The curator's triage-3 smoke surfaced that the per-song workbench toggle gave
@@ -713,6 +776,21 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-22 (Triage 1a+1b — two-tier analysis read + scalar browse filters, built + verified, pending
+  merge)** — On `session-triage-1a1b-analysis-tiers`, seven tasks, subagent-driven with a review gate each.
+  A start-of-session DB check found the curator's reanalysis had landed (`gemini-3.5-flash-lite`, 100%
+  clean codebook enums), closing the gate that parked triage 1a and un-deferring 1b. Shipped:
+  `services/metadataCodebook.js` (pure — labels, definitions, the suppressed-code set, scalar WHERE
+  clauses); `CODE_MODEL`/`SCALAR_MODEL` replacing `DEFAULT_MODEL` across eight consumer sites;
+  `getSongAnalysis` reading both tiers in one query; scalar filters in `/search` (alias `sca` beside the
+  code tier's `sa`); `analysis.scalarFacets` + `scalar_facets` exclude-self counts on `/browse-facets`;
+  seven collapsed sidebar groups on the existing URL/sessionStorage state; the song-page attributes card
+  with an Audience row, codebook labels and definition tooltips. Also fixed a stale admin string
+  (`AnalysisPanel.jsx` still said "Coded with gemma4:latest"), found by a reviewer outside the plan's
+  scope. Backend **114/114** (+24 over the branch); frontend lint 0 errors + clean build; `has_analysis`
+  640 → **665**. Not yet merged — and it overlaps triage 4's branch in `SearchAndFilter.jsx` /
+  `browseUrlState.js`.
 
 - **2026-07-21 (Triage 3b — Featured management view, built + verified, pending merge)** — On
   `session-triage-3b-featured-manage` (follow-up to triage 3 from the curator's smoke): an admin **Featured

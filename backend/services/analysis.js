@@ -2,8 +2,18 @@
 // Display-only: this service never writes analysis and never touches song_lyrics.
 // Functions take `db` (pool or client) first, mirroring services/curation.js.
 const taxonomy = require('../data/taxonomy.json');
+const codebook = require('./metadataCodebook');
 
-const DEFAULT_MODEL = 'gemma4:latest';
+// Two display tiers. The code dimensions (+ explanation/evidence) come from the refined
+// key-focus coding; the seven scalar metadata components come from the newer, enum-clean
+// pass. No song is guaranteed to be in both — getSongAnalysis returns whatever exists.
+const CODE_MODEL = 'gemma4:key_focus_pipeline';
+const SCALAR_MODEL = 'gemini-3.5-flash-lite';
+
+const sqlQuote = (s) => `'${String(s).replace(/'/g, "''")}'`;
+// For inlining into `model_used IN (…)` — "has analysis in either tier".
+const ANY_TIER_SQL = [CODE_MODEL, SCALAR_MODEL].map(sqlQuote).join(', ');
+
 // DB column -> taxonomy group key. topics=targets, advocacy=actions.
 const EVIDENCE_DIMS = ['themes', 'topics', 'advocacy', 'tactics', 'moral_frames'];
 const DIM_TO_TAXONOMY = { themes: 'themes', topics: 'targets', advocacy: 'actions', tactics: 'tactics', moral_frames: 'moral_frames' };
@@ -41,17 +51,6 @@ for (const [dbCol, taxKey] of Object.entries(DIM_TO_TAXONOMY)) {
   DEFS[dbCol] = new Map((taxonomy[taxKey] || []).map(i => [i.id, i.definition || '']));
 }
 
-// Scalar category label lookup. Some taxonomy scalar lists are [{id,label}],
-// others are plain strings; fall back to Title Case in both misses.
-function scalarLabel(listKey, value) {
-  if (!value) return null;
-  for (const item of (taxonomy[listKey] || [])) {
-    if (typeof item === 'string') { if (item === value) return titleCase(value); }
-    else if (item && item.id === value) return item.label || titleCase(value);
-  }
-  return titleCase(value);
-}
-
 function mapDim(dimension, arr) {
   return (Array.isArray(arr) ? arr : []).map(row => {
     const sd = SUBDIM[dimension].get(row.code) || {};
@@ -66,24 +65,48 @@ function mapDim(dimension, arr) {
 }
 
 async function getSongAnalysis(db, songId) {
+  // One row per (song_id, model_used) — PK-guaranteed, so both LEFT JOINs are 1:1.
   const r = await db.query(
-    `SELECT perspective, intensity, clarity, focus_amount, lyrical_tone, target_audience,
-            emotions, explanation, themes, topics, advocacy, tactics, moral_frames
-     FROM song_lyric_analysis WHERE song_id = $1 AND model_used = $2`,
-    [songId, DEFAULT_MODEL]);
-  if (r.rows.length === 0) return null;
+    `SELECT c.themes, c.topics, c.advocacy, c.tactics, c.moral_frames, c.explanation,
+            f.perspective, f.lyrical_tone, f.intensity, f.clarity, f.focus_amount,
+            f.target_audience, f.emotions,
+            (c.song_id IS NOT NULL) AS has_code,
+            (f.song_id IS NOT NULL) AS has_scalar
+     FROM (SELECT $1::int AS song_id) x
+     LEFT JOIN song_lyric_analysis c ON c.song_id = x.song_id AND c.model_used = $2
+     LEFT JOIN song_lyric_analysis f ON f.song_id = x.song_id AND f.model_used = $3`,
+    [songId, CODE_MODEL, SCALAR_MODEL]);
   const a = r.rows[0];
-  const attributes = [
-    ['Perspective', scalarLabel('perspectives', a.perspective)],
-    ['Tone', scalarLabel('lyrical_tones', a.lyrical_tone)],
-    ['Intensity', scalarLabel('intensity_levels', a.intensity)],
-    ['Clarity', scalarLabel('clarity_levels', a.clarity)],
-    ['Focus', scalarLabel('focus_amounts', a.focus_amount)],
-  ].filter(([, v]) => v).map(([label, value]) => ({ label, value }));
+  if (!a || (!a.has_code && !a.has_scalar)) return null;
+
+  // Compact attributes card: the six single-valued components. cleanSelection drops null,
+  // suppressed AND off-codebook values in one pass — the same gate the filters use, so the
+  // page can only ever show a value you could also filter by. That matters: a pipeline re-run
+  // has shipped typo'd codes (VISVERAL_HORROR…) and template artifacts (EXACT_ENUM_CODE_KEY)
+  // into these columns before, and the label fallback would have rendered them as prose.
+  const attributes = [];
+  for (const c of codebook.COMPONENTS) {
+    if (c.multi) continue;
+    const [v] = codebook.cleanSelection(c.key, a[c.column]);
+    if (!v) continue;
+    attributes.push({
+      label: c.heading,
+      value: codebook.codeLabel(c.key, v),
+      definition: codebook.codeDefinition(c.key, v),
+    });
+  }
+  const emotions = codebook.cleanSelection('emotions', a.emotions)
+    .map(e => codebook.codeLabel('emotions', e));
+
+  // NOTE mixed representation: `emotions` below is display labels (mapped via codebook),
+  // while perspective/lyrical_tone/intensity/clarity/focus_amount/target_audience are raw
+  // enum codes — the display surface for those is `attributes` above. Intended, but do not
+  // assume any of these top-level fields are codes you can match against the codebook.
   return {
     perspective: a.perspective, intensity: a.intensity, clarity: a.clarity,
-    focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone, target_audience: a.target_audience,
-    emotions: a.emotions || [], explanation: a.explanation,
+    focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone,
+    target_audience: a.target_audience,
+    emotions, explanation: a.explanation,
     themes: mapDim('themes', a.themes),
     targets: mapDim('topics', a.topics),
     actions: mapDim('advocacy', a.advocacy),
@@ -96,6 +119,8 @@ async function getSongAnalysis(db, songId) {
 // DB column -> public dimension name used in API output (facetTree, etc.).
 const PUBLIC_DIMS = { themes: 'themes', topics: 'targets', advocacy: 'actions', tactics: 'tactics', moral_frames: 'moral_frames' };
 
+// Parameter base: constraint.where/params must be built with startIndex: 2 — this function
+// prepends CODE_MODEL as $1 in every per-dimension query, so constraint params start at $2.
 async function facetTree(db, constraint = null) {
   const out = {};
   const extraJoin = constraint ? (constraint.joinSql || '') : '';
@@ -111,7 +136,7 @@ async function facetTree(db, constraint = null) {
        JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = $1
        CROSS JOIN LATERAL jsonb_array_elements(sa.${col}) AS elem
        WHERE s.status = 'included' AND s.published = true${extraWhere}`,
-      [DEFAULT_MODEL, ...extraParams])).rows;
+      [CODE_MODEL, ...extraParams])).rows;
 
     // Distinct-song sets at code / group / sub-dimension / dimension level.
     const codeSongs = new Map(), groupSongs = new Map(), subSongs = new Map(), dimSongs = new Set();
@@ -143,6 +168,47 @@ async function facetTree(db, constraint = null) {
       subDimensions.push({ id: subId, label: sub.label, count: (subSongs.get(subId) || new Set()).size, groups });
     }
     out[pub] = { label: h.label, count: dimSongs.size, sub_dimensions: subDimensions };
+  }
+  return out;
+}
+
+// Per-component option counts for the sidebar. `constraints` is keyed by component:
+// { [componentKey]: { joinSql, where: string[], params: any[] } } — each built with that
+// component excluded, so a group's own selection never shrinks its own options.
+// Lives here (not in metadataCodebook) so that module stays DB-free.
+// Parameter base: each constraint's where/params must be built with startIndex: 1 — this
+// function appends SCALAR_MODEL at $(cParams.length + 1) per component, so constraint
+// params start at $1 and the model param comes last, not first.
+async function scalarFacets(db, constraints = {}) {
+  const out = {};
+  for (const c of codebook.COMPONENTS) {
+    const cn = constraints[c.key] || {};
+    const cParams = cn.params || [];
+    const extraJoin = cn.joinSql || '';
+    const extraWhere = (cn.where && cn.where.length) ? ' AND ' + cn.where.join(' AND ') : '';
+    const modelIdx = cParams.length + 1;
+    // c.column comes from the COMPONENTS whitelist — never user input.
+    const inner = c.multi
+      ? `SELECT DISTINCT s.id AS song_id, e.code AS code
+         FROM songs s${extraJoin}
+         JOIN song_lyric_analysis scf ON scf.song_id = s.id AND scf.model_used = $${modelIdx}
+         CROSS JOIN LATERAL unnest(scf.${c.column}) AS e(code)
+         WHERE s.status = 'included' AND s.published = true${extraWhere}`
+      : `SELECT DISTINCT s.id AS song_id, scf.${c.column} AS code
+         FROM songs s${extraJoin}
+         JOIN song_lyric_analysis scf ON scf.song_id = s.id AND scf.model_used = $${modelIdx}
+         WHERE s.status = 'included' AND s.published = true${extraWhere}`;
+    const rows = (await db.query(
+      `SELECT code, COUNT(DISTINCT song_id)::int AS count FROM (${inner}) t
+       WHERE code IS NOT NULL GROUP BY code`,
+      [...cParams, SCALAR_MODEL])).rows;
+    const counts = new Map(rows.map(r => [r.code, r.count]));
+    out[c.key] = {
+      key: c.key,
+      heading: c.heading,
+      multi: c.multi,
+      options: codebook.optionsFor(c.key).map(o => ({ ...o, count: counts.get(o.code) || 0 })),
+    };
   }
   return out;
 }
@@ -220,8 +286,10 @@ async function themeCounts(db, limit = 15) {
      GROUP BY elem->>'code'
      ORDER BY song_count DESC
      LIMIT $2`,
-    [DEFAULT_MODEL, limit]);
+    [CODE_MODEL, limit]);
   return r.rows.map(row => ({ theme: row.theme, label: label('themes', row.theme), song_count: row.song_count }));
 }
 
-module.exports = { DEFAULT_MODEL, EVIDENCE_DIMS, DIM_TO_TAXONOMY, taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree, facetFilterConditions, facetSelectionClauses, themeCounts };
+module.exports = { CODE_MODEL, SCALAR_MODEL, ANY_TIER_SQL, EVIDENCE_DIMS, DIM_TO_TAXONOMY,
+  taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree,
+  scalarFacets, facetFilterConditions, facetSelectionClauses, themeCounts };

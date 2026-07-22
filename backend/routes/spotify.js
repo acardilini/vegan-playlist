@@ -5,6 +5,7 @@ const { getSubgenres } = require('../utils/genreMapping');
 const analysis = require('../services/analysis');
 const genres_svc = require('../services/genres');
 const browse = require('../services/browseFilters');
+const codebook = require('../services/metadataCodebook');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -280,9 +281,14 @@ router.get('/search', async (req, res) => {
     const queryParams = [...bw.params];
     let paramIndex = bw.nextIndex;
     const effectiveGenreJoin = bw.joins.effectiveGenre ? genres_svc.EFFECTIVE_GENRE_JOIN : '';
-    const facetJoin = bw.joins.analysis
-      ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.DEFAULT_MODEL}'`
-      : '';
+    const facetJoin = [
+      bw.joins.analysis
+        ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.CODE_MODEL}'`
+        : '',
+      bw.joins.scalarAnalysis
+        ? `JOIN song_lyric_analysis sca ON sca.song_id = s.id AND sca.model_used = '${analysis.SCALAR_MODEL}'`
+        : '',
+    ].filter(Boolean).join(' ');
 
     // Build WHERE clause
     const whereClause = whereConditions.length > 0 ?
@@ -426,7 +432,7 @@ router.get('/filter-options', async (req, res) => {
         COUNT(*)::int AS total,
         COUNT(*) FILTER (WHERE spotify_id IS NOT NULL AND spotify_id <> '')::int AS on_spotify,
         COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = songs.id))::int AS has_youtube,
-        COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = songs.id AND la.model_used = $1))::int AS has_analysis
+        COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = songs.id AND la.model_used IN (${analysis.ANY_TIER_SQL})))::int AS has_analysis
       FROM songs
       WHERE status = 'included' AND published = true`;
 
@@ -435,7 +441,7 @@ router.get('/filter-options', async (req, res) => {
       pool.query(yearRangeQuery),
       pool.query(languagesQuery),
       pool.query(lengthCountsQuery),
-      pool.query(availabilityQuery, [analysis.DEFAULT_MODEL]),
+      pool.query(availabilityQuery),
     ]);
 
     const lc = lengthCounts.rows[0] || {};
@@ -458,7 +464,6 @@ router.get('/browse-facets', async (req, res) => {
     const f = req.query;
     const LIVE = `s.status = 'included' AND s.published = true`;
     const whereSql = (bw) => 'WHERE ' + [LIVE, ...bw.where].join(' AND ');
-    const MODEL = analysis.DEFAULT_MODEL;
 
     const bwG = browse.buildWhere(f, { exclude: 'genre' });
     const genreSql = `SELECT DISTINCT s.id, ${genres_svc.EFFECTIVE_GENRE_EXPR} AS effective_genre
@@ -479,7 +484,8 @@ router.get('/browse-facets', async (req, res) => {
 
     const bwT = browse.buildWhere(f, { exclude: 'analysis_toggle' });
     const toggleSql = `SELECT
-        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${MODEL}'))::int AS has_analysis
+        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used IN (${analysis.ANY_TIER_SQL})))::int AS has_analysis,
+        COUNT(DISTINCT s.id) FILTER (WHERE EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = s.id AND la.model_used = '${analysis.CODE_MODEL}'))::int AS coded_count
       FROM songs s${browse.joinSql(bwT.joins)} ${whereSql(bwT)}`;
 
     const bwLang = browse.buildWhere(f, { exclude: 'language' });
@@ -490,11 +496,20 @@ router.get('/browse-facets', async (req, res) => {
     const bwAn = browse.buildWhere(f, { exclude: 'analysis', startIndex: 2 });
     const constraint = { joinSql: browse.joinSql(bwAn.joins), where: bwAn.where, params: bwAn.params };
 
+    // One exclude-self constraint per scalar component.
+    const scalarConstraints = {};
+    for (const c of codebook.COMPONENTS) {
+      const bwS = browse.buildWhere(f, { exclude: `scalar:${c.key}`, startIndex: 1 });
+      scalarConstraints[c.key] = {
+        joinSql: browse.joinSql(bwS.joins), where: bwS.where, params: bwS.params,
+      };
+    }
+
     const yearSql = `SELECT MIN(EXTRACT(YEAR FROM release_date)) AS min_year, MAX(EXTRACT(YEAR FROM release_date)) AS max_year
       FROM albums WHERE release_date IS NOT NULL
         AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)`;
 
-    const [gR, lR, aR, tR, langR, facets, yR] = await Promise.all([
+    const [gR, lR, aR, tR, langR, facets, yR, scalar_facets] = await Promise.all([
       pool.query(genreSql, bwG.params),
       pool.query(lengthSql, bwL.params),
       pool.query(availSql, bwA.params),
@@ -502,17 +517,20 @@ router.get('/browse-facets', async (req, res) => {
       pool.query(langSql, bwLang.params),
       analysis.facetTree(pool, constraint),
       pool.query(yearSql),
+      analysis.scalarFacets(pool, scalarConstraints),
     ]);
 
     const lc = lR.rows[0] || {};
     res.json({
       genre_tree: genres_svc.buildGenreTree(gR.rows),
       facets,
+      scalar_facets,
       length_buckets: genres_svc.LENGTH_BUCKETS.map(b => ({ value: b.value, label: b.label, count: lc[b.value] || 0 })),
       availability: {
         on_spotify: aR.rows[0]?.on_spotify || 0,
         has_youtube: aR.rows[0]?.has_youtube || 0,
         has_analysis: tR.rows[0]?.has_analysis || 0,
+        coded_count: tR.rows[0]?.coded_count || 0,
       },
       languages: langR.rows,
       year_range: yR.rows[0] || { min_year: null, max_year: null },

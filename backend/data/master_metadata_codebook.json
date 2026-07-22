@@ -1,0 +1,636 @@
+{
+  "perspective": {
+    "component_name": "Narrative Perspective",
+    "description": "The narrative voice or speaker identity through which the song is delivered.",
+    "parsimony_rule": "Select 1 primary dominant code. Only select a 2nd code if an equally prominent dual perspective exists.",
+    "codes": [
+      {
+        "code": "MORAL_ACCUSER_JUDGE",
+        "label": "Moral Accuser",
+        "short_tag": "⚖️ Moral Accuser",
+        "definition": "Confrontational narrative voice attributing guilt, passing moral judgment, and demanding retribution/accountability.",
+        "inclusion": "Direct accusations of murder, hypocrisy, or guilt; demanding moral accountability or punishment."
+      },
+      {
+        "code": "SYSTEMIC_SOCIAL_CRITIC",
+        "label": "Systemic Critic",
+        "short_tag": "🏭 Systemic Critic",
+        "definition": "Narrative voice focusing on structural, institutional, and political systems of oppression (capitalism, consumerism, patriarchy).",
+        "inclusion": "Critiques of subsidies, consumer culture, corporate greed, and institutionalized exploitation."
+      },
+      {
+        "code": "ETHICAL_COMPASSIONATE_ADVOCATE",
+        "label": "Ethical Advocate",
+        "short_tag": "🕊️ Ethical Advocate",
+        "definition": "Voice of conscience, empathy, and moral appeal, advocating for non-human animals through education and compassion.",
+        "inclusion": "Appeals to empathy, calls for changes in animal treatment, universal compassion, peaceful vegan advocacy."
+      },
+      {
+        "code": "MILITANT_REVOLUTIONARY_LIBERATOR",
+        "label": "Direct Action Liberator",
+        "short_tag": "💥 Direct Action",
+        "definition": "Activist voice advocating for or documenting direct action, underground resistance, animal rescue, sabotage, and ALF raids.",
+        "inclusion": "References to breaking cages, burning labs, underground ALF networks, militant resistance."
+      },
+      {
+        "code": "BEARING_WITNESS_OBSERVER",
+        "label": "Witness & Observer",
+        "short_tag": "👁️ Witness",
+        "definition": "Perspective centered on observing and documenting the suffering of others, characterized by shock, grief, or disgust.",
+        "inclusion": "Descriptions of watching slaughter/atrocities, feeling haunted by witnessed suffering."
+      },
+      {
+        "code": "EXPLOITED_CAPTIVE_SUBJECT",
+        "label": "Captive Animal Voice",
+        "short_tag": "🐾 Captive Voice",
+        "definition": "First-person narrative voice representing the exploited, caged, or slaughtered animal or victim.",
+        "inclusion": "First-person accounts of being caged, commodified, processed, or killed."
+      },
+      {
+        "code": "DEFIANT_NON_HUMAN_AGENT",
+        "label": "Rebellious Animal",
+        "short_tag": "🐺 Rebellious Animal",
+        "definition": "First-person narrative voice of an animal expressing active defiance, resistance, wildness, or retaliation.",
+        "inclusion": "Animals threatening retaliation, expressing pride in wild nature, organizing animal rebellion."
+      },
+      {
+        "code": "APOCALYPTIC_PROPHET_WARNING",
+        "label": "Ecological Warning",
+        "short_tag": "⚠️ Eco Warning",
+        "definition": "Narrative voice delivering urgent warnings of ecological collapse, global extinction, or civilizational doom.",
+        "inclusion": "Warnings of deforestation, resource wars, extinction, and final ultimatums to humanity."
+      },
+      {
+        "code": "CLINICAL_DETACHED_ANALYST",
+        "label": "Clinical Observer",
+        "short_tag": "🔬 Clinical View",
+        "definition": "Cold, objective, or scientific narrative voice describing exploitation or biological processes with detachment.",
+        "inclusion": "Scientific descriptions of biology or cold, emotionless descriptions of dissection/slaughter."
+      },
+      {
+        "code": "PERSONAL_LIFESTYLE_NARRATOR",
+        "label": "Personal Storyteller",
+        "short_tag": "👤 Personal Story",
+        "definition": "Narrative voice grounded in everyday personal experiences, lifestyle choices, personal conflicts, or storytelling.",
+        "inclusion": "Descriptions of eating at restaurants, personal health journeys, parental reflections, casual storytelling."
+      },
+      {
+        "code": "PERPETRATOR_DOMINANT_OPPRESSOR",
+        "label": "Oppressor Persona",
+        "short_tag": "👑 Oppressor Voice",
+        "definition": "Narrative voice representing the human oppressor or slaughterer justifying or enacting violence and supremacy.",
+        "inclusion": "First-person expressions of human superiority, right to enslave, or execution of slaughter."
+      }
+    ]
+  },
+  "lyrical_tone": {
+    "component_name": "Lyrical Tone",
+    "description": "The rhetorical posture, delivery style, and artistic tone of the lyrics.",
+    "parsimony_rule": "Select 1 primary dominant code. Only select a 2nd code if an equally prominent secondary posture exists.",
+    "codes": [
+      {
+        "code": "MORAL_CONDEMNATION_AND_INDICTMENT",
+        "label": "Moral Indictment",
+        "short_tag": "⚖️ Indictment",
+        "definition": "Accusatory, righteous posture framing actions as severe moral failures or crimes."
+      },
+      {
+        "code": "SYSTEMIC_AND_INSTITUTIONAL_CRITIQUE",
+        "label": "Systemic Critique",
+        "short_tag": "🏛️ Systemic",
+        "definition": "Tone targeting institutional power, state enforcement, corporate greed, and capitalism."
+      },
+      {
+        "code": "DEFIANT_RESISTANCE_AND_MILITANCY",
+        "label": "Defiant Resistance",
+        "short_tag": "✊ Defiant",
+        "definition": "Unyielding, rebellious posture of active resistance and readiness to fight back."
+      },
+      {
+        "code": "AGGRESSIVE_CONFRONTATION_AND_RETRIBUTION",
+        "label": "Aggressive Vengeance",
+        "short_tag": "🔥 Aggressive",
+        "definition": "Hostile, confrontational tone with direct threats, violent imagery, and demands for vengeance."
+      },
+      {
+        "code": "CYNICAL_DISILLUSIONMENT_AND_WEARINESS",
+        "label": "Cynical Weariness",
+        "short_tag": "🌧️ Cynical",
+        "definition": "Weary, exhausted, or deeply cynical tone reflecting hopelessness and broken trust."
+      },
+      {
+        "code": "URGENT_MOBILIZATION_AND_EXHORTATION",
+        "label": "Call to Action",
+        "short_tag": "📢 Call to Action",
+        "definition": "Urgent, rallying tone designed to mobilize listeners to immediate collective action."
+      },
+      {
+        "code": "APOCALYPTIC_WARNING_AND_FATALISM",
+        "label": "Apocalyptic Fatalism",
+        "short_tag": "🌋 Fatalistic",
+        "definition": "Prophetic, doom-laden tone warning of inevitable ecological collapse or cosmic retribution."
+      },
+      {
+        "code": "CONDESCENDING_SNARK_AND_SATIRE",
+        "label": "Satirical & Sarcastic",
+        "short_tag": "😏 Satirical",
+        "definition": "Sarcastic, mocking, or intellectually superior tone using snark or condescension."
+      },
+      {
+        "code": "DIDACTIC_AND_PHILOSOPHICAL_ADVOCACY",
+        "label": "Philosophical Advocacy",
+        "short_tag": "📘 Philosophical",
+        "definition": "Educational, rational, or philosophical tone using logical arguments, health facts, or ethics."
+      },
+      {
+        "code": "INTIMATE_DEVOTION_AND_SELF_RECKONING",
+        "label": "Introspective Reckoning",
+        "short_tag": "🪞 Introspective",
+        "definition": "Deeply personal, introspective tone focusing on self-guilt, personal sacrifice, or internal struggle."
+      },
+      {
+        "code": "VISCERAL_OUTRAGE_AND_LAMENTATION",
+        "label": "Visceral Lament",
+        "short_tag": "💔 Lamentation",
+        "definition": "Highly emotional, raw, graphic tone expressing deep grief and horror at physical suffering."
+      },
+      {
+        "code": "CLINICAL_DETACHMENT",
+        "label": "Clinical Detachment",
+        "short_tag": "🩺 Clinical",
+        "definition": "Cold, objective, sterile tone describing violent or surgical acts with technical precision."
+      },
+      {
+        "code": "SKEPTICAL_INQUIRY_AND_INTERROGATION",
+        "label": "Critical Inquiry",
+        "short_tag": "❓ Critical",
+        "definition": "Questioning tone challenging assumptions, addressing external skepticism, or doubting narratives."
+      },
+      {
+        "code": "UNIVERSALIZING_EQUIVALENCE",
+        "label": "Biological Equivalence",
+        "short_tag": "🧬 Equal Species",
+        "definition": "Philosophical tone leveling human and animal biology ('flesh and blood is animal, is you and me')."
+      },
+      {
+        "code": "COMPROMISED_IDEALISM",
+        "label": "Conflicted Idealism",
+        "short_tag": "⚡ Conflicted",
+        "definition": "Self-aware, pragmatic, or hypocritical tone acknowledging the gap between ideals and convenience."
+      }
+    ]
+  },
+  "intensity": {
+    "component_name": "Rhetorical Intensity",
+    "description": "The energy level, emotional extremity, and urgency of the lyrical delivery.",
+    "parsimony_rule": "Select 1 primary dominant code. Only select a 2nd code if an equally prominent dual intensity exists.",
+    "codes": [
+      {
+        "code": "MORAL_OUTRAGE_AND_CONDEMNATION",
+        "label": "Moral Outrage",
+        "short_tag": "🔥 Outrage",
+        "definition": "Intense ethical condemnation, indignation, and judgment against atrocities."
+      },
+      {
+        "code": "HOSTILE_AND_AGGRESSIVE_CONFRONTATION",
+        "label": "Aggressive Assault",
+        "short_tag": "⚔️ Hostile",
+        "definition": "Direct, highly aggressive, profane verbal attacks aimed at adversaries."
+      },
+      {
+        "code": "DEFIANT_RESOLVE_AND_MILITANCY",
+        "label": "Defiant Resolve",
+        "short_tag": "🛡️ Defiant",
+        "definition": "Expressions of unyielding determination and militant commitment to a cause."
+      },
+      {
+        "code": "VISCERAL_HORROR_AND_ABJECTION",
+        "label": "Visceral Graphic Horror",
+        "short_tag": "🩸 Graphic Horror",
+        "definition": "Vivid, graphic, emotionally intense depictions of slaughter, decay, and physical dread."
+      },
+      {
+        "code": "URGENT_AND_REVOLUTIONARY_IMPERATIVE",
+        "label": "Revolutionary Urgency",
+        "short_tag": "⚡ Urgent",
+        "definition": "High-intensity demands for immediate action, revolution, or behavioral change."
+      },
+      {
+        "code": "APOCALYPTIC_DOOM_AND_RETRIBUTION",
+        "label": "Apocalyptic Doom",
+        "short_tag": "🌑 Doomsday",
+        "definition": "Rhetoric centered on imminent collapse, inevitable retribution, and cosmic doom."
+      },
+      {
+        "code": "SYSTEMIC_AND_STRUCTURAL_INDICTMENT",
+        "label": "Structural Indictment",
+        "short_tag": "🏢 Structural",
+        "definition": "Analytical yet intense critiques targeting institutionalized oppression and capital."
+      },
+      {
+        "code": "DESPERATE_PLEA_AND_VULNERABILITY",
+        "label": "Desperate Plea",
+        "short_tag": "🥺 Vulnerable",
+        "definition": "Low-to-mid-intensity expressions of acute vulnerability, desperation, and pleading."
+      },
+      {
+        "code": "DETACHED_CYNICISM_AND_RESIGNATION",
+        "label": "Jaded Resignation",
+        "short_tag": "😶 Jaded",
+        "definition": "Subdued, jaded, or clinically detached perspectives on suffering."
+      },
+      {
+        "code": "VIOLENT_RETALIATION_AND_EXALTATION",
+        "label": "Violent Vengeance",
+        "short_tag": "💣 Retaliation",
+        "definition": "Extreme explicit threats or celebrations of physical violence against oppressors."
+      }
+    ]
+  },
+  "clarity": {
+    "component_name": "Lyric Clarity & Directness",
+    "description": "How directly or indirectly animal exploitation, slaughter, or vegan ethics are named.",
+    "parsimony_rule": "Select 1 primary dominant code.",
+    "codes": [
+      {
+        "code": "THEMATIC_ABSENCE",
+        "label": "Minor Theme",
+        "short_tag": "⚪ Minor",
+        "definition": "Complete lack of reference to animal exploitation, slaughter, vivisection, or vegan ethics."
+      },
+      {
+        "code": "EXPLICIT_GRAPHIC_VIOLENCE_SLAUGHTER",
+        "label": "Graphic Slaughter",
+        "short_tag": "🥩 Graphic Slaughter",
+        "definition": "Visceral, detailed, highly graphic descriptions of physical violence and butchery."
+      },
+      {
+        "code": "EXPLICIT_VEGAN_LIBERATION_NAMING",
+        "label": "Explicitly Vegan",
+        "short_tag": "🌱 Explicitly Vegan",
+        "definition": "Direct, unambiguous naming of 'vegan', 'veganism', 'animal rights', or 'liberation'."
+      },
+      {
+        "code": "EXPLICIT_VIVISECTION_SCIENTIFIC_CRUELTY",
+        "label": "Vivisection & Lab Cruelty",
+        "short_tag": "🧪 Vivisection",
+        "definition": "Direct naming and depiction of lab testing, vivisection, and scientific experiments."
+      },
+      {
+        "code": "DIRECT_CONSUMPTION_ACCUSATION_CONDEMNATION",
+        "label": "Dietary Accusation",
+        "short_tag": "🍽️ Accusation",
+        "definition": "Direct moral confrontation accusing the consumer of complicity in animal death ('meat is murder')."
+      },
+      {
+        "code": "SYSTEMIC_COMMODIFICATION_CRITIQUE",
+        "label": "Commodification Critique",
+        "short_tag": "🏷️ Commodification",
+        "definition": "Critique focused on industrial capitalist systems reducing sentient lives to inventory/products."
+      },
+      {
+        "code": "DIETARY_MATERIAL_EXCLUSION_ADVOCACY",
+        "label": "Plant-Based Advocacy",
+        "short_tag": "🥗 Plant-Based",
+        "definition": "Listing animal materials/foods to avoid ('no meat, no dairy, no fur') or promoting plant-based diets."
+      },
+      {
+        "code": "IMPLICIT_UNIVERSAL_ETHICAL_CRITIQUE",
+        "label": "Subtle Ethical Critique",
+        "short_tag": "💡 Subtle Ethical",
+        "definition": "Indirect, subtle, or universalized expressions of empathy for all living things."
+      },
+      {
+        "code": "SYMBOLIC_ALLEGORICAL_REPRESENTATION",
+        "label": "Allegory & Metaphor",
+        "short_tag": "📖 Allegorical",
+        "definition": "Use of metaphor, fable, skinning allegories, or symbolic language."
+      },
+      {
+        "code": "AMBIVALENT_OR_PRO_CONSUMPTION",
+        "label": "Ambivalent / Carnist View",
+        "short_tag": "❓ Ambivalent",
+        "definition": "Lyrics expressing conflict or actively normalizing animal consumption ('pizza with cheese')."
+      }
+    ]
+  },
+  "focus_amount": {
+    "component_name": "Focus Amount",
+    "description": "The degree to which animal liberation/vegan ethics forms the central thesis versus a secondary or minor theme.",
+    "parsimony_rule": "Select 1 primary dominant code.",
+    "codes": [
+      {
+        "code": "CENTRAL_THESIS",
+        "label": "Central Thesis",
+        "short_tag": "🎯 Central Thesis",
+        "definition": "The primary, overriding lyrical focus is dedicated to animal rights, anti-exploitation, or veganism."
+      },
+      {
+        "code": "MAJOR_INTERSECTIONAL_PILLAR",
+        "label": "Intersectional Pillar",
+        "short_tag": "🔗 Intersectional",
+        "definition": "Animal exploitation is framed as a co-equal, integrated pillar alongside capitalism, patriarchy, or racism."
+      },
+      {
+        "code": "SECONDARY_CONTEXTUAL_MENTION",
+        "label": "Secondary Mention",
+        "short_tag": "📌 Secondary Focus",
+        "definition": "Animal suffering is discussed in detail but serves as a secondary theme or specific verse illustration."
+      },
+      {
+        "code": "MINOR_PERIPHERAL_REFERENCE",
+        "label": "Peripheral Reference",
+        "short_tag": "🔹 Peripheral",
+        "definition": "Brief, passing, or peripheral reference (e.g. single line in a list or lifestyle mention)."
+      },
+      {
+        "code": "ABSENCE_OF_FOCUS",
+        "label": "Minor Focus",
+        "short_tag": "⚪ Minor",
+        "definition": "Complete absence of references to animal welfare, veganism, or non-human ethics."
+      },
+      {
+        "code": "INSUFFICIENT_DATA",
+        "label": "Insufficient Text",
+        "short_tag": "❓ Insufficient",
+        "definition": "Lacks sufficient lyrical content to perform thematic analysis (instrumental or missing text)."
+      }
+    ]
+  },
+  "target_audience": {
+    "component_name": "Target Audience",
+    "description": "The specific individuals, groups, institutions, or societal entities addressed or criticized.",
+    "parsimony_rule": "Select 1 primary dominant code. Only select a 2nd code if an equally prominent secondary target exists.",
+    "codes": [
+      {
+        "code": "CONSUMERS_OF_ANIMAL_PRODUCTS",
+        "label": "Meat & Dairy Consumers",
+        "short_tag": "🥩 Consumers",
+        "definition": "Individuals who actively purchase, consume, or wear animal-derived products."
+      },
+      {
+        "code": "COMPLACENT_AND_INDIFFERENT_PUBLIC",
+        "label": "Bystander Public",
+        "short_tag": "👥 Bystanders",
+        "definition": "General public who are aware of cruelty but choose to look away, remain silent, or tolerate injustice."
+      },
+      {
+        "code": "CORPORATE_AND_INDUSTRIAL_EXPLOITERS",
+        "label": "Agribusiness & Industry",
+        "short_tag": "🏭 Agribusiness",
+        "definition": "Corporate entities, agribusiness, factory farms, slaughterhouses, and capitalist structures."
+      },
+      {
+        "code": "SCIENTIFIC_AND_MEDICAL_RESEARCHERS",
+        "label": "Vivisection Labs",
+        "short_tag": "🥼 Lab Researchers",
+        "definition": "Labs, medical researchers, and pharmaceutical companies performing animal testing."
+      },
+      {
+        "code": "SYSTEMIC_AND_IDEOLOGICAL_STRUCTURES",
+        "label": "State & Ideology",
+        "short_tag": "🏛️ State/System",
+        "definition": "Governments, legal systems, police, patriarchy, fascism, and oppressive dogmas."
+      },
+      {
+        "code": "DIRECT_PERPETRATORS_AND_ABUSERS",
+        "label": "Hunters & Abusers",
+        "short_tag": "🏹 Abusers/Hunters",
+        "definition": "Individuals directly inflicting physical violence, hunting, circuses, or slaughter."
+      },
+      {
+        "code": "HUMANITY_AND_ANTHROPOCENTRIC_SOCIETY",
+        "label": "Human Society at Large",
+        "short_tag": "🌐 Humanity",
+        "definition": "Broad species-level critique targeting the human race and human superiority."
+      },
+      {
+        "code": "HYPOCRITES_AND_SELF_DECEIVERS",
+        "label": "Hypocritical Animal Lovers",
+        "short_tag": "🎭 Hypocritical Lovers",
+        "definition": "Groups claiming high moral standing (pro-lifers, pet owners) while ignoring animal slaughter."
+      },
+      {
+        "code": "FUTURE_GENERATIONS_AND_YOUTH",
+        "label": "Youth & Future Generations",
+        "short_tag": "🌱 Youth",
+        "definition": "Children, youth, and future generations representing hope or innocent inheritors of crisis."
+      },
+      {
+        "code": "EXPLOITED_AND_INTERSECTIONAL_VICTIMS",
+        "label": "Oppressed Groups",
+        "short_tag": "✊ Oppressed",
+        "definition": "Captive animals, third-world peasants, or marginalized populations targeted as allies."
+      },
+      {
+        "code": "INDIVIDUAL_AND_INTERPERSONAL_TARGETS",
+        "label": "Personal Friend / Self",
+        "short_tag": "👤 Individual",
+        "definition": "Specific individuals, the self in the mirror, or personal friends/caregivers."
+      },
+      {
+        "code": "UNSPECIFIED",
+        "label": "General Audience",
+        "definition": "No specific target audience explicitly identified or instrumental."
+      }
+    ]
+  },
+  "emotions": {
+    "component_name": "Overarching Emotions",
+    "description": "The primary emotional tenor and affective states conveyed by the song as a complete work.",
+    "parsimony_rule": "Select 1 to 3 dominant key emotions that best reflect the song's emotional arc.",
+    "codes": [
+      {
+        "code": "MORAL_OUTRAGE",
+        "label": "Moral Outrage",
+        "short_tag": "🔥 Outrage",
+        "definition": "Intense anger triggered by perceived violations of ethical boundaries and slaughter."
+      },
+      {
+        "code": "MILITANT_DEFIANCE",
+        "label": "Defiant Resistance",
+        "short_tag": "✊ Defiant",
+        "definition": "Active, confrontational resistance against oppressive systems, cages, or slaughter."
+      },
+      {
+        "code": "ACCUSATORY_CONDEMNATION",
+        "label": "Accusatory Blame",
+        "short_tag": "⚖️ Blame",
+        "definition": "Direct blame calling out consumers/society as murderers, hypocrites, or barbarians."
+      },
+      {
+        "code": "VENGEFUL_RETRIBUTION",
+        "label": "Vengeful Retribution",
+        "short_tag": "💥 Retribution",
+        "definition": "Desires or threats of physical retaliation and gallows against animal abusers."
+      },
+      {
+        "code": "VISCERAL_RAGE",
+        "label": "Visceral Vocal Rage",
+        "short_tag": "⚡ Rage",
+        "definition": "Raw, explosive, unrefined shouting and vocal fury."
+      },
+      {
+        "code": "MILITANT_SOLIDARITY",
+        "label": "Activist Solidarity",
+        "short_tag": "🤝 Solidarity",
+        "definition": "Intense loyalty to underground activist fronts (ALF)."
+      },
+      {
+        "code": "SARDONIC_MOCKERY",
+        "label": "Sardonic Mockery",
+        "short_tag": "😏 Mockery",
+        "definition": "Sarcastic, ironic humor exposing meat-eater hypocrisies."
+      },
+      {
+        "code": "ECOLOGICAL_FURY",
+        "label": "Eco Fury",
+        "short_tag": "🌿 Eco Fury",
+        "definition": "Intense anger directed at industrial destruction of ecosystems and nature."
+      },
+      {
+        "code": "EMPATHETIC_ANGUISH",
+        "label": "Empathetic Anguish",
+        "short_tag": "💔 Anguish",
+        "definition": "Deep, agonizing pain felt on behalf of suffering animals."
+      },
+      {
+        "code": "ECOLOGICAL_GRIEF",
+        "label": "Eco Grief",
+        "short_tag": "🍂 Eco Grief",
+        "definition": "Mourning extinct species, rainforest loss, and planetary ruin."
+      },
+      {
+        "code": "MOURNFUL_ELEGY",
+        "label": "Mournful Elegy",
+        "short_tag": "🕯️ Elegy",
+        "definition": "Poetic, formal laments dedicated to animal victims."
+      },
+      {
+        "code": "COMPASSIONATE_SORROW",
+        "label": "Compassionate Sorrow",
+        "short_tag": "🥺 Sorrow",
+        "definition": "Tender sadness and pity for captive or abandoned animals."
+      },
+      {
+        "code": "DESOLATE_LOSS",
+        "label": "Desolate Loss",
+        "short_tag": "🌑 Loss",
+        "definition": "Profound, irreversible grief following slaughter or extinction."
+      },
+      {
+        "code": "UNIVERSAL_EMPATHY",
+        "label": "Universal Kinship",
+        "short_tag": "🌐 Kinship",
+        "definition": "Kinship and equal empathy felt for all living creatures."
+      },
+      {
+        "code": "VISCERAL_HORROR",
+        "label": "Graphic Horror",
+        "short_tag": "🩸 Horror",
+        "definition": "Shock and terror induced by blood, gore, and slaughterhouse mechanics."
+      },
+      {
+        "code": "VISCERAL_DISGUST",
+        "label": "Meat Disgust",
+        "short_tag": "🤢 Meat Disgust",
+        "definition": "Physical nausea and revulsion at eating animal flesh or corpses."
+      },
+      {
+        "code": "MISANTHROPIC_DISGUST",
+        "label": "Misanthropy",
+        "short_tag": "💀 Misanthropy",
+        "definition": "Revulsion at the human species as a disease or inherently corrupt."
+      },
+      {
+        "code": "APOCALYPTIC_DREAD",
+        "label": "Apocalyptic Dread",
+        "short_tag": "🌋 Dread",
+        "definition": "Terrifying anticipation of planetary collapse or extinction."
+      },
+      {
+        "code": "CAPTIVITY_HORROR_ALIENATION",
+        "label": "Captivity Alienation",
+        "short_tag": "⛓️ Alienation",
+        "definition": "Claustrophobic terror of being caged, commodified, or tested on."
+      },
+      {
+        "code": "EXISTENTIAL_DESPAIR",
+        "label": "Existential Despair",
+        "definition": "Profound hopeless void facing global slaughter."
+      },
+      {
+        "code": "FATALISTIC_RESIGNATION",
+        "label": "Fatalistic Resignation",
+        "short_tag": "🥀 Resignation",
+        "definition": "Passive acceptance of inevitable extinction or human moral failure."
+      },
+      {
+        "code": "CYNICAL_DISILLUSIONMENT",
+        "label": "Disillusionment",
+        "short_tag": "🌧️ Disillusioned",
+        "definition": "Loss of faith in human morality, corporate promises, and greenwashing."
+      },
+      {
+        "code": "NIHILISTIC_ANNIHILATION",
+        "label": "Total Annihilation",
+        "short_tag": "💥 Annihilation",
+        "definition": "Desire for total destruction of human civilization to end suffering."
+      },
+      {
+        "code": "DESPERATE_YEARNING",
+        "label": "Desperate Yearning",
+        "short_tag": "🕊️ Yearning",
+        "definition": "Anguished longing for freedom or relief from pain."
+      },
+      {
+        "code": "COLLECTIVE_GUILT",
+        "label": "Collective Guilt",
+        "short_tag": "⚖️ Human Guilt",
+        "definition": "Shared moral guilt for human complicity in slaughter."
+      },
+      {
+        "code": "COMPLICIT_SHAME",
+        "label": "Species Shame",
+        "short_tag": "😔 Shame",
+        "definition": "Deep embarrassment at belonging to a species that inflicts such cruelty."
+      },
+      {
+        "code": "MORAL_SELF_SCRUTINY",
+        "label": "Self-Scrutiny",
+        "short_tag": "🪞 Self-Scrutiny",
+        "definition": "Self-reflective questioning leading to a moral awakening."
+      },
+      {
+        "code": "URGENT_ACCOUNTABILITY",
+        "label": "Demand for Apology",
+        "short_tag": "📢 Accountability",
+        "definition": "Direct demand for immediate moral action and apology to animals."
+      },
+      {
+        "code": "COMPASSIONATE_HOPE",
+        "label": "Vegan Hope",
+        "short_tag": "🌱 Hope",
+        "definition": "Optimistic faith in youth activism and a vegan world."
+      },
+      {
+        "code": "RESILIENT_DEFIANCE",
+        "label": "Unbroken Moral Courage",
+        "short_tag": "🛡️ Courage",
+        "definition": "Unyielding, long-term moral courage standing firm against all odds."
+      },
+      {
+        "code": "LIBERATION_JOY",
+        "label": "Empty Cage Joy",
+        "short_tag": "🔓 Liberation Joy",
+        "definition": "Exuberant joy celebrating animal rescues and empty cages."
+      },
+      {
+        "code": "EMPOWERED_ADVOCACY",
+        "label": "Empowered Education",
+        "short_tag": "✨ Advocacy",
+        "definition": "Confident, active conviction advocating for plant-based nutrition."
+      }
+    ]
+  }
+}

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
-import { readBrowseState, applyFilterState, writeStoredBrowseState, EMPTY_FILTERS } from '../utils/browseUrlState';
+import { readBrowseState, applyFilterState, writeStoredBrowseState, EMPTY_FILTERS, SCALAR_KEYS } from '../utils/browseUrlState';
 import GenreFilterTree from './GenreFilterTree';
 import ThemeFacetTree from './ThemeFacetTree';
+import ScalarFacetGroups from './ScalarFacetGroups';
 import FilterChips from './FilterChips';
 
 const DIM_KEYS = ['themes', 'targets', 'actions', 'tactics', 'moral_frames'];
@@ -14,6 +15,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
   const [filters, setFilters] = useState(() => readBrowseState(searchParams).filters);
   const [filterOptions, setFilterOptions] = useState({});
   const [facets, setFacets] = useState({});
+  const [scalarFacets, setScalarFacets] = useState({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -50,6 +52,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     DIM_KEYS.forEach(k => { if (filters[k].length) p[k] = filters[k]; });
     if (filters.facet_groups.length) p.facet_groups = filters.facet_groups;
     if (filters.facet_subdims.length) p.facet_subdims = filters.facet_subdims;
+    SCALAR_KEYS.forEach(k => { if (filters[k].length) p[k] = filters[k]; });
     return p;
   }, [searchQuery, filters, currentPage]);
 
@@ -90,6 +93,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         availability: data.availability,
       });
       setFacets(data.facets || {});
+      setScalarFacets(data.scalar_facets || {});
     }, 300);
     return () => clearTimeout(t);
   }, [buildSearchParams]);
@@ -197,6 +201,15 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     return { groups, subdims };
   }, [facets]);
 
+  const scalarLabelMap = useMemo(() => {
+    const m = {};
+    SCALAR_KEYS.forEach(k => {
+      m[k] = {};
+      (scalarFacets[k]?.options || []).forEach(o => { m[k][o.code] = o.label; });
+    });
+    return m;
+  }, [scalarFacets]);
+
   const chips = useMemo(() => {
     const list = [];
     if (searchQuery) list.push({ key: 'q:', label: `"${searchQuery}"` });
@@ -225,8 +238,10 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     });
     DIM_KEYS.forEach(dim => filters[dim].forEach(code =>
       list.push({ key: `${dim}:${code}`, label: codeLabelMap[dim]?.[code] || code })));
+    SCALAR_KEYS.forEach(k => filters[k].forEach(code =>
+      list.push({ key: `${k}:${code}`, label: scalarLabelMap[k]?.[code] || code })));
     return list;
-  }, [searchQuery, filters, filterOptions, lengthLabelMap, codeLabelMap, facetLabelMaps]);
+  }, [searchQuery, filters, filterOptions, lengthLabelMap, codeLabelMap, facetLabelMaps, scalarLabelMap]);
 
   const removeChip = (key) => {
     const [type, value] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
@@ -248,6 +263,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       const [dk, id] = [value.slice(0, value.indexOf(':')), value.slice(value.indexOf(':') + 1)];
       return onToggleGroup(dk, id, false);
     }
+    if (SCALAR_KEYS.includes(type)) return toggleInArray(type, value, false);
     if (DIM_KEYS.includes(type)) return toggleInArray(type, value, false);
   };
 
@@ -267,11 +283,16 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         facets={facets}
         selected={filters}
         onToggle={onToggleFacet}
-        codedCount={filterOptions.availability?.has_analysis || 0}
+        codedCount={filterOptions.availability?.coded_count || 0}
         selectedGroups={filters.facet_groups}
         selectedSubdims={filters.facet_subdims}
         onToggleGroup={onToggleGroup}
         onToggleSubdim={onToggleSubdim}
+      />
+      <ScalarFacetGroups
+        groups={scalarFacets}
+        selected={filters}
+        onToggle={(key, code, checked) => toggleInArray(key, code, checked)}
       />
       <div className="filter-section">
         <h3 className="filter-title">Year range</h3>

@@ -860,6 +860,22 @@
   margin: 0 0 var(--space-2);
 }
 
+/* Collapsible group header. A <button> defaults to text-align:center — the B3 theme-tree
+   misalignment bug — so the left alignment here is deliberate, not decorative. */
+.filter-title-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: var(--text-label);
+  text-align: left;
+  cursor: pointer;
+}
+
 .filter-options {
   display: flex;
   flex-direction: column;

@@ -6,7 +6,7 @@ function AnalysisPanel({ wb }) {
       <h2>Analysis</h2>
       {wb.analysis ? (
         <>
-          <p className="wb-readonly">Coded with gemma4:latest. Read-only — added by the external analysis process.</p>
+          <p className="wb-readonly">Read-only — added by the external analysis process.</p>
           <LyricalAnalysis analysis={wb.analysis} />
         </>
       ) : (
