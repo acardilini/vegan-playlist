@@ -280,9 +280,14 @@ router.get('/search', async (req, res) => {
     const queryParams = [...bw.params];
     let paramIndex = bw.nextIndex;
     const effectiveGenreJoin = bw.joins.effectiveGenre ? genres_svc.EFFECTIVE_GENRE_JOIN : '';
-    const facetJoin = bw.joins.analysis
-      ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.CODE_MODEL}'`
-      : '';
+    const facetJoin = [
+      bw.joins.analysis
+        ? `JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.CODE_MODEL}'`
+        : '',
+      bw.joins.scalarAnalysis
+        ? `JOIN song_lyric_analysis sca ON sca.song_id = s.id AND sca.model_used = '${analysis.SCALAR_MODEL}'`
+        : '',
+    ].filter(Boolean).join(' ');
 
     // Build WHERE clause
     const whereClause = whereConditions.length > 0 ?

@@ -4,6 +4,7 @@
 // caller prepends it. Booleans arrive as the string 'true'.
 const genres_svc = require('./genres');
 const analysis = require('./analysis');
+const codebook = require('./metadataCodebook');
 
 function asList(v) { return v == null ? [] : (Array.isArray(v) ? v : [v]); }
 
@@ -55,6 +56,20 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
     if (f.needsJoin) { where.push(...f.clauses); params.push(...f.params); idx += f.params.length; joins.analysis = true; }
   }
 
+  // Scalar metadata components — one exclude-self group per component, so an open
+  // sidebar group stays widenable. OR within a component, AND across (spec 2026-07-22).
+  const scalarSel = {};
+  for (const c of codebook.COMPONENTS) {
+    if (inc(`scalar:${c.key}`)) scalarSel[c.key] = filters[c.key];
+  }
+  const sc = codebook.scalarSelectionClauses(scalarSel, idx);
+  if (sc.needsJoin) {
+    where.push(...sc.clauses);
+    params.push(...sc.params);
+    idx = sc.nextIndex;
+    joins.scalarAnalysis = true;
+  }
+
   return { where, params, nextIndex: idx, joins };
 }
 
@@ -65,6 +80,7 @@ function joinSql(joins) {
   if (joins.artists) s += ` JOIN song_artists sart ON s.id = sart.song_id JOIN artists a ON sart.artist_id = a.id`;
   if (joins.effectiveGenre) s += ` ${genres_svc.EFFECTIVE_GENRE_JOIN}`;
   if (joins.analysis) s += ` JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = '${analysis.CODE_MODEL}'`;
+  if (joins.scalarAnalysis) s += ` JOIN song_lyric_analysis sca ON sca.song_id = s.id AND sca.model_used = '${analysis.SCALAR_MODEL}'`;
   return s;
 }
 

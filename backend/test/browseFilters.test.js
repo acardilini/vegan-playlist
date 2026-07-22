@@ -53,3 +53,34 @@ test('joinSql emits only the needed joins', () => {
   assert.ok(b.joinSql({ effectiveGenre: true }).includes('LATERAL'));
   assert.ok(b.joinSql({ analysis: true }).includes('song_lyric_analysis sa'));
 });
+
+test('buildWhere scalar components set the scalar join and one clause each', () => {
+  const r = b.buildWhere({ perspective: ['MORAL_ACCUSER_JUDGE'], emotions: ['MORAL_OUTRAGE'] });
+  assert.ok(r.joins.scalarAnalysis);
+  assert.ok(!r.joins.analysis, 'code-tier join not needed for scalar filters');
+  assert.ok(r.where.includes('sca.perspective = ANY($1::text[])'));
+  assert.ok(r.where.includes('sca.emotions && $2::text[]'));
+  assert.equal(r.nextIndex, 3);
+});
+
+test('buildWhere excludes one scalar component but keeps its siblings', () => {
+  const r = b.buildWhere(
+    { perspective: ['MORAL_ACCUSER_JUDGE'], clarity: ['SYSTEMIC_COMMODIFICATION_CRITIQUE'] },
+    { exclude: 'scalar:perspective' });
+  assert.ok(!r.where.some(c => c.includes('sca.perspective')), 'own group excluded');
+  assert.ok(r.where.some(c => c.includes('sca.clarity')), 'sibling kept');
+  assert.ok(r.joins.scalarAnalysis);
+});
+
+test('buildWhere scalar params continue the shared index sequence', () => {
+  const r = b.buildWhere({ q: 'x', perspective: ['MORAL_ACCUSER_JUDGE'] });
+  assert.ok(r.where[0].includes('$1'), 'q takes $1');
+  assert.ok(r.where.some(c => c.includes('sca.perspective = ANY($2::text[])')));
+  assert.equal(r.nextIndex, 3);
+});
+
+test('joinSql emits the scalar-tier join under a distinct alias', () => {
+  const s = b.joinSql({ analysis: true, scalarAnalysis: true });
+  assert.ok(s.includes('song_lyric_analysis sa '), 'code tier keeps alias sa');
+  assert.ok(s.includes('song_lyric_analysis sca '), 'scalar tier uses alias sca');
+});
