@@ -11,7 +11,11 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
 - **Current session:** _**Triage 1a + 1b (2026-07-22) — two-tier analysis read + scalar browse filters —
-  BUILT on `session-triage-1a1b-analysis-tiers`, pending curator smoke + merge.** The DB-cleaning gate
+  DONE, merged to `main` (merge `a6eb05a`), curator-smoke-confirmed.** Merged main re-verified: backend
+  **114/114**, frontend build clean. The curator's smoke confirmed labels, filter behaviour, both sidebar
+  counts and the admin surfaces; its two follow-ups (uniform collapsible sidebar sections with
+  descriptions, and faster tooltips) were **not** treated as defects but specced and planned as a separate
+  presentation batch — see Next session. The DB-cleaning gate
   that parked triage 1a is **resolved**: the curator's reanalysis added `gemini-3.5-flash-lite` (679 rows /
   661 live), whose seven scalar components are **100% valid codebook enums** (0 unknown values), alongside a
   vendored `backend/data/master_metadata_codebook.json`. That made the work a **genuine two-tier split** —
@@ -66,29 +70,36 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Headless (puppeteer) smoke **15/15**; caught + fixed a StrictMode page-reset bug (value-signature ref).
   Also committed a refreshed `vector_space.json` (key-focus coding, B4 input, `2a22e37`). Prior: Fixes
   Round 1 merged to `main` 2026-07-20 (merge `2a07339`)._
-- **⚠ TWO BRANCHES PENDING CURATOR SMOKE + MERGE:** triages 2, 3, 3b are merged + curator-confirmed.
-  (1) **Triage 4 (browse/search polish)** on **`session-triage-4-browse-polish`** (backend 92/92 +
-  full-stack sort/sidebar smoke all-pass): **(e)** the Sort-by **direction toggle** (A–Z/Z–A,
-  Oldest/Newest) reverses results, shows in the URL, and resets on sort-field change; **(f)** the **filter
-  sidebar scrolls independently** while pinned. (2) **Triage 1a+1b** on
-  **`session-triage-1a1b-analysis-tiers`** (see Current session). _Note: both branches touch
-  `SearchAndFilter.jsx` and `browseUrlState.js` — merge one, then rebase/merge the other and re-smoke the
-  sidebar._
-- **Next session:** **Smoke + merge the two open branches** (triage 4, then triage 1a+1b — or the reverse;
-  see the merge-order note above), then **Triage 5 — lyric highlights from the translation + multi-language
-  `songs.language`** (needs a brainstorm). _Triage 1a's DB-cleaning gate is closed — the reanalysis landed
-  2026-07-22 and 1b shipped with it._
-- **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **BUILT
-  2026-07-22, pending merge**) · **2** (persist
+- **⚠ ONE BRANCH PENDING CURATOR SMOKE + MERGE — triage 4 only:** triages 2, 3, 3b and now 1a+1b are
+  merged + curator-confirmed. **Triage 4 (browse/search polish)** remains on
+  **`session-triage-4-browse-polish`** (backend 92/92 + full-stack sort/sidebar smoke all-pass), never
+  yet clicked through by the curator: **(e)** the Sort-by **direction toggle** (A–Z/Z–A, Oldest/Newest)
+  reverses results, shows in the URL, and resets on sort-field change; **(f)** the **filter sidebar
+  scrolls independently** while pinned.
+  **Merging it into today's `main` conflicts in exactly three files** (measured with `git merge-tree`,
+  not guessed): `frontend/src/utils/browseUrlState.js` (both branches add keys to
+  `ARRAY_KEYS`/`EMPTY_FILTERS`), `backend/test/browseFilters.test.js` (both append tests), and
+  `docs/PROJECT_STATE.md`. **`SearchAndFilter.jsx` and `components.css` auto-merge** — an earlier note
+  here claimed otherwise; git disagrees.
+  _Curator note during the 1a+1b smoke: the sidebar's independent scroll reads as "broken" on `main`.
+  It is not a regression — that CSS ships with triage 4 and returns when it merges._
+- **Next session:** **Smoke + merge triage 4**, then execute the **filter/analysis presentation batch**
+  (spec + plan already written: `specs/2026-07-22-filter-and-analysis-presentation-design.md`,
+  `plans/2026-07-22-filter-and-analysis-presentation.md`) on a fresh branch off `main` — it is
+  deliberately gated on triage 4 landing, since it must not touch the sidebar scroll rule. Then **Triage
+  5 — lyric highlights from the translation + multi-language `songs.language`** (needs a brainstorm).
+  _Triage 1a's DB-cleaning gate is closed — the reanalysis landed 2026-07-22 and 1b shipped with it._
+- **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **merged `a6eb05a`, confirmed
+  2026-07-22**) · **2** (persist
   browse state — ☑ **merged `bf2f1da`**) · **3** (featured redesign — ☑ **merged `6718cec`**, confirmed) ·
   **3b** (Featured management view — ☑ **merged `f3936b1`**, confirmed) · **4** (browse/search polish — ☑
   **BUILT, pending merge**) → **5**
   (lyric highlights from translation + multi-language) → **B4** (Explore vector map, with the vector "You
   might also like") → triage **6** (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-22 _(triage 1a+1b built on `session-triage-1a1b-analysis-tiers`: two-tier
-  analysis read + seven scalar browse filters; the reanalysis gate is closed and 1b un-deferred. Two
-  branches now pending curator smoke + merge — triage 4 and triage 1a+1b — and they overlap in
-  `SearchAndFilter.jsx`/`browseUrlState.js`.)_
+- **Last updated:** 2026-07-22 _(triage 1a+1b MERGED to `main` (`a6eb05a`) after curator smoke: two-tier
+  analysis read + seven scalar browse filters; the reanalysis gate is closed and 1b un-deferred. Only
+  **triage 4** is now pending — never curator-smoked; its merge conflicts in three measured files. The
+  smoke's UI follow-ups are specced + planned as the presentation batch, gated on triage 4 landing.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -777,8 +788,8 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
-- **2026-07-22 (Triage 1a+1b — two-tier analysis read + scalar browse filters, built + verified, pending
-  merge)** — On `session-triage-1a1b-analysis-tiers`, seven tasks, subagent-driven with a review gate each.
+- **2026-07-22 (Triage 1a+1b — two-tier analysis read + scalar browse filters, MERGED `a6eb05a` after
+  curator smoke)** — On `session-triage-1a1b-analysis-tiers`, seven tasks, subagent-driven with a review gate each.
   A start-of-session DB check found the curator's reanalysis had landed (`gemini-3.5-flash-lite`, 100%
   clean codebook enums), closing the gate that parked triage 1a and un-deferring 1b. Shipped:
   `services/metadataCodebook.js` (pure — labels, definitions, the suppressed-code set, scalar WHERE
@@ -789,8 +800,14 @@ Newest first. What actually happened each session.
   with an Audience row, codebook labels and definition tooltips. Also fixed a stale admin string
   (`AnalysisPanel.jsx` still said "Coded with gemma4:latest"), found by a reviewer outside the plan's
   scope. Backend **114/114** (+24 over the branch); frontend lint 0 errors + clean build; `has_analysis`
-  640 → **665**. Not yet merged — and it overlaps triage 4's branch in `SearchAndFilter.jsx` /
-  `browseUrlState.js`.
+  640 → **665**. **Merged no-ff to `main` (`a6eb05a`) after the curator's smoke**; merged main
+  re-verified 114/114 + clean build. The smoke also produced a scalar-data episode worth recording: the
+  curator re-ran the tier mid-session, which fixed empty `emotions` (321/679 → 4) but briefly shipped 10
+  off-codebook values (typos, prompt-template artifacts). They were corrected immediately, and the
+  episode drove a durable guard — `getSongAnalysis` now gates display through the same `cleanSelection`
+  the filters use, so the public page can only render a value you could also filter by. The smoke's two
+  UI follow-ups (uniform collapsible sidebar sections with descriptions; faster tooltips) became their
+  own spec + plan rather than scope creep, gated on triage 4 merging first.
 
 - **2026-07-21 (Triage 3b — Featured management view, built + verified, pending merge)** — On
   `session-triage-3b-featured-manage` (follow-up to triage 3 from the curator's smoke): an admin **Featured
