@@ -10,12 +10,31 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Triage 1a + 1b (2026-07-22) — two-tier analysis read + scalar browse filters —
+- **Current session:** _**Triage 5 (2026-07-23) — translation highlights + multi-language `songs.language` —
+  BUILT + fully reviewed, on branch `session-triage-5-translation-highlights-multilang` (12 commits from
+  `a791283`), AWAITING CURATOR SMOKE + MERGE.** Two curator requests built together because they meet on the
+  non-English songs. **(1) `songs.language` → `text[]`** (migration 009; the 38 existing values converted,
+  the `Mouri`→`Māori` typo fixed): a bilingual song now carries several languages, the browse Language
+  facet `unnest`s so it counts under **each** of them, the filter is array-overlap (`&&`) so ticking
+  either finds it, and the workbench Details panel gets a **chip editor** (removable chips, add-on-Enter,
+  one-click suggestions from a new read-only `GET /api/admin/languages`). **(2) Translation highlights:**
+  the workbench Lyrics panel gets a second **"+ Add selection"** on the Translation field — a public
+  key-lyric highlight can now be taken from the English translation (flat list, no schema change). The
+  public song page gains a **"Sung in" hero cell** and a translation-aware Key-lyrics note. Backend
+  **130/130**; frontend lint 0 errors + build clean; **puppeteer live smoke of all four curator flows
+  ALL PASS**, with the curated songs 4691/4692/4693 verified byte-restored afterward. Six tasks, each
+  per-task reviewed; **two real defects the reviewers caught (not in the plan)** were fixed on branch: a
+  dropped accessible name on the `label=""` translation field, and a **data-loss save race** in the chip
+  editor (two rounds — a promise-chain queue, then a pending-counter guard against an unrelated workbench
+  replacement clobbering the optimistic list). Final whole-branch opus review: **READY TO MERGE = YES**,
+  0 Critical / 0 Important / 5 deferrable Minor — reviewer independently re-queried the live DB to confirm
+  the migration lost nothing. Handled like triage 1–4: **held for the curator's own smoke before merge.**
+  Prior session: **Triage 1a + 1b (2026-07-22) — two-tier analysis read + scalar browse filters —
   DONE, merged to `main` (merge `a6eb05a`), curator-smoke-confirmed.** Merged main re-verified: backend
   **114/114**, frontend build clean. The curator's smoke confirmed labels, filter behaviour, both sidebar
   counts and the admin surfaces; its two follow-ups (uniform collapsible sidebar sections with
   descriptions, and faster tooltips) were **not** treated as defects but specced and planned as a separate
-  presentation batch — see Next session. The DB-cleaning gate
+  presentation batch. The DB-cleaning gate
   that parked triage 1a is **resolved**: the curator's reanalysis added `gemini-3.5-flash-lite` (679 rows /
   661 live), whose seven scalar components are **100% valid codebook enums** (0 unknown values), alongside a
   vendored `backend/data/master_metadata_codebook.json`. That made the work a **genuine two-tier split** —
@@ -81,31 +100,36 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   `SearchAndFilter.jsx` and `components.css` auto-merged. Merged `main`: backend **117/117**, lint 0
   errors, build clean. Branches `session-triage-4-browse-polish`, `session-triage-1a1b-analysis-tiers`
   and `integration-triage-4` deleted (local + remote).
-- **✅ NOTHING PENDING — the filter/analysis presentation batch is merged too.** Eight uniform
-  collapsible sidebar sections (only Genre & style open by default), the five theme dimensions and
-  seven metadata components nested as the same unit, fast `InfoTip` tooltips on attribute values and
-  chips, emotions on one line separated by `;`, and the five dimension blocks two-up. Two rounds of
-  curator smoke removed UI rather than adding it — first the always-on descriptions, then the "i"
-  icons and the song page's colour legends. Backend **121/121**, lint/build clean.
-- **Next session:** **Triage 5 — lyric highlights from the translation + multi-language
-  `songs.language`** (needs a brainstorm). After that: **B4 — Explore vector map** (with the vector
-  "You might also like"), then **triage 6 — the About analysis-explainer + AI-disclosure page**, which
-  now has a concrete job to do: the seven component and five dimension descriptions are already served
-  by the API and deliberately not shown in the browse UI, so that page is where they belong.
-  _Triage 1a's DB-cleaning gate is closed — the reanalysis landed 2026-07-22 and 1b shipped with it._
+- **⏳ ONE BRANCH PENDING — Triage 5** (`session-triage-5-translation-highlights-multilang`, 12 commits
+  from `a791283`): built + fully reviewed (final opus review **READY TO MERGE**, 0 Critical/0 Important),
+  smoke-passed, **awaiting the curator's own smoke + merge** — the same gate triage 1–4 used. Migration
+  009 has **already been applied to the live dev DB** (`songs.language` is `text[]` now), so the
+  curator's own `:5000` backend must be running this branch's code; a plain pre-migration `node
+  server.js` will 500 on browse until restarted. The filter/analysis presentation batch before it is
+  merged (backend **121/121**).
+- **Next session:** **the curator smokes Triage 5 and it merges**, then **B4 — Explore vector map** (with
+  the vector "You might also like"), then **triage 6 — the About analysis-explainer + AI-disclosure
+  page**, which now has a concrete job to do: the seven component and five dimension descriptions are
+  already served by the API and deliberately not shown in the browse UI, so that page is where they
+  belong. _Triage 1a's DB-cleaning gate is closed — the reanalysis landed 2026-07-22 and 1b shipped
+  with it._
 - **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **merged `a6eb05a`, confirmed
   2026-07-22**) · **2** (persist
   browse state — ☑ **merged `bf2f1da`**) · **3** (featured redesign — ☑ **merged `6718cec`**, confirmed) ·
   **3b** (Featured management view — ☑ **merged `f3936b1`**, confirmed) · **4** (browse/search polish — ☑
-  **merged `d3887ad`**, confirmed) → **5**
-  (lyric highlights from translation + multi-language) → **B4** (Explore vector map, with the vector "You
-  might also like") → triage **6** (About analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-22 _(triage **1a+1b** merged `a6eb05a` and triage **4** merged `d3887ad`,
-  both after curator smoke — **the curator-triage backlog 1–4 is now fully merged with no branches
-  pending**, and the **filter/analysis presentation batch** merged after it — uniform collapsible
-  sidebar sections, fast tooltips, two-up song-page dimensions, with two rounds of curator smoke
-  removing UI (descriptions, then the "i" icons and colour legends) rather than adding it. Merged
-  `main`: backend **121/121**, lint/build clean, **no branches pending**. Next: triage 5.)_
+  **merged `d3887ad`**, confirmed) · **5**
+  (lyric highlights from translation + multi-language — ☑ **built + reviewed on
+  `session-triage-5-translation-highlights-multilang`, awaiting curator smoke + merge**) → **B4**
+  (Explore vector map, with the vector "You might also like") → triage **6** (About analysis-explainer +
+  AI disclosure) → sub-projects **C–F**.
+- **Last updated:** 2026-07-23 _(**triage 5 built + fully reviewed** on
+  `session-triage-5-translation-highlights-multilang`, awaiting curator smoke + merge: `songs.language`
+  → `text[]` (migration 009, already applied to the live dev DB) with a workbench chip editor, `unnest`
+  facets, and array-overlap filtering; a "+ Add selection" picker on the translation field; a song-page
+  "Sung in" cell. Backend **130/130**, lint/build clean, live smoke all-pass with the curated dataset
+  byte-restored; final opus review **READY TO MERGE** (0 Critical/0 Important). Two reviewer-caught
+  defects fixed on branch — a dropped accessible name and a chip-editor save race. Prior: triage **1a+1b**
+  `a6eb05a`, triage **4** `d3887ad`, and the filter/analysis presentation batch, all merged.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -229,6 +253,39 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-23 — Triage 5: `songs.language` becomes a real `text[]`, and a translated highlight is just
+  another flat entry.** Two curator requests were built together because they only matter on the
+  non-English songs — of which the DB had exactly **3 live** (of 38 with any language), so converting now
+  was cheap and gets steadily more expensive. Decisions: **(1) `text[]` via migration 009**, not a
+  semicolon `TEXT` split at query time — the array keeps parsing in one place (`unnest`/`&&`) instead of
+  in every consumer, and a separator typo can't silently mint a phantom language. The migration is
+  idempotent (guarded `ALTER`, self-limiting typo fix) and folds in the **`Mouri`→`Māori`** correction;
+  it was applied to the live dev DB during the build. **(2) Highlights stay a flat newline-joined list**
+  — a translation selection is appended to the same `songs.lyrics_highlights` blob with no pairing and
+  no per-line tag (rejected: paired original+translation, and tagged two-groups — both needed a storage
+  change for a feature the curator described as "add the translated line too"). **No schema change** for
+  that half. **(3) The workbench language control is chips + catalogue suggestions** (rejected: free text
+  alone, which converges on nothing; a fixed dropdown, which needs a code edit per new language). A new
+  read-only `GET /api/admin/languages` feeds the suggestions over **all** statuses, because the curator
+  edits unpublished songs the public `/filter-options` can't see. **(4) The song page shows the
+  language(s)** as a hero "Sung in" cell (only when set) and varies the Key-lyrics note for non-English
+  songs. **Known imprecision the curator accepted:** the public payload can't tell an original-language
+  highlight from a translated one, so the note asserts a translation is present whenever the song is
+  non-English. **Two reviewer-caught defects, neither in the plan, fixed on branch:** the plan's
+  `label=""` translation field would have shipped an input with no accessible name (fixed with an
+  optional `ariaLabel` prop on `AutoText`, inert for its other 10 call sites); and the chip editor had a
+  **data-loss save race** — `savePanel` replaces the whole workbench, so two edits computed from the same
+  render lost one while "Saved" still showed. Fixed in two rounds: a promise-chain queue serialising the
+  saves, then a **pending-counter guard** so an unrelated workbench replacement (another panel's save, or
+  a top-bar action's `reload()`) can't clobber the optimistic list mid-flight. One narrow window (a
+  `reload()` GET whose snapshot predates an already-completed save) is consciously left as the
+  whole-object-replace limitation every workbench field shares. Verified: backend **130/130**; lint 0
+  errors; build clean; puppeteer smoke of all four curator flows all-pass with songs 4691/4692/4693
+  byte-restored; final opus whole-branch review **READY TO MERGE** (0 Critical / 0 Important / 5 deferred
+  Minor), reviewer re-querying the live DB to confirm the migration lost nothing. Spec/plan:
+  `specs/2026-07-23-triage-5-translation-highlights-and-multi-language-design.md`,
+  `plans/2026-07-23-triage-5-translation-highlights-and-multi-language.md`.
 
 - **2026-07-22 — Filter/analysis presentation: two shared primitives rather than more one-off markup,
   and the description text lives in the curator's own files.** The curator's 1a+1b smoke produced two UI

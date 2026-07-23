@@ -81,13 +81,22 @@ also like") → **6** About analysis-explainer + AI disclosure.
   `/search`, via a pure `browseFilters.buildOrderBy(sort_by, dir)`; a UI direction toggle with contextual
   labels (A–Z/Z–A, Oldest/Newest) that resets on sort-field change; `dir` persisted in the URL.
 
-**Admin song dashboard** _(→ workbench / lyrics enhancements)_
-- **Add a lyrics highlight from the English translation.** Today the highlights picker
-  (`+ Add selection`) works only on the main lyrics textarea. Curator wants to select-and-add from the
-  translation field too.
-- **Multiple / bilingual languages.** Some songs are bilingual; the curator wants to record more than
-  one language for `songs.language` (e.g. semicolon-separated). Needs a UI + storage/display decision
-  (multi-value language on the workbench Details panel and song page).
+**Admin song dashboard** _(→ workbench / lyrics enhancements)_ — ✅ **RESOLVED (triage 5, 2026-07-23 —
+built + fully reviewed on `session-triage-5-translation-highlights-multilang`; ⚠ awaiting curator smoke + merge)**
+- ✅ **Add a lyrics highlight from the English translation.** Done: the workbench Lyrics panel's
+  Translation field gets its own **"+ Add selection"** button (disabled until a translation is saved).
+  Highlights stay a **flat** newline-joined list — no pairing, no per-line tag, no schema change (curator
+  decision).
+- ✅ **Multiple / bilingual languages.** Done: `songs.language` migrated **`VARCHAR(40)` → `text[]`**
+  (migration 009; the 38 existing values converted, the `Mouri`→`Māori` typo fixed). The workbench
+  Details field is now a **chip editor** (removable chips, add-on-Enter, one-click suggestions from a new
+  read-only `GET /api/admin/languages`); the browse Language facet `unnest`s so a bilingual song counts
+  under **each** of its languages and the `&&` filter finds it under either; the public song page shows a
+  **"Sung in"** hero cell. Chose a real array over the semicolon-string option (parsing lives in one
+  place, no phantom-language typos). Backend 130/130; final opus whole-branch review **READY TO MERGE**
+  (0 Critical/0 Important). Spec/plan:
+  [`specs/2026-07-23-triage-5-translation-highlights-and-multi-language-design.md`](./superpowers/specs/2026-07-23-triage-5-translation-highlights-and-multi-language-design.md),
+  [`plans/2026-07-23-triage-5-translation-highlights-and-multi-language.md`](./superpowers/plans/2026-07-23-triage-5-translation-highlights-and-multi-language.md).
 
 **About / transparency** _(→ "About / AI-disclosure page" round)_
 - **New page explaining the analysis** — what types of analysis we do (thematic taxonomy, vector
