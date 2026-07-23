@@ -27,30 +27,42 @@ function LanguageChips({ wb, savePanel }) {
   }, []);
   useEffect(() => { loadSuggestions(); }, [loadSuggestions]);
 
-  // Prev/Next swaps `wb` without remounting — don't carry the previous song's tag over.
-  useEffect(() => { setStatus('idle'); }, [wb.id]);
-
   // Chip edits must serialise: savePanel replaces the whole workbench object, so
   // two saves computed from the same render's list would silently lose one edit
   // (clicking a suggestion blurs the input first, firing two mutations in a row).
   const listRef = useRef(langs);
-  useEffect(() => { listRef.current = Array.isArray(wb.language) ? wb.language : []; }, [wb.language]);
+  // Our own saves are the authority on this list while they are in flight. An
+  // unrelated wb replacement (another panel's save, or a top-bar action's
+  // reload()) can carry a snapshot older than the edit we just queued, so
+  // resync only when nothing of ours is outstanding.
+  // (A narrower window remains: a reload() GET whose snapshot predates a language
+  // save that has already completed. That's the same whole-object-replace
+  // limitation every other workbench field shares — not worth version tracking.)
+  const pendingRef = useRef(0);
+  useEffect(() => {
+    if (pendingRef.current === 0) listRef.current = Array.isArray(wb.language) ? wb.language : [];
+  }, [wb.language]);
   const chainRef = useRef(Promise.resolve());
 
   const mutate = (fn) => {
+    pendingRef.current += 1;
     chainRef.current = chainRef.current.then(async () => {
-      const before = listRef.current;
-      const next = fn(before);
-      if (next === before) return;              // no-op (blank or duplicate)
-      listRef.current = next;                   // a queued follow-up builds on this
-      setStatus('saving');
-      const res = await savePanel('details', { language: next });
-      if (res && res.ok) {
-        setStatus('saved');
-        loadSuggestions();                      // a newly typed language becomes a suggestion
-      } else {
-        listRef.current = before;               // server rejected it — undo the optimistic list
-        setStatus('error');
+      try {
+        const before = listRef.current;
+        const next = fn(before);
+        if (next === before) return;              // no-op (blank or duplicate)
+        listRef.current = next;                   // a queued follow-up builds on this
+        setStatus('saving');
+        const res = await savePanel('details', { language: next });
+        if (res && res.ok) {
+          setStatus('saved');
+          loadSuggestions();                      // a newly typed language becomes a suggestion
+        } else {
+          listRef.current = before;               // server rejected it — undo the optimistic list
+          setStatus('error');
+        }
+      } finally {
+        pendingRef.current -= 1;
       }
     });
   };
