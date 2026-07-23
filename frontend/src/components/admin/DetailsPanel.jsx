@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AutoText, SaveTag } from './SavedField';
 import { adminFetch } from '../../api/adminApi';
 
@@ -22,28 +22,49 @@ function LanguageChips({ wb, savePanel }) {
     adminFetch('/api/admin/languages')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d && Array.isArray(d.languages)) setSuggestions(d.languages.map((l) => l.value)); })
+      // Suggestions are a convenience only; a failed fetch must not disrupt curation.
       .catch(() => {});
   }, []);
   useEffect(() => { loadSuggestions(); }, [loadSuggestions]);
 
-  const save = async (next) => {
-    setStatus('saving');
-    const res = await savePanel('details', { language: next });
-    setStatus(res && res.ok ? 'saved' : 'error');
-    // A newly typed language becomes a suggestion for the next song.
-    if (res && res.ok) loadSuggestions();
+  // Prev/Next swaps `wb` without remounting — don't carry the previous song's tag over.
+  useEffect(() => { setStatus('idle'); }, [wb.id]);
+
+  // Chip edits must serialise: savePanel replaces the whole workbench object, so
+  // two saves computed from the same render's list would silently lose one edit
+  // (clicking a suggestion blurs the input first, firing two mutations in a row).
+  const listRef = useRef(langs);
+  useEffect(() => { listRef.current = Array.isArray(wb.language) ? wb.language : []; }, [wb.language]);
+  const chainRef = useRef(Promise.resolve());
+
+  const mutate = (fn) => {
+    chainRef.current = chainRef.current.then(async () => {
+      const before = listRef.current;
+      const next = fn(before);
+      if (next === before) return;              // no-op (blank or duplicate)
+      listRef.current = next;                   // a queued follow-up builds on this
+      setStatus('saving');
+      const res = await savePanel('details', { language: next });
+      if (res && res.ok) {
+        setStatus('saved');
+        loadSuggestions();                      // a newly typed language becomes a suggestion
+      } else {
+        listRef.current = before;               // server rejected it — undo the optimistic list
+        setStatus('error');
+      }
+    });
   };
 
-  const has = (v) => langs.some((l) => l.toLowerCase() === v.toLowerCase());
+  const has = (list, v) => list.some((l) => l.toLowerCase() === v.toLowerCase());
   const add = (value) => {
     const v = (value || '').trim();
     setDraft('');
-    if (!v || has(v)) return;
-    save([...langs, v]);
+    if (!v) return;
+    mutate((list) => (has(list, v) ? list : [...list, v]));
   };
-  const remove = (idx) => save(langs.filter((_, i) => i !== idx));
+  const remove = (value) => mutate((list) => list.filter((l) => l !== value));
 
-  const unused = suggestions.filter((s) => !has(s)).slice(0, 6);
+  const unused = suggestions.filter((s) => !has(langs, s)).slice(0, 6);
 
   return (
     <div className="wb-field wb-lang">
@@ -54,11 +75,12 @@ function LanguageChips({ wb, savePanel }) {
           : langs.map((l, idx) => (
               <span key={`${l}-${idx}`} className="wb-lang-chip">{l}
                 <button type="button" className="wb-lang-x" aria-label={`Remove ${l}`}
-                  onClick={() => remove(idx)}>×</button>
+                  onClick={() => remove(l)}>×</button>
               </span>
             ))}
       </div>
       <input className="input" value={draft} placeholder="Add a language, then press Enter"
+        aria-label="Add a language"
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(draft); } }}
         onBlur={() => add(draft)} />
