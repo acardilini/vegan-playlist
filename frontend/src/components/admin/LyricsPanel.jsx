@@ -116,7 +116,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
             onClick={() => addHighlightFrom(lyricsRef, 'lyrics')}>+ Add selection</button>
         </div>
         {highlights.length === 0
-          ? <p className="admin-stub">Select a line in the lyrics or translation box above, then "Add selection".</p>
+          ? <p className="admin-stub">Select a line in the lyrics or translation box above, then “Add selection”.</p>
           : <ul className="wb-highlights">
               {highlights.map((h, idx) => (
                 <li key={idx}><span>{h}</span>
