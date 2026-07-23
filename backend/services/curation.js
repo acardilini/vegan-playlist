@@ -228,11 +228,28 @@ function assertHttp(v, label) {
   }
 }
 
+// language is text[] since migration 009. Accepts an array (the workbench chip
+// editor), a legacy semicolon string, or ''/null to clear. Trims, drops blanks,
+// dedupes case-insensitively while keeping the curator's chosen casing + order.
+function normLanguages(v) {
+  if (v === undefined) return undefined;
+  if (v === null || v === '') return null;
+  const arr = Array.isArray(v) ? v : String(v).split(';');
+  const out = [];
+  for (const raw of arr) {
+    const s = String(raw).trim();
+    if (!s) continue;
+    if (out.some((k) => k.toLowerCase() === s.toLowerCase())) continue;
+    out.push(s);
+  }
+  return out.length ? out : null;
+}
+
 async function saveDetails(db, id, { title, language, status_notes } = {}) {
   await assertSong(db, id);
   const sets = [], params = [id];
   const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
-  add('title', title); add('language', language); add('status_notes', status_notes);
+  add('title', title); add('language', normLanguages(language)); add('status_notes', status_notes);
   if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
   return getWorkbench(db, id);
 }

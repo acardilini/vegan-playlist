@@ -263,7 +263,7 @@ test('facetTree accepts a constraint that narrows the counted set', async () => 
   // One coded song with theme killing; constrain to a non-matching language -> zero counts.
   const s = (await pool.query(
     `INSERT INTO songs (title, status, published, data_source, language)
-     VALUES ('ZZZANL Constrained', 'included', true, 'manual', 'English') RETURNING id`)).rows[0];
+     VALUES ('ZZZANL Constrained', 'included', true, 'manual', ARRAY['English']) RETURNING id`)).rows[0];
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
@@ -271,7 +271,7 @@ test('facetTree accepts a constraint that narrows the counted set', async () => 
 
   // Constrain to a language that no coded song has -> killing count unaffected by our new row.
   const constrained = await analysis.facetTree(pool, {
-    joinSql: '', where: [`s.language = $2`], params: ['ZZZ-NoSuchLang'],
+    joinSql: '', where: [`s.language && $2::text[]`], params: [['ZZZ-NoSuchLang']],
   });
   // themes dimension should have no 'killing' contribution from our English song under this constraint
   const cruelty = (constrained.themes.sub_dimensions || []).find(sd => sd.id === 'cruelty_suffering');
@@ -340,9 +340,9 @@ test('scalarFacets counts distinct live songs per code, in codebook order', asyn
 test('scalarFacets applies a per-component constraint', async () => {
   const id = await mkSong('ZZZANL FacetConstrained');
   await addScalarTier(id);
-  await pool.query(`UPDATE songs SET language = 'ZZZ-NoSuchLang' WHERE id = $1`, [id]);
+  await pool.query(`UPDATE songs SET language = ARRAY['ZZZ-NoSuchLang'] WHERE id = $1`, [id]);
   const constrained = await analysis.scalarFacets(pool, {
-    perspective: { joinSql: '', where: [`s.language = $1`], params: ['ZZZ-NoSuchLang'] },
+    perspective: { joinSql: '', where: [`s.language && $1::text[]`], params: [['ZZZ-NoSuchLang']] },
   });
   const only = constrained.perspective.options.find(o => o.code === 'MORAL_ACCUSER_JUDGE');
   assert.equal(only.count, 1, 'only the constrained song counts');

@@ -233,6 +233,7 @@ router.get('/songs/:id', async (req, res) => {
         s.lyrics_url,
         s.lyrics_source,
         s.lyrics_highlights,
+        s.language,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
@@ -251,7 +252,7 @@ router.get('/songs/:id', async (req, res) => {
       JOIN song_artists sa ON s.id = sa.song_id
       JOIN artists a ON sa.artist_id = a.id
       WHERE s.id = $1 AND s.status = 'included' AND s.published = true
-      GROUP BY s.id, al.id
+      GROUP BY s.id, s.language, al.id
     `, [songId]);
     
     if (result.rows.length === 0) {
@@ -388,10 +389,10 @@ router.get('/filter-options', async (req, res) => {
         AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)`;
 
     const languagesQuery = `
-      SELECT language AS value, COUNT(*)::int AS count
-      FROM songs
-      WHERE status = 'included' AND published = true AND language IS NOT NULL AND language <> ''
-      GROUP BY language
+      SELECT lang AS value, COUNT(*)::int AS count
+      FROM songs s, unnest(s.language) AS lang
+      WHERE s.status = 'included' AND s.published = true
+      GROUP BY lang
       ORDER BY count DESC, value ASC`;
 
     const lengthCountsQuery = `
@@ -464,9 +465,10 @@ router.get('/browse-facets', async (req, res) => {
       FROM songs s${browse.joinSql(bwT.joins)} ${whereSql(bwT)}`;
 
     const bwLang = browse.buildWhere(f, { exclude: 'language' });
-    const langSql = `SELECT s.language AS value, COUNT(DISTINCT s.id)::int AS count
-      FROM songs s${browse.joinSql(bwLang.joins)} ${whereSql(bwLang)} AND s.language IS NOT NULL AND s.language <> ''
-      GROUP BY s.language ORDER BY count DESC, value ASC`;
+    const langSql = `SELECT lang AS value, COUNT(DISTINCT s.id)::int AS count
+      FROM songs s${browse.joinSql(bwLang.joins)} CROSS JOIN LATERAL unnest(s.language) AS lang
+      ${whereSql(bwLang)}
+      GROUP BY lang ORDER BY count DESC, value ASC`;
 
     const bwAn = browse.buildWhere(f, { exclude: 'analysis', startIndex: 2 });
     const constraint = { joinSql: browse.joinSql(bwAn.joins), where: bwAn.where, params: bwAn.params };

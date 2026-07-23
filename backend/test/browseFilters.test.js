@@ -47,6 +47,15 @@ test('buildWhere numbers params from startIndex', () => {
   assert.equal(r.nextIndex, 4);
 });
 
+test('language filter uses array overlap so a bilingual song matches either language', () => {
+  const r = b.buildWhere({ languages: ['English', 'Portuguese'] });
+  const clause = r.where.find(c => c.includes('s.language'));
+  assert.ok(clause, 'a language clause is emitted');
+  assert.ok(clause.includes('&&'), 'overlap operator, not = ANY');
+  assert.ok(clause.includes('::text[]'), 'parameter is cast to text[]');
+  assert.deepEqual(r.params[0], ['English', 'Portuguese']);
+});
+
 test('joinSql emits only the needed joins', () => {
   assert.equal(b.joinSql({ albums: false, artists: false, effectiveGenre: false, analysis: false }), '');
   assert.ok(b.joinSql({ albums: true }).includes('LEFT JOIN albums'));
