@@ -24,7 +24,9 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   // (created only when full lyrics are first saved). Gate the UI so that trap
   // is unreachable: no false "Saved" on a value that was silently dropped.
   const hasLyrics = !!(wb.lyrics && wb.lyrics.trim());
+  const hasTranslation = !!(wb.translation && wb.translation.trim());
   const lyricsRef = useRef(null);
+  const translationRef = useRef(null);
   const highlights = (wb.lyrics_highlights || '').split('\n').map((h) => h.trim()).filter(Boolean);
 
   const onStatus = async (e) => {
@@ -38,15 +40,15 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
     const res = await saveProcessing({ lyrics_tried: next });
     setAvenuesSave(res.ok ? 'saved' : 'error');
   };
-  const addHighlight = async () => {
-    const el = lyricsRef.current;
+  const addHighlightFrom = async (ref, sourceLabel) => {
+    const el = ref.current;
     if (!el) return;
     const raw = el.value.substring(el.selectionStart, el.selectionEnd).trim();
     // Collapse internal newlines/whitespace to a single space so a multi-line
     // passage (e.g. a couplet) stays one entry in the newline-joined storage —
     // otherwise it would fragment on the next `split('\n')` read.
     const sel = raw.replace(/\s*\n\s*/g, ' ');
-    if (!sel) { window.alert('Select a passage in the lyrics box first.'); return; }
+    if (!sel) { window.alert(`Select a passage in the ${sourceLabel} box first.`); return; }
     setHighlightsSave('saving');
     const res = await savePanel('highlights', { lyrics_highlights: [...highlights, sel].join('\n') });
     setHighlightsSave(res.ok ? 'saved' : 'error');
@@ -93,18 +95,28 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
         </div>
       </div>
 
-      <AutoText label="Translation (local-only)" initial={wb.translation} multiline rows={6}
-        disabled={!hasLyrics}
-        onSave={(v) => savePanel('lyrics', { translation: v })} />
+      <div className="wb-field">
+        <div className="wb-highlights-head">
+          <span className="wb-field-label">Translation (local-only)</span>
+          <button type="button" className="btn btn-secondary btn-sm"
+            disabled={!hasLyrics || !hasTranslation}
+            onClick={() => addHighlightFrom(translationRef, 'translation')}>+ Add selection</button>
+        </div>
+        <AutoText label="" initial={wb.translation} multiline rows={6}
+          disabled={!hasLyrics}
+          inputRef={translationRef}
+          onSave={(v) => savePanel('lyrics', { translation: v })} />
+      </div>
       {!hasLyrics && <p className="admin-stub">Add full lyrics first</p>}
 
       <div className="wb-field">
         <div className="wb-highlights-head">
           <span className="wb-field-label">Key lyrics (public highlights) <SaveTag status={highlightsSave} /></span>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={addHighlight}>+ Add selection</button>
+          <button type="button" className="btn btn-secondary btn-sm"
+            onClick={() => addHighlightFrom(lyricsRef, 'lyrics')}>+ Add selection</button>
         </div>
         {highlights.length === 0
-          ? <p className="admin-stub">Select a line in the lyrics box above, then “Add selection”.</p>
+          ? <p className="admin-stub">Select a line in the lyrics or translation box above, then "Add selection".</p>
           : <ul className="wb-highlights">
               {highlights.map((h, idx) => (
                 <li key={idx}><span>{h}</span>
