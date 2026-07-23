@@ -95,14 +95,14 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
         </div>
       </div>
 
-      <div className="wb-field">
+      <div>
         <div className="wb-highlights-head">
           <span className="wb-field-label">Translation (local-only)</span>
           <button type="button" className="btn btn-secondary btn-sm"
             disabled={!hasLyrics || !hasTranslation}
             onClick={() => addHighlightFrom(translationRef, 'translation')}>+ Add selection</button>
         </div>
-        <AutoText label="" initial={wb.translation} multiline rows={6}
+        <AutoText label="" ariaLabel="Translation (local-only)" initial={wb.translation} multiline rows={6}
           disabled={!hasLyrics}
           inputRef={translationRef}
           onSave={(v) => savePanel('lyrics', { translation: v })} />

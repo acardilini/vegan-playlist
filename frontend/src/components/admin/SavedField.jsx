@@ -7,7 +7,7 @@ export function SaveTag({ status }) {
 }
 
 // Self-contained autosaving text field. onSave(value) → { ok, error? }.
-export function AutoText({ label, initial, onSave, multiline = false, rows = 3, placeholder, monospace = false, disabled = false, inputRef }) {
+export function AutoText({ label, initial, onSave, multiline = false, rows = 3, placeholder, monospace = false, disabled = false, inputRef, ariaLabel = undefined }) {
   const [val, setVal] = useState(initial ?? '');
   const [status, setStatus] = useState('idle');
   // A successful save round-trips through a full workbench swap, which changes
@@ -42,6 +42,7 @@ export function AutoText({ label, initial, onSave, multiline = false, rows = 3, 
     onChange: (e) => { if (disabled) return; setVal(e.target.value); if (status !== 'idle') setStatus('idle'); },
     onBlur: commit,
     style: { width: '100%' },
+    'aria-label': ariaLabel,
   };
 
   return (
