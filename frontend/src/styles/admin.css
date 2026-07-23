@@ -90,8 +90,11 @@
 .wb-cover-img { width: 120px; height: 120px; object-fit: cover; border-radius: var(--radius-md); display: block; margin-bottom: var(--space-2); }
 .wb-cover-ph { display: block; width: 120px; height: 120px; border-radius: var(--radius-md); margin-bottom: var(--space-2); background-image: repeating-linear-gradient(45deg, var(--bg-surface-raised), var(--bg-surface-raised) 6px, var(--bg-surface) 6px, var(--bg-surface) 12px); }
 .wb-lang { margin-bottom: var(--space-3); }
-.wb-lang .wb-field { margin-bottom: var(--space-1); }
-.wb-lang .btn { margin-right: var(--space-2); }
+.wb-lang-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-1) 0; min-height: 24px; }
+.wb-lang-chip { display: inline-flex; align-items: center; gap: var(--space-1); padding: 1px var(--space-2); border-radius: var(--radius-pill); font-size: 0.75rem; background: var(--bg-surface-raised); border: 1px solid var(--border-hairline); color: var(--text-secondary); }
+.wb-lang-x { background: none; border: none; padding: 0; cursor: pointer; color: var(--text-muted); font-size: 0.95rem; line-height: 1; }
+.wb-lang-x:hover { color: var(--accent-ember-60); }
+.wb-lang-suggest { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
 .wb-linkactions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: calc(-1 * var(--space-1)); margin-bottom: var(--space-3); }
 .wb-linkactions:empty { display: none; margin: 0; }
 
