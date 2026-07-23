@@ -7,7 +7,7 @@
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.columns
-             WHERE table_name = 'songs' AND column_name = 'language'
+             WHERE table_name = 'songs' AND column_name = 'language' AND table_schema = 'public'
                AND data_type <> 'ARRAY') THEN
     ALTER TABLE songs ALTER COLUMN language TYPE text[]
       USING CASE WHEN btrim(COALESCE(language, '')) = '' THEN NULL

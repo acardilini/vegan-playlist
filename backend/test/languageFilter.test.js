@@ -32,14 +32,14 @@ test('a bilingual song is returned when filtering by either of its languages', a
 });
 
 test('a bilingual song counts under both languages in the unnest facet', async () => {
-  await mkBilingual();
+  const id = await mkBilingual();
   const r = await pool.query(`
     SELECT lang AS value, COUNT(*)::int AS count
     FROM songs s, unnest(s.language) AS lang
-    WHERE s.status = 'included' AND s.published = true
-    GROUP BY lang`);
+    WHERE s.status = 'included' AND s.published = true AND s.id = $1
+    GROUP BY lang`, [id]);
   const por = r.rows.find((x) => x.value === 'ZZZLNGPor');
   const eng = r.rows.find((x) => x.value === 'ZZZLNGEng');
-  assert.ok(por && por.count >= 1, 'counted under its first language');
-  assert.ok(eng && eng.count >= 1, 'counted under its second language');
+  assert.equal(por && por.count, 1, 'counted under its first language');
+  assert.equal(eng && eng.count, 1, 'counted under its second language');
 });
