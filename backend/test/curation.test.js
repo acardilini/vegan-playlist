@@ -333,3 +333,18 @@ test('featured queue lists featured songs and queueCounts.featured tracks them',
   await curation.setFeatured(pool, n, true);
   assert.equal((await curation.queueCounts(pool)).featured, before + 1, 'count increments');
 });
+
+test('listLanguages returns distinct languages across all statuses, most-used first', async () => {
+  const a = await mkSong({ title: 'ZZZCUR Lang List A' });
+  const b = await mkSong({ title: 'ZZZCUR Lang List B' });
+  await curation.saveDetails(pool, a, { language: ['ZZZCURLangOne', 'ZZZCURLangTwo'] });
+  await curation.saveDetails(pool, b, { language: ['ZZZCURLangOne'] });
+
+  const rows = await curation.listLanguages(pool);
+  const one = rows.find(r => r.value === 'ZZZCURLangOne');
+  const two = rows.find(r => r.value === 'ZZZCURLangTwo');
+  assert.ok(one && two, 'both seeded languages are listed');
+  assert.equal(one.count, 2, 'counts every song carrying the language');
+  assert.equal(two.count, 1);
+  assert.ok(rows.indexOf(one) < rows.indexOf(two), 'ordered by count desc');
+});

@@ -159,6 +159,18 @@ async function catalogueStats(db) {
   return { total: x.total, live: x.live, toFinalise: x.to_finalise, pending: x.pending, rejected: x.rejected };
 }
 
+// Distinct languages across the WHOLE catalogue (any status) — feeds the workbench
+// chip suggestions. The public /filter-options equivalent sees published songs only,
+// and the curator edits unpublished songs.
+async function listLanguages(db) {
+  const r = await db.query(`
+    SELECT lang AS value, COUNT(*)::int AS count
+    FROM songs s, unnest(s.language) AS lang
+    GROUP BY lang
+    ORDER BY count DESC, value ASC`);
+  return r.rows;
+}
+
 async function recentlyEdited(db, limit = 10) {
   const parsed = parseInt(limit, 10);
   // isNaN (not `parsed || 10`) so an explicit limit=0 clamps to 1, not the default 10.
@@ -365,4 +377,4 @@ async function quickCapture(db, { title, artist } = {}) {
 
 module.exports = { CODE_MODEL, SCALAR_MODEL, PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture, setFeatured };
+  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture, setFeatured, listLanguages };
