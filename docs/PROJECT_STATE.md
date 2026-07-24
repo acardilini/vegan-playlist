@@ -254,6 +254,35 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-07-25 — Triage 5 curator smoke: key-lyrics highlights preserve line breaks (tight-verse
+  model), and the two "Add" buttons name their source.** The curator's smoke of Triage 5 surfaced two
+  workbench issues, both fixed on-branch. **(1) Button confusion:** there were two identical
+  "+ Add selection" buttons — one in the Translation heading (reads the translation box), one in the
+  Key-lyrics heading (reads the lyrics box). Selecting translation text and clicking the Key-lyrics
+  button (the natural destination) reported "Select a passage in the lyrics box first." The feature
+  worked; the labels were ambiguous. Fix: both buttons now sit together in the Key-lyrics heading,
+  labelled **"+ Add from lyrics"** and **"+ Add from translation"**; the Translation field reverts to
+  a plain labelled `AutoText` (so the `ariaLabel` prop added earlier is removed as dead). **(2) Line
+  breaks:** `lyrics_highlights` was one TEXT column split on `\n` everywhere, so every newline meant
+  "separate highlight" and the add button collapsed a multi-line selection to one line — destroying
+  the verse shape on the song page. The curator chose the **tight-verse model** over a per-line one:
+  a selected passage is ONE highlight that keeps its internal line breaks, and distinct highlights
+  keep the gap between them. Implemented as a **two-level format** — passages separated in storage by a
+  blank line (`\n\n`), a single `\n` a line break within a passage — with `white-space: pre-line`
+  rendering on the song page and the workbench list. **One-time data reshape (curatorial column):**
+  25 pre-existing songs whose separate single-line highlights were `\n`-delimited were converted
+  `\n`→`\n\n` on the live DB so they still read as separate spaced highlights (rendering unchanged);
+  the row already hand-formatted with blank lines (id 30, _Cows with Guns_) was guarded out and left
+  intact. **Not** committed as a migration file — re-running it after tight-verse highlights exist
+  would corrupt them, and the live dev DB is the truth source production dumps from, so the one-time
+  apply is complete. **Data-handling note:** the curator had been smoke-testing between turns and had
+  legitimately changed song 4691's highlights; an earlier repro-restore script targeted a stale
+  session-start value, but the curator's later edits superseded it and their current content is intact
+  (verified byte-restored). Verified: pure round-trip logic 6/6; headless render of a hand-formatted
+  multi-line song (4 passages, breaks preserved) and a reshaped one (separate spaced highlights); a
+  full-stack workbench add/remove of a 2-line selection stored with its break and byte-restored. Lint
+  0 errors, build clean; backend highlight handling is format-agnostic (unchanged).
+
 - **2026-07-23 — Triage 5: `songs.language` becomes a real `text[]`, and a translated highlight is just
   another flat entry.** Two curator requests were built together because they only matter on the
   non-English songs — of which the DB had exactly **3 live** (of 38 with any language), so converting now
