@@ -95,28 +95,25 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
         </div>
       </div>
 
-      <div>
-        <div className="wb-highlights-head">
-          <span className="wb-field-label">Translation (local-only)</span>
-          <button type="button" className="btn btn-secondary btn-sm"
-            disabled={!hasLyrics || !hasTranslation}
-            onClick={() => addHighlightFrom(translationRef, 'translation')}>+ Add from translation</button>
-        </div>
-        <AutoText label="" ariaLabel="Translation (local-only)" initial={wb.translation} multiline rows={6}
-          disabled={!hasLyrics}
-          inputRef={translationRef}
-          onSave={(v) => savePanel('lyrics', { translation: v })} />
-      </div>
+      <AutoText label="Translation (local-only)" initial={wb.translation} multiline rows={6}
+        disabled={!hasLyrics}
+        inputRef={translationRef}
+        onSave={(v) => savePanel('lyrics', { translation: v })} />
       {!hasLyrics && <p className="admin-stub">Add full lyrics first</p>}
 
       <div className="wb-field">
         <div className="wb-highlights-head">
           <span className="wb-field-label">Key lyrics (public highlights) <SaveTag status={highlightsSave} /></span>
-          <button type="button" className="btn btn-secondary btn-sm"
-            onClick={() => addHighlightFrom(lyricsRef, 'lyrics')}>+ Add from lyrics</button>
+          <div className="wb-highlights-actions">
+            <button type="button" className="btn btn-secondary btn-sm"
+              onClick={() => addHighlightFrom(lyricsRef, 'lyrics')}>+ Add from lyrics</button>
+            <button type="button" className="btn btn-secondary btn-sm"
+              disabled={!hasLyrics || !hasTranslation}
+              onClick={() => addHighlightFrom(translationRef, 'translation')}>+ Add from translation</button>
+          </div>
         </div>
         {highlights.length === 0
-          ? <p className="admin-stub">Select a passage in the lyrics or translation box above, then use its “Add from…” button.</p>
+          ? <p className="admin-stub">Select a passage in the lyrics or translation box above, then “Add from lyrics” or “Add from translation”.</p>
           : <ul className="wb-highlights">
               {highlights.map((h, idx) => (
                 <li key={idx}><span>{h}</span>
