@@ -100,7 +100,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
           <span className="wb-field-label">Translation (local-only)</span>
           <button type="button" className="btn btn-secondary btn-sm"
             disabled={!hasLyrics || !hasTranslation}
-            onClick={() => addHighlightFrom(translationRef, 'translation')}>+ Add selection</button>
+            onClick={() => addHighlightFrom(translationRef, 'translation')}>+ Add from translation</button>
         </div>
         <AutoText label="" ariaLabel="Translation (local-only)" initial={wb.translation} multiline rows={6}
           disabled={!hasLyrics}
@@ -113,10 +113,10 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
         <div className="wb-highlights-head">
           <span className="wb-field-label">Key lyrics (public highlights) <SaveTag status={highlightsSave} /></span>
           <button type="button" className="btn btn-secondary btn-sm"
-            onClick={() => addHighlightFrom(lyricsRef, 'lyrics')}>+ Add selection</button>
+            onClick={() => addHighlightFrom(lyricsRef, 'lyrics')}>+ Add from lyrics</button>
         </div>
         {highlights.length === 0
-          ? <p className="admin-stub">Select a line in the lyrics or translation box above, then “Add selection”.</p>
+          ? <p className="admin-stub">Select a passage in the lyrics or translation box above, then use its “Add from…” button.</p>
           : <ul className="wb-highlights">
               {highlights.map((h, idx) => (
                 <li key={idx}><span>{h}</span>
