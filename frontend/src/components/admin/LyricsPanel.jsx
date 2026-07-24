@@ -27,7 +27,10 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   const hasTranslation = !!(wb.translation && wb.translation.trim());
   const lyricsRef = useRef(null);
   const translationRef = useRef(null);
-  const highlights = (wb.lyrics_highlights || '').split('\n').map((h) => h.trim()).filter(Boolean);
+  // Highlights are separated in storage by a blank line; a single newline is a
+  // meaningful line break within one passage (kept). Trim each passage's outer
+  // whitespace only.
+  const highlights = (wb.lyrics_highlights || '').split(/\n{2,}/).map((h) => h.trim()).filter(Boolean);
 
   const onStatus = async (e) => {
     setStatusSave('saving');
@@ -43,19 +46,20 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   const addHighlightFrom = async (ref, sourceLabel) => {
     const el = ref.current;
     if (!el) return;
-    const raw = el.value.substring(el.selectionStart, el.selectionEnd).trim();
-    // Collapse internal newlines/whitespace to a single space so a multi-line
-    // passage (e.g. a couplet) stays one entry in the newline-joined storage —
-    // otherwise it would fragment on the next `split('\n')` read.
-    const sel = raw.replace(/\s*\n\s*/g, ' ');
+    const raw = el.value.substring(el.selectionStart, el.selectionEnd);
+    // Keep the passage's own line breaks (meaningful in lyrics). Normalise CRLF,
+    // strip trailing spaces, and collapse any blank line WITHIN the selection to a
+    // single break — passages are separated in storage by a blank line, so an
+    // internal blank line would otherwise split one passage into two.
+    const sel = raw.replace(/\r\n?/g, '\n').replace(/[ \t]+$/gm, '').replace(/\n{2,}/g, '\n').trim();
     if (!sel) { window.alert(`Select a passage in the ${sourceLabel} box first.`); return; }
     setHighlightsSave('saving');
-    const res = await savePanel('highlights', { lyrics_highlights: [...highlights, sel].join('\n') });
+    const res = await savePanel('highlights', { lyrics_highlights: [...highlights, sel].join('\n\n') });
     setHighlightsSave(res.ok ? 'saved' : 'error');
   };
   const removeHighlight = async (idx) => {
     setHighlightsSave('saving');
-    const res = await savePanel('highlights', { lyrics_highlights: highlights.filter((_, i) => i !== idx).join('\n') });
+    const res = await savePanel('highlights', { lyrics_highlights: highlights.filter((_, i) => i !== idx).join('\n\n') });
     setHighlightsSave(res.ok ? 'saved' : 'error');
   };
 

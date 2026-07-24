@@ -191,10 +191,10 @@ function SongDetailPage() {
         <section className="detail-section">
           <h2>Key lyrics</h2>
           <div className="lyrics-quote">
-            {song.lyrics_highlights.split('\n').map((line, index) => (
-              line.trim() && (
+            {song.lyrics_highlights.split(/\n{2,}/).map((passage, index) => (
+              passage.trim() && (
                 <p key={index} className="lyrics-highlight-line">
-                  {line}
+                  {passage.trim()}
                 </p>
               )
             ))}

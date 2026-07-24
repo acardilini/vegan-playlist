@@ -1283,6 +1283,7 @@
   font: italic 400 1.05rem/1.6 var(--font-body);
   color: var(--text-secondary);
   margin: 0;
+  white-space: pre-line;
 }
 
 .section-note {
