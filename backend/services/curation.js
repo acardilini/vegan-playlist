@@ -159,6 +159,18 @@ async function catalogueStats(db) {
   return { total: x.total, live: x.live, toFinalise: x.to_finalise, pending: x.pending, rejected: x.rejected };
 }
 
+// Distinct languages across the WHOLE catalogue (any status) — feeds the workbench
+// chip suggestions. The public /filter-options equivalent sees published songs only,
+// and the curator edits unpublished songs.
+async function listLanguages(db) {
+  const r = await db.query(`
+    SELECT lang AS value, COUNT(*)::int AS count
+    FROM songs s, unnest(s.language) AS lang
+    GROUP BY lang
+    ORDER BY count DESC, value ASC`);
+  return r.rows;
+}
+
 async function recentlyEdited(db, limit = 10) {
   const parsed = parseInt(limit, 10);
   // isNaN (not `parsed || 10`) so an explicit limit=0 clamps to 1, not the default 10.
@@ -228,11 +240,28 @@ function assertHttp(v, label) {
   }
 }
 
+// language is text[] since migration 009. Accepts an array (the workbench chip
+// editor), a legacy semicolon string, or ''/null to clear. Trims, drops blanks,
+// dedupes case-insensitively while keeping the curator's chosen casing + order.
+function normLanguages(v) {
+  if (v === undefined) return undefined;
+  if (v === null || v === '') return null;
+  const arr = Array.isArray(v) ? v : String(v).split(';');
+  const out = [];
+  for (const raw of arr) {
+    const s = String(raw).trim();
+    if (!s) continue;
+    if (out.some((k) => k.toLowerCase() === s.toLowerCase())) continue;
+    out.push(s);
+  }
+  return out.length ? out : null;
+}
+
 async function saveDetails(db, id, { title, language, status_notes } = {}) {
   await assertSong(db, id);
   const sets = [], params = [id];
   const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
-  add('title', title); add('language', language); add('status_notes', status_notes);
+  add('title', title); add('language', normLanguages(language)); add('status_notes', status_notes);
   if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
   return getWorkbench(db, id);
 }
@@ -348,4 +377,4 @@ async function quickCapture(db, { title, artist } = {}) {
 
 module.exports = { CODE_MODEL, SCALAR_MODEL, PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture, setFeatured };
+  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture, setFeatured, listLanguages };

@@ -41,7 +41,7 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
                         WHERE la.song_id = s.id AND la.model_used IN (${analysis.ANY_TIER_SQL}))`);
   }
   if (inc('language') && asList(filters.languages).length) {
-    where.push(`s.language = ANY($${idx}::text[])`); params.push(asList(filters.languages)); idx++;
+    where.push(`s.language && $${idx}::text[]`); params.push(asList(filters.languages)); idx++;
   }
   if (inc('analysis')) {
     const sel = {

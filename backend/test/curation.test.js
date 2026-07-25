@@ -210,11 +210,11 @@ test('getWorkbench assembles song, lyrics, processing, completeness', async () =
   const id = await mkSong({ title: 'ZZZCUR WB', status: 'included', published: true, spotify_url: 'http://x' });
   await pool.query(`INSERT INTO song_lyrics (song_id, lyrics, source_url, translation) VALUES ($1,$2,$3,$4)`,
     [id, 'full lyric text', 'http://genius/x', 'translated text']);
-  await pool.query(`UPDATE songs SET language='Spanish', lyrics_highlights='a great line' WHERE id=$1`, [id]);
+  await pool.query(`UPDATE songs SET language=ARRAY['Spanish'], lyrics_highlights='a great line' WHERE id=$1`, [id]);
 
   const wb = await curation.getWorkbench(pool, id);
   assert.equal(wb.id, id);
-  assert.equal(wb.language, 'Spanish');
+  assert.deepEqual(wb.language, ['Spanish']);
   assert.equal(wb.lyrics, 'full lyric text');            // full lyrics returned (admin-only path)
   assert.equal(wb.translation, 'translated text');
   assert.equal(wb.lyrics_source_url, 'http://genius/x');
@@ -231,9 +231,25 @@ test('getWorkbench throws NOT_FOUND for missing song', async () => {
 
 test('saveDetails updates title + language', async () => {
   const id = await mkSong({ title: 'ZZZCUR Save Details' });
-  const wb = await curation.saveDetails(pool, id, { title: 'ZZZCUR Save Details 2', language: 'French' });
+  const wb = await curation.saveDetails(pool, id, {
+    title: 'ZZZCUR Save Details 2', language: ['French', 'English'],
+  });
   assert.equal(wb.title, 'ZZZCUR Save Details 2');
-  assert.equal(wb.language, 'French');
+  assert.deepEqual(wb.language, ['French', 'English']);
+});
+
+test('saveDetails normalises languages: trims, drops blanks, dedupes case-insensitively', async () => {
+  const id = await mkSong({ title: 'ZZZCUR Lang Norm' });
+  const wb = await curation.saveDetails(pool, id, { language: ['  German ', '', 'german', 'English'] });
+  assert.deepEqual(wb.language, ['German', 'English']);
+});
+
+test('saveDetails accepts a semicolon string and clears with an empty array', async () => {
+  const id = await mkSong({ title: 'ZZZCUR Lang String' });
+  const a = await curation.saveDetails(pool, id, { language: 'German; English' });
+  assert.deepEqual(a.language, ['German', 'English']);
+  const b = await curation.saveDetails(pool, id, { language: [] });
+  assert.equal(b.language, null);
 });
 
 test('saveLyrics upserts local lyrics + translation and sets lyrics_status', async () => {
@@ -316,4 +332,19 @@ test('featured queue lists featured songs and queueCounts.featured tracks them',
   assert.equal(list.rows.find(r => r.id === f).featured, true, 'row carries featured');
   await curation.setFeatured(pool, n, true);
   assert.equal((await curation.queueCounts(pool)).featured, before + 1, 'count increments');
+});
+
+test('listLanguages returns distinct languages across all statuses, most-used first', async () => {
+  const a = await mkSong({ title: 'ZZZCUR Lang List A' });
+  const b = await mkSong({ title: 'ZZZCUR Lang List B' });
+  await curation.saveDetails(pool, a, { language: ['ZZZCURLangOne', 'ZZZCURLangTwo'] });
+  await curation.saveDetails(pool, b, { language: ['ZZZCURLangOne'] });
+
+  const rows = await curation.listLanguages(pool);
+  const one = rows.find(r => r.value === 'ZZZCURLangOne');
+  const two = rows.find(r => r.value === 'ZZZCURLangTwo');
+  assert.ok(one && two, 'both seeded languages are listed');
+  assert.equal(one.count, 2, 'counts every song carrying the language');
+  assert.equal(two.count, 1);
+  assert.ok(rows.indexOf(one) < rows.indexOf(two), 'ordered by count desc');
 });

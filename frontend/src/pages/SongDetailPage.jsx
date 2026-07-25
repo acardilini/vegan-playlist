@@ -97,6 +97,8 @@ function SongDetailPage() {
     ? song.artists.map(artist => (artist && artist.name) || artist).join(', ')
     : song.artists;
 
+  const nonEnglish = (song.language || []).some((l) => l.trim().toLowerCase() !== 'english');
+
   return (
     <div className="song-detail-container">
       <div className="song-detail-header">
@@ -141,6 +143,12 @@ function SongDetailPage() {
               <span className="stat-cell-label">Duration</span>
               <span className="stat-cell-value">{formatDuration(song.duration_ms)}</span>
             </div>
+            {song.language?.length > 0 && (
+              <div className="stat-cell">
+                <span className="stat-cell-label">Sung in</span>
+                <span className="stat-cell-value">{song.language.join(', ')}</span>
+              </div>
+            )}
           </div>
 
           {(song.spotify_url || song.lyrics_url) && (
@@ -183,15 +191,19 @@ function SongDetailPage() {
         <section className="detail-section">
           <h2>Key lyrics</h2>
           <div className="lyrics-quote">
-            {song.lyrics_highlights.split('\n').map((line, index) => (
-              line.trim() && (
+            {song.lyrics_highlights.split(/\n{2,}/).map((passage, index) => (
+              passage.trim() && (
                 <p key={index} className="lyrics-highlight-line">
-                  {line}
+                  {passage.trim()}
                 </p>
               )
             ))}
           </div>
-          <span className="section-note">Brief excerpts for analytical purposes</span>
+          <span className="section-note">
+            {nonEnglish
+              ? 'Brief excerpts, with English translation, for analytical purposes'
+              : 'Brief excerpts for analytical purposes'}
+          </span>
         </section>
       )}
 

@@ -315,7 +315,15 @@ BUILT+merged** (`bf2f1da`, URL query params via `useSearchParams` + a sessionSto
 (3) ☑ **featured-songs redesign — DONE, merged `6718cec`** (⚠ pending curator smoke): curated pins +
 recency fill, cycle a random 4 when >4 pinned, restored workbench Featured toggle, dropped the card date;
 (4) ☑ **browse/search polish — merged `d3887ad`, curator-confirmed**: bidirectional
-sort via a pure `buildOrderBy` + `dir` URL param, sidebar independent scroll; (5) lyric highlights from the translation + multi-language `songs.language`; then
+sort via a pure `buildOrderBy` + `dir` URL param, sidebar independent scroll; (5) ☑ **lyric highlights
+from the translation + multi-language `songs.language` — BUILT + fully reviewed 2026-07-23 on
+`session-triage-5-translation-highlights-multilang` (awaiting curator smoke + merge)**: `songs.language`
+→ `text[]` (migration 009, `Mouri`→`Māori` fixed, already applied to the live dev DB), workbench chip
+editor + `GET /api/admin/languages`, `unnest` facets + `&&` filter so a bilingual song counts under and
+is found by each language; a second "+ Add selection" on the translation field (flat highlights, no
+schema change); a song-page "Sung in" cell + translation-aware note. Backend 130/130; final opus review
+READY TO MERGE (0 Critical/0 Important). Spec:
+[`specs/2026-07-23-triage-5-translation-highlights-and-multi-language-design.md`](./superpowers/specs/2026-07-23-triage-5-translation-highlights-and-multi-language-design.md); then
 **B4** (with vector "You might also like"); then (6) About analysis-explainer + AI-disclosure page —
 **now has concrete content waiting for it:** the seven component and five dimension descriptions are
 served by the API and deliberately not shown in the browse UI (curator removed them twice), so this

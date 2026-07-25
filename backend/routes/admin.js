@@ -1877,6 +1877,17 @@ router.get('/curation/recent', async (req, res) => {
   }
 });
 
+// Distinct languages in the catalogue — suggestion source for the workbench
+// language chips. Read-only.
+router.get('/languages', async (req, res) => {
+  try {
+    res.json({ success: true, languages: await curation.listLanguages(pool) });
+  } catch (error) {
+    console.error('Error fetching languages:', error);
+    res.status(500).json({ error: 'Failed to fetch languages', details: error.message });
+  }
+});
+
 router.post('/curation/quick-capture', async (req, res) => {
   try {
     const { id } = await curation.quickCapture(pool, req.body || {});

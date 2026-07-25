@@ -24,8 +24,13 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   // (created only when full lyrics are first saved). Gate the UI so that trap
   // is unreachable: no false "Saved" on a value that was silently dropped.
   const hasLyrics = !!(wb.lyrics && wb.lyrics.trim());
+  const hasTranslation = !!(wb.translation && wb.translation.trim());
   const lyricsRef = useRef(null);
-  const highlights = (wb.lyrics_highlights || '').split('\n').map((h) => h.trim()).filter(Boolean);
+  const translationRef = useRef(null);
+  // Highlights are separated in storage by a blank line; a single newline is a
+  // meaningful line break within one passage (kept). Trim each passage's outer
+  // whitespace only.
+  const highlights = (wb.lyrics_highlights || '').split(/\n{2,}/).map((h) => h.trim()).filter(Boolean);
 
   const onStatus = async (e) => {
     setStatusSave('saving');
@@ -38,22 +43,23 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
     const res = await saveProcessing({ lyrics_tried: next });
     setAvenuesSave(res.ok ? 'saved' : 'error');
   };
-  const addHighlight = async () => {
-    const el = lyricsRef.current;
+  const addHighlightFrom = async (ref, sourceLabel) => {
+    const el = ref.current;
     if (!el) return;
-    const raw = el.value.substring(el.selectionStart, el.selectionEnd).trim();
-    // Collapse internal newlines/whitespace to a single space so a multi-line
-    // passage (e.g. a couplet) stays one entry in the newline-joined storage —
-    // otherwise it would fragment on the next `split('\n')` read.
-    const sel = raw.replace(/\s*\n\s*/g, ' ');
-    if (!sel) { window.alert('Select a passage in the lyrics box first.'); return; }
+    const raw = el.value.substring(el.selectionStart, el.selectionEnd);
+    // Keep the passage's own line breaks (meaningful in lyrics). Normalise CRLF,
+    // strip trailing spaces, and collapse any blank line WITHIN the selection to a
+    // single break — passages are separated in storage by a blank line, so an
+    // internal blank line would otherwise split one passage into two.
+    const sel = raw.replace(/\r\n?/g, '\n').replace(/[ \t]+$/gm, '').replace(/\n{2,}/g, '\n').trim();
+    if (!sel) { window.alert(`Select a passage in the ${sourceLabel} box first.`); return; }
     setHighlightsSave('saving');
-    const res = await savePanel('highlights', { lyrics_highlights: [...highlights, sel].join('\n') });
+    const res = await savePanel('highlights', { lyrics_highlights: [...highlights, sel].join('\n\n') });
     setHighlightsSave(res.ok ? 'saved' : 'error');
   };
   const removeHighlight = async (idx) => {
     setHighlightsSave('saving');
-    const res = await savePanel('highlights', { lyrics_highlights: highlights.filter((_, i) => i !== idx).join('\n') });
+    const res = await savePanel('highlights', { lyrics_highlights: highlights.filter((_, i) => i !== idx).join('\n\n') });
     setHighlightsSave(res.ok ? 'saved' : 'error');
   };
 
@@ -95,16 +101,23 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
 
       <AutoText label="Translation (local-only)" initial={wb.translation} multiline rows={6}
         disabled={!hasLyrics}
+        inputRef={translationRef}
         onSave={(v) => savePanel('lyrics', { translation: v })} />
       {!hasLyrics && <p className="admin-stub">Add full lyrics first</p>}
 
       <div className="wb-field">
         <div className="wb-highlights-head">
           <span className="wb-field-label">Key lyrics (public highlights) <SaveTag status={highlightsSave} /></span>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={addHighlight}>+ Add selection</button>
+          <div className="wb-highlights-actions">
+            <button type="button" className="btn btn-secondary btn-sm"
+              onClick={() => addHighlightFrom(lyricsRef, 'lyrics')}>+ Add from lyrics</button>
+            <button type="button" className="btn btn-secondary btn-sm"
+              disabled={!hasLyrics || !hasTranslation}
+              onClick={() => addHighlightFrom(translationRef, 'translation')}>+ Add from translation</button>
+          </div>
         </div>
         {highlights.length === 0
-          ? <p className="admin-stub">Select a line in the lyrics box above, then “Add selection”.</p>
+          ? <p className="admin-stub">Select a passage in the lyrics or translation box above, then “Add from lyrics” or “Add from translation”.</p>
           : <ul className="wb-highlights">
               {highlights.map((h, idx) => (
                 <li key={idx}><span>{h}</span>
