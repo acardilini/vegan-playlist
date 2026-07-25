@@ -1,5 +1,11 @@
 # Lyrical-Analysis Layout Rework — Implementation Plan
 
+> **POST-BUILD CORRECTION (commit `e25d300`):** the summary source in this plan is wrong. The "In short"
+> summary comes from `song_lyric_analysis.**lyric_summary**` (populated for 668/672 live songs), NOT
+> `explanation` (empty everywhere). Every `explanation` in the code listings below (SELECT, `hasContent`,
+> the return field, and the test fixtures/assertions) became `lyric_summary` (column) / `summary` (the API
+> field the JSX reads). See the spec's "Correction" note. The rest of the plan executed as written.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rework the song-page Lyrical Analysis section (Option C layout + clearer naming + evidence next to codes) and switch the whole analysis surface to read each song's newest coding pass instead of two fixed model constants.
