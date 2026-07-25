@@ -82,7 +82,7 @@ also like") → **6** About analysis-explainer + AI disclosure.
   labels (A–Z/Z–A, Oldest/Newest) that resets on sort-field change; `dir` persisted in the URL.
 
 **Admin song dashboard** _(→ workbench / lyrics enhancements)_ — ✅ **RESOLVED (triage 5, 2026-07-23 —
-built + fully reviewed on `session-triage-5-translation-highlights-multilang`; ⚠ awaiting curator smoke + merge)**
+merged `577d139`, 2026-07-25, curator-confirmed)**
 - ✅ **Add a lyrics highlight from the English translation.** Done: the workbench Lyrics panel's
   Translation field gets its own **"+ Add selection"** button (disabled until a translation is saved).
   Highlights stay a **flat** newline-joined list — no pairing, no per-line tag, no schema change (curator

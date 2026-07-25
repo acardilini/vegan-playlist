@@ -100,36 +100,46 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   `SearchAndFilter.jsx` and `components.css` auto-merged. Merged `main`: backend **117/117**, lint 0
   errors, build clean. Branches `session-triage-4-browse-polish`, `session-triage-1a1b-analysis-tiers`
   and `integration-triage-4` deleted (local + remote).
-- **⏳ ONE BRANCH PENDING — Triage 5** (`session-triage-5-translation-highlights-multilang`, 12 commits
-  from `a791283`): built + fully reviewed (final opus review **READY TO MERGE**, 0 Critical/0 Important),
-  smoke-passed, **awaiting the curator's own smoke + merge** — the same gate triage 1–4 used. Migration
-  009 has **already been applied to the live dev DB** (`songs.language` is `text[]` now), so the
-  curator's own `:5000` backend must be running this branch's code; a plain pre-migration `node
-  server.js` will 500 on browse until restarted. The filter/analysis presentation batch before it is
-  merged (backend **121/121**).
-- **Next session:** **the curator smokes Triage 5 and it merges**, then **B4 — Explore vector map** (with
-  the vector "You might also like"), then **triage 6 — the About analysis-explainer + AI-disclosure
-  page**, which now has a concrete job to do: the seven component and five dimension descriptions are
-  already served by the API and deliberately not shown in the browse UI, so that page is where they
-  belong. _Triage 1a's DB-cleaning gate is closed — the reanalysis landed 2026-07-22 and 1b shipped
-  with it._
+- **✅ NOTHING PENDING — Triage 5 is merged.** `songs.language` → `text[]` (migration 009, applied to
+  the live dev DB) with a workbench chip editor, `unnest` facets and array-overlap filtering; the
+  "+ Add from lyrics" / "+ Add from translation" highlight picker with tight-verse line-break
+  preservation; a song-page "Sung in" cell + translation-aware note. Merged no-ff to `main` (merge
+  `577d139`) after curator smoke, which drove three on-branch fixes (button labels, button grouping,
+  line-break preservation) — see the Decision Log. **A one-time reshape of 25 songs' `lyrics_highlights`
+  was applied to the live DB** (`\n`→`\n\n` so separate highlights stayed separate; not a migration
+  file — see the Decision Log). Merged `main`: backend **130/130**, build clean.
+- **Next session:** **Brainstorm the song-page Lyrical Analysis / Themes layout** (curator request — a
+  design/UX session, likely no or light backend). Then **B4 — Explore vector map** (with the vector
+  "You might also like"), then **triage 6 — the About analysis-explainer + AI-disclosure page** (the
+  seven component + five dimension descriptions are served by the API and deliberately unused in the
+  browse UI — that page is where they land).
+  **Lyrical-analysis brainstorm brief (curator, 2026-07-25):** the song-page analysis section is three
+  parts — a **description via 7 general metadata codes** (Perspective/Tone/Intensity/Clarity/Focus/
+  Audience/Emotions), **5 sets of thematic analysis** (targets/actions/tactics/moral_frames/themes),
+  and **evidence** — and they look inconsistent and aren't clearly distinguished (it isn't obvious how
+  the metadata differs from the thematic analysis). Wants: cohesion + clearer separation of the two
+  sections (possibly short **subsection headers + descriptors** for "metadata" vs "thematic"); **clearer
+  dimension names** — e.g. **Audience vs Targets** read as the same thing; and a **better evidence
+  composition** — summaries are sometimes very long and the quotes aren't well connected to their enum
+  codes. Note: the codebook already serves component + dimension **descriptions** via the API (built in
+  1a/1b, deliberately unused in browse) — raw material for the subsection descriptors and for triage 6.
 - **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **merged `a6eb05a`, confirmed
   2026-07-22**) · **2** (persist
   browse state — ☑ **merged `bf2f1da`**) · **3** (featured redesign — ☑ **merged `6718cec`**, confirmed) ·
   **3b** (Featured management view — ☑ **merged `f3936b1`**, confirmed) · **4** (browse/search polish — ☑
   **merged `d3887ad`**, confirmed) · **5**
-  (lyric highlights from translation + multi-language — ☑ **built + reviewed on
-  `session-triage-5-translation-highlights-multilang`, awaiting curator smoke + merge**) → **B4**
+  (lyric highlights from translation + multi-language — ☑ **merged `577d139`, curator-confirmed**) →
+  **song-page Lyrical Analysis / Themes layout brainstorm** (curator request, next) → **B4**
   (Explore vector map, with the vector "You might also like") → triage **6** (About analysis-explainer +
   AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-23 _(**triage 5 built + fully reviewed** on
-  `session-triage-5-translation-highlights-multilang`, awaiting curator smoke + merge: `songs.language`
-  → `text[]` (migration 009, already applied to the live dev DB) with a workbench chip editor, `unnest`
-  facets, and array-overlap filtering; a "+ Add selection" picker on the translation field; a song-page
-  "Sung in" cell. Backend **130/130**, lint/build clean, live smoke all-pass with the curated dataset
-  byte-restored; final opus review **READY TO MERGE** (0 Critical/0 Important). Two reviewer-caught
-  defects fixed on branch — a dropped accessible name and a chip-editor save race. Prior: triage **1a+1b**
-  `a6eb05a`, triage **4** `d3887ad`, and the filter/analysis presentation batch, all merged.)_
+- **Last updated:** 2026-07-25 _(**triage 5 merged to `main`** — merge `577d139`, curator-confirmed:
+  `songs.language` → `text[]` (migration 009) with a workbench chip editor, `unnest` facets and
+  array-overlap filtering; the "+ Add from lyrics" / "+ Add from translation" highlight picker with
+  tight-verse line-break preservation; a song-page "Sung in" cell + translation-aware note. Curator
+  smoke drove three on-branch fixes (button labels, button grouping, line-break preservation) and a
+  one-time reshape of 25 songs' `lyrics_highlights` on the live DB (see Decision Log). Merged `main`:
+  backend **130/130**, build clean, **no branches pending**. Next: brainstorm the song-page Lyrical
+  Analysis / Themes layout.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is

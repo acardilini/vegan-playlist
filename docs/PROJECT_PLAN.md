@@ -316,8 +316,10 @@ BUILT+merged** (`bf2f1da`, URL query params via `useSearchParams` + a sessionSto
 recency fill, cycle a random 4 when >4 pinned, restored workbench Featured toggle, dropped the card date;
 (4) ☑ **browse/search polish — merged `d3887ad`, curator-confirmed**: bidirectional
 sort via a pure `buildOrderBy` + `dir` URL param, sidebar independent scroll; (5) ☑ **lyric highlights
-from the translation + multi-language `songs.language` — BUILT + fully reviewed 2026-07-23 on
-`session-triage-5-translation-highlights-multilang` (awaiting curator smoke + merge)**: `songs.language`
+from the translation + multi-language `songs.language` — MERGED `577d139` (2026-07-25),
+curator-confirmed** (smoke drove three on-branch fixes: source-named buttons grouped under Key lyrics,
+and tight-verse line-break preservation via a two-level highlight format + a one-time reshape of 25
+songs): `songs.language`
 → `text[]` (migration 009, `Mouri`→`Māori` fixed, already applied to the live dev DB), workbench chip
 editor + `GET /api/admin/languages`, `unnest` facets + `&&` filter so a bilingual song counts under and
 is found by each language; a second "+ Add selection" on the translation field (flat highlights, no
