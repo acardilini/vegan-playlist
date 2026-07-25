@@ -60,7 +60,7 @@ test('joinSql emits only the needed joins', () => {
   assert.equal(b.joinSql({ albums: false, artists: false, effectiveGenre: false, analysis: false }), '');
   assert.ok(b.joinSql({ albums: true }).includes('LEFT JOIN albums'));
   assert.ok(b.joinSql({ effectiveGenre: true }).includes('LATERAL'));
-  assert.ok(b.joinSql({ analysis: true }).includes('song_lyric_analysis sa'));
+  assert.ok(b.joinSql({ analysis: true }).includes('DISTINCT ON (song_id)') && b.joinSql({ analysis: true }).includes(') sa ON sa.song_id = s.id'));
 });
 
 test('buildWhere scalar components set the scalar join and one clause each', () => {
@@ -90,8 +90,8 @@ test('buildWhere scalar params continue the shared index sequence', () => {
 
 test('joinSql emits the scalar-tier join under a distinct alias', () => {
   const s = b.joinSql({ analysis: true, scalarAnalysis: true });
-  assert.ok(s.includes('song_lyric_analysis sa '), 'code tier keeps alias sa');
-  assert.ok(s.includes('song_lyric_analysis sca '), 'scalar tier uses alias sca');
+  assert.ok(s.includes(') sa ON sa.song_id = s.id'), 'code tier keeps alias sa');
+  assert.ok(s.includes(') sca ON sca.song_id = s.id'), 'scalar tier uses alias sca');
 });
 
 test('buildWhere scalar clauses respect a non-1 startIndex', () => {
@@ -120,4 +120,10 @@ test('buildOrderBy: unknown field falls back to popularity; bogus dir uses field
   assert.equal(b.buildOrderBy('popularity'), 'ORDER BY s.popularity DESC, s.title ASC');
   assert.equal(b.buildOrderBy('nonsense'), 'ORDER BY s.popularity DESC, s.title ASC');
   assert.equal(b.buildOrderBy('title', 'sideways'), 'ORDER BY s.title ASC');
+});
+
+test('joinSql routes analysis joins through the latest-pass subquery, not a model constant', () => {
+  const sql = b.joinSql({ analysis: true, scalarAnalysis: true });
+  assert.ok(sql.includes('DISTINCT ON (song_id)'), 'uses the LATEST_ANALYSIS subquery');
+  assert.ok(!/model_used\s*=/.test(sql), 'no hard-coded model filter remains');
 });
