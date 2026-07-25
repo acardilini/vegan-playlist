@@ -21,7 +21,7 @@ const COMPONENTS = [
   { key: 'intensity',       column: 'intensity',       heading: 'Intensity',   multi: false },
   { key: 'clarity',         column: 'clarity',         heading: 'Clarity',     multi: false },
   { key: 'focus_amount',    column: 'focus_amount',    heading: 'Focus',       multi: false },
-  { key: 'target_audience', column: 'target_audience', heading: 'Audience',    multi: false },
+  { key: 'target_audience', column: 'target_audience', heading: 'Speaking to',    multi: false },
   { key: 'emotions',        column: 'emotions',        heading: 'Emotions',    multi: true  },
 ];
 

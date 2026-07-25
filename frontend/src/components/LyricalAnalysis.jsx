@@ -5,7 +5,7 @@ import InfoTip from './InfoTip';
 // Dimension render order + display headings.
 const DIMENSIONS = [
   ['themes', 'Themes'],
-  ['targets', 'Targets'],
+  ['targets', 'Subjects'],
   ['actions', 'Actions'],
   ['tactics', 'Tactics'],
   ['moral_frames', 'Moral frames'],

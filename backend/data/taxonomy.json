@@ -1091,7 +1091,7 @@
   ],
   "hierarchy": {
     "targets": {
-      "label": "Targets & Species",
+      "label": "Subjects",
       "description": "Who or what the song is about: particular animals, the industries that use them, and the systems and roles that keep it running.",
       "sub_dimensions": {
         "farmed_domesticated": {

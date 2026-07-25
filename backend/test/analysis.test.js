@@ -96,7 +96,7 @@ test('getSongAnalysis resolves scalar attributes to codebook labels with definit
   assert.equal(byLabel['Perspective'], 'Moral Accuser');
   assert.equal(byLabel['Tone'], 'Satirical & Sarcastic');
   assert.equal(byLabel['Focus'], 'Central Thesis');
-  assert.equal(byLabel['Audience'], 'Hypocritical Animal Lovers');
+  assert.equal(byLabel['Speaking to'], 'Hypocritical Animal Lovers');
   assert.ok(a.attributes.every(x => x.value), 'no null/empty attributes leak in');
   const persp = a.attributes.find(x => x.label === 'Perspective');
   assert.ok(persp.definition.length > 0, 'definition carried for the tooltip');
@@ -148,7 +148,7 @@ test('getSongAnalysis drops suppressed scalar values', async () => {
   const labels = a.attributes.map(x => x.label);
   assert.ok(labels.includes('Perspective'));
   assert.ok(!labels.includes('Focus'), 'ABSENCE_OF_FOCUS suppressed');
-  assert.ok(!labels.includes('Audience'), 'UNSPECIFIED suppressed');
+  assert.ok(!labels.includes('Speaking to'), 'UNSPECIFIED suppressed');
 });
 
 // A pipeline re-run has previously written typo'd codes and prompt-template artifacts into
