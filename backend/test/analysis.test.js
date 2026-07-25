@@ -23,40 +23,44 @@ test('taxonomy exposes the five evidence dimensions with labels', () => {
   assert.equal(analysis.label('themes', 'some_new_code'), 'Some New Code');
 });
 
-// Helpers: insert songs with the ZZZANL sentinel, coded in one or both tiers.
+// Helpers: insert songs with the ZZZANL sentinel, each with a single "latest pass" row.
+const MODEL = 'gemini-3.5-flash-lite'; // any string; single row per fixture song
+
 async function mkSong(title) {
   return (await pool.query(
     `INSERT INTO songs (title, status, published, data_source)
      VALUES ($1, 'included', true, 'manual') RETURNING id`, [title])).rows[0].id;
 }
 
-async function addCodeTier(songId) {
+// Insert ONE analysis row (the new "complete pass" model). Fields default to empty.
+async function addAnalysis(songId, fields = {}, { model = MODEL, analyzedAt = '2026-07-25 10:00:00' } = {}) {
+  const f = {
+    explanation: null, themes: '[]', topics: '[]', advocacy: '[]', tactics: '[]', moral_frames: '[]',
+    perspective: null, lyrical_tone: null, intensity: null, clarity: null, focus_amount: null,
+    target_audience: null, emotions: [], ...fields,
+  };
   await pool.query(
     `INSERT INTO song_lyric_analysis
-       (song_id, model_used, explanation, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, $2, 'Test explanation.', $3::jsonb, $4::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
-    [songId, analysis.CODE_MODEL,
-     JSON.stringify([{ code: 'killing', evidence: 'ground beef' }]),
-     JSON.stringify([{ code: 'cows', evidence: 'Run cows run' }])]);
+       (song_id, model_used, analyzed_at, explanation, themes, topics, advocacy, tactics, moral_frames,
+        perspective, lyrical_tone, intensity, clarity, focus_amount, target_audience, emotions)
+     VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11,$12,$13,$14,$15,$16::text[])`,
+    [songId, model, analyzedAt, f.explanation, f.themes, f.topics, f.advocacy, f.tactics, f.moral_frames,
+     f.perspective, f.lyrical_tone, f.intensity, f.clarity, f.focus_amount, f.target_audience, f.emotions]);
 }
 
-async function addScalarTier(songId) {
-  await pool.query(
-    `INSERT INTO song_lyric_analysis
-       (song_id, model_used, perspective, lyrical_tone, intensity, clarity, focus_amount,
-        target_audience, emotions, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, $2, 'MORAL_ACCUSER_JUDGE', 'CONDESCENDING_SNARK_AND_SATIRE',
-             'MORAL_OUTRAGE_AND_CONDEMNATION', 'SYSTEMIC_COMMODIFICATION_CRITIQUE',
-             'CENTRAL_THESIS', 'HYPOCRITES_AND_SELF_DECEIVERS',
-             ARRAY['MORAL_OUTRAGE','SARDONIC_MOCKERY'],
-             '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
-    [songId, analysis.SCALAR_MODEL]);
-}
+const CODED = {
+  explanation: 'Test explanation.',
+  themes: JSON.stringify([{ code: 'killing', evidence: 'ground beef' }]),
+  topics: JSON.stringify([{ code: 'cows', evidence: 'Run cows run' }]),
+  perspective: 'MORAL_ACCUSER_JUDGE', lyrical_tone: 'CONDESCENDING_SNARK_AND_SATIRE',
+  intensity: 'MORAL_OUTRAGE_AND_CONDEMNATION', clarity: 'SYSTEMIC_COMMODIFICATION_CRITIQUE',
+  focus_amount: 'CENTRAL_THESIS', target_audience: 'HYPOCRITES_AND_SELF_DECEIVERS',
+  emotions: ['MORAL_OUTRAGE', 'SARDONIC_MOCKERY'],
+};
 
 async function mkCodedSong() {
   const id = await mkSong('ZZZANL Coded');
-  await addCodeTier(id);
-  await addScalarTier(id);
+  await addAnalysis(id, CODED);
   return id;
 }
 
@@ -107,9 +111,9 @@ test('getSongAnalysis returns null for an un-coded song', async () => {
   assert.equal(await analysis.getSongAnalysis(pool, s.id), null);
 });
 
-test('getSongAnalysis returns chips only when just the code tier exists', async () => {
+test('getSongAnalysis returns chips only when the latest row has only thematic codes', async () => {
   const id = await mkSong('ZZZANL CodeOnly');
-  await addCodeTier(id);
+  await addAnalysis(id, { themes: CODED.themes, topics: CODED.topics, explanation: 'Test explanation.' });
   const a = await analysis.getSongAnalysis(pool, id);
   assert.equal(a.themes[0].code, 'killing');
   assert.deepEqual(a.attributes, [], 'no scalar row -> no attributes');
@@ -117,13 +121,17 @@ test('getSongAnalysis returns chips only when just the code tier exists', async 
   assert.equal(a.explanation, 'Test explanation.');
 });
 
-test('getSongAnalysis returns attributes only when just the scalar tier exists', async () => {
+test('getSongAnalysis returns attributes only when the latest row has only scalars', async () => {
   const id = await mkSong('ZZZANL ScalarOnly');
-  await addScalarTier(id);
+  await addAnalysis(id, {
+    perspective: CODED.perspective, lyrical_tone: CODED.lyrical_tone, intensity: CODED.intensity,
+    clarity: CODED.clarity, focus_amount: CODED.focus_amount, target_audience: CODED.target_audience,
+    emotions: CODED.emotions,
+  });
   const a = await analysis.getSongAnalysis(pool, id);
   assert.ok(a, 'scalar-only song still has an analysis');
   assert.deepEqual(a.themes, [], 'no code row -> no chips');
-  assert.equal(a.explanation, null, 'explanation lives in the code tier only');
+  assert.ok(!a.explanation, 'no explanation on a scalar-only pass');
   assert.equal(a.attributes.length, 6, 'all six single-valued components present');
 });
 
@@ -135,7 +143,7 @@ test('getSongAnalysis drops suppressed scalar values', async () => {
         themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $2, 'MORAL_ACCUSER_JUDGE', 'ABSENCE_OF_FOCUS', 'UNSPECIFIED', ARRAY[]::text[],
              '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
-    [id, analysis.SCALAR_MODEL]);
+    [id, MODEL]);
   const a = await analysis.getSongAnalysis(pool, id);
   const labels = a.attributes.map(x => x.label);
   assert.ok(labels.includes('Perspective'));
@@ -154,7 +162,7 @@ test('getSongAnalysis drops off-codebook scalar values instead of showing them',
      VALUES ($1, $2, 'EXACT_ENUM_CODE_KEY', 'VISVERAL_HORROR_AND_ABJECTION',
              'SYSTEMIC_COMMODIFICATION_CRITIQUE', ARRAY['MORAL_OUTRAGE','NOT_A_REAL_EMOTION'],
              '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
-    [id, analysis.SCALAR_MODEL]);
+    [id, MODEL]);
   const a = await analysis.getSongAnalysis(pool, id);
   const labels = a.attributes.map(x => x.label);
   assert.ok(!labels.includes('Perspective'), 'template artifact dropped, not title-cased');
@@ -237,14 +245,14 @@ test('facetTree rolls up two codes in the same group with distinct-song counts',
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
-    [a.id, JSON.stringify([{ code: 'killing', evidence: 'x' }, { code: 'brutality', evidence: 'y' }]), analysis.CODE_MODEL]);
+    [a.id, JSON.stringify([{ code: 'killing', evidence: 'x' }, { code: 'brutality', evidence: 'y' }]), MODEL]);
   const b = (await pool.query(
     `INSERT INTO songs (title, status, published, data_source)
      VALUES ('ZZZANL TwoCode B', 'included', true, 'manual') RETURNING id`)).rows[0];
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
-    [b.id, JSON.stringify([{ code: 'killing', evidence: 'z' }]), analysis.CODE_MODEL]);
+    [b.id, JSON.stringify([{ code: 'killing', evidence: 'z' }]), MODEL]);
 
   const after = await getViolence();
   const dKilling = after.killing - before.killing;
@@ -267,11 +275,11 @@ test('facetTree accepts a constraint that narrows the counted set', async () => 
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
-    [s.id, JSON.stringify([{ code: 'killing', evidence: 'x' }]), analysis.CODE_MODEL]);
+    [s.id, JSON.stringify([{ code: 'killing', evidence: 'x' }]), MODEL]);
 
   // Constrain to a language that no coded song has -> killing count unaffected by our new row.
   const constrained = await analysis.facetTree(pool, {
-    joinSql: '', where: [`s.language && $2::text[]`], params: [['ZZZ-NoSuchLang']],
+    joinSql: '', where: [`s.language && $1::text[]`], params: [['ZZZ-NoSuchLang']],
   });
   // themes dimension should have no 'killing' contribution from our English song under this constraint
   const cruelty = (constrained.themes.sub_dimensions || []).find(sd => sd.id === 'cruelty_suffering');
@@ -323,7 +331,12 @@ test('facetSelectionClauses: empty selection needs no join', () => {
 
 test('scalarFacets counts distinct live songs per code, in codebook order', async () => {
   const id = await mkSong('ZZZANL Facet');
-  await addScalarTier(id); // perspective MORAL_ACCUSER_JUDGE, emotions [MORAL_OUTRAGE, SARDONIC_MOCKERY]
+  // perspective MORAL_ACCUSER_JUDGE, emotions [MORAL_OUTRAGE, SARDONIC_MOCKERY]
+  await addAnalysis(id, {
+    perspective: CODED.perspective, lyrical_tone: CODED.lyrical_tone, intensity: CODED.intensity,
+    clarity: CODED.clarity, focus_amount: CODED.focus_amount, target_audience: CODED.target_audience,
+    emotions: CODED.emotions,
+  });
   const f = await analysis.scalarFacets(pool, {});
   assert.equal(f.perspective.heading, 'Perspective');
   assert.equal(f.emotions.multi, true);
@@ -339,7 +352,11 @@ test('scalarFacets counts distinct live songs per code, in codebook order', asyn
 
 test('scalarFacets applies a per-component constraint', async () => {
   const id = await mkSong('ZZZANL FacetConstrained');
-  await addScalarTier(id);
+  await addAnalysis(id, {
+    perspective: CODED.perspective, lyrical_tone: CODED.lyrical_tone, intensity: CODED.intensity,
+    clarity: CODED.clarity, focus_amount: CODED.focus_amount, target_audience: CODED.target_audience,
+    emotions: CODED.emotions,
+  });
   await pool.query(`UPDATE songs SET language = ARRAY['ZZZ-NoSuchLang'] WHERE id = $1`, [id]);
   const constrained = await analysis.scalarFacets(pool, {
     perspective: { joinSql: '', where: [`s.language && $1::text[]`], params: [['ZZZ-NoSuchLang']] },
