@@ -318,8 +318,9 @@ keep/rebuild/drop/defer decisions are recorded in
   **with a direction toggle**; pagination. ✅ _(B3, 2026-07-20; sort direction + independently
   scrolling sidebar, triage 4, 2026-07-22.)_
 - **Lyric-metadata filters:** the seven scalar analysis components (Perspective, Tone, Intensity,
-  Clarity, Focus, Audience, Emotions) as browse filters — **OR within a component, AND across** —
-  with exclude-self counts, read from the enum-clean analysis tier. ✅ _(Triage 1b, 2026-07-22.)_
+  Clarity, Focus, Speaking to, Emotions) as browse filters — **OR within a component, AND across** —
+  with exclude-self counts, read from each song's latest analysis pass. ✅ _(Triage 1b, 2026-07-22;
+  "Speaking to" rename + latest-pass source, 2026-07-25.)_
 - **Browse state in the URL:** filters, sort, direction, search and page are all query params, with a
   sessionStorage layer so a param-less return to `/` restores the last browse. ✅ _(Triage 2.)_
 - **Sidebar presentation:** every filter group is a uniform collapsible section (only Genre & style
@@ -329,11 +330,14 @@ keep/rebuild/drop/defer decisions are recorded in
   destined for the About pages. ✅ _(Presentation batch, 2026-07-22.)_
 - **Featured songs:** curated highlighting on the homepage (`featured` field). ✅
 - **Song detail:** coding categories, platform links, similar-songs navigation. ✅
-- **Lyrical analysis on the song page:** an attributes card (the seven codebook components, resolved
-  to labels, with the code's definition on hover) plus theme chips per dimension, laid out two-up;
-  evidence quotes behind a toggle. Read from **two analysis tiers** — code dimensions from
-  `gemma4:key_focus_pipeline`, scalars from `gemini-3.5-flash-lite` — so a song shows whatever it has.
-  ✅ _(B2; two-tier read + Audience row, triage 1a, 2026-07-22.)_
+- **Lyrical analysis on the song page (Option C):** a conditional **"In short"** summary (from
+  `lyric_summary`, shown only when present) above two labelled sections — **"Style & tone"** (the seven
+  metadata components incl. **"Speaking to"** + Emotions) and **"What it's about"** (five thematic
+  dimensions incl. **"Subjects"**, codebook-gated to match the browse filters) — with a per-section
+  **"Show quotes"** toggle placing each code's evidence under its dimension. Read from each song's
+  **latest analysis pass** (`MAX(analyzed_at)`; the two-tier model constants retired). ✅ _(B2; two-tier
+  read + Audience row, triage 1a, 2026-07-22; Option C + latest-pass + renames + `lyric_summary` summary,
+  2026-07-25.)_
 - **YouTube integration:** per-song video embeds with a primary-video concept. ✅
 - **Lyrics links:** lyrics lookup/links per song. ✅
 - **Artist pages:** stats, discography tracking, advocacy notes. ✅

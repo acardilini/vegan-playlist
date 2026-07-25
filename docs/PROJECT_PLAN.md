@@ -326,6 +326,15 @@ is found by each language; a second "+ Add selection" on the translation field (
 schema change); a song-page "Sung in" cell + translation-aware note. Backend 130/130; final opus review
 READY TO MERGE (0 Critical/0 Important). Spec:
 [`specs/2026-07-23-triage-5-translation-highlights-and-multi-language-design.md`](./superpowers/specs/2026-07-23-triage-5-translation-highlights-and-multi-language-design.md); then
+☑ **song-page Lyrical Analysis / Themes layout — MERGED `47229bb` (2026-07-25), curator-confirmed**
+(subagent-driven, 8 commits, display-only): the whole analysis surface reads each song's **latest coding
+pass** (`MAX(analyzed_at)` via `LATEST_ANALYSIS`; the `CODE_MODEL`/`SCALAR_MODEL`/`ANY_TIER_SQL` constants
+deleted — no hard-coded model string remains), the song page codebook-gates thematic codes to match the
+filters, **Option C** layout (conditional **"In short"** summary from `song_lyric_analysis.lyric_summary`
+— 668/672 live songs, curator-corrected from `explanation` — + **"Style & tone"** / **"What it's about"**
+sections + per-section **"Show quotes"**), and renames Audience→**"Speaking to"** / Targets→**"Subjects"**.
+Backend 131/131; final opus review READY TO MERGE (0 Critical/0 Important/5 Minor→backlog). Spec:
+[`specs/2026-07-25-lyrical-analysis-layout-design.md`](./superpowers/specs/2026-07-25-lyrical-analysis-layout-design.md); then
 **B4** (with vector "You might also like"); then (6) About analysis-explainer + AI-disclosure page —
 **now has concrete content waiting for it:** the seven component and five dimension descriptions are
 served by the API and deliberately not shown in the browse UI (curator removed them twice), so this

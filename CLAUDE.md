@@ -68,13 +68,18 @@ Run before ending every working session:
   Note: `/api/submissions/admin*` is currently unauthenticated (Phase 4 item)
 - **services/staging.js**: staging-queue service (queues, include/reject/publish, candidate
   intake, submissions→pending bridge); tests in `test/staging.test.js` (node:test)
-- **services/analysis.js + services/metadataCodebook.js**: the lyric-analysis read. It spans **two
-  tiers** of `song_lyric_analysis` — `CODE_MODEL` (`gemma4:key_focus_pipeline`) for the five code
-  dimensions, `explanation` and evidence, and `SCALAR_MODEL` (`gemini-3.5-flash-lite`) for the seven
-  scalar components. **Those two constants are the only place either model string may appear**, and
-  there is deliberately no `DEFAULT_MODEL`, so every consumer states its tier; "has analysis" means
-  either tier. `metadataCodebook.js` is pure (no DB) and owns `data/master_metadata_codebook.json` —
-  labels, definitions, the hidden absence codes, and the scalar filter clauses
+- **services/analysis.js + services/metadataCodebook.js**: the lyric-analysis read. Every consumer
+  (song page, browse facets, `/search` filters, `themeCounts`, the admin `needs-analysis` queue) reads
+  each song's **latest coding pass** — the single newest `song_lyric_analysis` row by `MAX(analyzed_at)`,
+  via the shared `LATEST_ANALYSIS` fragment (`DISTINCT ON (song_id) … ORDER BY analyzed_at DESC …`).
+  **There is no hard-coded model string anywhere** — the old two-tier `CODE_MODEL`/`SCALAR_MODEL`/
+  `ANY_TIER_SQL` constants were deleted (2026-07-25); selection is purely by recency. **Contract:** each
+  pass must be written as one *complete* row per song, or a partial newer row would override a richer one.
+  The song page **codebook-gates** thematic codes and scalars so it shows exactly what the browse filters
+  count. The top summary comes from the `lyric_summary` column (exposed as `summary`); `hasAnalysisExists`/
+  `hasCodesExists` are the shared has-analysis/has-codes EXISTS helpers. `metadataCodebook.js` is pure (no
+  DB) and owns `data/master_metadata_codebook.json` — labels, definitions, the hidden absence codes, and
+  the scalar filter clauses (the `target_audience` heading is **"Speaking to"**)
 - **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
 - **scripts/**: 4 documented maintenance scripts (see `backend/scripts/README.md`);
   the ~37 one-off scripts were deleted in Session 2.3 (git history preserves them)

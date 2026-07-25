@@ -10,9 +10,21 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Triage 5 (2026-07-23) — translation highlights + multi-language `songs.language` —
-  BUILT + fully reviewed, on branch `session-triage-5-translation-highlights-multilang` (12 commits from
-  `a791283`), AWAITING CURATOR SMOKE + MERGE.** Two curator requests built together because they meet on the
+- **Current session:** _**Lyrical-analysis layout rework (2026-07-25) — DONE, merged to `main` (merge
+  `47229bb`), curator-smoke-confirmed.** Display-only song-page rework (spec `66a1b52`, plan `3b87553`;
+  subagent-driven, 8 commits from `11cdbf7`, branch `session-lyrical-analysis-layout`). The **whole
+  analysis surface** now reads each song's **latest coding pass** (`MAX(analyzed_at)` via a shared
+  `LATEST_ANALYSIS` fragment; `CODE_MODEL`/`SCALAR_MODEL`/`ANY_TIER_SQL` **deleted** — no hard-coded model
+  string remains). Song page **codebook-gates thematic codes** (matches the browse filters), renders
+  **Option C** (conditional **"In short"** summary from `song_lyric_analysis.lyric_summary` — 668/672 live
+  songs — beside **"Style & tone"** / **"What it's about"** sections + a per-section **"Show quotes"**
+  toggle), and renames **Audience→"Speaking to"** / **Targets→"Subjects"**. Curator correction mid-flight:
+  the summary lives in `lyric_summary`, not `explanation` (fixed `e25d300`; exposed as the API field
+  `summary`). Backend **131/131**; lint 0 errors; build clean; isolated dev smoke 8/8; **curator smoke
+  confirmed** ("In short" appears, layout works). Final opus whole-branch review **READY TO MERGE = YES**
+  (0 Critical / 0 Important / **5 Minor** → triage backlog; see Decision Log 2026-07-25). Prior session:
+  **Triage 5 (2026-07-23) — translation highlights + multi-language `songs.language` — DONE, merged to
+  `main` (merge `577d139`), curator-confirmed.** Two curator requests built together because they meet on the
   non-English songs. **(1) `songs.language` → `text[]`** (migration 009; the 38 existing values converted,
   the `Mouri`→`Māori` typo fixed): a bilingual song now carries several languages, the browse Language
   facet `unnest`s so it counts under **each** of them, the filter is array-overlap (`&&`) so ticking
@@ -108,40 +120,34 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   line-break preservation) — see the Decision Log. **A one-time reshape of 25 songs' `lyrics_highlights`
   was applied to the live DB** (`\n`→`\n\n` so separate highlights stayed separate; not a migration
   file — see the Decision Log). Merged `main`: backend **130/130**, build clean.
-- **Next session:** **Execute the lyrical-analysis layout plan (subagent-driven).** The brainstorm is
-  **DONE** — spec + plan are written and committed (2026-07-25; spec `66a1b52`, plan `3b87553`), and the
-  curator chose **subagent-driven execution**. 7 tasks; **display-only, no migrations/pipeline changes.**
-  After it: **B4 — Explore vector map** (with the vector "You might also like"), then **triage 6 — the
-  About analysis-explainer + AI-disclosure page** (the seven component + five dimension descriptions are
-  served by the API and deliberately unused in browse — that page is where they land).
-  **What the plan does (curator-approved design, see Decision Log 2026-07-25 below):** (1) the **whole
-  analysis surface** switches from the fixed `CODE_MODEL`/`SCALAR_MODEL` two-tier read to each song's
-  **latest pass** (`MAX(analyzed_at)` via a shared `LATEST_ANALYSIS` fragment); the three model constants
-  are deleted (no hard-coded model string remains). (2) the song page **codebook-gates thematic codes**
-  (matches the filters — drops the ~30 off-codebook/typo/blank codes the newest pass currently emits).
-  (3) **Option C layout**: a conditional top summary (from `explanation`, shown only if present), two
-  labelled sections side by side — **"Style & tone"** (7 metadata codes) and **"What it's about"** (5
-  thematic dimensions) — plus a per-section **"Show quotes"** toggle placing each code's quote under its
-  dimension. (4) renames **Audience → "Speaking to"** and **Targets → "Subjects"** (the latter in
-  `taxonomy.json`, so it reflects through browse + the future About page).
+- **Next session:** **B4 — Explore vector map** (2D/3D scatter over `vector_space.json`, space/colour
+  toggles, spotlight filter) — the last Sub-project-B build — **with the vector "You might also like"**
+  (replacing the current `/similar`, which is genre + dead NULL audio-features). After it: **triage 6 —
+  the About analysis-explainer + AI-disclosure page** (the seven metadata-component + five
+  thematic-dimension descriptions are served by the API and deliberately unused in browse — that page is
+  where they land; now with the renamed **"Speaking to"** / **"Subjects"** labels). Note there is a
+  pre-existing uncommitted `frontend/public/vector_space.json` + untracked `docs/examples/` in the working
+  tree, left as-is per the curator — relevant to B4.
 - **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **merged `a6eb05a`, confirmed
   2026-07-22**) · **2** (persist
   browse state — ☑ **merged `bf2f1da`**) · **3** (featured redesign — ☑ **merged `6718cec`**, confirmed) ·
   **3b** (Featured management view — ☑ **merged `f3936b1`**, confirmed) · **4** (browse/search polish — ☑
   **merged `d3887ad`**, confirmed) · **5**
   (lyric highlights from translation + multi-language — ☑ **merged `577d139`, curator-confirmed**) →
-  **song-page Lyrical Analysis / Themes layout** (☑ spec+plan written 2026-07-25; **executing next**,
-  subagent-driven) → **B4**
-  (Explore vector map, with the vector "You might also like") → triage **6** (About analysis-explainer +
-  AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-25 _(**lyrical-analysis rework brainstormed → spec + plan committed** on
-  `main` — spec `66a1b52`, plan `3b87553`. Curator-approved design: the whole analysis surface follows
-  each song's **latest coding pass** (`MAX(analyzed_at)` via `LATEST_ANALYSIS`; the two-tier model
-  constants are deleted), the song page codebook-gates thematic codes, **Option C** layout (conditional
-  summary + "Style & tone" / "What it's about" sections + per-section "Show quotes"), and renames
-  Audience→"Speaking to" / Targets→"Subjects". Read-only, no migrations. **No code changed this session
-  (docs only); nothing pending to merge.** Next: **execute the plan subagent-driven.** Pre-existing
-  uncommitted `frontend/public/vector_space.json` + untracked `docs/examples/` left as-is per curator.)_
+  **song-page Lyrical Analysis / Themes layout** (☑ **merged `47229bb` 2026-07-25, curator-confirmed**;
+  latest-pass source + Option C + renames + summary from `lyric_summary`) → **B4**
+  (Explore vector map, with the vector "You might also like" — **executing next**) → triage **6** (About
+  analysis-explainer + AI disclosure) → sub-projects **C–F**.
+- **Last updated:** 2026-07-25 _(**lyrical-analysis layout rework BUILT + merged** to `main`, merge
+  `47229bb` — subagent-driven, 8 commits from `11cdbf7`. The whole analysis surface now reads each song's
+  **latest coding pass** (`MAX(analyzed_at)` via `LATEST_ANALYSIS`; `CODE_MODEL`/`SCALAR_MODEL`/
+  `ANY_TIER_SQL` deleted — no hard-coded model string remains), the song page codebook-gates thematic
+  codes, renders **Option C**, and renames Audience→"Speaking to" / Targets→"Subjects". The **"In short"**
+  summary reads `song_lyric_analysis.lyric_summary` (668/672 live songs; curator correction `e25d300` —
+  the plan had wrongly used `explanation`), exposed as the API field `summary`. Backend **131/131**; lint
+  0; build clean; **curator-smoke-confirmed**. Final opus review READY TO MERGE = YES (0C/0I/**5 Minor** →
+  triage backlog, see Decision Log). Read-only, no migrations. Next: **B4 — Explore vector map.**
+  Pre-existing uncommitted `frontend/public/vector_space.json` + untracked `docs/examples/` left as-is.)_
 
 ### Next Tasks (start here)
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
@@ -265,6 +271,36 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-25 — Lyrical-analysis rework BUILT + merged (`47229bb`); the "In short" summary source was
+  corrected to `lyric_summary`.** Executed the 2026-07-25 plan subagent-driven (8 commits from `11cdbf7`,
+  branch `session-lyrical-analysis-layout`): the whole analysis surface reads each song's latest pass
+  (`MAX(analyzed_at)` via `LATEST_ANALYSIS`; the three model constants deleted — no hard-coded model
+  string remains), the song page codebook-gates thematic codes to match the browse filters, Option C
+  layout, and the Audience→"Speaking to" / Targets→"Subjects" renames (the latter in `taxonomy.json`, so
+  it reflects through browse + the future About page). Per-task reviewed clean; final opus whole-branch
+  review **READY TO MERGE = YES** (0 Critical / 0 Important / **5 Minor**, all carried to the triage
+  backlog — see below). **Curator correction during smoke:** the top summary is stored in
+  `song_lyric_analysis.**lyric_summary**` (TEXT), NOT `explanation`. A read-only DB check confirmed
+  `lyric_summary` is populated for **668/672 live songs** (all on the `gemini-3.5-flash-lite` latest
+  pass) while `explanation` is empty for all — so the strip shipped blank. The spec/plan had specified
+  `explanation`; fixed on-branch (`e25d300`): `getSongAnalysis` selects `lyric_summary` and exposes it as
+  the API field **`summary`** (the misleading `explanation` key dropped; the frontend var was already
+  `summary`), `hasContent` gates on the summary, tests moved to the `lyric_summary` column. Verified
+  end-to-end against live data; curator re-smoked: **"In short" appears, layout respected and works.**
+  Backend **131/131**; lint 0; build clean. Read-only — no migrations, no pipeline changes. **The 5
+  Minors (backlog, none blocked merge):** (1) `hasCodesExists` / analytics `songs_with_themes` /
+  `browse-facets` `coded_count` are latest-gated but NOT codebook-gated — a song whose latest codes are
+  all off-codebook counts in a caption yet renders no chips (edge case; self-heals as the curator cleans
+  codes). (2) `hasAnalysisExists` is any-row while the page needs the latest row to have content — under
+  the one-complete-row-per-pass contract a content-less newer row would make the "Has analysis" toggle
+  include a song the page 404s (documented assumption; a monitoring query is the proportionate follow-up,
+  not code). (3) `LATEST_ANALYSIS` is a WHERE-less full-table `DISTINCT ON` re-materialised per join site
+  (negligible at ~650 songs; revisit only if the table grows). (4) the two EXISTS helpers have no direct
+  unit test; `metadataCodebook.js:19` `multi:` whitespace over-pad is cosmetic. (5) `LyricalAnalysis.jsx`'s
+  empty-return is now partly dead (the route 404s first) — harmless defensive code. Spec:
+  `specs/2026-07-25-lyrical-analysis-layout-design.md` (with a post-build correction note); plan:
+  `plans/2026-07-25-lyrical-analysis-layout.md`.
 
 - **2026-07-25 — Lyrical-analysis rework: the site follows each song's LATEST coding pass, and the song
   page renders Option C.** Brainstorm (spec `66a1b52`, plan `3b87553`) of the song-page analysis section.
