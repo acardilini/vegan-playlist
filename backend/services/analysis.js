@@ -83,7 +83,7 @@ function mapDim(dimension, arr) {
 
 async function getSongAnalysis(db, songId) {
   const r = await db.query(
-    `SELECT sla.themes, sla.topics, sla.advocacy, sla.tactics, sla.moral_frames, sla.explanation,
+    `SELECT sla.themes, sla.topics, sla.advocacy, sla.tactics, sla.moral_frames, sla.lyric_summary,
             sla.perspective, sla.lyrical_tone, sla.intensity, sla.clarity, sla.focus_amount,
             sla.target_audience, sla.emotions
      FROM ${LATEST_ANALYSIS} sla
@@ -121,14 +121,14 @@ async function getSongAnalysis(db, songId) {
   // Nothing displayable (e.g. a lyrics-less pass with empty codes and empty scalars) -> null,
   // so the route 404s and the page shows no empty "Lyrical analysis" heading.
   const hasContent = attributes.length > 0 || emotions.length > 0 ||
-    Object.values(dims).some(d => d.length > 0) || !!(a.explanation && a.explanation.trim());
+    Object.values(dims).some(d => d.length > 0) || !!(a.lyric_summary && a.lyric_summary.trim());
   if (!hasContent) return null;
 
   return {
     perspective: a.perspective, intensity: a.intensity, clarity: a.clarity,
     focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone,
     target_audience: a.target_audience,
-    emotions, explanation: a.explanation,
+    emotions, summary: a.lyric_summary,
     ...dims,
     attributes,
     dimension_descriptions: DIM_DESCRIPTIONS,

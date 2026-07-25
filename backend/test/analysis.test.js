@@ -35,21 +35,21 @@ async function mkSong(title) {
 // Insert ONE analysis row (the new "complete pass" model). Fields default to empty.
 async function addAnalysis(songId, fields = {}, { model = MODEL, analyzedAt = '2026-07-25 10:00:00' } = {}) {
   const f = {
-    explanation: null, themes: '[]', topics: '[]', advocacy: '[]', tactics: '[]', moral_frames: '[]',
+    lyric_summary: null, themes: '[]', topics: '[]', advocacy: '[]', tactics: '[]', moral_frames: '[]',
     perspective: null, lyrical_tone: null, intensity: null, clarity: null, focus_amount: null,
     target_audience: null, emotions: [], ...fields,
   };
   await pool.query(
     `INSERT INTO song_lyric_analysis
-       (song_id, model_used, analyzed_at, explanation, themes, topics, advocacy, tactics, moral_frames,
+       (song_id, model_used, analyzed_at, lyric_summary, themes, topics, advocacy, tactics, moral_frames,
         perspective, lyrical_tone, intensity, clarity, focus_amount, target_audience, emotions)
      VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11,$12,$13,$14,$15,$16::text[])`,
-    [songId, model, analyzedAt, f.explanation, f.themes, f.topics, f.advocacy, f.tactics, f.moral_frames,
+    [songId, model, analyzedAt, f.lyric_summary, f.themes, f.topics, f.advocacy, f.tactics, f.moral_frames,
      f.perspective, f.lyrical_tone, f.intensity, f.clarity, f.focus_amount, f.target_audience, f.emotions]);
 }
 
 const CODED = {
-  explanation: 'Test explanation.',
+  lyric_summary: 'Test summary.',
   themes: JSON.stringify([{ code: 'killing', evidence: 'ground beef' }]),
   topics: JSON.stringify([{ code: 'cows', evidence: 'Run cows run' }]),
   perspective: 'MORAL_ACCUSER_JUDGE', lyrical_tone: 'CONDESCENDING_SNARK_AND_SATIRE',
@@ -80,6 +80,8 @@ test('getSongAnalysis returns the full coding with display labels', async () => 
   assert.equal(a.targets[0].label, 'Cows');
   assert.equal(a.targets[0].sub_dimension, 'farmed_domesticated');
   assert.deepEqual(a.actions, []);
+  // the "In short" summary comes from the lyric_summary column, exposed as `summary`
+  assert.equal(a.summary, 'Test summary.');
 });
 
 test('getSongAnalysis enriches each code with its taxonomy definition', async () => {
@@ -113,12 +115,12 @@ test('getSongAnalysis returns null for an un-coded song', async () => {
 
 test('getSongAnalysis returns chips only when the latest row has only thematic codes', async () => {
   const id = await mkSong('ZZZANL CodeOnly');
-  await addAnalysis(id, { themes: CODED.themes, topics: CODED.topics, explanation: 'Test explanation.' });
+  await addAnalysis(id, { themes: CODED.themes, topics: CODED.topics, lyric_summary: 'Test summary.' });
   const a = await analysis.getSongAnalysis(pool, id);
   assert.equal(a.themes[0].code, 'killing');
   assert.deepEqual(a.attributes, [], 'no scalar row -> no attributes');
   assert.deepEqual(a.emotions, []);
-  assert.equal(a.explanation, 'Test explanation.');
+  assert.equal(a.summary, 'Test summary.');
 });
 
 test('getSongAnalysis returns attributes only when the latest row has only scalars', async () => {
@@ -131,7 +133,7 @@ test('getSongAnalysis returns attributes only when the latest row has only scala
   const a = await analysis.getSongAnalysis(pool, id);
   assert.ok(a, 'scalar-only song still has an analysis');
   assert.deepEqual(a.themes, [], 'no code row -> no chips');
-  assert.ok(!a.explanation, 'no explanation on a scalar-only pass');
+  assert.ok(!a.summary, 'no summary on a scalar-only pass');
   assert.equal(a.attributes.length, 6, 'all six single-valued components present');
 });
 

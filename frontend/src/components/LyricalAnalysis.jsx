@@ -17,7 +17,7 @@ function LyricalAnalysis({ analysis }) {
 
   const attributes = analysis.attributes || [];
   const emotions = analysis.emotions || [];
-  const summary = (analysis.explanation || '').trim();
+  const summary = (analysis.summary || '').trim();
   const dims = DIMENSIONS
     .map(([key, heading]) => [key, heading, analysis[key] || []])
     .filter(([, , codes]) => codes.length > 0);
