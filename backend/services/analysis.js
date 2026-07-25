@@ -4,15 +4,28 @@
 const taxonomy = require('../data/taxonomy.json');
 const codebook = require('./metadataCodebook');
 
-// Two display tiers. The code dimensions (+ explanation/evidence) come from the refined
-// key-focus coding; the seven scalar metadata components come from the newer, enum-clean
-// pass. No song is guaranteed to be in both — getSongAnalysis returns whatever exists.
-const CODE_MODEL = 'gemma4:key_focus_pipeline';
-const SCALAR_MODEL = 'gemini-3.5-flash-lite';
+// The site shows each song's latest analysis pass (see LATEST_ANALYSIS below).
 
-const sqlQuote = (s) => `'${String(s).replace(/'/g, "''")}'`;
-// For inlining into `model_used IN (…)` — "has analysis in either tier".
-const ANY_TIER_SQL = [CODE_MODEL, SCALAR_MODEL].map(sqlQuote).join(', ');
+// Exactly one row per song: the newest pass (MAX analyzed_at). Drop-in replacement for
+// `song_lyric_analysis` in any JOIN — join on song_id, no model filter. model_used DESC is a
+// deterministic tiebreak when two passes share an analyzed_at. This is the ONLY place model
+// selection happens; the site always shows a song's latest coding.
+const LATEST_ANALYSIS = `(SELECT DISTINCT ON (song_id) *
+   FROM song_lyric_analysis
+   ORDER BY song_id, analyzed_at DESC NULLS LAST, model_used DESC)`;
+
+// "Has any analysis at all" — any row exists (a latest row therefore exists).
+const hasAnalysisExists = (alias) =>
+  `EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = ${alias}.id)`;
+
+// "The latest pass carries at least one thematic code" (for the theme-tree caption count).
+const hasCodesExists = (alias) =>
+  `EXISTS (SELECT 1 FROM ${LATEST_ANALYSIS} la WHERE la.song_id = ${alias}.id AND (
+     jsonb_array_length(COALESCE(la.themes,'[]'::jsonb)) > 0
+     OR jsonb_array_length(COALESCE(la.topics,'[]'::jsonb)) > 0
+     OR jsonb_array_length(COALESCE(la.advocacy,'[]'::jsonb)) > 0
+     OR jsonb_array_length(COALESCE(la.tactics,'[]'::jsonb)) > 0
+     OR jsonb_array_length(COALESCE(la.moral_frames,'[]'::jsonb)) > 0))`;
 
 // DB column -> taxonomy group key. topics=targets, advocacy=actions.
 const EVIDENCE_DIMS = ['themes', 'topics', 'advocacy', 'tactics', 'moral_frames'];
@@ -51,39 +64,37 @@ for (const [dbCol, taxKey] of Object.entries(DIM_TO_TAXONOMY)) {
   DEFS[dbCol] = new Map((taxonomy[taxKey] || []).map(i => [i.id, i.definition || '']));
 }
 
+// Only codebook-known codes reach the page — the same gate facetTree/filters use, so the
+// song page and the browse filters never disagree. Drops unknowns, typos and blank codes.
 function mapDim(dimension, arr) {
-  return (Array.isArray(arr) ? arr : []).map(row => {
-    const sd = SUBDIM[dimension].get(row.code) || {};
-    return {
-      code: row.code, label: label(dimension, row.code), evidence: row.evidence,
-      definition: (DEFS[dimension].get(row.code)) || '',
-      sub_dimension: sd.sub_dimension || null,
-      sub_dimension_label: sd.sub_dimension ? subDimensionLabel(dimension, sd.sub_dimension) : null,
-      group: sd.group || null,
-    };
-  });
+  return (Array.isArray(arr) ? arr : [])
+    .filter(row => row && row.code && SUBDIM[dimension].has(row.code))
+    .map(row => {
+      const sd = SUBDIM[dimension].get(row.code) || {};
+      return {
+        code: row.code, label: label(dimension, row.code), evidence: row.evidence,
+        definition: (DEFS[dimension].get(row.code)) || '',
+        sub_dimension: sd.sub_dimension || null,
+        sub_dimension_label: sd.sub_dimension ? subDimensionLabel(dimension, sd.sub_dimension) : null,
+        group: sd.group || null,
+      };
+    });
 }
 
 async function getSongAnalysis(db, songId) {
-  // One row per (song_id, model_used) — PK-guaranteed, so both LEFT JOINs are 1:1.
   const r = await db.query(
-    `SELECT c.themes, c.topics, c.advocacy, c.tactics, c.moral_frames, c.explanation,
-            f.perspective, f.lyrical_tone, f.intensity, f.clarity, f.focus_amount,
-            f.target_audience, f.emotions,
-            (c.song_id IS NOT NULL) AS has_code,
-            (f.song_id IS NOT NULL) AS has_scalar
-     FROM (SELECT $1::int AS song_id) x
-     LEFT JOIN song_lyric_analysis c ON c.song_id = x.song_id AND c.model_used = $2
-     LEFT JOIN song_lyric_analysis f ON f.song_id = x.song_id AND f.model_used = $3`,
-    [songId, CODE_MODEL, SCALAR_MODEL]);
+    `SELECT sla.themes, sla.topics, sla.advocacy, sla.tactics, sla.moral_frames, sla.lyric_summary,
+            sla.perspective, sla.lyrical_tone, sla.intensity, sla.clarity, sla.focus_amount,
+            sla.target_audience, sla.emotions
+     FROM ${LATEST_ANALYSIS} sla
+     WHERE sla.song_id = $1`,
+    [songId]);
   const a = r.rows[0];
-  if (!a || (!a.has_code && !a.has_scalar)) return null;
+  if (!a) return null;
 
   // Compact attributes card: the six single-valued components. cleanSelection drops null,
-  // suppressed AND off-codebook values in one pass — the same gate the filters use, so the
-  // page can only ever show a value you could also filter by. That matters: a pipeline re-run
-  // has shipped typo'd codes (VISVERAL_HORROR…) and template artifacts (EXACT_ENUM_CODE_KEY)
-  // into these columns before, and the label fallback would have rendered them as prose.
+  // suppressed and off-codebook values — the same gate the filters use, so the page can only
+  // ever show a value you could also filter by.
   const attributes = [];
   for (const c of codebook.COMPONENTS) {
     if (c.multi) continue;
@@ -99,20 +110,26 @@ async function getSongAnalysis(db, songId) {
   const emotions = codebook.cleanSelection('emotions', a.emotions)
     .map(e => codebook.codeLabel('emotions', e));
 
-  // NOTE mixed representation: `emotions` below is display labels (mapped via codebook),
-  // while perspective/lyrical_tone/intensity/clarity/focus_amount/target_audience are raw
-  // enum codes — the display surface for those is `attributes` above. Intended, but do not
-  // assume any of these top-level fields are codes you can match against the codebook.
-  return {
-    perspective: a.perspective, intensity: a.intensity, clarity: a.clarity,
-    focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone,
-    target_audience: a.target_audience,
-    emotions, explanation: a.explanation,
+  const dims = {
     themes: mapDim('themes', a.themes),
     targets: mapDim('topics', a.topics),
     actions: mapDim('advocacy', a.advocacy),
     tactics: mapDim('tactics', a.tactics),
     moral_frames: mapDim('moral_frames', a.moral_frames),
+  };
+
+  // Nothing displayable (e.g. a lyrics-less pass with empty codes and empty scalars) -> null,
+  // so the route 404s and the page shows no empty "Lyrical analysis" heading.
+  const hasContent = attributes.length > 0 || emotions.length > 0 ||
+    Object.values(dims).some(d => d.length > 0) || !!(a.lyric_summary && a.lyric_summary.trim());
+  if (!hasContent) return null;
+
+  return {
+    perspective: a.perspective, intensity: a.intensity, clarity: a.clarity,
+    focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone,
+    target_audience: a.target_audience,
+    emotions, summary: a.lyric_summary,
+    ...dims,
     attributes,
     dimension_descriptions: DIM_DESCRIPTIONS,
   };
@@ -130,8 +147,8 @@ const DIM_DESCRIPTIONS = Object.fromEntries(
   })
 );
 
-// Parameter base: constraint.where/params must be built with startIndex: 2 — this function
-// prepends CODE_MODEL as $1 in every per-dimension query, so constraint params start at $2.
+// Parameter base: constraint.where/params must be built with startIndex: 1 — this function no
+// longer prepends a model param.
 async function facetTree(db, constraint = null) {
   const out = {};
   const extraJoin = constraint ? (constraint.joinSql || '') : '';
@@ -144,10 +161,10 @@ async function facetTree(db, constraint = null) {
     const rows = (await db.query(
       `SELECT DISTINCT s.id AS song_id, elem->>'code' AS code
        FROM songs s${extraJoin}
-       JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = $1
+       JOIN ${LATEST_ANALYSIS} sa ON sa.song_id = s.id
        CROSS JOIN LATERAL jsonb_array_elements(sa.${col}) AS elem
        WHERE s.status = 'included' AND s.published = true${extraWhere}`,
-      [CODE_MODEL, ...extraParams])).rows;
+      [...extraParams])).rows;
 
     // Distinct-song sets at code / group / sub-dimension / dimension level.
     const codeSongs = new Map(), groupSongs = new Map(), subSongs = new Map(), dimSongs = new Set();
@@ -187,9 +204,8 @@ async function facetTree(db, constraint = null) {
 // { [componentKey]: { joinSql, where: string[], params: any[] } } — each built with that
 // component excluded, so a group's own selection never shrinks its own options.
 // Lives here (not in metadataCodebook) so that module stays DB-free.
-// Parameter base: each constraint's where/params must be built with startIndex: 1 — this
-// function appends SCALAR_MODEL at $(cParams.length + 1) per component, so constraint
-// params start at $1 and the model param comes last, not first.
+// Parameter base: each constraint's where/params is built with startIndex: 1; no model param
+// is appended.
 async function scalarFacets(db, constraints = {}) {
   const out = {};
   for (const c of codebook.COMPONENTS) {
@@ -197,22 +213,21 @@ async function scalarFacets(db, constraints = {}) {
     const cParams = cn.params || [];
     const extraJoin = cn.joinSql || '';
     const extraWhere = (cn.where && cn.where.length) ? ' AND ' + cn.where.join(' AND ') : '';
-    const modelIdx = cParams.length + 1;
     // c.column comes from the COMPONENTS whitelist — never user input.
     const inner = c.multi
       ? `SELECT DISTINCT s.id AS song_id, e.code AS code
          FROM songs s${extraJoin}
-         JOIN song_lyric_analysis scf ON scf.song_id = s.id AND scf.model_used = $${modelIdx}
+         JOIN ${LATEST_ANALYSIS} scf ON scf.song_id = s.id
          CROSS JOIN LATERAL unnest(scf.${c.column}) AS e(code)
          WHERE s.status = 'included' AND s.published = true${extraWhere}`
       : `SELECT DISTINCT s.id AS song_id, scf.${c.column} AS code
          FROM songs s${extraJoin}
-         JOIN song_lyric_analysis scf ON scf.song_id = s.id AND scf.model_used = $${modelIdx}
+         JOIN ${LATEST_ANALYSIS} scf ON scf.song_id = s.id
          WHERE s.status = 'included' AND s.published = true${extraWhere}`;
     const rows = (await db.query(
       `SELECT code, COUNT(DISTINCT song_id)::int AS count FROM (${inner}) t
        WHERE code IS NOT NULL GROUP BY code`,
-      [...cParams, SCALAR_MODEL])).rows;
+      [...cParams])).rows;
     const counts = new Map(rows.map(r => [r.code, r.count]));
     out[c.key] = {
       key: c.key,
@@ -292,16 +307,17 @@ async function themeCounts(db, limit = 15) {
   const r = await db.query(
     `SELECT elem->>'code' AS theme, COUNT(DISTINCT s.id)::int AS song_count
      FROM songs s
-     JOIN song_lyric_analysis sa ON sa.song_id = s.id AND sa.model_used = $1
+     JOIN ${LATEST_ANALYSIS} sa ON sa.song_id = s.id
      CROSS JOIN LATERAL jsonb_array_elements(sa.themes) AS elem
      WHERE s.status = 'included' AND s.published = true
      GROUP BY elem->>'code'
      ORDER BY song_count DESC
-     LIMIT $2`,
-    [CODE_MODEL, limit]);
+     LIMIT $1`,
+    [limit]);
   return r.rows.map(row => ({ theme: row.theme, label: label('themes', row.theme), song_count: row.song_count }));
 }
 
-module.exports = { CODE_MODEL, SCALAR_MODEL, ANY_TIER_SQL, EVIDENCE_DIMS, DIM_TO_TAXONOMY,
+module.exports = { LATEST_ANALYSIS, hasAnalysisExists,
+  hasCodesExists, EVIDENCE_DIMS, DIM_TO_TAXONOMY,
   taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree,
   scalarFacets, facetFilterConditions, facetSelectionClauses, themeCounts };

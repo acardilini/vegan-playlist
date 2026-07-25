@@ -10,7 +10,7 @@ test('COMPONENTS lists the seven components in order with short headings', () =>
     'focus_amount', 'target_audience', 'emotions',
   ]);
   assert.deepEqual(cb.COMPONENTS.map(c => c.heading), [
-    'Perspective', 'Tone', 'Intensity', 'Clarity', 'Focus', 'Audience', 'Emotions',
+    'Perspective', 'Tone', 'Intensity', 'Clarity', 'Focus', 'Speaking to', 'Emotions',
   ]);
   // emotions is the only multi-valued component; column === key for all seven
   assert.deepEqual(cb.COMPONENTS.filter(c => c.multi).map(c => c.key), ['emotions']);

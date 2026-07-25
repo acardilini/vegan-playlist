@@ -15,6 +15,18 @@ summaries with `gemini-3.5-flash-lite`.
 
 ---
 
+## Correction (2026-07-25, post-build — commit `e25d300`)
+
+**The top summary comes from `song_lyric_analysis.lyric_summary`, NOT `explanation`.** The curator
+generates the "In short" summaries into the **`lyric_summary`** (TEXT) column on the
+`gemini-3.5-flash-lite` pass — populated for **668 / 672 live songs**, while `explanation` is empty for
+all. The plan and Decision #3 below said the summary reads `explanation`, so the strip shipped blank on
+every song. Fixed on-branch: `getSongAnalysis` now selects `lyric_summary` and exposes it as the API
+field **`summary`** (the misleading `explanation` key is dropped; the frontend variable was already
+named `summary`). Wherever this doc says the summary source is `explanation`, read **`lyric_summary`**;
+wherever it names the API field `explanation`, read **`summary`**. Everything else about Decision #3
+(shown only when present; not auto-composed; not reused from older gemma4 prose) still holds.
+
 ## Decisions (with rationale)
 
 ### 1. Data source: dynamic "latest complete pass per song" — across the whole analysis surface
