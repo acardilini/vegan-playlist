@@ -4,15 +4,7 @@
 const taxonomy = require('../data/taxonomy.json');
 const codebook = require('./metadataCodebook');
 
-// Two display tiers. The code dimensions (+ explanation/evidence) come from the refined
-// key-focus coding; the seven scalar metadata components come from the newer, enum-clean
-// pass. No song is guaranteed to be in both — getSongAnalysis returns whatever exists.
-const CODE_MODEL = 'gemma4:key_focus_pipeline';
-const SCALAR_MODEL = 'gemini-3.5-flash-lite';
-
-const sqlQuote = (s) => `'${String(s).replace(/'/g, "''")}'`;
-// For inlining into `model_used IN (…)` — "has analysis in either tier".
-const ANY_TIER_SQL = [CODE_MODEL, SCALAR_MODEL].map(sqlQuote).join(', ');
+// The site shows each song's latest analysis pass (see LATEST_ANALYSIS below).
 
 // Exactly one row per song: the newest pass (MAX analyzed_at). Drop-in replacement for
 // `song_lyric_analysis` in any JOIN — join on song_id, no model filter. model_used DESC is a
@@ -325,7 +317,7 @@ async function themeCounts(db, limit = 15) {
   return r.rows.map(row => ({ theme: row.theme, label: label('themes', row.theme), song_count: row.song_count }));
 }
 
-module.exports = { CODE_MODEL, SCALAR_MODEL, ANY_TIER_SQL, LATEST_ANALYSIS, hasAnalysisExists,
+module.exports = { LATEST_ANALYSIS, hasAnalysisExists,
   hasCodesExists, EVIDENCE_DIMS, DIM_TO_TAXONOMY,
   taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree,
   scalarFacets, facetFilterConditions, facetSelectionClauses, themeCounts };

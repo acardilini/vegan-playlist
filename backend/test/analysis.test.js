@@ -5,12 +5,12 @@ const analysis = require('../services/analysis');
 
 // Unique fixture sentinel per test file: ZZZANL.
 
-test('the two analysis tiers are the code and scalar models', () => {
-  assert.equal(analysis.CODE_MODEL, 'gemma4:key_focus_pipeline');
-  assert.equal(analysis.SCALAR_MODEL, 'gemini-3.5-flash-lite');
-  assert.equal(analysis.DEFAULT_MODEL, undefined, 'DEFAULT_MODEL is removed, not aliased');
-  assert.equal(analysis.ANY_TIER_SQL,
-    `'gemma4:key_focus_pipeline', 'gemini-3.5-flash-lite'`);
+test('model selection is by latest pass, not a fixed constant', () => {
+  assert.equal(analysis.CODE_MODEL, undefined, 'CODE_MODEL removed');
+  assert.equal(analysis.SCALAR_MODEL, undefined, 'SCALAR_MODEL removed');
+  assert.equal(analysis.ANY_TIER_SQL, undefined, 'ANY_TIER_SQL removed');
+  assert.ok(analysis.LATEST_ANALYSIS.includes('DISTINCT ON (song_id)'), 'LATEST_ANALYSIS picks one row per song');
+  assert.ok(analysis.hasAnalysisExists('s').includes('EXISTS'));
 });
 
 test('taxonomy exposes the five evidence dimensions with labels', () => {

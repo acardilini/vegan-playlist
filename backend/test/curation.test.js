@@ -6,6 +6,8 @@ const curation = require('../services/curation');
 // Unique fixture sentinel per test file — parallel suites must not clobber each other's
 // rows via a shared LIKE-prefix cleanup. (staging.test.js uses ZZZTEST; videos uses ZZZVID.)
 
+const MODEL = 'gemini-3.5-flash-lite'; // any string; fixtures don't depend on a specific model
+
 async function mkSong({ title, status = 'pending', published = false, spotify_url = null,
   bandcamp_url = null, album_id = null, artist = 'ZZZCUR Artist' }) {
   const s = (await pool.query(
@@ -34,18 +36,16 @@ test('quickCapture rejects blank title or artist', async () => {
 });
 
 test('getWorkbench includes the full analysis object when coded', async () => {
-  const { CODE_MODEL, SCALAR_MODEL } = require('../services/analysis');
   const id = await mkSong({ title: 'ZZZCUR Analysed', status: 'included', published: true });
-  // Code tier: themes/topics/advocacy/tactics/moral_frames + explanation.
+  // A single latest-pass row carries both the thematic codes (themes/topics/advocacy/
+  // tactics/moral_frames) and the scalar fields (perspective/emotions) — under the
+  // single-latest-row read, only one row is ever selected per song, so this fixture
+  // must be complete in one row rather than split across two model literals.
   await pool.query(
-    `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, $3, $2::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
-    [id, JSON.stringify([{ code: 'compassion', evidence: 'be kind' }]), CODE_MODEL]);
-  // Scalar tier: perspective/tone/.../emotions — a distinct (song_id, model_used) row.
-  await pool.query(
-    `INSERT INTO song_lyric_analysis (song_id, model_used, perspective, emotions, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, $2, 'human_observer', ARRAY['hope'], '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
-    [id, SCALAR_MODEL]);
+    `INSERT INTO song_lyric_analysis
+       (song_id, model_used, themes, topics, advocacy, tactics, moral_frames, perspective, emotions)
+     VALUES ($1, $3, $2::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 'human_observer', ARRAY['hope'])`,
+    [id, JSON.stringify([{ code: 'compassion', evidence: 'be kind' }]), MODEL]);
   const wb = await curation.getWorkbench(pool, id);
   assert.equal(wb.analysed, true);
   assert.equal(wb.analysis.perspective, 'human_observer');
@@ -53,7 +53,6 @@ test('getWorkbench includes the full analysis object when coded', async () => {
 });
 
 test('hasAnalysis is true from a scalar-only row (either tier counts)', async () => {
-  const analysis = require('../services/analysis');
   const s = (await pool.query(
     `INSERT INTO songs (title, status, published, data_source)
      VALUES ('ZZZCUR ScalarOnly', 'included', true, 'manual') RETURNING id`)).rows[0];
@@ -61,7 +60,7 @@ test('hasAnalysis is true from a scalar-only row (either tier counts)', async ()
     `INSERT INTO song_lyric_analysis (song_id, model_used, perspective,
        themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $2, 'MORAL_ACCUSER_JUDGE', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
-    [s.id, analysis.SCALAR_MODEL]);
+    [s.id, MODEL]);
   const wb = await curation.getWorkbench(pool, s.id);
   assert.ok(wb.analysis, 'workbench shows the scalar-only analysis');
 });
