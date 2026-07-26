@@ -5,6 +5,7 @@
 const genres_svc = require('./genres');
 const analysis = require('./analysis');
 const codebook = require('./metadataCodebook');
+const acousticCodebook = require('./acousticCodebook');
 
 function asList(v) { return v == null ? [] : (Array.isArray(v) ? v : [v]); }
 
@@ -12,6 +13,8 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
   const where = [];
   const params = [];
   let idx = startIndex;
+  // scalarAnalysis === the `sca` LATEST_ANALYSIS join. Shared by the scalar metadata
+  // components AND the acoustic dimensions — they are columns on the same row.
   const joins = { albums: false, artists: false, effectiveGenre: false, analysis: false, scalarAnalysis: false };
   const inc = (g) => g !== exclude;
 
@@ -67,6 +70,31 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
     params.push(...sc.params);
     idx = sc.nextIndex;
     joins.scalarAnalysis = true;
+  }
+
+  // Acoustic dimensions — same latest-analysis row as the scalar components, so they reuse
+  // the `sca` join and add none of their own. OR within a component, AND across.
+  const acousticSel = {};
+  for (const c of acousticCodebook.COMPONENTS) {
+    if (inc(`acoustic:${c.key}`)) acousticSel[c.key] = filters[c.key];
+  }
+  const ac = acousticCodebook.acousticSelectionClauses(acousticSel, idx);
+  if (ac.needsJoin) {
+    where.push(...ac.clauses);
+    params.push(...ac.params);
+    idx = ac.nextIndex;
+    joins.scalarAnalysis = true;
+  }
+
+  // Tempo is a range, not an enum: always applied (it has no facet counts of its own to
+  // protect), exactly like year_from/year_to.
+  if (filters.tempo_from) {
+    where.push(`sca.tempo_bpm >= $${idx}`); params.push(parseInt(filters.tempo_from, 10));
+    idx++; joins.scalarAnalysis = true;
+  }
+  if (filters.tempo_to) {
+    where.push(`sca.tempo_bpm <= $${idx}`); params.push(parseInt(filters.tempo_to, 10));
+    idx++; joins.scalarAnalysis = true;
   }
 
   return { where, params, nextIndex: idx, joins };

@@ -127,3 +127,49 @@ test('joinSql routes analysis joins through the latest-pass subquery, not a mode
   assert.ok(sql.includes('DISTINCT ON (song_id)'), 'uses the LATEST_ANALYSIS subquery');
   assert.ok(!/model_used\s*=/.test(sql), 'no hard-coded model filter remains');
 });
+
+test('buildWhere acoustic components reuse the sca join, OR within a component', () => {
+  const r = b.buildWhere({
+    sonic_energy: ['EXPLOSIVE_HIGH_INTENSITY', 'DRIVING_ENERGETIC'],
+    vocal_delivery: 'SPOKEN_WORD_RAP',
+  });
+  assert.ok(r.joins.scalarAnalysis, 'acoustic filters ride the existing scalar join');
+  assert.ok(!r.joins.analysis, 'no second analysis join is added');
+  assert.ok(r.where.includes('sca.sonic_energy = ANY($1::text[])'));
+  assert.ok(r.where.includes('sca.vocal_delivery = ANY($2::text[])'));
+  assert.deepEqual(r.params[0], ['EXPLOSIVE_HIGH_INTENSITY', 'DRIVING_ENERGETIC']);
+  assert.deepEqual(r.params[1], ['SPOKEN_WORD_RAP']);
+});
+
+test('buildWhere drops invented acoustic codes rather than querying for them', () => {
+  const r = b.buildWhere({ sonic_energy: ['NOT_A_REAL_CODE'] });
+  assert.deepEqual(r.where, []);
+  assert.equal(r.joins.scalarAnalysis, false);
+});
+
+test('buildWhere tempo bounds are integers on the sca row and always applied', () => {
+  const r = b.buildWhere({ tempo_from: '100', tempo_to: '140' },
+    { exclude: 'acoustic:sonic_energy' });
+  assert.ok(r.joins.scalarAnalysis);
+  assert.deepEqual(r.where, ['sca.tempo_bpm >= $1', 'sca.tempo_bpm <= $2']);
+  assert.deepEqual(r.params, [100, 140], 'parsed as integers, not strings');
+  assert.equal(r.nextIndex, 3);
+});
+
+test('buildWhere exclude omits one acoustic component but keeps its siblings', () => {
+  const r = b.buildWhere(
+    { sonic_energy: ['DRIVING_ENERGETIC'], vocal_delivery: ['SPOKEN_WORD_RAP'] },
+    { exclude: 'acoustic:sonic_energy' });
+  assert.ok(!r.where.some(c => c.includes('sonic_energy')), 'own group excluded');
+  assert.ok(r.where.some(c => c.includes('vocal_delivery')), 'sibling kept');
+});
+
+test('buildWhere numbers acoustic params after the scalar ones', () => {
+  const r = b.buildWhere({
+    perspective: ['MORAL_ACCUSER_JUDGE'],
+    sonic_energy: ['DRIVING_ENERGETIC'],
+  });
+  assert.ok(r.where.includes('sca.perspective = ANY($1::text[])'));
+  assert.ok(r.where.includes('sca.sonic_energy = ANY($2::text[])'));
+  assert.equal(r.nextIndex, 3);
+});
