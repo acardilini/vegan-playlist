@@ -335,7 +335,21 @@ filters, **Option C** layout (conditional **"In short"** summary from `song_lyri
 sections + per-section **"Show quotes"**), and renames Audience→**"Speaking to"** / Targets→**"Subjects"**.
 Backend 131/131; final opus review READY TO MERGE (0 Critical/0 Important/5 Minor→backlog). Spec:
 [`specs/2026-07-25-lyrical-analysis-layout-design.md`](./superpowers/specs/2026-07-25-lyrical-analysis-layout-design.md); then
+◐ **acoustic dimensions — BUILT 2026-07-26** on `session-acoustic-dimensions` (9 commits, pending curator
+smoke + merge): the pipeline's six audio-derived dimensions reach the song page as an **"In the sound"**
+group inside Style & tone (beside a newly labelled **"In the lyrics"**) and the browse sidebar as a
+**"Sound"** group of five checkbox facets plus a **Tempo** BPM range, via a new pure
+`services/acousticCodebook.js` and `analysis.acousticFacets`/`tempoRange` — **reusing the existing `sca`
+latest-analysis join, so no new SQL join was added**. Also renames "Key lyrics"→**"Lyric highlights"**,
+"Lyrical analysis"→**"Song analysis"**, "Has lyrics analysis"→**"Has song analysis"**. **Display is
+ungated / filter selections gated** — deliberately the reverse of the lyrical rule. The data began as
+schema defaults and the curator ran the real derivation mid-build (692 songs, tempo 45–235); the spec
+carries dated corrections. Backend 151/151; live smoke 11/11; final opus review 0 Critical / 0 Important
+(one real `NaN`-tempo 500 caught and fixed) / 6 Minor→backlog. Spec:
+[`specs/2026-07-26-acoustic-dimensions-design.md`](./superpowers/specs/2026-07-26-acoustic-dimensions-design.md); then
 **B4** (with vector "You might also like"); then (6) About analysis-explainer + AI-disclosure page —
+**now also needs an acoustic section** (the six dimensions' Librosa derivation sources and thresholds are
+in `acoustic_codebook.json` and deliberately unused in the UI) —
 **now has concrete content waiting for it:** the seven component and five dimension descriptions are
 served by the API and deliberately not shown in the browse UI (curator removed them twice), so this
 page is where they land. _(1b

@@ -337,7 +337,16 @@ keep/rebuild/drop/defer decisions are recorded in
   **"Show quotes"** toggle placing each code's evidence under its dimension. Read from each song's
   **latest analysis pass** (`MAX(analyzed_at)`; the two-tier model constants retired). ✅ _(B2; two-tier
   read + Audience row, triage 1a, 2026-07-22; Option C + latest-pass + renames + `lyric_summary` summary,
-  2026-07-25.)_
+  2026-07-25.)_ **Renamed 2026-07-26 to "Song analysis"** now that the page carries audio analysis too.
+- **Acoustic dimensions on the song page:** the "Style & tone" section splits into **"In the lyrics"**
+  (the metadata components) and **"In the sound"** — six audio-derived cells, **Energy · Mood · Rhythm ·
+  Instruments · Vocals · Tempo** (tempo as `N BPM`), each with a hover definition led by its full
+  component name. Read from the same latest analysis pass; **display is ungated** (an off-codebook value
+  title-cases rather than disappearing), unlike the lyrical half. ✅ _(2026-07-26.)_
+- **Acoustic browse filters:** a **"Sound"** sidebar group nesting the five categorical dimensions as
+  checkbox facets with exclude-self counts (OR within a component, AND across) plus a nested **"Tempo"**
+  From/To BPM range. Rides the same URL + sessionStorage browse state and chip row as every other filter.
+  ✅ _(2026-07-26.)_
 - **YouTube integration:** per-song video embeds with a primary-video concept. ✅
 - **Lyrics links:** lyrics lookup/links per song. ✅
 - **Artist pages:** stats, discography tracking, advocacy notes. ✅

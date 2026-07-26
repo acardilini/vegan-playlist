@@ -80,6 +80,17 @@ Run before ending every working session:
   `hasCodesExists` are the shared has-analysis/has-codes EXISTS helpers. `metadataCodebook.js` is pure (no
   DB) and owns `data/master_metadata_codebook.json` — labels, definitions, the hidden absence codes, and
   the scalar filter clauses (the `target_audience` heading is **"Speaking to"**)
+- **services/acousticCodebook.js**: the sibling codebook service for the **six acoustic dimensions**
+  (`sonic_energy`, `emotional_mood`, `rhythmic_style`, `acoustic_type`, `vocal_delivery`, `tempo_bpm`) —
+  audio-derived, stored on the same `song_lyric_analysis` row. Pure (no DB); owns
+  `data/acoustic_codebook.json`. Headings are Energy · Mood · Rhythm · Instruments · Vocals · Tempo
+  (`tempo_bpm` is an integer, so it lives in `TEMPO` **outside** `COMPONENTS` and filters as a range).
+  **Its gating rule is the reverse of the lyrical one, deliberately:** display is *ungated* — `codeLabel`
+  title-cases an off-codebook value instead of dropping it, so the page shows what the pipeline emitted —
+  while filter selections *are* gated through `cleanSelection`. `analysis.js` adds `acousticFacets`
+  (exclude-self sidebar counts) and `tempoRange`; `getSongAnalysis` returns an `acoustic` array in the
+  **same cell shape as `attributes`**, which is what lets the song page render both with one loop.
+  Acoustic filters reuse the existing `sca` latest-analysis join — **they add no new SQL join**
 - **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
 - **scripts/**: 4 documented maintenance scripts (see `backend/scripts/README.md`);
   the ~37 one-off scripts were deleted in Session 2.3 (git history preserves them)
@@ -102,7 +113,9 @@ Run before ending every working session:
   (Add candidates + import-only Sync + mismatch report); Duplicate Manager is
   data-quality only. **Two shared presentation primitives:** `FilterSection` — every
   browse-sidebar group is one, so they all collapse identically; it nests, which is how the
-  five theme dimensions and seven metadata components read as the same unit. Its `note` is
+  five theme dimensions, seven metadata components and five acoustic dimensions read as the
+  same unit. `ScalarFacetGroups` is generic over `{key: {heading, options}}` and renders both
+  the "Lyric metadata" and the "Sound" families — don't fork it for a third. Its `note` is
   **usage help only** (caveats, what the options mean): the curator twice rejected
   definitional copy in the sidebar, so "what this filter is" text belongs on the About
   pages, not here — the API serves it (`scalarFacets`/`facetTree` `description`) but the
