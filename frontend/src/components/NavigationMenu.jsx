@@ -30,14 +30,14 @@ function NavigationMenu() {
             Playlists
           </a>
         </li>
+        <li className={`nav-item ${isActive('/explore') ? 'active' : ''}`}>
+          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/explore', 'Explore'); }}>
+            Explore
+          </a>
+        </li>
         <li className={`nav-item ${isActive('/submit') ? 'active' : ''}`}>
           <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/submit', 'Submit'); }}>
             Submit Song
-          </a>
-        </li>
-        <li className={`nav-item ${isActive('/dashboard') ? 'active' : ''}`}>
-          <a href="#" onClick={(e) => { e.preventDefault(); handleNavClick('/dashboard', 'Dashboard'); }}>
-            Dashboard
           </a>
         </li>
         <li className={`nav-item ${isActive('/about') ? 'active' : ''}`}>
