@@ -27,10 +27,10 @@ test('discoverSpaces reads the *_2d columns from the live table', async () => {
 // --- fixtures -------------------------------------------------------------
 const made = { songs: [] };
 
-async function mkSong(title, { published = true, status = 'included' } = {}) {
+async function mkSong(title, { published = true, status = 'included', genre = null } = {}) {
   const id = (await pool.query(
-    `INSERT INTO songs (title, status, published, data_source)
-     VALUES ($1, $2, $3, 'manual') RETURNING id`, [title, status, published])).rows[0].id;
+    `INSERT INTO songs (title, status, published, data_source, genre)
+     VALUES ($1, $2, $3, 'manual', $4) RETURNING id`, [title, status, published, genre])).rows[0].id;
   made.songs.push(id);
   return id;
 }
@@ -127,6 +127,110 @@ test('mapPayload assembles spaces, legends, coverage and songs', async () => {
   assert.equal(song.codes.sonic_energy, 'EXPLOSIVE_HIGH_INTENSITY');
   assert.equal(song.codes.focus_amount, explore.NOT_CODED, 'suppressed code is bucketed');
   assert.equal(song.artist, '', 'a song with no artist rows serves an empty artist string');
+});
+
+test('genreFold folds outside-top-3 and the literal other parent into Other genres', () => {
+  // A synthetic rows array, independent of anything in the database: metal(4) >
+  // hardcore(3) > punk(2) > folk(1) — folk sits outside the top 3. 'christian' maps to
+  // the literal 'other' parent and is given the highest count of all, to prove rule 1:
+  // 'other' is excluded from the top-N ranking regardless of count. This test never
+  // touches the DB, so it cannot fail for a live-catalogue-genre-distribution reason.
+  const rows = [
+    ...Array(4).fill({ genre: 'metalcore' }),  // -> metal
+    ...Array(3).fill({ genre: 'hardcore' }),   // -> hardcore
+    ...Array(2).fill({ genre: 'punk' }),       // -> punk
+    { genre: 'folk' },                         // -> folk (outside top 3)
+    ...Array(5).fill({ genre: 'christian' }),  // -> other (literal parent, excluded from ranking)
+    { genre: null },                           // -> NOT_CODED
+  ];
+  const fold = explore.genreFold(rows);
+  const bucket = row => fold('genre', explore.codeFor('genre', row));
+
+  assert.equal(bucket({ genre: 'metalcore' }), 'metal');
+  assert.equal(bucket({ genre: 'hardcore' }), 'hardcore');
+  assert.equal(bucket({ genre: 'punk' }), 'punk');
+  // A genre outside the top 3 lands in Other genres, not a bucket of its own.
+  assert.equal(bucket({ genre: 'folk' }), explore.OTHER_GENRES);
+  // The literal 'other' parent lands in Other genres even though it out-counts everything.
+  assert.equal(bucket({ genre: 'christian' }), explore.OTHER_GENRES);
+  // No genre at all still buckets to NOT_CODED, not Other genres.
+  assert.equal(bucket({ genre: null }), explore.NOT_CODED);
+
+  // Non-genre dimensions pass through unchanged — the fold is genre-only.
+  assert.equal(fold('sonic_energy', 'EXPLOSIVE_HIGH_INTENSITY'), 'EXPLOSIVE_HIGH_INTENSITY');
+  assert.equal(fold('focus_amount', explore.NOT_CODED), explore.NOT_CODED);
+
+  assert.equal(explore.OTHER_GENRES_LABEL, 'Other genres');
+});
+
+test('genre colour-by via mapPayload: no-genre stays NOT_CODED, legend fits the palette, ' +
+  'and every song codes.genre is in its own legend', async () => {
+  // This test goes through the real DB/mapPayload path, so it deliberately asserts only
+  // structural properties that hold no matter what the live catalogue's genre distribution
+  // is — never "genre X is/isn't in the top 3", which the pure genreFold test above already
+  // covers deterministically.
+  const noGenreId = await mkSong('ZZZEXP Genre none');
+  await addCoords(noGenreId);
+
+  const p = await explore.mapPayload(pool);
+  const genreLegend = p.colourBy.find(c => c.key === 'genre');
+  const codes = genreLegend.codes.map(c => c.code);
+
+  // At most 5 entries: 3 named genres + "Other genres" + "Not coded" is the palette budget.
+  assert.ok(genreLegend.codes.length <= 5, `genre legend fits the palette, got ${codes}`);
+  assert.ok(!codes.includes('other'), 'the literal other parent never appears as its own bucket');
+
+  // Not coded is present (this fixture guarantees it) and sorts last; if Other genres is
+  // present it sits immediately before Not coded.
+  assert.ok(codes.includes(explore.NOT_CODED));
+  assert.equal(codes[codes.length - 1], explore.NOT_CODED, 'Not coded sorts last');
+  const otherIdx = codes.indexOf(explore.OTHER_GENRES);
+  if (otherIdx !== -1) {
+    assert.equal(otherIdx, codes.length - 2, 'Other genres sits immediately before Not coded');
+    const otherEntry = genreLegend.codes[otherIdx];
+    assert.equal(otherEntry.label, explore.OTHER_GENRES_LABEL);
+  }
+
+  // No genre at all still buckets to NOT_CODED, not Other genres.
+  const noGenreSong = p.songs.find(s => s.id === noGenreId);
+  assert.equal(noGenreSong.codes.genre, explore.NOT_CODED);
+
+  // The invariant: every song's codes.genre value appears somewhere in the genre legend.
+  // Checked over the whole payload (not just this fixture) so a fold applied to only one
+  // of legendFor/mapPayload's consumers would be caught even by songs outside this test.
+  for (const song of p.songs) {
+    assert.ok(codes.includes(song.codes.genre),
+      `song ${song.id} codes.genre=${song.codes.genre} missing from genre legend ${codes}`);
+  }
+});
+
+test('a non-genre dimension is completely unaffected by the genre fold', async () => {
+  const a = await mkSong('ZZZEXP NonGenre A');
+  await addCoords(a);
+  await addAnalysis(a, { sonic_energy: 'EXPLOSIVE_HIGH_INTENSITY' });
+
+  const b = await mkSong('ZZZEXP NonGenre B');
+  await addCoords(b);
+  await addAnalysis(b, { sonic_energy: 'SOFT_CALM_ACOUSTIC' });
+
+  const c = await mkSong('ZZZEXP NonGenre C');
+  await addCoords(c);
+  await addAnalysis(c, { sonic_energy: null });
+
+  const p = await explore.mapPayload(pool);
+  const energy = p.colourBy.find(c => c.key === 'sonic_energy');
+  const codes = energy.codes.map(x => x.code);
+
+  assert.ok(codes.includes('EXPLOSIVE_HIGH_INTENSITY'), 'fixture code A is in the legend');
+  assert.ok(codes.includes('SOFT_CALM_ACOUSTIC'), 'fixture code B is in the legend');
+  assert.ok(!codes.includes('OTHER_GENRES'), 'the genre-only fold bucket never leaks in here');
+
+  const songA = p.songs.find(s => s.id === a);
+  const songB = p.songs.find(s => s.id === b);
+  const songC = p.songs.find(s => s.id === c);
+  assert.equal(songA.codes.sonic_energy, 'EXPLOSIVE_HIGH_INTENSITY');
+  assert.equal(songB.codes.sonic_energy, 'SOFT_CALM_ACOUSTIC');
+  assert.equal(songC.codes.sonic_energy, explore.NOT_CODED);
 });
 
 after(async () => {
