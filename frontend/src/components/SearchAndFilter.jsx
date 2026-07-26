@@ -373,7 +373,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             <input type="checkbox" checked={filters.has_analysis}
               disabled={(filterOptions.availability?.has_analysis || 0) === 0 && !filters.has_analysis}
               onChange={() => toggleBool('has_analysis')} />
-            <span className="filter-label">Has lyrics analysis<span className="filter-count">({filterOptions.availability?.has_analysis || 0})</span></span>
+            <span className="filter-label">Has song analysis<span className="filter-count">({filterOptions.availability?.has_analysis || 0})</span></span>
           </label>
         </div>
       </FilterSection>

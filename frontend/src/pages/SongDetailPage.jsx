@@ -189,7 +189,7 @@ function SongDetailPage() {
 
       {song.lyrics_highlights && (
         <section className="detail-section">
-          <h2>Key lyrics</h2>
+          <h2>Lyric highlights</h2>
           <div className="lyrics-quote">
             {song.lyrics_highlights.split(/\n{2,}/).map((passage, index) => (
               passage.trim() && (
@@ -209,7 +209,7 @@ function SongDetailPage() {
 
       {analysis && (
         <section className="detail-section">
-          <h2>Lyrical analysis</h2>
+          <h2>Song analysis</h2>
           <LyricalAnalysis analysis={analysis} />
         </section>
       )}
