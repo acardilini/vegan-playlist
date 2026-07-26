@@ -116,9 +116,16 @@ Create `backend/.env` with the following:
 ```env
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-DATABASE_URL=your_postgresql_connection_string
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=vegan_playlist
+DB_USER=your_pg_user
+DB_PASSWORD=your_pg_password
+ADMIN_PASSWORD=shared_admin_password
 PORT=5000
 ```
+
+`backend/database/db.js` reads the discrete `DB_*` variables — there is no `DATABASE_URL` in this project.
 
 Get Spotify credentials from: https://developer.spotify.com/dashboard
 

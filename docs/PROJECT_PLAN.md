@@ -285,9 +285,20 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     whole-branch reviews; curator-confirmed all four rounds. Specs/plans under `superpowers/`
     (`2026-07-19-B3-browse-search*`, `2026-07-19-B3-rework-*`, `2026-07-20-B3-facet-selection-*`,
     `2026-07-20-B3-theme-tree-restyle-*`).
-  - ☐ **B4 — Explore vector map.** 2D + 3D scatter, space/colour toggles, spotlight filter, hover/click.
-    _(with the vector "You might also like" rework). **Now sequenced after curator-triage items 1–5** —
-    see the reprioritised order in the Fixes Round 1 note below and `CURATOR_TRIAGE_BACKLOG.md`._
+  - ◐ **B4 — Explore vector map** _(brainstorm started 2026-07-27 and **paused mid-way** at the curator's
+    request; resume as the first task next session from `.superpowers/sdd/b4-brainstorm-handoff.md`. No code,
+    no spec yet.)_ **Reshaped by data that landed mid-brainstorm:** the analysis project created a
+    **`song_coordinates`** table (664 rows, one per song, eight `float8[]` columns — semantic/thematic/
+    **audio**/**holistic** × 2D/3D), so B4 reads the **DB through a publish-filtered API endpoint** instead
+    of `frontend/public/vector_space.json`, which is superseded and gets deleted (it leaked 24 non-live
+    songs). Scope now: **2D canvas scatter only — no new frontend dependency — with 3D as its own
+    follow-up**; a four-way space toggle; a curated low-cardinality colour-by menu (absence codes as neutral
+    grey); spotlight via a clickable legend + song search. Coverage is a first-class concern: the map can
+    show **640 of 1,333 live songs**. _(with the vector "You might also like" rework — now **two tabs**,
+    message (768-dim `lyric_embedding` cosine) and sound (6D `audio_embedding`, which needs per-dimension
+    standardisation), plus an honest "More in this genre" fallback for the 52% of live songs with no
+    embeddings). **Sequenced after curator-triage items 1–5** — see the reprioritised order in the Fixes
+    Round 1 note below and `CURATOR_TRIAGE_BACKLOG.md`._
 - ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
   To-be-processed / spam. Reuses `staging.addSubmissionAsPending`.
 - ☐ **D — YouTube assist.** Search YouTube from the workbench, present candidates, pick best.

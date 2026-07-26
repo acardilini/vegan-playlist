@@ -151,6 +151,15 @@ Run before ending every working session:
 - **`song_lyrics` is LOCAL ONLY** (copyright): full lyrics for analysis; never SELECT it from
   an API route, never commit it (`backups/` and `backend/logs/` are gitignored), and exclude
   it from production dumps (`pg_dump --exclude-table-data=song_lyrics`)
+- **Analysis-service tables** (written by the curator's separate analysis project; the web app is a
+  **read-only** consumer): `song_lyric_analysis` (see `services/analysis.js`), `song_embeddings`
+  (`lyric_embedding` 768-dim `float8[]`; `audio_embedding` — **careful: 6-dim
+  `[energy, valence, danceability, acousticness, speechiness, normalized_bpm]` on newer rows but still
+  1024-dim on ~1,041 older ones, so any distance query must constrain `array_length(...)=6`**), and
+  `song_coordinates` (one row per song; eight `float8[]` UMAP projections —
+  `{semantic,thematic,audio,holistic}_{2d,3d}`). Only ~640 live songs have coordinates/embeddings, and
+  some rows belong to unpublished songs, so **public reads must still filter
+  `status='included' AND published=true`**. No `pgvector` is installed
 - **Categorization**: Flexible TEXT[] arrays for vegan focus, advocacy styles, animal categories
 - **User features**: playlists, playlist_songs for user-generated content
 - **Spotify integration**: Stores spotify_id, URLs, and metadata — enrichment only,
@@ -181,9 +190,17 @@ Run before ending every working session:
 ```
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-DATABASE_URL=your_postgresql_connection_string
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=vegan_playlist
+DB_USER=your_pg_user
+DB_PASSWORD=your_pg_password
+ADMIN_PASSWORD=shared_admin_password
 PORT=5000
 ```
+
+**Note:** `database/db.js` reads the five discrete `DB_*` vars above — there is **no `DATABASE_URL`**
+(earlier docs claimed one; scripts that build their own pool must use the `DB_*` vars).
 
 ### Development Workflow
 1. Start PostgreSQL database

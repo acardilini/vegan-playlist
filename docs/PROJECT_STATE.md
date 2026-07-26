@@ -10,7 +10,25 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Acoustic dimensions (2026-07-26) — DONE, merged to `main`, curator-smoke-confirmed.**
+- **Current session:** _**B4 — Explore vector map: BRAINSTORM PAUSED MID-WAY (2026-07-27), resume as the
+  first task next session.** No code written, no spec written. Full handoff — every probe finding, every
+  decision already taken, and the exact question to resume on — is in
+  [`.superpowers/sdd/b4-brainstorm-handoff.md`](../.superpowers/sdd/b4-brainstorm-handoff.md). **Read that
+  file first next session.** Headline: the curator's analysis project **landed a new `song_coordinates`
+  table mid-session** (2026-07-26 20:27) — 664 rows, one per song, all **eight** coordinate columns
+  (`semantic`/`thematic`/`audio`/`holistic` × 2D/3D, `float8[]`) 100% populated — which **supersedes
+  `frontend/public/vector_space.json` entirely** and reshapes B4 from a static-file reader into an API
+  reader. Decisions taken so far: data-driven space discovery (four spaces); read through a publish-filtered
+  API endpoint, not the static file (which leaks 24 non-live songs); **2D canvas now, 3D as its own
+  follow-up** (no new frontend dependency); a curated low-cardinality colour-by menu with absence codes as
+  neutral grey; spotlight = clickable legend + song search; **"You might also like" = two tabs, message
+  (768-dim `lyric_embedding` cosine) and sound (6D `audio_embedding`)**, with an honest "More in this genre"
+  fallback for the 693 live songs (52%) that have no embeddings. Two build hazards recorded: `audio_embedding`
+  now holds **two incompatible shapes** in one column (664 rows at 6D, 1,041 still at 1024D — every query
+  must constrain `array_length(...)=6`), and the 6D dimensions are on **very different scales**
+  (`danceability` sd 0.67 vs `acousticness` 0.02), so the sound tab needs per-dimension standardisation.
+  Also fixed in passing: `CLAUDE.md` and `README.md` documented a `DATABASE_URL` that `database/db.js`
+  never reads. Prior session: **Acoustic dimensions (2026-07-26) — DONE, merged to `main`, curator-smoke-confirmed.**
   Branch `session-acoustic-dimensions`, 10 commits from base `d5517e6`. The pipeline
   added **six acoustic dimensions** to `song_lyric_analysis` (`sonic_energy`, `emotional_mood`,
   `rhythmic_style`, `acoustic_type`, `vocal_delivery`, `tempo_bpm`), derived from audio via Librosa and
@@ -150,14 +168,21 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   the pre-existing **Year range** control shares both patterns the tempo fixes addressed (clipping
   `From 1970` placeholders and an ellipsis chip for a single-ended range) — a two-line change whenever
   wanted; and the **acoustic derivation itself needs a pipeline re-run** (see the Decision Log).
-- **Next session:** **B4 — Explore vector map** (2D/3D scatter over `vector_space.json`, space/colour
-  toggles, spotlight filter) — the last Sub-project-B build — **with the vector "You might also like"**
-  (replacing the current `/similar`, which is genre + dead NULL audio-features). After it: **triage 6 —
+- **Next session:** **Resume the B4 brainstorm — it is the FIRST task, before anything else** (curator's
+  instruction, 2026-07-27). Start by reading
+  [`.superpowers/sdd/b4-brainstorm-handoff.md`](../.superpowers/sdd/b4-brainstorm-handoff.md), then pick up
+  at the paused question (the Explore page **layout** — the visual-companion offer was outstanding when the
+  session ended). Six decisions are already made and must not be re-litigated; five questions remain, one of
+  which is whether the two untracked screenshots in `docs/examples/` are new triage items. B4 now reads
+  `song_coordinates` + `song_embeddings` from the DB, **not** `vector_space.json` (which B4 deletes). After
+  B4: **triage 6 —
   the About analysis-explainer + AI-disclosure page** (the seven metadata-component + five
   thematic-dimension descriptions are served by the API and deliberately unused in browse — that page is
   where they land; now with the renamed **"Speaking to"** / **"Subjects"** labels). Note there is a
   pre-existing uncommitted `frontend/public/vector_space.json` + untracked `docs/examples/` in the working
-  tree, left as-is per the curator — relevant to B4.
+  tree, still left as-is per the curator. The JSON is now **superseded** by `song_coordinates` and is
+  scheduled for deletion in B4; the two `docs/examples/` screenshots are **unopened** and may be new triage
+  items (a resume question).
 - **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **merged `a6eb05a`, confirmed
   2026-07-22**) · **2** (persist
   browse state — ☑ **merged `bf2f1da`**) · **3** (featured redesign — ☑ **merged `6718cec`**, confirmed) ·
@@ -166,9 +191,22 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   (lyric highlights from translation + multi-language — ☑ **merged `577d139`, curator-confirmed**) →
   **song-page Lyrical Analysis / Themes layout** (☑ **merged `47229bb` 2026-07-25, curator-confirmed**;
   latest-pass source + Option C + renames + summary from `lyric_summary`) → **B4**
-  (Explore vector map, with the vector "You might also like" — **executing next**) → triage **6** (About
+  (Explore vector map, with the vector "You might also like" — **brainstorm in progress, paused
+  2026-07-27**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-26 _(**acoustic dimensions BUILT + MERGED** to `main` after the curator's
+- **Last updated:** 2026-07-27 _(**B4 brainstorm started and paused mid-way at the curator's request** —
+  resume it as the **first task** next session from
+  [`.superpowers/sdd/b4-brainstorm-handoff.md`](../.superpowers/sdd/b4-brainstorm-handoff.md). No code, no
+  spec yet; six design decisions taken, five questions open. The session's substance was **read-only
+  discovery**: the analysis project's new **`song_coordinates`** table landed mid-session (664 rows, one per
+  song, eight fully-populated `float8[]` coordinate columns — semantic/thematic/audio/holistic × 2D/3D),
+  which supersedes `frontend/public/vector_space.json` and turns B4 into an API reader. Also found: the
+  static file **leaks 24 non-live songs** (22 unpublished + 2 pending); the map can only cover **640 of
+  1,333 live songs (48%)**; `audio_embedding` holds **two incompatible vector shapes** in one column
+  (6D vs 1024D) and its 6D dimensions need standardisation before any distance is taken; and
+  `lyric_embedding` measures 768 dims, not the 384 the curator expected. Docs corrected: `CLAUDE.md` +
+  `README.md` documented a `DATABASE_URL` the code never reads. No code changed, so no smoke test._)
+- **Previously updated:** 2026-07-26 _(**acoustic dimensions BUILT + MERGED** to `main` after the curator's
   smoke; branch `session-acoustic-dimensions`, 10 commits from `d5517e6`, deleted after merge. Six audio-derived dimensions reach the
   song page as an **"In the sound"** group inside Style & tone and the browse sidebar as a **"Sound"**
   filter group with a BPM range; three headings renamed. New pure `services/acousticCodebook.js` over the
@@ -192,6 +230,14 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Pre-existing uncommitted `frontend/public/vector_space.json` + untracked `docs/examples/` left as-is.)_
 
 ### Next Tasks (start here)
+
+> **⏭ FIRST TASK NEXT SESSION (curator's explicit instruction, 2026-07-27): resume the paused B4
+> brainstorm.** Read [`.superpowers/sdd/b4-brainstorm-handoff.md`](../.superpowers/sdd/b4-brainstorm-handoff.md)
+> before anything else — it holds the read-only probe findings (which will not be re-derivable cheaply),
+> the six decisions already taken, and the exact question the conversation stopped on. Do **not** restart
+> the brainstorm from scratch and do **not** re-ask the settled questions. The session ended with the
+> visual-companion offer outstanding for the Explore page **layout** question.
+
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
    complete.** A1 merged (`145efbb`); A2 (`b5ec26f`, 2026-07-14); A3 (`8579b4e`, 2026-07-16). **A4
    (`session-A4-dashboard`, merged to `main` 2026-07-17 — merge `77ea3b5`, pushed):** the `/admin`
@@ -313,6 +359,57 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-27 — B4 is redesigned around the new `song_coordinates` table, and reads it through a
+  publish-filtered API rather than a public static file. (Brainstorm paused mid-way; six decisions taken.)**
+  The B4 brainstorm opened against the 2026-07-17 spec's premise — a 658-song
+  `frontend/public/vector_space.json` with `themes`, `audio_2d` and `audio_3d`. **Read-only probing
+  invalidated that premise twice in one session.** First, the working-tree JSON turned out to have a
+  different shape (675 rows, `metadata` instead of `themes`, no audio coordinates) **and 9 song_ids appearing
+  2–3 times with different coordinates**. Then, mid-session, the curator's analysis project **created
+  `song_coordinates`** (664 rows, exactly one per song, eight `float8[]` columns — `semantic`/`thematic`/
+  `audio`/`holistic` × 2D/3D — all 100% populated), which supersedes the file outright. Decisions (curator):
+  **(1) Space discovery is data-driven** — the code reads whichever coordinate sets exist rather than
+  hardcoding them, so a future space appears without a code change (the same "read whatever the pipeline
+  holds" rule as the acoustic dimensions). Today that means four spaces. **(2) Read through the API, not the
+  static file** — a read-only endpoint over `song_coordinates` joined to `songs` with
+  `status='included' AND published=true`, and `vector_space.json` **deleted**. The file was a genuine
+  publication-staging leak: of its 664 songs, **22 are `included`-but-unpublished and 2 are `pending`**, and
+  being a static asset it bypassed the filter every API route enforces. Serving it through the API also makes
+  an unpublish take effect immediately instead of waiting for a pipeline re-run. **(3) 2D now, 3D as its own
+  follow-up session** — a hand-rolled canvas scatter over 640 points needs **no new frontend dependency**
+  (the project carries only chart.js), where 3D would add ~150KB of WebGL plus raycast hit-testing and
+  roughly double the surface to test. YAGNI. **(4) Colour-by is a curated low-cardinality menu** — the five
+  acoustic dimensions (3–4 codes each), `focus_amount`, and parent genre, with the four absence codes drawn
+  as neutral grey **"Not coded"** rather than given a palette colour (consistent with 2026-07-22's decision
+  to hide them everywhere). Rejected: all seven scalar components with top-8 + "Other" bucketing — `tone`
+  has 16 codes, so "Other" would swallow half the distribution and the legend would stop being a key.
+  **This also retires a latent trap in the old spec:** "colour by sub-dimension" is unbuildable as written,
+  because a song carries many theme codes across several sub-dimensions, so one colour per point would
+  require the implementer to pick a "dominant" theme — a curatorial act. **(5) Spotlight = clickable legend
+  + a song search box** — the legend you need anyway becomes the filter (multi-select, non-matching points
+  dim), and the search box answers "where does THIS song sit?". Rejected: re-mounting the whole browse
+  sidebar on the Explore page. **(6) "You might also like" becomes two tabs, message and sound** — cosine
+  over the full 768-dim `lyric_embedding`, and distance over the 6D `audio_embedding`. The curator chose
+  both over a single metric; kNN in the `holistic_3d` projection was rejected in favour of full-dimensional
+  cosine (a UMAP projection is locally faithful but globally distorted). **(7) Songs with no embeddings get
+  an honest genre fallback** — one panel labelled **"More in this genre"**, reusing the existing genre query
+  minus its dead audio-feature clause and `RANDOM()`. This is not an edge case: **693 of 1,333 live songs
+  (52%) have no embeddings**, and the map itself can only ever cover **640 of 1,333 (48%)**, so the page
+  must state its coverage rather than implying it shows the catalogue. **Two build hazards recorded now
+  because they are the most likely defects:** `song_embeddings.audio_embedding` holds **two incompatible
+  shapes in one column** (664 rows at the new 6D, `updated_at` 2026-07-26; **1,041 rows still at the old
+  1024D**, 2026-07-16), so every similarity query must constrain `array_length(audio_embedding,1)=6`; and
+  the 6D dimensions are on **very different scales** (`danceability` sd 0.67 vs `acousticness` sd 0.02, a
+  30× spread, and `danceability` reaches 4.93 — these are Librosa proxies, not Spotify's 0–1 features), so
+  raw distance would be almost entirely danceability and the sound tab needs per-dimension standardisation.
+  Noted for the pipeline, not blocking: `lyric_embedding` measures **768** dims, not the 384 the curator
+  described, and there is **no `pgvector`** (only `plpgsql`), so similarity is either a multi-array `unnest`
+  cosine in SQL or an in-memory Node computation — **not yet decided**. **The brainstorm was paused by the
+  curator to save tokens** with five questions open (page layout, nav/copy, point interaction incl. canvas
+  keyboard accessibility, result counts, and whether `docs/examples/`' two unopened screenshots are new
+  triage items); it resumes as the **first task** next session from
+  `.superpowers/sdd/b4-brainstorm-handoff.md`. No code, no spec, no smoke test — read-only discovery only.
 
 - **2026-07-26 — Acoustic dimensions: the song page shows what the pipeline emits, but you can only filter
   by what the codebook knows.** The analysis pipeline added six audio-derived dimensions to
@@ -1139,6 +1236,25 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-27 (B4 brainstorm — started, paused mid-way; no code)** — Opened the B4 brainstorm and spent the
+  session on read-only discovery, which is the whole value of it: the 2026-07-17 spec's data premises no
+  longer hold. The working-tree `vector_space.json` had a different shape than specced (no `themes`, no audio
+  coordinates) and repeated 9 song_ids at conflicting positions; then the curator's analysis project
+  **created `song_coordinates` mid-session** (664 rows, one per song, eight fully-populated `float8[]`
+  columns covering semantic/thematic/audio/holistic in 2D and 3D), superseding the file. Probing also
+  established that the static file **leaked 24 songs the public site may not show**, that the map can cover
+  only **640 of 1,333 live songs**, that `audio_embedding` now holds **two incompatible vector shapes in one
+  column** (6D and 1024D), and that its 6D dimensions are on scales differing 30× — so any distance taken
+  without standardisation would be almost entirely `danceability`. Six design decisions were taken with the
+  curator (data-driven space discovery · API over static file · 2D now / 3D later · curated colour-by menu ·
+  legend+search spotlight · two-tab "You might also like" with a genre fallback for the 52% of live songs
+  with no embeddings), and one unbuildable idea in the old spec was retired ("colour by sub-dimension" would
+  need the implementer to pick a dominant theme per song). **The curator paused the brainstorm to save
+  tokens** with five questions still open, so it resumes as the first task next session from
+  `.superpowers/sdd/b4-brainstorm-handoff.md`. Fixed in passing: `CLAUDE.md` and `README.md` both documented
+  a `DATABASE_URL` that `database/db.js` never reads (it uses `DB_HOST`/`DB_PORT`/`DB_NAME`/`DB_USER`/
+  `DB_PASSWORD`) — a probe failed on it. No application code changed, so no smoke test was owed.
 
 - **2026-07-26 (Acoustic dimensions — built, reviewed, curator-smoked, merged)** — On
   `session-acoustic-dimensions`, eight plan tasks plus a fix wave, subagent-driven with a review gate per
