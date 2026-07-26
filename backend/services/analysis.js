@@ -175,14 +175,23 @@ const DIM_DESCRIPTIONS = Object.fromEntries(
   })
 );
 
+// Unpack a per-component constraint {joinSql, where, params} into ready-to-splice SQL
+// fragments. A missing/null constraint degrades to no extra join, where or params — shared
+// by facetTree (one constraint per call) and scalarFacets/acousticFacets (one per component).
+function unpackConstraint(cn) {
+  cn = cn || {};
+  return {
+    joinSql: cn.joinSql || '',
+    whereSql: (cn.where && cn.where.length) ? ' AND ' + cn.where.join(' AND ') : '',
+    params: cn.params || [],
+  };
+}
+
 // Parameter base: constraint.where/params must be built with startIndex: 1 — this function no
 // longer prepends a model param.
 async function facetTree(db, constraint = null) {
   const out = {};
-  const extraJoin = constraint ? (constraint.joinSql || '') : '';
-  const extraWhere = constraint && constraint.where && constraint.where.length
-    ? ' AND ' + constraint.where.join(' AND ') : '';
-  const extraParams = constraint && constraint.params ? constraint.params : [];
+  const { joinSql: extraJoin, whereSql: extraWhere, params: extraParams } = unpackConstraint(constraint);
   for (const [col, pub] of Object.entries(PUBLIC_DIMS)) {
     // One query: distinct (song_id, code) pairs over live+coded songs for this dimension.
     // ${col} comes from the controlled PUBLIC_DIMS whitelist — never user input.
@@ -228,6 +237,16 @@ async function facetTree(db, constraint = null) {
   return out;
 }
 
+// Count distinct live songs per code. `inner` is a SELECT yielding (song_id, code) rows;
+// each caller owns its own inner query because the scalar tier must unnest an array column
+// while the acoustic tier reads a plain one. Shared by scalarFacets and acousticFacets.
+async function countByCode(db, inner, params) {
+  const rows = (await db.query(
+    `SELECT code, COUNT(DISTINCT song_id)::int AS count FROM (${inner}) t
+     WHERE code IS NOT NULL GROUP BY code`, params)).rows;
+  return new Map(rows.map(r => [r.code, r.count]));
+}
+
 // Per-component option counts for the sidebar. `constraints` is keyed by component:
 // { [componentKey]: { joinSql, where: string[], params: any[] } } — each built with that
 // component excluded, so a group's own selection never shrinks its own options.
@@ -237,10 +256,7 @@ async function facetTree(db, constraint = null) {
 async function scalarFacets(db, constraints = {}) {
   const out = {};
   for (const c of codebook.COMPONENTS) {
-    const cn = constraints[c.key] || {};
-    const cParams = cn.params || [];
-    const extraJoin = cn.joinSql || '';
-    const extraWhere = (cn.where && cn.where.length) ? ' AND ' + cn.where.join(' AND ') : '';
+    const { joinSql: extraJoin, whereSql: extraWhere, params: cParams } = unpackConstraint(constraints[c.key]);
     // c.column comes from the COMPONENTS whitelist — never user input.
     const inner = c.multi
       ? `SELECT DISTINCT s.id AS song_id, e.code AS code
@@ -252,11 +268,7 @@ async function scalarFacets(db, constraints = {}) {
          FROM songs s${extraJoin}
          JOIN ${LATEST_ANALYSIS} scf ON scf.song_id = s.id
          WHERE s.status = 'included' AND s.published = true${extraWhere}`;
-    const rows = (await db.query(
-      `SELECT code, COUNT(DISTINCT song_id)::int AS count FROM (${inner}) t
-       WHERE code IS NOT NULL GROUP BY code`,
-      [...cParams])).rows;
-    const counts = new Map(rows.map(r => [r.code, r.count]));
+    const counts = await countByCode(db, inner, [...cParams]);
     out[c.key] = {
       key: c.key,
       heading: c.heading,
@@ -276,20 +288,13 @@ async function scalarFacets(db, constraints = {}) {
 async function acousticFacets(db, constraints = {}) {
   const out = {};
   for (const c of acoustic.COMPONENTS) {
-    const cn = constraints[c.key] || {};
-    const cParams = cn.params || [];
-    const extraJoin = cn.joinSql || '';
-    const extraWhere = (cn.where && cn.where.length) ? ' AND ' + cn.where.join(' AND ') : '';
+    const { joinSql: extraJoin, whereSql: extraWhere, params: cParams } = unpackConstraint(constraints[c.key]);
     // c.column comes from the COMPONENTS whitelist — never user input.
-    const rows = (await db.query(
-      `SELECT code, COUNT(DISTINCT song_id)::int AS count FROM (
-         SELECT DISTINCT s.id AS song_id, acf.${c.column} AS code
-         FROM songs s${extraJoin}
-         JOIN ${LATEST_ANALYSIS} acf ON acf.song_id = s.id
-         WHERE s.status = 'included' AND s.published = true${extraWhere}
-       ) t WHERE code IS NOT NULL GROUP BY code`,
-      [...cParams])).rows;
-    const counts = new Map(rows.map(r => [r.code, r.count]));
+    const inner = `SELECT DISTINCT s.id AS song_id, acf.${c.column} AS code
+       FROM songs s${extraJoin}
+       JOIN ${LATEST_ANALYSIS} acf ON acf.song_id = s.id
+       WHERE s.status = 'included' AND s.published = true${extraWhere}`;
+    const counts = await countByCode(db, inner, [...cParams]);
     out[c.key] = {
       key: c.key,
       heading: c.heading,
