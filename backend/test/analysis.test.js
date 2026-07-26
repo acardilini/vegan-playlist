@@ -447,6 +447,40 @@ test('acoustic display is ungated: an off-codebook value title-cases instead of 
   assert.ok(a.acoustic[0].definition.length > 20, 'component description stands alone');
 });
 
+test('acousticFacets counts distinct live songs per code, in codebook order', async () => {
+  const id = await mkSong('ZZZANL AcFacet');
+  await addAnalysis(id, ACOUSTIC);
+  const f = await analysis.acousticFacets(pool, {});
+  assert.equal(f.sonic_energy.heading, 'Energy');
+  assert.deepEqual(f.acoustic_type.options.map(o => o.code),
+    ['UNPLUGGED_ACOUSTIC', 'HYBRID_SEMI_ACOUSTIC', 'ELECTRIC_AMPLIFIED']);
+  const opt = f.vocal_delivery.options.find(o => o.code === 'SPOKEN_WORD_RAP');
+  assert.ok(opt && opt.count >= 1, 'the fixture song is counted');
+  assert.ok(f.sonic_energy.description.length > 20, 'component description carried');
+  assert.ok(!('tempo_bpm' in f), 'tempo is a range, not a facet group');
+  // zero-count options are kept so the group shape is stable
+  assert.ok(f.rhythmic_style.options.length === 3);
+});
+
+test('acousticFacets applies a per-component constraint', async () => {
+  const id = await mkSong('ZZZANL AcFacetConstrained');
+  await addAnalysis(id, ACOUSTIC);
+  await pool.query(`UPDATE songs SET language = ARRAY['ZZZ-NoSuchLang'] WHERE id = $1`, [id]);
+  const c = await analysis.acousticFacets(pool, {
+    vocal_delivery: { joinSql: '', where: [`s.language && $1::text[]`], params: [['ZZZ-NoSuchLang']] },
+  });
+  const only = c.vocal_delivery.options.find(o => o.code === 'SPOKEN_WORD_RAP');
+  assert.equal(only.count, 1, 'only the constrained song counts');
+});
+
+test('tempoRange reports the live BPM bounds from the latest pass', async () => {
+  const id = await mkSong('ZZZANL Tempo');
+  await addAnalysis(id, { tempo_bpm: 300 }); // above any real value, so the max is deterministic
+  const r = await analysis.tempoRange(pool);
+  assert.equal(r.max_bpm, 300);
+  assert.ok(r.min_bpm !== null && r.min_bpm <= 300);
+});
+
 after(async () => {
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);

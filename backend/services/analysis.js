@@ -268,6 +268,48 @@ async function scalarFacets(db, constraints = {}) {
   return out;
 }
 
+// Per-component option counts for the sidebar's Sound group. Mirrors scalarFacets: each
+// component's constraint is built with that component excluded, so an open group's own
+// selection never shrinks its own options. Tempo is absent by design — a range has no
+// options to count; the route serves tempoRange() instead.
+// Parameter base: each constraint's where/params is built with startIndex: 1.
+async function acousticFacets(db, constraints = {}) {
+  const out = {};
+  for (const c of acoustic.COMPONENTS) {
+    const cn = constraints[c.key] || {};
+    const cParams = cn.params || [];
+    const extraJoin = cn.joinSql || '';
+    const extraWhere = (cn.where && cn.where.length) ? ' AND ' + cn.where.join(' AND ') : '';
+    // c.column comes from the COMPONENTS whitelist — never user input.
+    const rows = (await db.query(
+      `SELECT code, COUNT(DISTINCT song_id)::int AS count FROM (
+         SELECT DISTINCT s.id AS song_id, acf.${c.column} AS code
+         FROM songs s${extraJoin}
+         JOIN ${LATEST_ANALYSIS} acf ON acf.song_id = s.id
+         WHERE s.status = 'included' AND s.published = true${extraWhere}
+       ) t WHERE code IS NOT NULL GROUP BY code`,
+      [...cParams])).rows;
+    const counts = new Map(rows.map(r => [r.code, r.count]));
+    out[c.key] = {
+      key: c.key,
+      heading: c.heading,
+      description: acoustic.componentDescription(c.key),
+      options: acoustic.optionsFor(c.key).map(o => ({ ...o, count: counts.get(o.code) || 0 })),
+    };
+  }
+  return out;
+}
+
+// Min/max BPM over live+published songs' latest pass — feeds the range input placeholders,
+// the same role year_range plays for the Year inputs.
+async function tempoRange(db) {
+  const r = await db.query(
+    `SELECT MIN(la.tempo_bpm)::int AS min_bpm, MAX(la.tempo_bpm)::int AS max_bpm
+     FROM songs s JOIN ${LATEST_ANALYSIS} la ON la.song_id = s.id
+     WHERE s.status = 'included' AND s.published = true`);
+  return r.rows[0] || { min_bpm: null, max_bpm: null };
+}
+
 const FACET_TO_COLUMN = { themes: 'themes', targets: 'topics', actions: 'advocacy', tactics: 'tactics', moral_frames: 'moral_frames' };
 
 // Reverse maps (built once): per facet dimension, group id -> [code ids] and sub-dimension id -> [code ids].
@@ -348,4 +390,4 @@ async function themeCounts(db, limit = 15) {
 module.exports = { LATEST_ANALYSIS, hasAnalysisExists,
   hasCodesExists, EVIDENCE_DIMS, DIM_TO_TAXONOMY,
   taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree,
-  scalarFacets, facetFilterConditions, facetSelectionClauses, themeCounts };
+  scalarFacets, acousticFacets, tempoRange, facetFilterConditions, facetSelectionClauses, themeCounts };
