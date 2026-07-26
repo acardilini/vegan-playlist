@@ -181,8 +181,12 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   where they land; now with the renamed **"Speaking to"** / **"Subjects"** labels). Note there is a
   pre-existing uncommitted `frontend/public/vector_space.json` + untracked `docs/examples/` in the working
   tree, still left as-is per the curator. The JSON is now **superseded** by `song_coordinates` and is
-  scheduled for deletion in B4; the two `docs/examples/` screenshots are **unopened** and may be new triage
-  items (a resume question).
+  scheduled for deletion in B4. The two `docs/examples/` screenshots were **opened 2026-07-27 and are NOT
+  new triage items** — both are already fixed: `Themes Filter Dimension Text Missalignment.png` is the B3
+  theme-tree centring bug, fixed at `components.css:875` (a `<button>` defaults to `text-align:center`),
+  and `Filter Chips Location.png` circles the strip above the results grid, which is exactly where
+  `FilterChips` now renders (`SearchAndFilter.jsx:506`; the old applied-filter summary was removed — see
+  `HomePage.jsx:200`). Both screenshots predate triage 4; the files are left in place.
 - **Reprioritised order (2026-07-20):** triage **1a+1b** (analysis tiers + scalar filters — ☑ **merged `a6eb05a`, confirmed
   2026-07-22**) · **2** (persist
   browse state — ☑ **merged `bf2f1da`**) · **3** (featured redesign — ☑ **merged `6718cec`**, confirmed) ·
@@ -321,9 +325,11 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 - **Staging queue counts drift as the curator works them** — smoke tests should treat the
   totals as informational, not fixed expectations (2.2 observed 172 pending / 42 to-finalise /
   1,342 live vs 1.4's 177/39/1,341).
-- **Vegan-themes analysis is future work, not a bug:** `analytics/vegan-themes` reports 0
-  because the thematic coding of songs hasn't been done yet. Plan it as its own workstream
-  once the truth source is in place.
+- ~~**Vegan-themes analysis is future work, not a bug:** `analytics/vegan-themes` reports 0
+  because the thematic coding of songs hasn't been done yet~~ **Stale — corrected 2026-07-27.**
+  The route now reads `analysis.themeCounts(pool, 15)`, so it reflects the real thematic coding
+  from each song's latest analysis pass. Worth knowing because B4 moves this dashboard behind the
+  new **Explore → Data** tab, making it more visible than it was.
 - Deployment must be cheap and GitHub-driven — decided in Phase 4.
 - **The DB holds no curatorial data** (all categorisation/review/rating fields empty across
   1,208 songs) — the curated dataset lives in the curator's external files. Protecting "the
