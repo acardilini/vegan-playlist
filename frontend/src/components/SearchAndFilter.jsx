@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
-import { readBrowseState, applyFilterState, writeStoredBrowseState, EMPTY_FILTERS, SCALAR_KEYS } from '../utils/browseUrlState';
+import { readBrowseState, applyFilterState, writeStoredBrowseState, EMPTY_FILTERS, SCALAR_KEYS, ACOUSTIC_KEYS } from '../utils/browseUrlState';
 import GenreFilterTree from './GenreFilterTree';
 import ThemeFacetTree from './ThemeFacetTree';
 import ScalarFacetGroups from './ScalarFacetGroups';
@@ -25,6 +25,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
   const [filterOptions, setFilterOptions] = useState({});
   const [facets, setFacets] = useState({});
   const [scalarFacets, setScalarFacets] = useState({});
+  const [acousticFacets, setAcousticFacets] = useState({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -63,6 +64,9 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     if (filters.facet_groups.length) p.facet_groups = filters.facet_groups;
     if (filters.facet_subdims.length) p.facet_subdims = filters.facet_subdims;
     SCALAR_KEYS.forEach(k => { if (filters[k].length) p[k] = filters[k]; });
+    ACOUSTIC_KEYS.forEach(k => { if (filters[k].length) p[k] = filters[k]; });
+    if (filters.tempo_from) p.tempo_from = filters.tempo_from;
+    if (filters.tempo_to) p.tempo_to = filters.tempo_to;
     return p;
   }, [searchQuery, filters, currentPage]);
 
@@ -100,10 +104,11 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       setFilterOptions({
         genre_tree: data.genre_tree, year_range: data.year_range,
         languages: data.languages, length_buckets: data.length_buckets,
-        availability: data.availability,
+        availability: data.availability, tempo_range: data.tempo_range,
       });
       setFacets(data.facets || {});
       setScalarFacets(data.scalar_facets || {});
+      setAcousticFacets(data.acoustic_facets || {});
     }, 300);
     return () => clearTimeout(t);
   }, [buildSearchParams]);
@@ -220,6 +225,15 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     return m;
   }, [scalarFacets]);
 
+  const acousticLabelMap = useMemo(() => {
+    const m = {};
+    ACOUSTIC_KEYS.forEach(k => {
+      m[k] = {};
+      (acousticFacets[k]?.options || []).forEach(o => { m[k][o.code] = o.label; });
+    });
+    return m;
+  }, [acousticFacets]);
+
   const chips = useMemo(() => {
     const list = [];
     if (searchQuery) list.push({ key: 'q:', label: `"${searchQuery}"` });
@@ -250,13 +264,26 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       list.push({ key: `${dim}:${code}`, label: codeLabelMap[dim]?.[code] || code })));
     SCALAR_KEYS.forEach(k => filters[k].forEach(code =>
       list.push({ key: `${k}:${code}`, label: scalarLabelMap[k]?.[code] || code })));
+    ACOUSTIC_KEYS.forEach(k => filters[k].forEach(code =>
+      list.push({ key: `${k}:${code}`, label: acousticLabelMap[k]?.[code] || code })));
+    // Spell the open-ended cases out rather than filling the missing bound with an ellipsis:
+    // "150–… BPM" reads as a truncated chip, not as an open upper bound.
+    if (filters.tempo_from || filters.tempo_to) {
+      const label = filters.tempo_from && filters.tempo_to
+        ? `${filters.tempo_from}–${filters.tempo_to} BPM`
+        : filters.tempo_from
+          ? `From ${filters.tempo_from} BPM`
+          : `Up to ${filters.tempo_to} BPM`;
+      list.push({ key: 'tempo:', label });
+    }
     return list;
-  }, [searchQuery, filters, filterOptions, lengthLabelMap, codeLabelMap, facetLabelMaps, scalarLabelMap]);
+  }, [searchQuery, filters, filterOptions, lengthLabelMap, codeLabelMap, facetLabelMaps, scalarLabelMap, acousticLabelMap]);
 
   const removeChip = (key) => {
     const [type, value] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
     if (type === 'q') return setSearchQuery('');
     if (type === 'year') return setFilters(prev => ({ ...prev, year_from: '', year_to: '' }));
+    if (type === 'tempo') return setFilters(prev => ({ ...prev, tempo_from: '', tempo_to: '' }));
     if (type === 'parent') {
       const parent = (filterOptions.genre_tree?.parents || []).find(p => p.value === value);
       return onToggleParent(value, false, parent ? parent.subgenres.map(s => s.value) : []);
@@ -274,11 +301,13 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       return onToggleGroup(dk, id, false);
     }
     if (SCALAR_KEYS.includes(type)) return toggleInArray(type, value, false);
+    if (ACOUSTIC_KEYS.includes(type)) return toggleInArray(type, value, false);
     if (DIM_KEYS.includes(type)) return toggleInArray(type, value, false);
   };
 
   const activeCount = chips.length;
   const yr = filterOptions.year_range || {};
+  const tr = filterOptions.tempo_range || {};
 
   const filterGroups = (
     <div className="sidebar-groups">
@@ -318,6 +347,33 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
           selected={filters}
           onToggle={(key, code, checked) => toggleInArray(key, code, checked)}
         />
+      </FilterSection>
+
+      <FilterSection
+        title="Sound"
+        count={ACOUSTIC_KEYS.reduce((n, k) => n + filters[k].length, 0) + ((filters.tempo_from || filters.tempo_to) ? 1 : 0)}
+      >
+        <ScalarFacetGroups
+          groups={acousticFacets}
+          selected={filters}
+          onToggle={(key, code, checked) => toggleInArray(key, code, checked)}
+        />
+        <FilterSection title="Tempo" count={(filters.tempo_from || filters.tempo_to) ? 1 : 0}>
+          <div className="range-inputs">
+            {/* Bare numbers, not "From 45": these boxes are barely wide enough for the label
+                plus a number-input spinner, and a clipped hint is worse than a terse one. The
+                "to" separator already says which bound is which. */}
+            <input type="number" placeholder={tr.min_bpm ? String(tr.min_bpm) : 'From'}
+              aria-label="Tempo from (BPM)"
+              value={filters.tempo_from} onChange={(e) => setScalar('tempo_from', e.target.value)}
+              min={tr.min_bpm} max={tr.max_bpm} />
+            <span>to</span>
+            <input type="number" placeholder={tr.max_bpm ? String(tr.max_bpm) : 'To'}
+              aria-label="Tempo to (BPM)"
+              value={filters.tempo_to} onChange={(e) => setScalar('tempo_to', e.target.value)}
+              min={tr.min_bpm} max={tr.max_bpm} />
+          </div>
+        </FilterSection>
       </FilterSection>
 
       <FilterSection title="Year range" count={(filters.year_from || filters.year_to) ? 1 : 0}>
@@ -373,7 +429,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
             <input type="checkbox" checked={filters.has_analysis}
               disabled={(filterOptions.availability?.has_analysis || 0) === 0 && !filters.has_analysis}
               onChange={() => toggleBool('has_analysis')} />
-            <span className="filter-label">Has lyrics analysis<span className="filter-count">({filterOptions.availability?.has_analysis || 0})</span></span>
+            <span className="filter-label">Has song analysis<span className="filter-count">({filterOptions.availability?.has_analysis || 0})</span></span>
           </label>
         </div>
       </FilterSection>

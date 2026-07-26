@@ -10,7 +10,27 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Lyrical-analysis layout rework (2026-07-25) — DONE, merged to `main` (merge
+- **Current session:** _**Acoustic dimensions (2026-07-26) — BUILT + reviewed, NOT merged; held for the
+  curator's smoke.** Branch `session-acoustic-dimensions`, 9 commits from base `d5517e6`. The pipeline
+  added **six acoustic dimensions** to `song_lyric_analysis` (`sonic_energy`, `emotional_mood`,
+  `rhythmic_style`, `acoustic_type`, `vocal_delivery`, `tempo_bpm`), derived from audio via Librosa and
+  described by a new curator artifact `backend/data/acoustic_codebook.json`. Shipped: a pure
+  **`services/acousticCodebook.js`** mirroring `metadataCodebook.js`; `getSongAnalysis` returning an
+  **`acoustic`** array in the same cell shape as `attributes`; the song page's **"Style & tone" split into
+  "In the lyrics" / "In the sound"**; **five acoustic browse filters + a BPM range** under a new **"Sound"**
+  sidebar group (reusing the existing `sca` latest-analysis join — no new SQL join anywhere); and three
+  renames — **"Key lyrics" → "Lyric highlights"**, **"Lyrical analysis" → "Song analysis"**, sidebar
+  **"Has lyrics analysis" → "Has song analysis"**. **Display is ungated, filter selections are gated** —
+  deliberately the reverse of the lyrical rule (curator's call; see the Decision Log). **The data changed
+  mid-session:** it began as a placeholder fill (one identical value per dimension, tempo always 120) and
+  the curator ran the real derivation while the branch was being built — the live 692 analysed songs now
+  carry a full distribution (sonic_energy 478/139/71/4 … tempo 45–235, mean 123), all on-codebook. No code
+  changed as a result; the spec carries a dated correction. Backend **151/151**; lint 0 errors; build clean;
+  isolated live smoke **11/11**. Final opus whole-branch review **READY TO MERGE = with fixes → fixed**:
+  it caught a **real new 500 vector** (a non-numeric `tempo_from` in a shared URL bound `NaN` to an
+  `integer` column, 500ing both `/search` and `/browse-facets`; the analogous year path survives only
+  because `EXTRACT(YEAR…)` is `numeric`) — fixed in `192e4d9` with a test. 0 Critical / 0 remaining
+  Important / 6 Minor → triage backlog. Prior session: **Lyrical-analysis layout rework (2026-07-25) — DONE, merged to `main` (merge
   `47229bb`), curator-smoke-confirmed.** Display-only song-page rework (spec `66a1b52`, plan `3b87553`;
   subagent-driven, 8 commits from `11cdbf7`, branch `session-lyrical-analysis-layout`). The **whole
   analysis surface** now reads each song's **latest coding pass** (`MAX(analyzed_at)` via a shared
@@ -120,6 +140,11 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   line-break preservation) — see the Decision Log. **A one-time reshape of 25 songs' `lyrics_highlights`
   was applied to the live DB** (`\n`→`\n\n` so separate highlights stayed separate; not a migration
   file — see the Decision Log). Merged `main`: backend **130/130**, build clean.
+- **⏳ ONE BRANCH PENDING — `session-acoustic-dimensions` is built, reviewed and smoke-tested but NOT
+  merged**, held for the curator's own smoke exactly like triage 1–5 and the lyrical-analysis rework.
+  **Smoke handoff note:** the curator's `:5000` backend is a plain `node server.js` started before this
+  branch, so it runs OLD code — it **must be restarted on this branch** to see the acoustic data (Vite on
+  `:5173` HMRs the frontend automatically; the backend does not reload).
 - **Next session:** **B4 — Explore vector map** (2D/3D scatter over `vector_space.json`, space/colour
   toggles, spotlight filter) — the last Sub-project-B build — **with the vector "You might also like"**
   (replacing the current `/similar`, which is genre + dead NULL audio-features). After it: **triage 6 —
@@ -138,7 +163,18 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   latest-pass source + Option C + renames + summary from `lyric_summary`) → **B4**
   (Explore vector map, with the vector "You might also like" — **executing next**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-25 _(**lyrical-analysis layout rework BUILT + merged** to `main`, merge
+- **Last updated:** 2026-07-26 _(**acoustic dimensions BUILT + reviewed, awaiting the curator's smoke** on
+  branch `session-acoustic-dimensions`, 9 commits from `d5517e6`. Six audio-derived dimensions reach the
+  song page as an **"In the sound"** group inside Style & tone and the browse sidebar as a **"Sound"**
+  filter group with a BPM range; three headings renamed. New pure `services/acousticCodebook.js` over the
+  curator's `acoustic_codebook.json`. **No new SQL join** — acoustic columns ride the existing `sca`
+  latest-analysis join. **Display ungated / filters gated**, deliberately the reverse of the lyrical rule.
+  The acoustic data went from placeholder to real mid-session (the curator ran the derivation); spec §2/§6/§7
+  carry dated corrections. Backend **151/151**; lint 0; build clean; isolated live smoke **11/11**; final
+  opus review's one real finding — a `NaN` tempo bound 500ing both browse endpoints — fixed in `192e4d9`.
+  6 Minors → triage backlog. Read-only, no migrations. Next after merge: **B4 — Explore vector map.**
+  Pre-existing uncommitted `vector_space.json` + untracked `docs/examples/` still left as-is.)_
+- **Previously updated:** 2026-07-25 _(**lyrical-analysis layout rework BUILT + merged** to `main`, merge
   `47229bb` — subagent-driven, 8 commits from `11cdbf7`. The whole analysis surface now reads each song's
   **latest coding pass** (`MAX(analyzed_at)` via `LATEST_ANALYSIS`; `CODE_MODEL`/`SCALAR_MODEL`/
   `ANY_TIER_SQL` deleted — no hard-coded model string remains), the song page codebook-gates thematic
@@ -271,6 +307,71 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-26 — Acoustic dimensions: the song page shows what the pipeline emits, but you can only filter
+  by what the codebook knows.** The analysis pipeline added six audio-derived dimensions to
+  `song_lyric_analysis` (`sonic_energy`, `emotional_mood`, `rhythmic_style`, `acoustic_type`,
+  `vocal_delivery`, `tempo_bpm`) with a new curator artifact `backend/data/acoustic_codebook.json`
+  (Librosa-derived; each component carries `component_name`, `description`, and codes with
+  `label`/`definition`/`threshold`). Decisions (curator): **(1) Placement** — inside the existing
+  "Style & tone" section, which splits into two labelled groups, **"In the lyrics"** and **"In the sound"**,
+  separated by a hairline that only renders *between* two groups. Rejected: labelling only the sound half
+  (asymmetric), and chips for the sound values (drops the dimension names, invents a second visual language
+  inside one section). **(2) Short row labels** — Energy · Mood · Rhythm · Instruments · Vocals · Tempo —
+  matching the terse lyrical headings rather than the codebook's long `component_name`s, which wrap to three
+  lines in a grid cell; the full name is recovered in the hover tooltip as `"<Component name> — <definition>"`.
+  **(3) Display is UNGATED, filter selections are GATED** — deliberately the **reverse** of the lyrical rule.
+  The lyrical path drops any code absent from its codebook; here the page shows whatever the pipeline emitted
+  (title-cased if unknown) because the curator asked to see it as-is, while `cleanSelection` still gates
+  selections so a hand-typed URL cannot select an invented code. **Accepted consequence:** an off-codebook
+  value would appear on the page but could not be filtered by. **(4) Filters mirror the scalar metadata
+  filters** — one collapsible **"Sound"** group nesting five checkbox components, OR within a component and
+  AND across, with exclude-self counts. Rejected: folding them into "Lyric metadata" (wrong name), and five
+  new top-level groups (sidebar bloat). **(5) Tempo filters as a From/To BPM pair**, styled like Year range
+  and nested as a sixth group. Rejected: invented tempo bands — the codebook gives example values, not
+  thresholds, so boundaries would have been a curatorial act taken by the implementer. **(6) Renames**
+  (public song page + sidebar only): "Key lyrics" → **"Lyric highlights"** (sentence case to match every other
+  heading; plural because each stored passage renders as its own block), "Lyrical analysis" →
+  **"Song analysis"**, "Has lyrics analysis" → **"Has song analysis"**. The admin Lyrics panel,
+  `SongSubmissionForm` and `SubmissionsManager` keep their own wording. **(7) No new SQL join** — the acoustic
+  columns live on the same latest-analysis row the scalar filters already join as `sca`, so the whole filter
+  path reuses `joins.scalarAnalysis`. **(8) No `note` copy on the Sound sidebar group** — the curator has twice
+  cut explanatory sidebar prose; the group titles carry the meaning.
+  **THE DATA CHANGED MID-SESSION.** A pre-design read-only probe found the six columns **degenerate**: all 717
+  rows carried one identical value per dimension (`MODERATE_BALANCED`, `BALANCED_NEUTRAL`,
+  `DRIVING_STEADY_PULSE`, `ELECTRIC_AMPLIFIED`, `STANDARD_MELODIC_SINGING`, tempo 120) — schema defaults, with
+  no source to derive from (Spotify audio features are 0/1,333 populated; `manual_audio_features` is empty).
+  The curator chose to **build and ship it as-is, with no degenerate-data guard**, and that decision is why
+  the ungated-display rule was taken. **They then ran the real derivation while the branch was being built**:
+  a re-query found a full distribution over the same 692 analysed songs — sonic_energy 478/139/71/4,
+  emotional_mood 270/253/106/63, rhythmic_style 264/226/202, acoustic_type 607/84/1, vocal_delivery
+  463/124/105, tempo **45–235** (mean 123) — **every live value on-codebook**, so the title-case fallback
+  never fires today. **No code changed as a result**; the spec carries dated corrections to §2, §6 and §7.
+  **One reviewer-caught defect, not in the plan, fixed on branch (`192e4d9`):** a non-numeric `tempo_from` or
+  `tempo_to` in a shared URL bound `NaN` to the `integer` column `tempo_bpm`, **500ing both `/search` and
+  `/browse-facets`** (the sidebar then silently lost all its counts). This was a **new** crash class, not
+  inherited — the analogous `year_from`/`year_to` path survives the same input only because
+  `EXTRACT(YEAR …)` yields `numeric`, which accepts `NaN`. Now guarded with `Number.isFinite` plus a test.
+  **One Important review finding was escalated to the curator rather than absorbed:** `acousticFacets`
+  duplicated ~80% of `scalarFacets` — code my own plan had prescribed — and the curator chose to **extract the
+  shared middle** (two private helpers, `countByCode` and `unpackConstraint`), rejecting both "accept it" and a
+  merged configurable function. **A spec claim proved wrong post-build and was corrected rather than enforced:**
+  §6 said there would be no admin display, but the workbench's `AnalysisPanel` reuses the same
+  `LyricalAnalysis` component, so the sound group appears there too — kept, since the curator seeing the
+  derivation while curating is a benefit. Verified: backend **151/151**; lint 0 errors; build clean; isolated
+  live smoke (backend :5001 + Vite :5199, curator's :5000/:5173 untouched) **11/11**; final opus whole-branch
+  review **0 Critical / 0 remaining Important / 6 Minor** → triage backlog. Read-only — no migrations, no
+  pipeline changes, no writes to `song_lyric_analysis`. **The 6 Minors:** (1) `cleanSelection` doesn't
+  de-duplicate repeated values (harmless in `= ANY`; matches `metadataCodebook`); (2) an unknown *component
+  key* in `codeLabel` is indistinguishable from an unknown *code* — both title-case — so a caller typo would
+  surface as title-cased output rather than an error; (3) the `[...cParams]` spread is now redundant at both
+  `countByCode` call sites, and the two private helpers have only indirect test coverage; (4) the Tempo cell's
+  tooltip omits the `"Tempo (BPM) — "` prefix the other five carry — left deliberately, since that prefix
+  exists to recover what the short label drops and "Tempo" drops nothing; (5) the Style & tone description
+  mentions sound even on the one live song that has none; (6) **pre-existing, worth a backlog entry:**
+  `GET /api/analysis/song/:id` does not filter `status='included' AND published=true`, so an unpublished
+  song's analysis is readable by id — it predates this work but now also serves acoustic data. Spec:
+  `specs/2026-07-26-acoustic-dimensions-design.md`; plan: `plans/2026-07-26-acoustic-dimensions.md`.
 
 - **2026-07-25 — Lyrical-analysis rework BUILT + merged (`47229bb`); the "In short" summary source was
   corrected to `lyric_summary`.** Executed the 2026-07-25 plan subagent-driven (8 commits from `11cdbf7`,
@@ -1016,6 +1117,26 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-07-26 (Acoustic dimensions — built + reviewed, pending curator smoke)** — On
+  `session-acoustic-dimensions`, eight plan tasks plus a fix wave, subagent-driven with a review gate per
+  task. Six audio-derived dimensions reach the public site: a pure `services/acousticCodebook.js` over the
+  curator's new `backend/data/acoustic_codebook.json`; `getSongAnalysis` returning an `acoustic` cell array
+  in the same shape as `attributes`; the song page's "Style & tone" split into **"In the lyrics"** and
+  **"In the sound"**; and a **"Sound"** browse group with five checkbox filters and a nested BPM range —
+  all riding the existing `sca` latest-analysis join, so **no new SQL join was added anywhere**. Three
+  renames: "Key lyrics" → **"Lyric highlights"**, "Lyrical analysis" → **"Song analysis"**, and the sidebar's
+  "Has lyrics analysis" → **"Has song analysis"**. The session opened by finding the six columns filled with
+  schema defaults — one identical value per dimension — which the curator chose to ship as-is; **they then
+  ran the real derivation mid-build**, so the live 692 analysed songs now carry a genuine distribution
+  (tempo 45–235, mean 123) with every value on-codebook. Two decisions were escalated rather than absorbed:
+  duplication between `acousticFacets` and `scalarFacets` that **my own plan had prescribed** (curator chose
+  to extract two private helpers), and the sidebar copy question. The final opus review caught a **real new
+  500 vector** — a non-numeric `tempo_from` in a shared URL bound `NaN` to an `integer` column and crashed
+  both public browse endpoints — fixed with a `Number.isFinite` guard and a test. Backend **151/151**; lint
+  0 errors; build clean; isolated live smoke **11/11** on a separate backend and Vite instance, with the
+  curator's own servers verified untouched. Read-only: no migrations, no pipeline changes. **Not merged —
+  held for the curator's smoke.**
 
 - **2026-07-22 (Filter/analysis presentation — built + verified, pending curator smoke)** — On
   `session-presentation-polish`, six tasks from the curator's 1a+1b smoke follow-ups. New shared

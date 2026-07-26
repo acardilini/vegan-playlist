@@ -2243,6 +2243,18 @@
 .la-attr-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
 .la-attr-value { color: var(--text-primary); }
 
+/* Style & tone splits into "In the lyrics" / "In the sound"; the rule only appears
+   between two groups, so a single-group section shows no stray divider. */
+.la-group { display: flex; flex-direction: column; gap: var(--space-1); }
+.la-group + .la-group {
+  margin-top: var(--space-3); padding-top: var(--space-3);
+  border-top: 1px solid var(--border-hairline);
+}
+.la-group-title {
+  margin: 0; font-size: 0.8rem; letter-spacing: 0.03em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+
 .la-dimension { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-2); }
 .la-dim-heading { margin: 0; font-size: 0.8rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); }
 .la-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }

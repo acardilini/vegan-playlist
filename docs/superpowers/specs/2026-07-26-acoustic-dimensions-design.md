@@ -16,7 +16,29 @@ now that the page carries both lyric and audio analysis.
 
 ## 2. The data, as it actually is
 
-Read-only DB probe, 2026-07-26. Six new columns on `song_lyric_analysis`:
+> **CORRECTION — 2026-07-26, during the build.** This section described the data as
+> degenerate. **That is no longer true.** The curator ran the real derivation while the branch
+> was being built, and a read-only re-query of the live DB found a full distribution across all
+> six dimensions over the same 692 analysed songs:
+>
+> | Column | Distribution (live, latest pass) |
+> | --- | --- |
+> | `sonic_energy` | EXPLOSIVE 478 · DRIVING 139 · MODERATE 71 · SOFT 4 |
+> | `emotional_mood` | BALANCED 270 · SERIOUS 253 · SOMBER 106 · UPLIFTING 63 |
+> | `rhythmic_style` | DANCEABLE 264 · FREEFORM 226 · DRIVING PULSE 202 |
+> | `acoustic_type` | ELECTRIC 607 · HYBRID 84 · UNPLUGGED 1 |
+> | `vocal_delivery` | SPOKEN/RAP 463 · SPOKEN SAMPLE 124 · MELODIC 105 |
+> | `tempo_bpm` | 45–235, mean 123 |
+>
+> **No code changed as a result** — the feature was built ungated against the real columns, so
+> it simply started showing real values. What the correction retires is the "ship it as-is"
+> caveat below and the degenerate-data expectations in §7: the sidebar now shows a genuine
+> distribution rather than one option at 692 with the rest greyed out. Every live value is
+> on-codebook, so the title-case fallback never fires today. The original finding is kept
+> below because it is why the ungated-display decision (§4.3) was taken.
+
+Read-only DB probe, 2026-07-26 (superseded — see the correction above). Six new columns on
+`song_lyric_analysis`:
 
 | Column | Type | Distinct values across all 717 rows |
 | --- | --- | --- |
@@ -187,7 +209,11 @@ carries a separate `tempo_range: { min, max }` for the input placeholders, match
 
 ## 6. What this does not do (YAGNI)
 
-- No admin/workbench display of acoustic values.
+- ~~No admin/workbench display of acoustic values.~~ **Corrected 2026-07-26 (post-build):** the
+  admin workbench's `AnalysisPanel` renders the same `LyricalAnalysis` component over
+  `getWorkbench`'s analysis object, so the "In the sound" group appears there too, as a free
+  rider. Kept — the curator seeing the derivation while curating is a benefit, and hiding it
+  would need a new prop purely to suppress information.
 - No About-page explainer copy — that is triage 6, which will need an acoustic section.
 - No "has acoustic analysis" availability toggle.
 - No `song_lyric_analysis` writes, no migration, no pipeline change.
@@ -210,6 +236,8 @@ carries a separate `tempo_range: { min, max }` for the input placeholders, match
 a filter round-trip (select → URL → reload → still applied → chip removes it); a BPM range that
 matches and one that excludes.
 
-**Expected under today's data:** one option per group at count 692, every other option at (0) and
-disabled; a BPM range including 120 returns the 692, one excluding it returns 0. That is correct
-behaviour on degenerate data, not a defect.
+~~**Expected under today's data:** one option per group at count 692, every other option at (0)
+and disabled; a BPM range including 120 returns the 692, one excluding it returns 0.~~
+**Superseded by the §2 correction** — the derivation has since run, so every option in every
+group carries a real non-zero count and nothing renders disabled. The isolated live smoke
+(11/11 checks) was run against the real distribution.

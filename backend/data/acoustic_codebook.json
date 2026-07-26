@@ -1,0 +1,168 @@
+{
+  "sonic_energy": {
+    "component_name": "Sonic Energy & Intensity",
+    "description": "Perceptual measure of musical intensity, dynamic volume, distortion, and sound pressure level.",
+    "derivation_source": "Root-Mean-Square (RMS) Energy & Spectral Centroid Brightness via Librosa",
+    "codes": [
+      {
+        "code": "EXPLOSIVE_HIGH_INTENSITY",
+        "label": "Explosive & Heavy",
+        "short_tag": "💥 Explosive",
+        "definition": "High-octane, heavy distortion, loud production, and maximum dynamic force (e.g. Hardcore, Grindcore, Metalcore).",
+        "threshold": "Librosa RMS > 0.12 or Spectral Centroid > 3200 Hz"
+      },
+      {
+        "code": "DRIVING_ENERGETIC",
+        "label": "Driving & Energetic",
+        "short_tag": "⚡ Driving",
+        "definition": "Upbeat, driving rhythm, energetic instrumentation, and lively production (e.g. Punk Rock, Fast Ska, Upbeat Rock).",
+        "threshold": "Librosa RMS 0.055 - 0.12 or Spectral Centroid 2000 - 3200 Hz"
+      },
+      {
+        "code": "MODERATE_BALANCED",
+        "label": "Moderate & Balanced",
+        "short_tag": "⚖️ Balanced",
+        "definition": "Mid-tempo, balanced volume, steady acoustic/electric arrangement (e.g. Indie Rock, Mid-tempo Alternative).",
+        "threshold": "Librosa RMS 0.025 - 0.055"
+      },
+      {
+        "code": "SOFT_CALM_ACOUSTIC",
+        "label": "Soft & Calm",
+        "short_tag": "🌿 Soft & Calm",
+        "definition": "Gentle, quiet production, intimate acoustic instruments, and subdued dynamics (e.g. Folk Ballads, Acoustic Solos, Ambient).",
+        "threshold": "Librosa RMS < 0.025"
+      }
+    ]
+  },
+  "emotional_mood": {
+    "component_name": "Emotional Mood (Valence)",
+    "description": "Harmonic and emotional positivity conveyed by the musical arrangement and chord structures.",
+    "derivation_source": "Harmonic Chromagram & Tonnetz Major/Minor Key Ratios via Librosa",
+    "codes": [
+      {
+        "code": "SOMBER_MELANCHOLIC",
+        "label": "Somber & Melancholic",
+        "short_tag": "🖤 Somber",
+        "definition": "Low positivity: minor-key, mournful, sad, elegiac, or desolate harmonic mood (e.g. Captivity Elegies, Slaughterhouse Laments).",
+        "threshold": "Librosa Chroma Major/Minor Ratio < 0.85"
+      },
+      {
+        "code": "SERIOUS_INTENSE",
+        "label": "Serious & Intense",
+        "short_tag": "🪞 Serious",
+        "definition": "Mid-low positivity: serious, urgent, tense, or confrontational harmonic tone.",
+        "threshold": "Librosa Chroma Major/Minor Ratio 0.85 - 1.05"
+      },
+      {
+        "code": "BALANCED_NEUTRAL",
+        "label": "Balanced & Neutral",
+        "short_tag": "⚖️ Neutral",
+        "definition": "Moderate positivity: neutral, storytelling, or reflective harmonic background.",
+        "threshold": "Librosa Chroma Major/Minor Ratio 1.05 - 1.30"
+      },
+      {
+        "code": "UPLIFTING_POSITIVE",
+        "label": "Uplifting & Positive",
+        "short_tag": "🌱 Uplifting",
+        "definition": "High positivity: major-key, cheerful, bright, encouraging, or triumphant feel (e.g. Celebration of Vegan Life).",
+        "threshold": "Librosa Chroma Major/Minor Ratio > 1.30"
+      }
+    ]
+  },
+  "rhythmic_style": {
+    "component_name": "Rhythmic Style",
+    "description": "Rhythmic regularity, danceability, beat strength, and tempo momentum.",
+    "derivation_source": "Onset Strength Envelope Variance & Beat Onsets via Librosa",
+    "codes": [
+      {
+        "code": "HIGH_DANCEABLE_RHYTHM",
+        "label": "Danceable Rhythm",
+        "short_tag": "🕺 Danceable",
+        "definition": "High rhythmic regularity, strong danceable groove, and clear beat pulse (e.g. Funk, Ska, Hip-Hop, Pop).",
+        "threshold": "Librosa Onset Variance > 2.5 or BPM 105 - 140"
+      },
+      {
+        "code": "DRIVING_STEADY_PULSE",
+        "label": "Driving Rhythm",
+        "short_tag": "🥁 Driving Pulse",
+        "definition": "Driving rock/punk/metal beat, fast double-kick, and steady rhythmic pulse.",
+        "threshold": "Librosa Onset Variance 1.2 - 2.5"
+      },
+      {
+        "code": "FREEFORM_ATMOSPHERIC",
+        "label": "Atmospheric / Freeform",
+        "short_tag": "🌊 Freeform",
+        "definition": "Loose beat structure, ambient soundscapes, spoken word monologues, or non-rhythmic passages.",
+        "threshold": "Librosa Onset Variance < 1.2"
+      }
+    ]
+  },
+  "acoustic_type": {
+    "component_name": "Acoustic Type",
+    "description": "Primary instrumentation setup and acoustic vs electric/electronic sound spectrum.",
+    "derivation_source": "Spectral Flatness & Harmonic-Percussive Source Separation via Librosa",
+    "codes": [
+      {
+        "code": "UNPLUGGED_ACOUSTIC",
+        "label": "Unplugged Acoustic",
+        "short_tag": "🪕 Unplugged",
+        "definition": "Unamplified acoustic instruments, acoustic guitar, piano, strings, and organic folk production.",
+        "threshold": "Librosa Spectral Flatness < 0.003 & RMS < 0.045"
+      },
+      {
+        "code": "HYBRID_SEMI_ACOUSTIC",
+        "label": "Semi-Acoustic Hybrid",
+        "short_tag": "🎸 Semi-Acoustic",
+        "definition": "Blend of acoustic and electric/electronic instruments (e.g. Acoustic guitar with electric drums/bass).",
+        "threshold": "Librosa Spectral Flatness 0.003 - 0.012"
+      },
+      {
+        "code": "ELECTRIC_AMPLIFIED",
+        "label": "Electric & Amplified",
+        "short_tag": "⚡ Electric",
+        "definition": "Electric guitars, bass, synthesizers, distorted amplifiers, and heavy studio production.",
+        "threshold": "Librosa Spectral Flatness > 0.012"
+      }
+    ]
+  },
+  "vocal_delivery": {
+    "component_name": "Vocal Delivery",
+    "description": "Style of vocal presentation and ratio of spoken word vs melodic singing.",
+    "derivation_source": "Zero-Crossing Rate (ZCR) & High-Frequency Spectral Flux via Librosa",
+    "codes": [
+      {
+        "code": "SPOKEN_WORD_RAP",
+        "label": "Spoken Word & Rap",
+        "short_tag": "🎤 Spoken / Rap",
+        "definition": "Spoken word monologues, rap, hip-hop, or spoken poetry.",
+        "threshold": "Librosa Zero Crossing Rate > 0.095"
+      },
+      {
+        "code": "SPOKEN_SAMPLE_HYBRID",
+        "label": "Spoken Sample & Vocal",
+        "short_tag": "🗣️ Spoken Sample",
+        "definition": "Singing mixed with spoken speech samples (e.g. activist speeches, slaughterhouse audio samples).",
+        "threshold": "Librosa Zero Crossing Rate 0.060 - 0.095"
+      },
+      {
+        "code": "STANDARD_MELODIC_SINGING",
+        "label": "Melodic Singing",
+        "short_tag": "🎵 Singing",
+        "definition": "Standard melodic singing, clean vocal lines, screaming, or vocal melodies.",
+        "threshold": "Librosa Zero Crossing Rate < 0.060"
+      }
+    ]
+  },
+  "tempo_bpm": {
+    "component_name": "Tempo (BPM)",
+    "description": "Exact musical speed and pace measured in Beats Per Minute.",
+    "derivation_source": "Onset Autocorrelation Beat Tracking via Librosa",
+    "value_type": "INTEGER_BPM",
+    "example_values": [
+      "88 BPM (Slow / Downtempo)",
+      "120 BPM (Mid-Tempo Groove)",
+      "142 BPM (Fast Driving Rock)",
+      "178 BPM (Rapid Hardcore Punk)"
+    ]
+  }
+}

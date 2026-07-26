@@ -6,6 +6,7 @@ const analysis = require('../services/analysis');
 const genres_svc = require('../services/genres');
 const browse = require('../services/browseFilters');
 const codebook = require('../services/metadataCodebook');
+const acousticCodebook = require('../services/acousticCodebook');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -478,26 +479,40 @@ router.get('/browse-facets', async (req, res) => {
       };
     }
 
+    // One exclude-self constraint per acoustic component.
+    const acousticConstraints = {};
+    for (const c of acousticCodebook.COMPONENTS) {
+      const bwAc = browse.buildWhere(f, { exclude: `acoustic:${c.key}`, startIndex: 1 });
+      acousticConstraints[c.key] = {
+        joinSql: browse.joinSql(bwAc.joins), where: bwAc.where, params: bwAc.params,
+      };
+    }
+
     const yearSql = `SELECT MIN(EXTRACT(YEAR FROM release_date)) AS min_year, MAX(EXTRACT(YEAR FROM release_date)) AS max_year
       FROM albums WHERE release_date IS NOT NULL
         AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)`;
 
-    const [gR, lR, aR, tR, langR, facets, yR, scalar_facets] = await Promise.all([
-      pool.query(genreSql, bwG.params),
-      pool.query(lengthSql, bwL.params),
-      pool.query(availSql, bwA.params),
-      pool.query(toggleSql, bwT.params),
-      pool.query(langSql, bwLang.params),
-      analysis.facetTree(pool, constraint),
-      pool.query(yearSql),
-      analysis.scalarFacets(pool, scalarConstraints),
-    ]);
+    const [gR, lR, aR, tR, langR, facets, yR, scalar_facets, acoustic_facets, tempo_range] =
+      await Promise.all([
+        pool.query(genreSql, bwG.params),
+        pool.query(lengthSql, bwL.params),
+        pool.query(availSql, bwA.params),
+        pool.query(toggleSql, bwT.params),
+        pool.query(langSql, bwLang.params),
+        analysis.facetTree(pool, constraint),
+        pool.query(yearSql),
+        analysis.scalarFacets(pool, scalarConstraints),
+        analysis.acousticFacets(pool, acousticConstraints),
+        analysis.tempoRange(pool),
+      ]);
 
     const lc = lR.rows[0] || {};
     res.json({
       genre_tree: genres_svc.buildGenreTree(gR.rows),
       facets,
       scalar_facets,
+      acoustic_facets,
+      tempo_range,
       length_buckets: genres_svc.LENGTH_BUCKETS.map(b => ({ value: b.value, label: b.label, count: lc[b.value] || 0 })),
       availability: {
         on_spotify: aR.rows[0]?.on_spotify || 0,
