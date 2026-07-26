@@ -2,6 +2,7 @@ const { test, after } = require('node:test');
 const assert = require('node:assert');
 const pool = require('../database/db');
 const analysis = require('../services/analysis');
+const { componentDescription } = require('../services/acousticCodebook');
 
 // Unique fixture sentinel per test file: ZZZANL.
 
@@ -69,8 +70,8 @@ async function mkCodedSong() {
   return id;
 }
 
-// Deliberately varied acoustic values — the live data currently carries one identical value
-// per dimension, so fixtures must differ from it for these assertions to mean anything.
+// Deliberately varied acoustic values — fixed, known values chosen so the assertions are
+// exact and independent of whatever the live catalogue happens to contain.
 const ACOUSTIC = {
   sonic_energy: 'EXPLOSIVE_HIGH_INTENSITY', emotional_mood: 'SOMBER_MELANCHOLIC',
   rhythmic_style: 'HIGH_DANCEABLE_RHYTHM', acoustic_type: 'UNPLUGGED_ACOUSTIC',
@@ -443,7 +444,8 @@ test('acoustic display is ungated: an off-codebook value title-cases instead of 
   assert.equal(a.acoustic[0].value, 'Brand New Code');
   // No code definition exists for an unknown code, so the tooltip falls back to the
   // component's own description rather than showing "Name — " with nothing after it.
-  assert.ok(!a.acoustic[0].definition.includes('—'), 'no dangling "Name — " prefix');
+  assert.equal(a.acoustic[0].definition, componentDescription('sonic_energy'),
+    'falls back to the component\'s own description, not a dangling "Name — " prefix');
   assert.ok(a.acoustic[0].definition.length > 20, 'component description stands alone');
 });
 
@@ -477,7 +479,7 @@ test('tempoRange reports the live BPM bounds from the latest pass', async () => 
   const id = await mkSong('ZZZANL Tempo');
   await addAnalysis(id, { tempo_bpm: 300 }); // above any real value, so the max is deterministic
   const r = await analysis.tempoRange(pool);
-  assert.equal(r.max_bpm, 300);
+  assert.ok(r.max_bpm >= 300, 'fixture bound is reflected even if live data also has high tempos');
   assert.ok(r.min_bpm !== null && r.min_bpm <= 300);
 });
 

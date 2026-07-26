@@ -164,6 +164,17 @@ test('buildWhere exclude omits one acoustic component but keeps its siblings', (
   assert.ok(r.where.some(c => c.includes('vocal_delivery')), 'sibling kept');
 });
 
+test('buildWhere ignores a non-numeric tempo bound instead of binding NaN', () => {
+  const r = b.buildWhere({ tempo_from: 'abc', tempo_to: '' });
+  assert.deepEqual(r.where, [], 'no clause emitted');
+  assert.deepEqual(r.params, []);
+  assert.equal(r.joins.scalarAnalysis, false, 'and no join is forced');
+  // a valid bound alongside an invalid one still applies
+  const mixed = b.buildWhere({ tempo_from: 'abc', tempo_to: '140' });
+  assert.deepEqual(mixed.where, ['sca.tempo_bpm <= $1']);
+  assert.deepEqual(mixed.params, [140]);
+});
+
 test('buildWhere numbers acoustic params after the scalar ones', () => {
   const r = b.buildWhere({
     perspective: ['MORAL_ACCUSER_JUDGE'],

@@ -88,12 +88,18 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
 
   // Tempo is a range, not an enum: always applied (it has no facet counts of its own to
   // protect), exactly like year_from/year_to.
-  if (filters.tempo_from) {
-    where.push(`sca.tempo_bpm >= $${idx}`); params.push(parseInt(filters.tempo_from, 10));
+  // Only emit a bound when the value actually parses. tempo_bpm is an INTEGER column, so a
+  // NaN from a hand-edited URL would be sent as 'NaN' and rejected by Postgres, 500ing both
+  // /search and /browse-facets. (The year bounds survive the same input only because
+  // EXTRACT(YEAR ...) is numeric, which accepts NaN.)
+  const tempoFrom = parseInt(filters.tempo_from, 10);
+  if (Number.isFinite(tempoFrom)) {
+    where.push(`sca.tempo_bpm >= $${idx}`); params.push(tempoFrom);
     idx++; joins.scalarAnalysis = true;
   }
-  if (filters.tempo_to) {
-    where.push(`sca.tempo_bpm <= $${idx}`); params.push(parseInt(filters.tempo_to, 10));
+  const tempoTo = parseInt(filters.tempo_to, 10);
+  if (Number.isFinite(tempoTo)) {
+    where.push(`sca.tempo_bpm <= $${idx}`); params.push(tempoTo);
     idx++; joins.scalarAnalysis = true;
   }
 
