@@ -3,6 +3,7 @@
 // Functions take `db` (pool or client) first, mirroring services/curation.js.
 const taxonomy = require('../data/taxonomy.json');
 const codebook = require('./metadataCodebook');
+const acoustic = require('./acousticCodebook');
 
 // The site shows each song's latest analysis pass (see LATEST_ANALYSIS below).
 
@@ -85,7 +86,9 @@ async function getSongAnalysis(db, songId) {
   const r = await db.query(
     `SELECT sla.themes, sla.topics, sla.advocacy, sla.tactics, sla.moral_frames, sla.lyric_summary,
             sla.perspective, sla.lyrical_tone, sla.intensity, sla.clarity, sla.focus_amount,
-            sla.target_audience, sla.emotions
+            sla.target_audience, sla.emotions,
+            sla.sonic_energy, sla.emotional_mood, sla.rhythmic_style,
+            sla.acoustic_type, sla.vocal_delivery, sla.tempo_bpm
      FROM ${LATEST_ANALYSIS} sla
      WHERE sla.song_id = $1`,
     [songId]);
@@ -118,9 +121,33 @@ async function getSongAnalysis(db, songId) {
     moral_frames: mapDim('moral_frames', a.moral_frames),
   };
 
+  // Acoustic dimensions, derived from the audio. UNGATED by design (spec 2026-07-26 §4.3):
+  // whatever the pipeline emits is shown, title-cased when off-codebook. The tooltip carries
+  // "<Component name> — <definition>" so the long name stays out of the narrow grid cell.
+  const acousticCells = [];
+  for (const c of acoustic.COMPONENTS) {
+    const v = a[c.column];
+    if (!v) continue;
+    const def = acoustic.codeDefinition(c.key, v);
+    acousticCells.push({
+      label: c.heading,
+      value: acoustic.codeLabel(c.key, v),
+      definition: def
+        ? `${acoustic.componentName(c.key)} — ${def}`
+        : acoustic.componentDescription(c.key),
+    });
+  }
+  if (a.tempo_bpm != null) {
+    acousticCells.push({
+      label: acoustic.TEMPO.heading,
+      value: `${a.tempo_bpm} BPM`,
+      definition: acoustic.componentDescription(acoustic.TEMPO.key),
+    });
+  }
+
   // Nothing displayable (e.g. a lyrics-less pass with empty codes and empty scalars) -> null,
   // so the route 404s and the page shows no empty "Lyrical analysis" heading.
-  const hasContent = attributes.length > 0 || emotions.length > 0 ||
+  const hasContent = attributes.length > 0 || emotions.length > 0 || acousticCells.length > 0 ||
     Object.values(dims).some(d => d.length > 0) || !!(a.lyric_summary && a.lyric_summary.trim());
   if (!hasContent) return null;
 
@@ -131,6 +158,7 @@ async function getSongAnalysis(db, songId) {
     emotions, summary: a.lyric_summary,
     ...dims,
     attributes,
+    acoustic: acousticCells,
     dimension_descriptions: DIM_DESCRIPTIONS,
   };
 }
