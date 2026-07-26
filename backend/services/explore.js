@@ -3,6 +3,9 @@
 // mirroring services/analysis.js.
 const analysis = require('./analysis');
 const genres = require('./genres');
+const acoustic = require('./acousticCodebook');
+const codebook = require('./metadataCodebook');
+const { getParentGenre } = require('../utils/genreMapping');
 
 // Friendly names for the projected spaces. `audio` is shown as "Sound" — the site's word
 // for the acoustic dimensions everywhere else. Unknown spaces title-case rather than
@@ -69,4 +72,108 @@ async function mapRows(db, spaces) {
   return r.rows;
 }
 
-module.exports = { SPACE_LABELS, spaceLabel, discoverSpaces, mapRows };
+// One bucket for every "we have no finding here" case: a null, a missing analysis row, or
+// one of the four absence codes. Drawn as neutral grey and always listed last, consistent
+// with the 2026-07-22 decision to hide absence codes rather than give them a colour.
+const NOT_CODED = 'NOT_CODED';
+const NOT_CODED_LABEL = 'Not coded';
+
+// The curated, low-cardinality colour-by menu: five acoustic dimensions (3–4 codes each),
+// one scalar component, and parent genre. Deliberately NOT all seven scalar components —
+// `lyrical_tone` has 16 codes and a legend that long stops being a key.
+const COLOUR_DIMENSIONS = [
+  ...acoustic.COMPONENTS.map(c => ({ key: c.key, label: c.heading, source: 'acoustic' })),
+  { key: 'focus_amount', label: 'Focus', source: 'scalar' },
+  { key: 'genre', label: 'Genre', source: 'genre' },
+];
+
+const DIMENSION_BY_KEY = Object.fromEntries(COLOUR_DIMENSIONS.map(d => [d.key, d]));
+
+// The colour bucket for one song under one dimension.
+function codeFor(dimensionKey, row) {
+  const dim = DIMENSION_BY_KEY[dimensionKey];
+  if (!dim) return NOT_CODED;
+  if (dim.source === 'genre') {
+    return getParentGenre(row.genre) || NOT_CODED;
+  }
+  const v = row[dimensionKey];
+  if (!v) return NOT_CODED;
+  if (dim.source === 'scalar' && codebook.isSuppressed(v)) return NOT_CODED;
+  return v;
+}
+
+function labelFor(dim, code) {
+  if (code === NOT_CODED) return NOT_CODED_LABEL;
+  if (dim.source === 'acoustic') return acoustic.codeLabel(dim.key, code);
+  if (dim.source === 'scalar') return codebook.codeLabel(dim.key, code);
+  return titleCase(code);
+}
+
+// Legend entries for one dimension, counted over the songs actually on the map. Codebook
+// order first (so the legend reads the way the codebook does), then any observed
+// off-codebook code by descending count, then "Not coded" last. Zero-count codes are
+// omitted — the legend describes what is on screen.
+function legendFor(dim, rows) {
+  const counts = new Map();
+  for (const r of rows) {
+    const code = codeFor(dim.key, r);
+    counts.set(code, (counts.get(code) || 0) + 1);
+  }
+  const ordered = [];
+  const seen = new Set([NOT_CODED]);
+  const known = dim.source === 'acoustic' ? acoustic.optionsFor(dim.key)
+    : dim.source === 'scalar' ? codebook.optionsFor(dim.key)
+    : [];
+  for (const o of known) {
+    seen.add(o.code);
+    if (counts.has(o.code)) ordered.push({ code: o.code, label: o.label, count: counts.get(o.code) });
+  }
+  const extras = [...counts.entries()]
+    .filter(([code]) => !seen.has(code))
+    .sort((a, b) => b[1] - a[1]);
+  for (const [code, count] of extras) {
+    ordered.push({ code, label: labelFor(dim, code), count });
+  }
+  if (counts.has(NOT_CODED)) {
+    ordered.push({ code: NOT_CODED, label: NOT_CODED_LABEL, count: counts.get(NOT_CODED) });
+  }
+  return ordered;
+}
+
+// Everything the Explore page needs, in one response: switching space, switching colour-by,
+// spotlighting and searching then need no further request, and the selected-song card needs
+// no second fetch.
+async function mapPayload(db) {
+  const spaces = await discoverSpaces(db);
+  const rows = await mapRows(db, spaces);
+  const live = await db.query(
+    `SELECT COUNT(*)::int AS n FROM songs WHERE status = 'included' AND published = true`);
+
+  const songs = rows.map(r => {
+    const coords = {};
+    for (const s of spaces) coords[s.key] = r[s.column];
+    const codes = {};
+    for (const d of COLOUR_DIMENSIONS) codes[d.key] = codeFor(d.key, r);
+    return {
+      id: r.id,
+      title: r.title,
+      artist: (r.artists || []).join(', '),
+      year: r.year,
+      art: r.art,
+      coords,
+      codes,
+    };
+  });
+
+  return {
+    spaces: spaces.map(s => ({ key: s.key, label: s.label })),
+    colourBy: COLOUR_DIMENSIONS.map(d => ({ key: d.key, label: d.label, codes: legendFor(d, rows) })),
+    coverage: { mapped: songs.length, live: live.rows[0].n },
+    songs,
+  };
+}
+
+module.exports = {
+  SPACE_LABELS, spaceLabel, discoverSpaces, mapRows,
+  NOT_CODED, COLOUR_DIMENSIONS, codeFor, mapPayload,
+};
