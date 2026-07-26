@@ -266,8 +266,15 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       list.push({ key: `${k}:${code}`, label: scalarLabelMap[k]?.[code] || code })));
     ACOUSTIC_KEYS.forEach(k => filters[k].forEach(code =>
       list.push({ key: `${k}:${code}`, label: acousticLabelMap[k]?.[code] || code })));
+    // Spell the open-ended cases out rather than filling the missing bound with an ellipsis:
+    // "150–… BPM" reads as a truncated chip, not as an open upper bound.
     if (filters.tempo_from || filters.tempo_to) {
-      list.push({ key: 'tempo:', label: `${filters.tempo_from || '…'}–${filters.tempo_to || '…'} BPM` });
+      const label = filters.tempo_from && filters.tempo_to
+        ? `${filters.tempo_from}–${filters.tempo_to} BPM`
+        : filters.tempo_from
+          ? `From ${filters.tempo_from} BPM`
+          : `Up to ${filters.tempo_to} BPM`;
+      list.push({ key: 'tempo:', label });
     }
     return list;
   }, [searchQuery, filters, filterOptions, lengthLabelMap, codeLabelMap, facetLabelMaps, scalarLabelMap, acousticLabelMap]);
@@ -353,11 +360,16 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         />
         <FilterSection title="Tempo" count={(filters.tempo_from || filters.tempo_to) ? 1 : 0}>
           <div className="range-inputs">
-            <input type="number" placeholder={tr.min_bpm ? `From ${tr.min_bpm}` : 'From'}
+            {/* Bare numbers, not "From 45": these boxes are barely wide enough for the label
+                plus a number-input spinner, and a clipped hint is worse than a terse one. The
+                "to" separator already says which bound is which. */}
+            <input type="number" placeholder={tr.min_bpm ? String(tr.min_bpm) : 'From'}
+              aria-label="Tempo from (BPM)"
               value={filters.tempo_from} onChange={(e) => setScalar('tempo_from', e.target.value)}
               min={tr.min_bpm} max={tr.max_bpm} />
             <span>to</span>
-            <input type="number" placeholder={tr.max_bpm ? `To ${tr.max_bpm}` : 'To'}
+            <input type="number" placeholder={tr.max_bpm ? String(tr.max_bpm) : 'To'}
+              aria-label="Tempo to (BPM)"
               value={filters.tempo_to} onChange={(e) => setScalar('tempo_to', e.target.value)}
               min={tr.min_bpm} max={tr.max_bpm} />
           </div>
