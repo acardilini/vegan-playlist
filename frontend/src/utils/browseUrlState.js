@@ -8,6 +8,12 @@ export const SCALAR_KEYS = [
   'focus_amount', 'target_audience', 'emotions',
 ];
 
+// The five acoustic dimensions (song_lyric_analysis columns) derived from the audio —
+// filterable since 2026-07-26. tempo_bpm is a range (tempo_from/tempo_to), not an array.
+export const ACOUSTIC_KEYS = [
+  'sonic_energy', 'emotional_mood', 'rhythmic_style', 'acoustic_type', 'vocal_delivery',
+];
+
 export const EMPTY_FILTERS = {
   genres: [], parent_genres: [],
   year_from: '', year_to: '',
@@ -18,6 +24,8 @@ export const EMPTY_FILTERS = {
   facet_groups: [], facet_subdims: [],
   perspective: [], lyrical_tone: [], intensity: [], clarity: [],
   focus_amount: [], target_audience: [], emotions: [],
+  sonic_energy: [], emotional_mood: [], rhythmic_style: [], acoustic_type: [], vocal_delivery: [],
+  tempo_from: '', tempo_to: '',
   sort_by: 'year', dir: '',
 };
 
@@ -26,8 +34,9 @@ const ARRAY_KEYS = [
   'themes', 'targets', 'actions', 'tactics', 'moral_frames',
   'facet_groups', 'facet_subdims',
   ...SCALAR_KEYS,
+  ...ACOUSTIC_KEYS,
 ];
-const STRING_KEYS = ['year_from', 'year_to', 'dir'];
+const STRING_KEYS = ['year_from', 'year_to', 'dir', 'tempo_from', 'tempo_to'];
 const BOOL_KEYS = ['has_youtube', 'has_analysis', 'on_spotify'];
 const DEFAULT_SORT = 'year';
 

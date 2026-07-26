@@ -1,9 +1,10 @@
 import FilterSection from './FilterSection';
 
-// The seven scalar analysis components as collapsible checkbox groups. Options, labels,
-// counts and the description all come from the API (`scalar_facets`) — the codebook lives
-// in the backend only. Selecting several codes in one group widens (OR); selecting across
-// groups narrows (AND).
+// A set of analysis components rendered as collapsible checkbox groups. Used for both the
+// seven lyric-metadata components (`scalar_facets`) and the five acoustic dimensions
+// (`acoustic_facets`). Options, labels, counts and the description all come from the API —
+// the codebooks live in the backend only. Selecting several codes in one group widens (OR);
+// selecting across groups narrows (AND).
 function ScalarFacetGroups({ groups, selected, onToggle }) {
   const keys = Object.keys(groups || {});
   if (keys.length === 0) return null;
