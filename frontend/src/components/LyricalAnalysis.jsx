@@ -18,11 +18,14 @@ function LyricalAnalysis({ analysis }) {
   const attributes = analysis.attributes || [];
   const emotions = analysis.emotions || [];
   const summary = (analysis.summary || '').trim();
+  const acoustic = analysis.acoustic || [];
   const dims = DIMENSIONS
     .map(([key, heading]) => [key, heading, analysis[key] || []])
     .filter(([, , codes]) => codes.length > 0);
 
-  const hasStyle = attributes.length > 0 || emotions.length > 0;
+  const hasLyricStyle = attributes.length > 0 || emotions.length > 0;
+  const hasSound = acoustic.length > 0;
+  const hasStyle = hasLyricStyle || hasSound;
   const hasThemes = dims.length > 0;
   if (!hasStyle && !hasThemes && !summary) return null;
 
@@ -41,23 +44,45 @@ function LyricalAnalysis({ analysis }) {
         {hasStyle && (
           <section className="la-section">
             <h3 className="la-section-title">Style &amp; tone</h3>
-            <p className="la-section-desc">The voice, mood and intensity of the lyrics.</p>
-            <div className="la-attributes">
-              {attributes.map(a => (
-                <div key={a.label} className="la-attr">
-                  <span className="la-attr-label">{a.label}</span>
-                  <InfoTip text={a.definition}>
-                    <span className="la-attr-value">{a.value}</span>
-                  </InfoTip>
+            <p className="la-section-desc">The voice and mood of the lyrics, and how the recording sounds.</p>
+
+            {hasLyricStyle && (
+              <div className="la-group">
+                <h4 className="la-group-title">In the lyrics</h4>
+                <div className="la-attributes">
+                  {attributes.map(a => (
+                    <div key={a.label} className="la-attr">
+                      <span className="la-attr-label">{a.label}</span>
+                      <InfoTip text={a.definition}>
+                        <span className="la-attr-value">{a.value}</span>
+                      </InfoTip>
+                    </div>
+                  ))}
+                  {emotions.length > 0 && (
+                    <div className="la-attr la-attr-emotions">
+                      <span className="la-attr-label">Emotions</span>
+                      <span className="la-attr-value">{emotions.join('; ')}</span>
+                    </div>
+                  )}
                 </div>
-              ))}
-              {emotions.length > 0 && (
-                <div className="la-attr la-attr-emotions">
-                  <span className="la-attr-label">Emotions</span>
-                  <span className="la-attr-value">{emotions.join('; ')}</span>
+              </div>
+            )}
+
+            {hasSound && (
+              <div className="la-group">
+                <h4 className="la-group-title">In the sound</h4>
+                <div className="la-attributes">
+                  {acoustic.map(a => (
+                    <div key={a.label} className="la-attr">
+                      <span className="la-attr-label">{a.label}</span>
+                      <InfoTip text={a.definition}>
+                        <span className="la-attr-value">{a.value}</span>
+                      </InfoTip>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </section>
         )}
 
