@@ -10,8 +10,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Acoustic dimensions (2026-07-26) — BUILT + reviewed, NOT merged; held for the
-  curator's smoke.** Branch `session-acoustic-dimensions`, 9 commits from base `d5517e6`. The pipeline
+- **Current session:** _**Acoustic dimensions (2026-07-26) — DONE, merged to `main`, curator-smoke-confirmed.**
+  Branch `session-acoustic-dimensions`, 10 commits from base `d5517e6`. The pipeline
   added **six acoustic dimensions** to `song_lyric_analysis` (`sonic_energy`, `emotional_mood`,
   `rhythmic_style`, `acoustic_type`, `vocal_delivery`, `tempo_bpm`), derived from audio via Librosa and
   described by a new curator artifact `backend/data/acoustic_codebook.json`. Shipped: a pure
@@ -30,7 +30,11 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   it caught a **real new 500 vector** (a non-numeric `tempo_from` in a shared URL bound `NaN` to an
   `integer` column, 500ing both `/search` and `/browse-facets`; the analogous year path survives only
   because `EXTRACT(YEAR…)` is `numeric`) — fixed in `192e4d9` with a test. 0 Critical / 0 remaining
-  Important / 6 Minor → triage backlog. Prior session: **Lyrical-analysis layout rework (2026-07-25) — DONE, merged to `main` (merge
+  Important / 6 Minor → triage backlog. **The curator's smoke passed and produced two UI fixes**
+  (`d478521`): the tempo range's placeholders clipped (both bounds now render bare — `45` / `235` — with
+  `aria-label`s, since a bare number is not an accessible name), and the tempo chip's ellipsis fallback
+  made a single-ended range read as truncated (`150–… BPM`), so the three cases are now spelled out
+  (`150–235 BPM` / `From 150 BPM` / `Up to 235 BPM`). Prior session: **Lyrical-analysis layout rework (2026-07-25) — DONE, merged to `main` (merge
   `47229bb`), curator-smoke-confirmed.** Display-only song-page rework (spec `66a1b52`, plan `3b87553`;
   subagent-driven, 8 commits from `11cdbf7`, branch `session-lyrical-analysis-layout`). The **whole
   analysis surface** now reads each song's **latest coding pass** (`MAX(analyzed_at)` via a shared
@@ -140,11 +144,12 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   line-break preservation) — see the Decision Log. **A one-time reshape of 25 songs' `lyrics_highlights`
   was applied to the live DB** (`\n`→`\n\n` so separate highlights stayed separate; not a migration
   file — see the Decision Log). Merged `main`: backend **130/130**, build clean.
-- **⏳ ONE BRANCH PENDING — `session-acoustic-dimensions` is built, reviewed and smoke-tested but NOT
-  merged**, held for the curator's own smoke exactly like triage 1–5 and the lyrical-analysis rework.
-  **Smoke handoff note:** the curator's `:5000` backend is a plain `node server.js` started before this
-  branch, so it runs OLD code — it **must be restarted on this branch** to see the acoustic data (Vite on
-  `:5173` HMRs the frontend automatically; the backend does not reload).
+- **✅ NOTHING PENDING — the acoustic dimensions are merged.** `session-acoustic-dimensions` merged
+  no-ff to `main` after the curator's smoke; merged `main` re-verified backend **151/151**, lint 0 errors,
+  build clean. Branch deleted local + remote. **Two curator-known follow-ups deliberately NOT done:**
+  the pre-existing **Year range** control shares both patterns the tempo fixes addressed (clipping
+  `From 1970` placeholders and an ellipsis chip for a single-ended range) — a two-line change whenever
+  wanted; and the **acoustic derivation itself needs a pipeline re-run** (see the Decision Log).
 - **Next session:** **B4 — Explore vector map** (2D/3D scatter over `vector_space.json`, space/colour
   toggles, spotlight filter) — the last Sub-project-B build — **with the vector "You might also like"**
   (replacing the current `/similar`, which is genre + dead NULL audio-features). After it: **triage 6 —
@@ -163,8 +168,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   latest-pass source + Option C + renames + summary from `lyric_summary`) → **B4**
   (Explore vector map, with the vector "You might also like" — **executing next**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-26 _(**acoustic dimensions BUILT + reviewed, awaiting the curator's smoke** on
-  branch `session-acoustic-dimensions`, 9 commits from `d5517e6`. Six audio-derived dimensions reach the
+- **Last updated:** 2026-07-26 _(**acoustic dimensions BUILT + MERGED** to `main` after the curator's
+  smoke; branch `session-acoustic-dimensions`, 10 commits from `d5517e6`, deleted after merge. Six audio-derived dimensions reach the
   song page as an **"In the sound"** group inside Style & tone and the browse sidebar as a **"Sound"**
   filter group with a BPM range; three headings renamed. New pure `services/acousticCodebook.js` over the
   curator's `acoustic_codebook.json`. **No new SQL join** — acoustic columns ride the existing `sca`
@@ -172,8 +177,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   The acoustic data went from placeholder to real mid-session (the curator ran the derivation); spec §2/§6/§7
   carry dated corrections. Backend **151/151**; lint 0; build clean; isolated live smoke **11/11**; final
   opus review's one real finding — a `NaN` tempo bound 500ing both browse endpoints — fixed in `192e4d9`.
-  6 Minors → triage backlog. Read-only, no migrations. Next after merge: **B4 — Explore vector map.**
-  Pre-existing uncommitted `vector_space.json` + untracked `docs/examples/` still left as-is.)_
+  6 Minors → triage backlog. The curator's smoke passed and added two UI fixes (`d478521`). Read-only, no
+  migrations. **Next: B4 — Explore vector map.** Pre-existing uncommitted `vector_space.json` + untracked
+  `docs/examples/` still left as-is.)_
 - **Previously updated:** 2026-07-25 _(**lyrical-analysis layout rework BUILT + merged** to `main`, merge
   `47229bb` — subagent-driven, 8 commits from `11cdbf7`. The whole analysis surface now reads each song's
   **latest coding pass** (`MAX(analyzed_at)` via `LATEST_ANALYSIS`; `CODE_MODEL`/`SCALAR_MODEL`/
@@ -372,6 +378,22 @@ Newest first. Each entry: date · decision · why.
   `GET /api/analysis/song/:id` does not filter `status='included' AND published=true`, so an unpublished
   song's analysis is readable by id — it predates this work but now also serves acoustic data. Spec:
   `specs/2026-07-26-acoustic-dimensions-design.md`; plan: `plans/2026-07-26-acoustic-dimensions.md`.
+  **CURATOR SMOKE (same day) — passed, two UI fixes (`d478521`), then merged.** (1) The tempo range's
+  `From 45` / `To 235` placeholders clipped. The cause was **not** nesting — nested `FilterSection`s add no
+  horizontal padding, and `From 45` is *shorter* than Year range's `From 1970`; both controls were always
+  marginal at the 228px sidebar body with two inputs, a "to" separator and number-input spinner
+  reservation, and Year merely clips to a still-plausible `From 19`. Fixed by rendering the **bare bounds**
+  (`45` / `235`) plus `aria-label`s, since a bare number is not a usable accessible name. (2) The tempo
+  chip looked "cut off": its ellipsis fallback rendered a single-ended range as `150–… BPM`, and U+2026
+  reads as truncation. Fixed by spelling the three cases out — `150–235 BPM` / `From 150 BPM` /
+  `Up to 235 BPM`. **The identical two patterns in the pre-existing Year range control were deliberately
+  left alone** (out of scope; a two-line follow-up whenever wanted). **The curator's smoke also surfaced
+  that the acoustic DERIVATION is unreliable** — 235 BPM coded `FREEFORM_ATMOSPHERIC` (internally
+  contradictory), NOFX coded `SOFT_CALM_ACOUSTIC`, a folk song coded `EXPLOSIVE_HIGH_INTENSITY`, and
+  `/song/5266` carrying a single theme apparently inferred from its title. Their working hypothesis is
+  that the pipeline judges only the first ~30 seconds of each track. **This is a pipeline matter, not a
+  display one:** the site reads whatever the latest pass holds, so a corrected re-run needs **no code
+  change**, and the site is not deployed (Phase 5), so nothing wrong is publicly visible meanwhile.
 
 - **2026-07-25 — Lyrical-analysis rework BUILT + merged (`47229bb`); the "In short" summary source was
   corrected to `lyric_summary`.** Executed the 2026-07-25 plan subagent-driven (8 commits from `11cdbf7`,
@@ -1118,7 +1140,7 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
-- **2026-07-26 (Acoustic dimensions — built + reviewed, pending curator smoke)** — On
+- **2026-07-26 (Acoustic dimensions — built, reviewed, curator-smoked, merged)** — On
   `session-acoustic-dimensions`, eight plan tasks plus a fix wave, subagent-driven with a review gate per
   task. Six audio-derived dimensions reach the public site: a pure `services/acousticCodebook.js` over the
   curator's new `backend/data/acoustic_codebook.json`; `getSongAnalysis` returning an `acoustic` cell array
@@ -1135,8 +1157,9 @@ Newest first. What actually happened each session.
   500 vector** — a non-numeric `tempo_from` in a shared URL bound `NaN` to an `integer` column and crashed
   both public browse endpoints — fixed with a `Number.isFinite` guard and a test. Backend **151/151**; lint
   0 errors; build clean; isolated live smoke **11/11** on a separate backend and Vite instance, with the
-  curator's own servers verified untouched. Read-only: no migrations, no pipeline changes. **Not merged —
-  held for the curator's smoke.**
+  curator's own servers verified untouched. Read-only: no migrations, no pipeline changes. The curator's
+  own smoke passed and produced two tempo-control fixes (clipped placeholders, an ellipsis chip that read
+  as truncation). **Merged no-ff to `main`;** merged `main` re-verified 151/151, lint 0, build clean.
 
 - **2026-07-22 (Filter/analysis presentation — built + verified, pending curator smoke)** — On
   `session-presentation-polish`, six tasks from the curator's 1a+1b smoke follow-ups. New shared
