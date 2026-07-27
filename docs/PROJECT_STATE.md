@@ -10,25 +10,27 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**B4 — Explore vector map: BRAINSTORM PAUSED MID-WAY (2026-07-27), resume as the
-  first task next session.** No code written, no spec written. Full handoff — every probe finding, every
-  decision already taken, and the exact question to resume on — is in
-  [`.superpowers/sdd/b4-brainstorm-handoff.md`](../.superpowers/sdd/b4-brainstorm-handoff.md). **Read that
-  file first next session.** Headline: the curator's analysis project **landed a new `song_coordinates`
-  table mid-session** (2026-07-26 20:27) — 664 rows, one per song, all **eight** coordinate columns
-  (`semantic`/`thematic`/`audio`/`holistic` × 2D/3D, `float8[]`) 100% populated — which **supersedes
-  `frontend/public/vector_space.json` entirely** and reshapes B4 from a static-file reader into an API
-  reader. Decisions taken so far: data-driven space discovery (four spaces); read through a publish-filtered
-  API endpoint, not the static file (which leaks 24 non-live songs); **2D canvas now, 3D as its own
-  follow-up** (no new frontend dependency); a curated low-cardinality colour-by menu with absence codes as
-  neutral grey; spotlight = clickable legend + song search; **"You might also like" = two tabs, message
-  (768-dim `lyric_embedding` cosine) and sound (6D `audio_embedding`)**, with an honest "More in this genre"
-  fallback for the 693 live songs (52%) that have no embeddings. Two build hazards recorded: `audio_embedding`
-  now holds **two incompatible shapes** in one column (664 rows at 6D, 1,041 still at 1024D — every query
-  must constrain `array_length(...)=6`), and the 6D dimensions are on **very different scales**
-  (`danceability` sd 0.67 vs `acousticness` 0.02), so the sound tab needs per-dimension standardisation.
-  Also fixed in passing: `CLAUDE.md` and `README.md` documented a `DATABASE_URL` that `database/db.js`
-  never reads. Prior session: **Acoustic dimensions (2026-07-26) — DONE, merged to `main`, curator-smoke-confirmed.**
+- **Current session:** _**B4 — Explore vector map: brainstorm COMPLETED and the MAP HALF BUILT (2026-07-27).
+  Branch `session-B4-explore-map`, 8 commits from `3f479c7`, pushed. HELD FOR THE CURATOR'S SMOKE — the
+  checklist is [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md); read it before touching anything else.**
+  The paused brainstorm resumed and finished (spec `491733c`, plan `3f479c7`), then Tasks 1–7 of 12 were
+  executed subagent-driven, each per-task reviewed. **Shipped:** a new read-only `services/explore.js`
+  (catalogue-driven space discovery, publish-filtered `song_coordinates` read, colour-by legends, coverage);
+  `GET /api/analysis/explore/points` serving the whole map in **one** response so switching space, colour,
+  spotlight and search need no further request; an **Explore** nav section **after Playlists** with `Map` /
+  `Data` tabs, into which the standalone **Dashboard is retired** (`/dashboard` redirects to
+  `/explore/data`); a hand-rolled **canvas scatter** over 640 points, rescaled per space; and the full
+  interaction layer — cursor-following hover card, click-to-select filling a **docked rail card** that
+  carries the link (**clicking a dot never navigates** — curator's call, it would break exploration flow),
+  a clickable legend as spotlight, a song search whose result list is also the keyboard route into the
+  canvas, and all five view params in the URL so a map is shareable and Back restores it.
+  **Gates: backend 159/159 · lint 0 errors · build clean.** **NOT built (Tasks 8–12, deliberately after the
+  smoke because they touch the song page):** the two similarity tabs, the genre fallback, deleting
+  `vector_space.json`, the doc pass. **Two curator decisions taken mid-build:** the colour-by menu's parent
+  genre turned out to carry **13 values against a 5-slot palette**, so it folds to **top 3 + "Other
+  genres"** (the alternative was a legend that silently rendered metal and blues the same colour); and the
+  palette is the `dataviz`-validated **blue/yellow/magenta/green** — one of only **2 of 70** four-hue subsets
+  clearing every contrast gate in both light and dark. Prior session: **Acoustic dimensions (2026-07-26) — DONE, merged to `main`, curator-smoke-confirmed.**
   Branch `session-acoustic-dimensions`, 10 commits from base `d5517e6`. The pipeline
   added **six acoustic dimensions** to `song_lyric_analysis` (`sonic_energy`, `emotional_mood`,
   `rhythmic_style`, `acoustic_type`, `vocal_delivery`, `tempo_bpm`), derived from audio via Librosa and
@@ -162,19 +164,29 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   line-break preservation) — see the Decision Log. **A one-time reshape of 25 songs' `lyrics_highlights`
   was applied to the live DB** (`\n`→`\n\n` so separate highlights stayed separate; not a migration
   file — see the Decision Log). Merged `main`: backend **130/130**, build clean.
+- **⏳ ONE BRANCH PENDING — `session-B4-explore-map` (8 commits from `3f479c7`, pushed, NOT merged).**
+  The B4 map half, held for the curator's smoke ([`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md)) exactly as
+  triage 1–5 and the acoustic session were. Tasks 8–12 of the plan are unbuilt. Merged-`main` state is
+  unchanged by this branch. **Restart the `:5000` backend on the branch before smoking** — it adds a new
+  API route, and the curator's launcher does not reload.
 - **✅ NOTHING PENDING — the acoustic dimensions are merged.** `session-acoustic-dimensions` merged
   no-ff to `main` after the curator's smoke; merged `main` re-verified backend **151/151**, lint 0 errors,
   build clean. Branch deleted local + remote. **Two curator-known follow-ups deliberately NOT done:**
   the pre-existing **Year range** control shares both patterns the tempo fixes addressed (clipping
   `From 1970` placeholders and an ellipsis chip for a single-ended range) — a two-line change whenever
   wanted; and the **acoustic derivation itself needs a pipeline re-run** (see the Decision Log).
-- **Next session:** **Resume the B4 brainstorm — it is the FIRST task, before anything else** (curator's
-  instruction, 2026-07-27). Start by reading
-  [`.superpowers/sdd/b4-brainstorm-handoff.md`](../.superpowers/sdd/b4-brainstorm-handoff.md), then pick up
-  at the paused question (the Explore page **layout** — the visual-companion offer was outstanding when the
-  session ended). Six decisions are already made and must not be re-litigated; five questions remain, one of
-  which is whether the two untracked screenshots in `docs/examples/` are new triage items. B4 now reads
-  `song_coordinates` + `song_embeddings` from the DB, **not** `vector_space.json` (which B4 deletes). After
+- **Next session:** **The curator's smoke of the B4 map half comes FIRST** — work through
+  [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). **Its §0 is not optional: the curator's `:5000` backend is
+  a plain `node server.js` started before this branch existed, so it runs OLD code and lacks
+  `/api/analysis/explore/points` — `/explore` shows its error state until the backend is restarted on the
+  branch.** Vite HMRs the frontend; the backend does not reload. Once the smoke passes (or its findings are
+  fixed), resume the plan at **Task 8** — the recommendations half: the similarity registry, cosine over
+  `lyric_embedding`, z-scored Euclidean over the 6-dim `audio_embedding` (**every query must constrain
+  `array_length(audio_embedding,1)=6`** — 1,041 rows still hold the old 1024-dim vectors), the genre
+  fallback, the song-page tabs, then deleting `vector_space.json` and the doc pass. **Task 8 Step 5 is a
+  measured decision point, not a guess:** if the cosine query medians ≥500ms, stop and report rather than
+  building a cache. The 17 Minor findings recorded across Tasks 1–6 in `.superpowers/sdd/progress.md` go to
+  the final whole-branch review for triage. After
   B4: **triage 6 —
   the About analysis-explainer + AI-disclosure page** (the seven metadata-component + five
   thematic-dimension descriptions are served by the API and deliberately unused in browse — that page is
@@ -198,7 +210,17 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   (Explore vector map, with the vector "You might also like" — **brainstorm in progress, paused
   2026-07-27**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-27 _(**B4 brainstorm started and paused mid-way at the curator's request** —
+- **Last updated:** 2026-07-27 _(**B4 brainstorm finished and the MAP HALF BUILT** — branch
+  `session-B4-explore-map`, 8 commits, pushed, **held for the curator's smoke**
+  ([`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md); its §0 restarts the `:5000` backend, which otherwise
+  serves old code without the new route). Explore section with Map/Data tabs, the Dashboard retired into it,
+  a canvas scatter over 640 songs in four spaces, and the full interaction layer with the view in the URL.
+  Backend **159/159**, lint 0 errors, build clean; 0 Critical / 2 Important (both fixed) / 17 Minor carried
+  to the final review. Genre folded to top 3 + "Other genres" after a subagent found the spec's
+  low-cardinality premise false for that one dimension; palette is `dataviz`-validated for both themes with
+  one documented WARN-band pair whose safety depends on the legend's text labels. Tasks 8–12 not started —
+  they touch the song page and wait on the smoke.)_
+- **Previously updated:** 2026-07-27 _(**B4 brainstorm started and paused mid-way at the curator's request** —
   resume it as the **first task** next session from
   [`.superpowers/sdd/b4-brainstorm-handoff.md`](../.superpowers/sdd/b4-brainstorm-handoff.md). No code, no
   spec yet; six design decisions taken, five questions open. The session's substance was **read-only
@@ -235,12 +257,15 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ FIRST TASK NEXT SESSION (curator's explicit instruction, 2026-07-27): resume the paused B4
-> brainstorm.** Read [`.superpowers/sdd/b4-brainstorm-handoff.md`](../.superpowers/sdd/b4-brainstorm-handoff.md)
-> before anything else — it holds the read-only probe findings (which will not be re-derivable cheaply),
-> the six decisions already taken, and the exact question the conversation stopped on. Do **not** restart
-> the brainstorm from scratch and do **not** re-ask the settled questions. The session ended with the
-> visual-companion offer outstanding for the Explore page **layout** question.
+> **⏭ FIRST TASK NEXT SESSION: the curator's smoke of the B4 map half.** Work through
+> [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md) — **starting with its §0, which restarts the `:5000`
+> backend on the branch.** Everything on that branch has passed automated checks (backend 159/159, lint 0
+> errors, build clean, headless browser runs) and **nothing has been seen by a human**, which is precisely
+> why the build stopped at Task 7 of 12. The checklist's §4 holds the questions no test can answer: whether
+> 640 dots read as structure or mush, whether the "Other genres" fold is honest at a glance, whether the
+> coverage line reads as an honest limit or as a bug, and whether the four spaces are visibly distinct.
+> Resume the plan at **Task 8** afterwards. The brainstorm handoff
+> `.superpowers/sdd/b4-brainstorm-handoff.md` is now **superseded by the spec** and needs no reading.
 
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
    complete.** A1 merged (`145efbb`); A2 (`b5ec26f`, 2026-07-14); A3 (`8579b4e`, 2026-07-16). **A4
@@ -365,6 +390,56 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-27 (later the same day) — B4 map half BUILT; two decisions the build forced, and one design
+  error the process caught before it shipped.** The paused brainstorm was resumed and completed (four
+  further decisions: **Explore absorbs the analytics dashboard** as a `Data` tab with the standalone
+  Dashboard nav item retired and `/dashboard` redirecting; **toolbar-on-top layout** with the legend in a
+  right rail; **a point click pins the song's card in that rail rather than navigating** — the curator's
+  reasoning was that clicking through to the song page is a dead end that destroys the exploration you were
+  doing, so the card carries the link instead; and **six recommendations per tab with no similarity score**,
+  because a cosine value looks like a measurement a visitor can act on and is not one). Spec `491733c`,
+  plan `3f479c7`; Tasks 1–7 of 12 executed subagent-driven with a per-task review gate, branch
+  `session-B4-explore-map`.
+  **THE PLAN'S PREMISE WAS WRONG ABOUT ONE DIMENSION, AND THE BUILD CAUGHT IT.** Task 5's implementer
+  invoked the `dataviz` skill, then — instead of trusting the plan's claim that "the largest dimension has
+  4 codes plus Not coded" — queried the live database and found **parent genre carries 13 values**
+  (metal 357 · hardcore 239 · punk 202 · other 75 · blues 28 · folk 25 · reggae 25 · electronic 17 ·
+  rock 11 · hip-hop 11 · pop 8 · soul 2 · jazz 2, plus 331 with no genre). The palette has five slots and
+  the plan's own `colourScale` assigns with `cats[i % cats.length]`, so it would have **silently cycled** —
+  rendering metal and blues in the same colour on a legend where metal is a third of the catalogue. This
+  was my error in the spec, not the implementer's: §3 rejected the seven scalar components for exactly this
+  reason (`tone` has 16 codes) and then included genre without checking it. **Curator chose to fold genre
+  to its top 3 plus a single "Other genres" bucket** (rejecting both dropping Genre from the menu and
+  shipping the cycling as a documented limitation) — 4 categorical entries plus the grey bucket, exactly the
+  palette budget. Implemented server-side in `services/explore.js` (Task 4b, inserted): the literal `other`
+  parent always folds and is excluded from the top-3 ranking, since `getParentGenre` returns it for anything
+  unrecognised and a bucket called "other" beside one called "Other genres" is indefensible; `NOT_CODED`
+  is deliberately **not** merged into it, because "no genre for this song" and "genre outside the top three"
+  are different claims. The fold is computed **once** and the same closure passed to both the legend builder
+  and the per-song code map — the invariant being protected is that a point can never carry a bucket its own
+  legend does not explain.
+  **The palette is `dataviz`-validated blue/yellow/magenta/green** — one of only **2 of 70** possible
+  four-hue subsets clearing every hard gate in both light and dark under all-pairs testing. **One accepted
+  shortfall, recorded because it is load-bearing:** in dark mode the green/yellow pair sits in the
+  validator's WARN band for one form of colour blindness. That is safe **only because every legend swatch
+  renders a text label beside it** — a future icon-only or label-optional legend would silently remove the
+  compensating control. A second finding was fixed rather than accepted: the fifth palette slot was wired
+  and reachable but validated only for four colours, guarded by nothing but a CSS comment; no fifth hue
+  clears both modes, so the fallback now carries a `VALIDATED_CATS` constant and a `console.warn` naming the
+  dimension and the overflowing code — chosen over dropping to four slots, which would have made the modulo
+  reuse slot 1 and silently duplicate a colour instead.
+  **Corrections to the spec, to be applied in Task 12:** the endpoint payload measures **~393KB**, not the
+  §4.1 estimate of ~250KB (still one request, still far under the 1MB stop threshold that was set as a
+  design condition, so no design change). Also verified and recorded: the two untracked screenshots in
+  `docs/examples/` are **already-fixed issues, not new triage items** — the B3 theme-tree centring bug
+  (fixed at `components.css:875`) and the filter-chip location (`FilterChips` now renders at the top of
+  `.browse-results`, `SearchAndFilter.jsx:506`) — and the watch-out claiming `analytics/vegan-themes`
+  reports 0 was **stale**: that route reads `analysis.themeCounts` and reflects the real coding.
+  **Verified:** backend **159/159**; lint 0 errors (6 pre-existing warnings); build clean; every task
+  per-task reviewed (0 Critical, 2 Important both fixed, 17 Minor carried to the final whole-branch review).
+  Read-only — no migrations, no writes to any analysis table. **Held for the curator's smoke before Tasks
+  8–12**, which touch the song page.
 
 - **2026-07-27 — B4 is redesigned around the new `song_coordinates` table, and reads it through a
   publish-filtered API rather than a public static file. (Brainstorm paused mid-way; six decisions taken.)**
@@ -1243,6 +1318,22 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-07-27 (B4 — brainstorm finished, map half built; branch pushed, held for smoke)** — Resumed the
+  paused brainstorm, finished it (spec `491733c`), wrote the 12-task plan (`3f479c7`), and executed Tasks
+  1–7 subagent-driven on `session-B4-explore-map`, each gated by its own review. The site gains an
+  **Explore** section after Playlists with `Map` and `Data` tabs — the standalone Dashboard retiring into
+  the second one, `/dashboard` redirecting — where the Map tab is a hand-rolled canvas scatter of 640 songs
+  over four projected spaces, served by a single new read-only endpoint. Interaction: hover preview,
+  click-to-pin a rail card that carries the link (**a dot click never navigates**), legend-as-spotlight,
+  song search doubling as the keyboard route into the canvas, and the whole view in the URL. Two things
+  worth remembering: a subagent **caught a wrong premise in my own spec** by checking the live data instead
+  of trusting it — parent genre has 13 values against a 5-slot palette, which would have shipped a legend
+  that coloured metal and blues identically — and the curator chose to fold it to top 3 + "Other genres";
+  and the palette that emerged is one of only 2 of 70 four-hue sets passing contrast validation in both
+  themes. Backend 159/159, lint 0 errors, build clean. Tasks 8–12 (the song page's two similarity tabs, the
+  genre fallback, deleting `vector_space.json`, docs) deliberately **not** started until the curator has
+  smoked the map — checklist logged at [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md) since they were away
+  from the machine.
 - **2026-07-27 (B4 brainstorm — started, paused mid-way; no code)** — Opened the B4 brainstorm and spent the
   session on read-only discovery, which is the whole value of it: the 2026-07-17 spec's data premises no
   longer hold. The working-tree `vector_space.json` had a different shape than specced (no `themes`, no audio

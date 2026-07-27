@@ -285,9 +285,13 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     whole-branch reviews; curator-confirmed all four rounds. Specs/plans under `superpowers/`
     (`2026-07-19-B3-browse-search*`, `2026-07-19-B3-rework-*`, `2026-07-20-B3-facet-selection-*`,
     `2026-07-20-B3-theme-tree-restyle-*`).
-  - ◐ **B4 — Explore vector map** _(brainstorm started 2026-07-27 and **paused mid-way** at the curator's
-    request; resume as the first task next session from `.superpowers/sdd/b4-brainstorm-handoff.md`. No code,
-    no spec yet.)_ **Reshaped by data that landed mid-brainstorm:** the analysis project created a
+  - ◐ **B4 — Explore vector map** _(brainstorm **completed** 2026-07-27; spec `491733c`, plan `3f479c7`.
+    **Map half BUILT and per-task reviewed** on branch `session-B4-explore-map` — 8 commits, backend
+    159/159, lint 0 errors, build clean — and **held for the curator's smoke**: see
+    [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). The recommendations half (Tasks 8–12: the two
+    similarity tabs, the genre fallback, deleting `vector_space.json`, docs) is **not started**, deliberately
+    sequenced after the smoke because it touches the song page.)_ **Reshaped by data that landed
+    mid-brainstorm:** the analysis project created a
     **`song_coordinates`** table (664 rows, one per song, eight `float8[]` columns — semantic/thematic/
     **audio**/**holistic** × 2D/3D), so B4 reads the **DB through a publish-filtered API endpoint** instead
     of `frontend/public/vector_space.json`, which is superseded and gets deleted (it leaked 24 non-live
