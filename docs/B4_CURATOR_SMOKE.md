@@ -1,7 +1,9 @@
-# B4 — Explore map: curator smoke checklist
+# B4 — Explore map + similar songs: curator smoke checklist
 
-**Branch:** `session-B4-explore-map` (8 commits from `3f479c7`) · **Status:** map half built and reviewed,
-**held for this smoke before the second half is built**.
+**Branch:** `session-B4-explore-map` · **Status:** **ALL 12 tasks built.** The map half (Tasks 1–7) was
+finished first and held for this smoke; you were away from a computer, so you asked for the second half
+(Tasks 8–12 — the song page's similarity tabs) to be built too. Both halves are now waiting on you, so
+this checklist covers both: **§1–§4 are the map, §6 is the song page.**
 Plan: [`superpowers/plans/2026-07-27-B4-explore-vector-map.md`](./superpowers/plans/2026-07-27-B4-explore-vector-map.md) ·
 Spec: [`superpowers/specs/2026-07-27-B4-explore-vector-map-design.md`](./superpowers/specs/2026-07-27-B4-explore-vector-map-design.md)
 
@@ -11,17 +13,21 @@ under §4 are the ones no test can answer.
 
 ---
 
-## 0. Before you start — RESTART THE BACKEND
+## 0. Before you start — no restart needed (this instruction was wrong)
 
-Your `:5000` backend is a plain `node server.js` started **before this branch existed**, so it is running
-old code and does not have `/api/analysis/explore/points`. **`/explore` will show its error state until you
-restart it.** Vite on `:5173` picks up frontend changes by itself; the backend does **not** reload.
+**Corrected 2026-07-27.** This section used to tell you to restart your backend. That was based on a
+stale note claiming your `:5000` was a plain `node server.js`. It is not — it is **nodemon**
+(`npm run dev`), and it was verified live to be picking up this branch's brand-new routes within seconds
+of them being written. **Just make sure you are on the branch**; nodemon reloads the backend and Vite
+reloads the frontend.
 
 ```
 git checkout session-B4-explore-map      # if not already on it
-# stop your :5000 backend, then:
-cd backend && npm run dev
 ```
+
+_Minor housekeeping, not a blocker: there are currently **two** nodemon processes running against this
+repo (PIDs 20344 and 34528). Only one owns `:5000`. If you see odd double-restarts in your terminal, that
+is why — closing the stray one is harmless._
 
 ---
 
@@ -83,19 +89,50 @@ These are the reason this checklist exists. Please answer them even if everythin
 
 ## 5. If something is wrong
 
-Note which numbered item, and what you saw versus what the list says. Anything in §4 is a design answer,
-not a bug — say what you would rather have.
+Note which numbered item, and what you saw versus what the list says. Anything in §4 or §6.4 is a design
+answer, not a bug — say what you would rather have.
 
 ---
 
-## What has NOT been built yet (Tasks 8–12)
+## 6. The song page — "You might also like" (Tasks 8–11, built 2026-07-27)
 
-Deliberately stopped before these, because they touch the song page:
+The old block picked songs by genre-or-similar-energy with a `RANDOM()` tiebreak. Half that query was
+dead: `songs.energy` is NULL across the whole catalogue, so the audio half never matched anything. It is
+replaced by two embedding tabs, with an honest fallback for songs that have no embeddings.
 
-- The two similarity tabs on the song page — **Similar message** (cosine over the 768-dim lyric embedding)
-  and **Similar sound** (z-scored distance over the 6-dim audio embedding).
-- The **"More in this genre"** fallback for the **693 of 1,333 live songs (52%)** that have no embeddings.
-- Deleting the superseded `frontend/public/vector_space.json`.
-- The documentation pass (`CLAUDE.md`, `PRD.md` §11, and correcting the spec's payload-size estimate).
+**Three songs to open — these are the three coverage cases, verified working headlessly:**
 
-Nothing on the song page has changed yet, so it is unaffected by this branch.
+- [ ] **`/song/1`** (_Some of My Best Friends Are Meat Eaters_) — **both embeddings.** Two tabs,
+      **Similar message** and **Similar sound**, 6 cards each. Switching tabs is instant and makes **no
+      network request** (both sets arrive in one response).
+- [ ] **`/song/5266`** (_You Feed My Hate_) — **lyric embedding only.** Exactly **one** tab, no
+      "More in this genre" line. A tab is omitted rather than shown empty.
+- [ ] **`/song/4`** (_Show Some Heart (Go Vegan)_) — **no embeddings.** No tabs; the line
+      **"More in this genre"** above a normal 6-card grid.
+- [ ] Cards look **exactly as they did before** and still navigate on click — the markup is unchanged.
+
+### 6.4 Judgement calls on the song page
+
+- [ ] **Are the recommendations any good?** This is the whole question. "Similar message" is cosine over
+      the 768-dim lyric embedding; "Similar sound" is distance over the 6-dim audio embedding **after
+      per-dimension standardisation**. Do the two tabs give **visibly different** answers, and does each
+      one earn its name?
+- [ ] **Bear in mind you already found the acoustic derivation unreliable** (235 BPM coded
+      `FREEFORM_ATMOSPHERIC`, NOFX coded `SOFT_CALM_ACOUSTIC`; your hypothesis was that the pipeline
+      judges only the first ~30 seconds). **Similar sound reads the same underlying audio features**, so
+      if that tab looks wrong, the likely cause is upstream in the pipeline, not in this code — a
+      corrected re-run needs no code change here.
+- [ ] **Is "More in this genre" honest enough**, or does it read as a consolation prize? It fires for
+      **692 of 1,333 live songs (52%)** — not an edge case.
+- [ ] **No similarity score is shown anywhere.** That was your call (a cosine value looks like a
+      measurement a visitor can act on, and is not one). Still right?
+
+---
+
+## What is left
+
+Nothing in the plan — all 12 tasks are built. Remaining work is decided by this smoke.
+
+Deliberate follow-ups, not omissions: **3D is its own future session** (2D needs no charting dependency;
+3D adds ~150KB of WebGL plus raycast hit-testing), and the **acoustic derivation re-run** is a pipeline
+matter you already know about.

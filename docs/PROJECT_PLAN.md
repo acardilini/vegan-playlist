@@ -286,11 +286,15 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     (`2026-07-19-B3-browse-search*`, `2026-07-19-B3-rework-*`, `2026-07-20-B3-facet-selection-*`,
     `2026-07-20-B3-theme-tree-restyle-*`).
   - ◐ **B4 — Explore vector map** _(brainstorm **completed** 2026-07-27; spec `491733c`, plan `3f479c7`.
-    **Map half BUILT and per-task reviewed** on branch `session-B4-explore-map` — 8 commits, backend
-    159/159, lint 0 errors, build clean — and **held for the curator's smoke**: see
-    [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). The recommendations half (Tasks 8–12: the two
-    similarity tabs, the genre fallback, deleting `vector_space.json`, docs) is **not started**, deliberately
-    sequenced after the smoke because it touches the song page.)_ **Reshaped by data that landed
+    **ALL 12 TASKS BUILT** on branch `session-B4-explore-map` — 13 commits, backend **162/162**, lint 0
+    errors, build clean, headless smoke **15/15** — and **held for the curator's smoke of both halves**:
+    see [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). The map half (1–7) was per-task reviewed and
+    stopped for that smoke; the curator was away from a computer and asked for the recommendations half
+    (8–12: similarity registry, 768-dim cosine, z-scored 6-dim sound distance, genre fallback, song-page
+    tabs, deleting `vector_space.json`, docs) to proceed meanwhile. **3D remains a deliberate follow-up
+    session, not an omission** — 2D needs no charting dependency, where 3D adds ~150KB of WebGL plus
+    raycast hit-testing and roughly doubles the surface to test. Marked ☑ once the smoke passes and it
+    merges.)_ **Reshaped by data that landed
     mid-brainstorm:** the analysis project created a
     **`song_coordinates`** table (664 rows, one per song, eight `float8[]` columns — semantic/thematic/
     **audio**/**holistic** × 2D/3D), so B4 reads the **DB through a publish-filtered API endpoint** instead

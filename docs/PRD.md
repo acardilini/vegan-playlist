@@ -304,7 +304,9 @@ keep/rebuild/drop/defer decisions are recorded in
 | `/playlists` | Playlists directory | ✅ | Curated playlist listing (browse-only — see 11.2) |
 | `/playlist/:playlistId` | Playlist Detail | ✅ | Playlist songs and metadata (browse-only) |
 | `/submit` | Submit a Song | ✅ | Community suggestion form |
-| `/dashboard` | Data Dashboard | ✅ | Visualisations (Chart.js) |
+| `/explore` | Explore → Map | ✅ | 2D canvas scatter of the catalogue in four projected spaces (B4) |
+| `/explore/data` | Explore → Data | ✅ | Visualisations (Chart.js) — the former standalone Dashboard |
+| `/dashboard` | _(redirect)_ | ↪ | Redirects to `/explore/data`; the Dashboard nav item is retired (B4) |
 | `/about` | About | ✅ | Methodology / coding-system explanation |
 | `/admin` | Admin Interface | ✅ | Private content-management console (no auth yet — see 11.5) |
 
@@ -323,6 +325,24 @@ keep/rebuild/drop/defer decisions are recorded in
   "Speaking to" rename + latest-pass source, 2026-07-25.)_
 - **Browse state in the URL:** filters, sort, direction, search and page are all query params, with a
   sessionStorage layer so a param-less return to `/` restores the last browse. ✅ _(Triage 2.)_
+- **Explore map:** a hand-rolled **canvas scatter** (no charting dependency) over the **640 live songs the
+  analysis has mapped**, in four projected spaces — Semantic · Thematic · Sound · Holistic — rescaled per
+  space. Colour-by is a curated low-cardinality menu (five acoustic dimensions, Focus, and parent genre
+  **folded to top 3 + "Other genres"** against a 5-slot palette), with absence codes drawn as neutral grey
+  "Not coded". Hover card follows the cursor; **clicking a point pins the song's card in the rail rather
+  than navigating** (the card carries the link — navigating on click would destroy the exploration in
+  progress); the legend doubles as a multi-select spotlight; a song search dims non-matches and doubles as
+  the keyboard route into the canvas. **All five view params live in the URL**, so a view is shareable and
+  Back restores it. The whole map arrives in **one** response (~393KB), so no interaction refetches. The
+  page states its own coverage: *"Showing 640 of 1,333 songs."* ✅ _(B4, 2026-07-27.)_
+- **"You might also like" — two embedding tabs:** **Similar message** (cosine over the full 768-dim
+  `lyric_embedding`) and **Similar sound** (Euclidean over the 6-dim `audio_embedding` **after
+  per-dimension z-scoring** — without it the tab would be a danceability ranking). Both sets arrive in one
+  response, so switching tabs makes no request. A tab is **omitted** when its embedding is missing, and
+  **no similarity score is shown** — a cosine value looks like a measurement a visitor can act on and is
+  not one. For the **692 of 1,333 live songs (52%) with no embeddings**, an honest **"More in this genre"**
+  panel replaces the tabs. Supersedes the old genre-or-energy query, half of which was dead
+  (`songs.energy` is NULL catalogue-wide). ✅ _(B4, 2026-07-27.)_
 - **Sidebar presentation:** every filter group is a uniform collapsible section (only Genre & style
   open by default), with the five theme dimensions and seven metadata components nested as the same
   visual unit; visible help is usage-only (caveats, what the options mean). The definitional copy for
@@ -372,12 +392,15 @@ keep/rebuild/drop/defer decisions are recorded in
   flag removed songs. ✅ (to be re-framed under the truth-source model — see Overview).
 
 ### 11.4 Backend API Surface (mounted routers)
-`/api/spotify` (songs, artists, search, filter-options, similar, db-stats) ·
+Seven routers: `/api/spotify` (songs, artists, search, filter-options, browse-facets, db-stats) ·
 `/api/admin` (song/artist/playlist management, categorisation, sync, cleanup) ·
-`/api/admin_simple` (experimental duplicate of admin — to be consolidated) ·
 `/api/playlists` (user playlist CRUD) · `/api/youtube` (video CRUD, search, extract-id) ·
-`/api/lyrics` (status, stats, missing) · `/api/submissions` (submit, admin queue, stats) ·
-`/api/analytics` (dataset visualisation data).
+`/api/submissions` (submit, admin queue, stats) · `/api/analytics` (dataset visualisation data) ·
+**`/api/analysis`** (facets, per-song analysis, **`explore/points`** = the whole map in one response,
+**`songs/:id/similar`** = both similarity tabs + the genre fallback).
+
+_Corrected 2026-07-27: `/api/admin_simple` and `/api/lyrics` were deleted in Session 2.2 and are no longer
+mounted; **`similar` moved from `/api/spotify` to `/api/analysis`** in B4 when it became embedding-based._
 
 ### 11.5 Data Model (implemented tables)
 `artists`, `albums`, `songs` (curatorial fields `your_review`, `audio_review_url`,

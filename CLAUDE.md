@@ -91,6 +91,22 @@ Run before ending every working session:
   (exclude-self sidebar counts) and `tempoRange`; `getSongAnalysis` returns an `acoustic` array in the
   **same cell shape as `attributes`**, which is what lets the song page render both with one loop.
   Acoustic filters reuse the existing `sca` latest-analysis join — **they add no new SQL join**
+- **services/explore.js**: the read-only consumer of `song_coordinates` + `song_embeddings` behind the
+  Explore map and the song page's "You might also like". Two halves. **The map:** space discovery is
+  *data-driven* — it reads whichever `*_2d` columns the catalogue holds, so a space the pipeline adds
+  appears with no code change — and `mapPayload` serves spaces, colour-by legends, coverage and all 640
+  points in **one** response (~393KB), which is why switching space/colour/spotlight/search costs no
+  further request. Colour-by is a curated low-cardinality menu; **parent genre folds to the top 3 +
+  "Other genres"** because it carries 13 values against a 5-slot palette, and the fold is computed **once**
+  and shared by the legend builder and the per-song code map so a point can never carry a bucket its own
+  legend doesn't explain. **Similarity is a REGISTRY, not discovery** (`SIMILARITY`) — coordinates are
+  interchangeable, but each embedding needs a metric and a normalisation judgement code must not guess:
+  `message` is cosine over the full 768-dim `lyric_embedding`, `sound` is Euclidean **after per-dimension
+  z-scoring** (without it the tab is a danceability ranking in disguise — sd 0.66 vs acousticness' 0.023).
+  **Every query touching `audio_embedding` MUST carry `array_length(audio_embedding,1)=6`** — the column
+  still holds 1,041 old 1024-dim rows. A tab is omitted when its embedding is missing; only when no tab
+  has anything does the honest **"More in this genre"** fallback fire (692 of 1,333 live songs, 52%, have
+  no embeddings). Read-only — never writes to any analysis table
 - **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
 - **scripts/**: 4 documented maintenance scripts (see `backend/scripts/README.md`);
   the ~37 one-off scripts were deleted in Session 2.3 (git history preserves them)
@@ -102,10 +118,16 @@ Run before ending every working session:
 ### Frontend Structure (`frontend/`)
 - **src/App.jsx** (~50 lines): router shell only — routes, header/nav, footer
 - **src/pages/**: one file per route — HomePage, SongDetailPage, PlaylistsPage,
-  PlaylistDetailPage, AboutPage. Single-consumer helpers stay local to their page file
-- **src/components/**: 38 components (23 public + 15 admin) — public (SearchAndFilter,
+  PlaylistDetailPage, AboutPage, **ExplorePage** (a tab shell over `/explore` = Map and
+  `/explore/data` = the analytics dashboard; **the standalone Dashboard nav item is retired and
+  `/dashboard` redirects to `/explore/data`**). Single-consumer helpers stay local to their page file
+- **src/components/**: 42 components (27 public + 15 admin) — public (SearchAndFilter,
   ArtistSearchResults, ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge,
-  YouTubeEmbed, plus the shared NavigationMenu, SongCard, PaginationControls) and admin
+  YouTubeEmbed, **SimilarSongs** (the song page's two embedding tabs + genre fallback), plus
+  **`components/explore/`** — `ExploreMap` (hand-rolled canvas scatter, **no charting
+  dependency**), `SelectedSongCard`, `useExplorePoints`, `palette.js` (categorical colours live in
+  CSS as `--explore-cat-*` so theming stays in the token layer; JS only reads them) — plus the
+  shared NavigationMenu, SongCard, PaginationControls) and admin
   (AdminInterface is a
   login + tab-nav shell over ManageSongsTab, ManagePlaylistsTab and the 8 other tab
   components; `CategorizationFields` is the one categorisation form shared by Manage
@@ -159,7 +181,12 @@ Run before ending every working session:
   `song_coordinates` (one row per song; eight `float8[]` UMAP projections —
   `{semantic,thematic,audio,holistic}_{2d,3d}`). Only ~640 live songs have coordinates/embeddings, and
   some rows belong to unpublished songs, so **public reads must still filter
-  `status='included' AND published=true`**. No `pgvector` is installed
+  `status='included' AND published=true`**. No `pgvector` is installed — similarity is a multi-array
+  `unnest` cosine/distance in SQL (measured median **224ms**, so no cache was built). All three tables are
+  read through `services/explore.js` via `GET /api/analysis/explore/points` and
+  `GET /api/analysis/songs/:id/similar`. **`frontend/public/vector_space.json` is deleted** (B4): it was
+  superseded by `song_coordinates` and was a real publication-staging leak — being a static asset it
+  bypassed the publish filter every API route enforces, exposing 22 unpublished + 2 pending songs
 - **Categorization**: Flexible TEXT[] arrays for vegan focus, advocacy styles, animal categories
 - **User features**: playlists, playlist_songs for user-generated content
 - **Spotify integration**: Stores spotify_id, URLs, and metadata — enrichment only,

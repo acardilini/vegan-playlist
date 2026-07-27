@@ -164,36 +164,32 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   line-break preservation) — see the Decision Log. **A one-time reshape of 25 songs' `lyrics_highlights`
   was applied to the live DB** (`\n`→`\n\n` so separate highlights stayed separate; not a migration
   file — see the Decision Log). Merged `main`: backend **130/130**, build clean.
-- **⏳ ONE BRANCH PENDING — `session-B4-explore-map` (8 commits from `3f479c7`, pushed, NOT merged).**
-  The B4 map half, held for the curator's smoke ([`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md)) exactly as
-  triage 1–5 and the acoustic session were. Tasks 8–12 of the plan are unbuilt. Merged-`main` state is
-  unchanged by this branch. **Restart the `:5000` backend on the branch before smoking** — it adds a new
-  API route, and the curator's launcher does not reload.
+- **⏳ ONE BRANCH PENDING — `session-B4-explore-map` (13 commits from `3f479c7`, NOT merged).**
+  **All 12 plan tasks are now built** — the map half (1–7) plus the recommendations half (8–12). Held for
+  the curator's smoke ([`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md)) exactly as triage 1–5 and the
+  acoustic session were; the checklist now covers **both** halves (§1–§4 map, §6 song page). Merged-`main`
+  state is unchanged by this branch. **The "restart the `:5000` backend" instruction has been removed as
+  incorrect** — that backend is **nodemon** (`npm run dev`), verified live picking up newly-written routes
+  within seconds, not the plain `node server.js` an earlier note claimed.
 - **✅ NOTHING PENDING — the acoustic dimensions are merged.** `session-acoustic-dimensions` merged
   no-ff to `main` after the curator's smoke; merged `main` re-verified backend **151/151**, lint 0 errors,
   build clean. Branch deleted local + remote. **Two curator-known follow-ups deliberately NOT done:**
   the pre-existing **Year range** control shares both patterns the tempo fixes addressed (clipping
   `From 1970` placeholders and an ellipsis chip for a single-ended range) — a two-line change whenever
   wanted; and the **acoustic derivation itself needs a pipeline re-run** (see the Decision Log).
-- **Next session:** **The curator's smoke of the B4 map half comes FIRST** — work through
-  [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). **Its §0 is not optional: the curator's `:5000` backend is
-  a plain `node server.js` started before this branch existed, so it runs OLD code and lacks
-  `/api/analysis/explore/points` — `/explore` shows its error state until the backend is restarted on the
-  branch.** Vite HMRs the frontend; the backend does not reload. Once the smoke passes (or its findings are
-  fixed), resume the plan at **Task 8** — the recommendations half: the similarity registry, cosine over
-  `lyric_embedding`, z-scored Euclidean over the 6-dim `audio_embedding` (**every query must constrain
-  `array_length(audio_embedding,1)=6`** — 1,041 rows still hold the old 1024-dim vectors), the genre
-  fallback, the song-page tabs, then deleting `vector_space.json` and the doc pass. **Task 8 Step 5 is a
-  measured decision point, not a guess:** if the cosine query medians ≥500ms, stop and report rather than
-  building a cache. The 17 Minor findings recorded across Tasks 1–6 in `.superpowers/sdd/progress.md` go to
-  the final whole-branch review for triage. After
-  B4: **triage 6 —
+- **Next session:** **The curator's smoke of the WHOLE B4 branch comes FIRST** — work through
+  [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md), which now covers the map (§1–§4) **and** the song page
+  (§6). No backend restart is needed (see above). The build is complete: **all 12 tasks**, gates green
+  (backend **162/162**, lint 0 errors, build clean, headless smoke **15/15**). After the smoke, the
+  sequence is: fix whatever it finds → **final whole-branch opus review**, into which the **17 Minor
+  findings from Tasks 1–6** (`.superpowers/sdd/progress.md`) are carried for triage → merge. Then
+  **triage 6 —
   the About analysis-explainer + AI-disclosure page** (the seven metadata-component + five
   thematic-dimension descriptions are served by the API and deliberately unused in browse — that page is
-  where they land; now with the renamed **"Speaking to"** / **"Subjects"** labels). Note there is a
-  pre-existing uncommitted `frontend/public/vector_space.json` + untracked `docs/examples/` in the working
-  tree, still left as-is per the curator. The JSON is now **superseded** by `song_coordinates` and is
-  scheduled for deletion in B4. The two `docs/examples/` screenshots were **opened 2026-07-27 and are NOT
+  where they land; now with the renamed **"Speaking to"** / **"Subjects"** labels). **`vector_space.json`
+  is now DELETED** (Task 12) — superseded by `song_coordinates`, and a real publication-staging leak while
+  it lived. The untracked `docs/examples/` remains in the working tree, left as-is per the curator. Its two
+  screenshots were **opened 2026-07-27 and are NOT
   new triage items** — both are already fixed: `Themes Filter Dimension Text Missalignment.png` is the B3
   theme-tree centring bug, fixed at `components.css:875` (a `<button>` defaults to `text-align:center`),
   and `Filter Chips Location.png` circles the strip above the results grid, which is exactly where
@@ -210,7 +206,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   (Explore vector map, with the vector "You might also like" — **brainstorm in progress, paused
   2026-07-27**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-27 _(**B4 brainstorm finished and the MAP HALF BUILT** — branch
+- **Last updated:** 2026-07-27 _(**B4 COMPLETE — all 12 tasks built**; branch `session-B4-explore-map`,
+  13 commits, held for the curator's smoke of **both** halves. Tasks 8–12 added the similarity registry,
+  768-dim cosine, z-scored 6-dim sound distance, the "More in this genre" fallback,
+  `GET /api/analysis/songs/:id/similar`, the song page's `SimilarSongs`, and deleted both the dead
+  `/api/spotify/songs/:id/similar` and `frontend/public/vector_space.json`. **The plan's sound-metric test
+  was passing for the wrong reason and was rebuilt to actually flip between raw and z-scored ranking**,
+  proven by deleting the z-score and watching it fail. Cosine measured **224ms** median → no cache, per the
+  plan's decision rule. `B4_CURATOR_SMOKE.md` §0's "restart the backend" step was **wrong and is removed** —
+  that backend is nodemon. Backend **162/162**, lint 0, build clean, headless smoke **15/15**.)_
+- **Previously updated:** 2026-07-27 _(**B4 brainstorm finished and the MAP HALF BUILT** — branch
   `session-B4-explore-map`, 8 commits, pushed, **held for the curator's smoke**
   ([`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md); its §0 restarts the `:5000` backend, which otherwise
   serves old code without the new route). Explore section with Map/Data tabs, the Dashboard retired into it,
@@ -390,6 +395,51 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-07-27 (third entry, same day) — B4 COMPLETED: Tasks 8–12 built while the curator was away from a
+  computer. The similarity half, and a test that was passing for the wrong reason.** The map half had been
+  deliberately held for the curator's smoke; they were away and asked for the next task to proceed. Judged
+  low-risk and said so before starting: smoke findings would land on the map (wording, dot size, palette)
+  while Tasks 8–12 are the song page and docs, so rework overlap is near-nil. **Shipped:** a similarity
+  **registry** (`SIMILARITY`) — deliberately not discovery, because coordinates are interchangeable but each
+  embedding needs a metric and a normalisation judgement code must not guess; **cosine** over the full
+  768-dim `lyric_embedding`, matching candidates on the *target's own* dimensionality so a mixed-width
+  column can never compare vectors of different lengths; **z-scored Euclidean** over the 6-dim
+  `audio_embedding`; `similarFor` returning both tabs **and** the fallback in one response (so switching
+  tabs costs no request); the **"More in this genre"** fallback; `GET /api/analysis/songs/:id/similar`
+  (declared above `/song/:id`, with the `Number.isFinite` guard the acoustic session's one real defect
+  taught); deletion of the old `/api/spotify/songs/:id/similar`, **half of which was dead** —
+  `songs.energy` is NULL catalogue-wide so its audio branch never matched; the song page's `SimilarSongs`;
+  and the deletion of `frontend/public/vector_space.json`.
+  **THE PLAN'S OWN "SECOND MOST LIKELY DEFECT" WAS NOT ACTUALLY GUARDED.** The plan named "the sound tab
+  silently becoming a danceability ranking" as the second most likely failure and asserted its fixtures
+  were built so a missing z-score changes the ranking. **They were not.** As specified, the "near" song was
+  closer under *both* metrics (raw 0.001 vs 0.25; z-scored 0.044 vs 0.377), so the test passed with the
+  z-scoring deleted, and its comment described the effect backwards. Rebuilt from the measured live
+  spreads (danceability sd **0.662**, acousticness sd **0.023** — the documented ~30×) so the ranking
+  **flips** between metrics: 0.30 on the big-sd dimension vs 0.05 on the small-sd one is raw 0.30 > 0.05
+  but z-scored 0.45 < 2.22. **Verified by temporarily deleting the z-score and confirming the test fails**,
+  then restoring it. A test that cannot fail is not a guard, and this one protects the headline claim of a
+  user-facing feature.
+  **The measured decision point went the good way:** Task 8 Step 5 required stopping and reporting rather
+  than silently building a cache if the cosine query medianed ≥500ms. Measured **224ms** over 5 runs on a
+  real 768-dim song (240–260ms for a full two-tab `similarFor`), so **no cache was built** — that remains
+  the curator's decision if it is ever needed.
+  **A stale instruction was corrected rather than followed:** `B4_CURATOR_SMOKE.md` §0 told the curator to
+  restart their `:5000` backend because it was "a plain `node server.js`". It is **nodemon** — proven by
+  the route written minutes earlier already answering on `:5000`, and by the process tree (PID 70392 is a
+  nodemon child; two nodemon instances, 20344/34528, are running against the repo). §0 now says no restart
+  is needed. **Two other doc corrections:** the no-embedding population is **692** of 1,333, not the
+  spec's 693; and the payload is ~393KB, not the §4.1 estimate of ~250KB (recorded earlier, applied here).
+  **One data fact worth knowing before the smoke:** there is **no song with an audio embedding but no
+  lyric embedding**, so the single-tab case only ever occurs as message-only. The sound-only branch is
+  correct but unexercised by today's data.
+  **Verified:** backend **162/162** (159 + 3 new); lint 0 errors (6 pre-existing warnings); build clean;
+  isolated puppeteer smoke **15/15** on ports 5001/5199 with the curator's 5000/5173 left untouched and
+  both isolated servers killed by PID — all three coverage cases render, the tab switch fires **0** network
+  requests and genuinely changes the results, the map is unregressed and `/dashboard` still redirects.
+  Read-only — no migrations, no writes to any analysis table. **Held for the curator's smoke before merge**,
+  as every session since triage 1 has been.
 
 - **2026-07-27 (later the same day) — B4 map half BUILT; two decisions the build forced, and one design
   error the process caught before it shipped.** The paused brainstorm was resumed and completed (four
