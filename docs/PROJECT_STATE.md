@@ -164,7 +164,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   line-break preservation) — see the Decision Log. **A one-time reshape of 25 songs' `lyrics_highlights`
   was applied to the live DB** (`\n`→`\n\n` so separate highlights stayed separate; not a migration
   file — see the Decision Log). Merged `main`: backend **130/130**, build clean.
-- **⏳ ONE BRANCH PENDING — `session-B4-explore-map` (13 commits from `3f479c7`, NOT merged).**
+- **⏳ ONE BRANCH PENDING — `session-B4-explore-map` (15 commits from `3f479c7`, NOT merged).**
   **All 12 plan tasks are now built** — the map half (1–7) plus the recommendations half (8–12). Held for
   the curator's smoke ([`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md)) exactly as triage 1–5 and the
   acoustic session were; the checklist now covers **both** halves (§1–§4 map, §6 song page). Merged-`main`
@@ -207,7 +207,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   2026-07-27**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
 - **Last updated:** 2026-07-27 _(**B4 COMPLETE — all 12 tasks built**; branch `session-B4-explore-map`,
-  13 commits, held for the curator's smoke of **both** halves. Tasks 8–12 added the similarity registry,
+  15 commits, held for the curator's smoke of **both** halves. Tasks 8–12 added the similarity registry,
   768-dim cosine, z-scored 6-dim sound distance, the "More in this genre" fallback,
   `GET /api/analysis/songs/:id/similar`, the song page's `SimilarSongs`, and deleted both the dead
   `/api/spotify/songs/:id/similar` and `frontend/public/vector_space.json`. **The plan's sound-metric test

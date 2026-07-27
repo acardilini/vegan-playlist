@@ -286,7 +286,7 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     (`2026-07-19-B3-browse-search*`, `2026-07-19-B3-rework-*`, `2026-07-20-B3-facet-selection-*`,
     `2026-07-20-B3-theme-tree-restyle-*`).
   - ◐ **B4 — Explore vector map** _(brainstorm **completed** 2026-07-27; spec `491733c`, plan `3f479c7`.
-    **ALL 12 TASKS BUILT** on branch `session-B4-explore-map` — 13 commits, backend **162/162**, lint 0
+    **ALL 12 TASKS BUILT** on branch `session-B4-explore-map` — 15 commits, backend **162/162**, lint 0
     errors, build clean, headless smoke **15/15** — and **held for the curator's smoke of both halves**:
     see [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). The map half (1–7) was per-task reviewed and
     stopped for that smoke; the curator was away from a computer and asked for the recommendations half
