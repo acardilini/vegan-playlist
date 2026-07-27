@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useExplorePoints } from './useExplorePoints';
-import { colourScale } from './palette';
+import { colourScale, dimColour } from './palette';
+import SelectedSongCard from './SelectedSongCard';
 
 const DOT_RADIUS = 3.2;
 const PAD = 18;
@@ -28,17 +30,32 @@ function ExploreMap() {
   const { data, loading, error, reload } = useExplorePoints();
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
+  const positionsRef = useRef([]);
   const [size, setSize] = useState({ w: 800, h: 520 });
-  const [space, setSpace] = useState(null);
-  const [colour, setColour] = useState(null);
+  const [hover, setHover] = useState(null);   // { song, x, y }
 
-  // Default to the first discovered space and to Energy when it exists.
-  useEffect(() => {
-    if (!data) return;
-    setSpace(prev => prev || (data.spaces[0] && data.spaces[0].key));
-    setColour(prev => prev ||
-      (data.colourBy.find(c => c.key === 'sonic_energy') || data.colourBy[0] || {}).key);
-  }, [data]);
+  const [params, setParams] = useSearchParams();
+
+  const space = params.get('space') || (data && data.spaces[0] && data.spaces[0].key) || null;
+  const colour = params.get('colour')
+    || (data && (data.colourBy.find(c => c.key === 'sonic_energy') || data.colourBy[0] || {}).key)
+    || null;
+  const query = params.get('q') || '';
+  const selectedId = params.get('song') ? Number(params.get('song')) : null;
+  const spotlit = useMemo(() => {
+    const raw = params.get('codes');
+    return new Set(raw ? raw.split(',').filter(Boolean) : []);
+  }, [params]);
+
+  // One writer for every param, so a change never clobbers its neighbours.
+  const setParam = (key, value) => {
+    const next = new URLSearchParams(params);
+    if (value == null || value === '') next.delete(key);
+    else next.set(key, value);
+    // Changing the colour dimension invalidates a spotlight expressed in its codes.
+    if (key === 'colour') next.delete('codes');
+    setParams(next, { replace: true });
+  };
 
   // Track the plot box so the canvas can be backing-store accurate.
   useEffect(() => {
@@ -60,6 +77,20 @@ function ExploreMap() {
     () => colourScale(legend ? legend.codes.map(c => c.code) : [], legend && legend.label),
     [legend]);
 
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q || !data) return null;   // null = "no query", distinct from "no matches"
+    return data.songs.filter(s =>
+      s.title.toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q));
+  }, [data, query]);
+
+  const matchIds = useMemo(
+    () => (matches ? new Set(matches.map(s => s.id)) : null), [matches]);
+
+  const selected = useMemo(
+    () => (data && selectedId ? data.songs.find(s => s.id === selectedId) || null : null),
+    [data, selectedId]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !data || !space) return;
@@ -77,20 +108,73 @@ function ExploreMap() {
     const sx = (size.w - PAD * 2) / (maxX - minX);
     const sy = (size.h - PAD * 2) / (maxY - minY);
 
+    const dim = dimColour();
+    const positions = [];
+    const lit = [];
     for (const song of data.songs) {
       const c = song.coords[space];
       if (!c) continue;
       const x = PAD + (c[0] - minX) * sx;
       // Canvas y grows downward; flip so the plot reads like a chart.
       const y = size.h - PAD - (c[1] - minY) * sy;
+      positions.push({ id: song.id, x, y });
+      const passesSpotlight = spotlit.size === 0 || spotlit.has(song.codes[colour]);
+      const passesSearch = !matchIds || matchIds.has(song.id);
+      if (passesSpotlight && passesSearch) lit.push({ song, x, y });
+      else {
+        ctx.beginPath();
+        ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = dim;
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 0.85;
+    for (const p of lit) {
       ctx.beginPath();
-      ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = scale(song.codes[colour]);
-      ctx.globalAlpha = 0.85;
+      ctx.arc(p.x, p.y, DOT_RADIUS, 0, Math.PI * 2);
+      ctx.fillStyle = scale(p.song.codes[colour]);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
-  }, [data, space, colour, scale, size]);
+    positionsRef.current = positions;
+
+    if (selectedId) {
+      const hit = positions.find(p => p.id === selectedId);
+      if (hit) {
+        ctx.beginPath();
+        ctx.arc(hit.x, hit.y, DOT_RADIUS + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = getComputedStyle(document.documentElement)
+          .getPropertyValue('--text-primary').trim() || '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+  }, [data, space, colour, scale, size, spotlit, matchIds, selectedId]);
+
+  const nearest = (mx, my) => {
+    let best = null, bestD = 12 * 12;   // 12px grab radius, squared
+    for (const p of positionsRef.current) {
+      const dx = p.x - mx, dy = p.y - my;
+      const d = dx * dx + dy * dy;
+      if (d < bestD) { bestD = d; best = p; }
+    }
+    return best;
+  };
+
+  const onMove = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    const hit = nearest(mx, my);
+    if (!hit) { setHover(null); return; }
+    const song = data.songs.find(s => s.id === hit.id);
+    setHover(song ? { song, x: hit.x, y: hit.y } : null);
+  };
+
+  const onClick = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const hit = nearest(e.clientX - r.left, e.clientY - r.top);
+    if (hit) setParam('song', String(hit.id));
+  };
 
   if (loading) return <div className="explore-loading">Loading the map…</div>;
   if (error) {
@@ -113,7 +197,7 @@ function ExploreMap() {
               type="button"
               className={`explore-chip ${s.key === space ? 'on' : ''}`}
               aria-pressed={s.key === space}
-              onClick={() => setSpace(s.key)}
+              onClick={() => setParam('space', s.key)}
             >
               {s.label}
             </button>
@@ -121,9 +205,18 @@ function ExploreMap() {
         </div>
         <label className="explore-colour-by">
           <span className="explore-toolbar-label">Colour by</span>
-          <select value={colour || ''} onChange={(e) => setColour(e.target.value)}>
+          <select value={colour || ''} onChange={(e) => setParam('colour', e.target.value)}>
             {data.colourBy.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
           </select>
+        </label>
+        <label className="explore-search">
+          <span className="explore-toolbar-label">Find a song</span>
+          <input
+            type="search"
+            value={query}
+            placeholder="Title or artist…"
+            onChange={(e) => setParam('q', e.target.value)}
+          />
         </label>
       </div>
 
@@ -135,18 +228,79 @@ function ExploreMap() {
             aria-label={`Map of ${data.coverage.mapped} songs positioned by ${
               (data.spaces.find(s => s.key === space) || {}).label} similarity, coloured by ${
               (legend || {}).label}.`}
+            onMouseMove={onMove}
+            onMouseLeave={() => setHover(null)}
+            onClick={onClick}
           />
+          {hover && (
+            <div
+              className="explore-hovercard"
+              style={{
+                left: Math.min(hover.x + 14, size.w - 190),
+                top: Math.max(hover.y - 10, 0),
+              }}
+            >
+              <div className="explore-song-title">{hover.song.title}</div>
+              <div className="explore-song-meta">
+                {hover.song.artist}{hover.song.year ? ` · ${hover.song.year}` : ''}
+              </div>
+              {legend && (
+                <div className="explore-song-meta">
+                  {legend.label}: {
+                    (legend.codes.find(c => c.code === hover.song.codes[colour]) || {}).label
+                  }
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <aside className="explore-rail">
           <div className="explore-rail-label">{(legend || {}).label}</div>
           <ul className="explore-legend">
             {legend && legend.codes.map(c => (
               <li key={c.code}>
-                <span className="explore-swatch" style={{ background: scale(c.code) }} />
-                {c.label} <span className="explore-legend-count">({c.count})</span>
+                <button
+                  type="button"
+                  className={`explore-legend-toggle ${spotlit.size && !spotlit.has(c.code) ? 'off' : ''}`}
+                  aria-pressed={spotlit.has(c.code)}
+                  onClick={() => {
+                    const next = new Set(spotlit);
+                    if (next.has(c.code)) next.delete(c.code); else next.add(c.code);
+                    setParam('codes', [...next].join(','));
+                  }}
+                >
+                  <span className="explore-swatch" style={{ background: scale(c.code) }} />
+                  {c.label} <span className="explore-legend-count">({c.count})</span>
+                </button>
               </li>
             ))}
           </ul>
+
+          {matches && (
+            <div className="explore-matches">
+              <div className="explore-rail-label">
+                {matches.length === 0 ? 'No songs match' : `${matches.length} match${matches.length === 1 ? '' : 'es'}`}
+              </div>
+              <ul>
+                {matches.slice(0, 20).map(s => (
+                  <li key={s.id}>
+                    <button type="button" onClick={() => setParam('song', String(s.id))}>
+                      {s.title} <span className="explore-legend-count">{s.artist}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="explore-rail-label">Selected</div>
+          <SelectedSongCard
+            song={selected}
+            colourLabel={(legend || {}).label}
+            colourValue={selected && legend
+              ? (legend.codes.find(c => c.code === selected.codes[colour]) || {}).label
+              : null}
+          />
         </aside>
       </div>
 

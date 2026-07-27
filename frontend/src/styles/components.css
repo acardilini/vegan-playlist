@@ -2527,3 +2527,45 @@
   .explore-body { flex-direction: column; }
   .explore-rail { width: auto; border-left: 0; padding-left: 0; }
 }
+
+.explore-search { display: flex; align-items: center; gap: var(--space-2); }
+
+.explore-legend-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.explore-legend-toggle.off { opacity: 0.45; }
+
+.explore-hovercard {
+  position: absolute;
+  pointer-events: none;
+  width: 180px;
+  padding: var(--space-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-raised);
+  font-size: 0.85rem;
+}
+
+.explore-song-card { margin-top: var(--space-2); }
+.explore-song-art { width: 100%; border-radius: var(--radius-md); display: block; }
+.explore-song-title { font-weight: 600; }
+.explore-song-meta { color: var(--text-secondary); font-size: 0.85rem; }
+.explore-song-link { display: inline-block; margin-top: var(--space-2); color: var(--accent-ember-60); }
+.explore-hint { color: var(--text-secondary); font-size: 0.85rem; }
+
+.explore-matches ul { list-style: none; padding: 0; margin: var(--space-2) 0 0; }
+.explore-matches button {
+  background: none; border: 0; padding: 2px 0; color: inherit;
+  text-align: left; cursor: pointer; width: 100%;
+}
