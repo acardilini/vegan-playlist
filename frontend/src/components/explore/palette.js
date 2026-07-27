@@ -15,20 +15,39 @@ const CAT_VARS = [
   '--explore-cat-4', '--explore-cat-5',
 ];
 
+// Only the first 4 slots are validated (dataviz's --pairs all, both modes — see
+// components.css). --explore-cat-5 is a documented-but-unvalidated fallback: no 5-hue
+// subset of the palette's 8 documented hues clears every hard gate in both light and
+// dark (checked all four candidates for the 5th slot; see task-5-report.md). Rather than
+// let it ship silently, colourScale warns the moment a legend actually reaches it.
+const VALIDATED_CATS = 4;
+
 function cssVar(name, fallback) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return v || fallback;
 }
 
 // Colour lookup for one legend. Codes arrive in legend order; NOT_CODED always takes the
-// neutral, never a categorical slot.
-export function colourScale(codes) {
+// neutral, never a categorical slot. `dimensionLabel` is optional and used only to name the
+// dimension in the overflow warning below — it never affects the colours returned.
+export function colourScale(codes, dimensionLabel) {
   const cats = CAT_VARS.map(v => cssVar(v, '#888'));
   const neutral = cssVar('--explore-not-coded', '#8a8a8a');
   const map = new Map();
   let i = 0;
   for (const code of codes) {
     if (code === NOT_CODED) { map.set(code, neutral); continue; }
+    if (i >= VALIDATED_CATS) {
+      // Silent-and-visual is the worst failure mode here: a wrong colour looks plausible,
+      // not broken. Loud in the console instead — names the dimension and the code so the
+      // next person sees it the first time it happens, rather than discovering it by eye.
+      console.warn(
+        `explore palette: "${dimensionLabel || 'this dimension'}" needs a ${i + 1}th `
+        + `categorical colour ("${code}"), past the ${VALIDATED_CATS} validated slots. `
+        + 'Using the unvalidated --explore-cat-5 fallback. Fold this dimension server-side '
+        + "instead (see genre's fold in backend/services/explore.js) rather than relying on "
+        + 'this colour.');
+    }
     map.set(code, cats[i % cats.length]);
     i += 1;
   }

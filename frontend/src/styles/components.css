@@ -2437,16 +2437,21 @@
    Every live colour-by legend needs at most 4 categorical codes + "Not coded"
    (verified against the live database, not assumed), so 4 validated slots covers
    every dimension today. Slot 5 (violet) is a defensive fallback only — no 5-hue
-   subset of the eight clears all-pairs in both modes, so a live dimension ever
-   needing a 5th categorical colour must fold server-side (as genre already does),
-   not add a hue here. See docs/superpowers/sdd/task-5-report.md for the full
-   validator output in both modes. */
+   subset of the eight clears all-pairs in both modes (checked all four remaining
+   hues against the validated four: aqua and violet each pass light but fail dark's
+   normal-vision floor; orange and red fail outright). A live dimension ever needing
+   a 5th categorical colour must fold server-side (as genre already does), not add a
+   hue here — palette.js's colourScale enforces this in code, not just in this
+   comment: it console.warns by name the moment a legend actually reaches slot 5, so
+   the fallback shipping silently is not the only thing standing in the way. See
+   docs/superpowers/sdd/task-5-report.md for the full validator output in both
+   modes. */
 :root {
   --explore-cat-1: #3987e5; /* blue */
   --explore-cat-2: #c98500; /* yellow */
   --explore-cat-3: #d55181; /* magenta */
   --explore-cat-4: #008300; /* green */
-  --explore-cat-5: #9085e9; /* violet — unvalidated past 4, defensive fallback only */
+  --explore-cat-5: #9085e9; /* violet — unvalidated past 4; colourScale warns on use */
   /* Neutral "not coded" grey — deliberately NOT a categorical slot: it means
      "nothing found", not a finding. Pulled from the dataviz skill's mode-invariant
      muted/axis ink role (#898781), which already clears 3:1 against both a light

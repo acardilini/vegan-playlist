@@ -57,7 +57,7 @@ function ExploreMap() {
     [data, colour]);
 
   const scale = useMemo(
-    () => colourScale(legend ? legend.codes.map(c => c.code) : []),
+    () => colourScale(legend ? legend.codes.map(c => c.code) : [], legend && legend.label),
     [legend]);
 
   useEffect(() => {
@@ -151,8 +151,8 @@ function ExploreMap() {
       </div>
 
       <p className="explore-coverage">
-        Showing {data.coverage.mapped} of {data.coverage.live} songs — only songs the
-        analysis has mapped appear here.
+        Showing {data.coverage.mapped.toLocaleString()} of {data.coverage.live.toLocaleString()} songs
+        — only songs the analysis has mapped appear here.
       </p>
     </div>
   );
