@@ -2424,3 +2424,101 @@
   background: var(--bg-surface);
   color: var(--text-primary);
 }
+
+/* Explore map — categorical palette. Values are the `dataviz` skill's documented
+   default 8-hue palette (blue/orange/aqua/yellow/magenta/green/violet/red), NOT
+   hand-picked hex. This is a scatter plot, so any two categories' dots can sit next
+   to each other on screen — that means the skill's stricter "all pairs" CVD check
+   applies (not just adjacent pairs), which the default 8 hues cannot clear past 3
+   slots in any order. blue+yellow+magenta+green is one of only two 4-hue subsets
+   of the eight that clear every hard gate (lightness, chroma, CVD, normal-vision
+   floor) in BOTH light and dark at all-pairs rigor — validated with
+   scripts/validate_palette.js "<hex,hex,hex,hex>" --mode <light|dark> --pairs all.
+   Every live colour-by legend needs at most 4 categorical codes + "Not coded"
+   (verified against the live database, not assumed), so 4 validated slots covers
+   every dimension today. Slot 5 (violet) is a defensive fallback only — no 5-hue
+   subset of the eight clears all-pairs in both modes, so a live dimension ever
+   needing a 5th categorical colour must fold server-side (as genre already does),
+   not add a hue here. See docs/superpowers/sdd/task-5-report.md for the full
+   validator output in both modes. */
+:root {
+  --explore-cat-1: #3987e5; /* blue */
+  --explore-cat-2: #c98500; /* yellow */
+  --explore-cat-3: #d55181; /* magenta */
+  --explore-cat-4: #008300; /* green */
+  --explore-cat-5: #9085e9; /* violet — unvalidated past 4, defensive fallback only */
+  /* Neutral "not coded" grey — deliberately NOT a categorical slot: it means
+     "nothing found", not a finding. Pulled from the dataviz skill's mode-invariant
+     muted/axis ink role (#898781), which already clears 3:1 against both a light
+     and a dark chart surface, and 4.12:1 against this site's actual dark canvas. */
+  --explore-not-coded: #898781;
+  --explore-dimmed: rgba(137, 135, 129, 0.22);
+}
+
+.explore-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.explore-toolbar-label {
+  font: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.explore-space-chips { display: flex; gap: var(--space-2); }
+
+.explore-chip {
+  border: 1px solid var(--border-hairline);
+  background: none;
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+}
+
+.explore-chip.on {
+  background: var(--accent-moss-60);
+  border-color: var(--accent-moss-60);
+  color: var(--text-on-accent);
+}
+
+.explore-colour-by { display: flex; align-items: center; gap: var(--space-2); }
+
+.explore-body { display: flex; gap: var(--space-4); align-items: stretch; }
+
+.explore-plot {
+  flex: 1;
+  min-width: 0;
+  min-height: 520px;
+  position: relative;
+}
+
+.explore-rail {
+  width: 232px;
+  flex: none;
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--border-hairline);
+}
+
+.explore-rail-label { font: var(--text-label); color: var(--text-secondary); }
+
+.explore-legend { list-style: none; padding: 0; margin: var(--space-2) 0 0; }
+.explore-legend li { display: flex; align-items: center; gap: var(--space-2); padding: 2px 0; }
+.explore-legend-count { color: var(--text-secondary); }
+
+.explore-swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+.explore-coverage {
+  margin-top: var(--space-3);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 860px) {
+  .explore-body { flex-direction: column; }
+  .explore-rail { width: auto; border-left: 0; padding-left: 0; }
+}
