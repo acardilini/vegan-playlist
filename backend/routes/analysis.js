@@ -28,6 +28,19 @@ router.get('/explore/points', async (req, res) => {
   }
 });
 
+// Two tabs (message / sound) plus the genre fallback, in one response.
+router.get('/songs/:id/similar', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: 'Bad song id' });
+    const limit = Math.min(parseInt(req.query.limit, 10) || 6, 24);
+    res.json(await explore.similarFor(pool, id, limit));
+  } catch (e) {
+    console.error('similar songs error:', e);
+    res.status(500).json({ error: 'Failed to load similar songs' });
+  }
+});
+
 router.get('/song/:id', async (req, res) => {
   try {
     const a = await analysis.getSongAnalysis(pool, parseInt(req.params.id));

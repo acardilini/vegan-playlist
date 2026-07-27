@@ -326,9 +326,51 @@ async function similarByEmbedding(db, songId, entry, limit = 6) {
   return r.rows;
 }
 
+// The honest fallback for the 692 of 1,333 live songs (52%) with no embeddings. This is the
+// old /songs/:id/similar query with its dead audio-feature clause removed (songs.energy is
+// NULL catalogue-wide, so that half never matched) and its RANDOM() removed. It uses the
+// EFFECTIVE genre — the artist's genre when the song has none — the same expression browse
+// uses, which is why its coverage is ~1,003 songs rather than 492.
+async function genreFallback(db, songId, limit = 6) {
+  const r = await db.query(
+    `WITH cs AS (
+       SELECT ${genres.EFFECTIVE_GENRE_EXPR} AS g
+         FROM songs s ${genres.EFFECTIVE_GENRE_JOIN}
+        WHERE s.id = $1
+     )
+     SELECT ${SIMILAR_SELECT}
+       FROM songs s
+       ${genres.EFFECTIVE_GENRE_JOIN}
+       LEFT JOIN albums al ON al.id = s.album_id
+       CROSS JOIN cs
+      WHERE s.id <> $1
+        AND s.status = 'included' AND s.published = true
+        AND cs.g IS NOT NULL
+        AND ${genres.EFFECTIVE_GENRE_EXPR} = cs.g
+      ORDER BY s.popularity DESC NULLS LAST, s.id
+      LIMIT $2`, [songId, limit]);
+  return r.rows;
+}
+
+// Both tabs and the fallback in one response, so switching tabs needs no request. A tab is
+// omitted when its embedding is missing; the fallback fires only when no tab has anything.
+async function similarFor(db, songId, limit = 6) {
+  const tabs = [];
+  for (const entry of SIMILARITY) {
+    const songs = await similarByEmbedding(db, songId, entry, limit);
+    if (songs.length > 0) tabs.push({ key: entry.key, label: entry.label, songs });
+  }
+  if (tabs.length > 0) return { tabs, fallback: null };
+  const songs = await genreFallback(db, songId, limit);
+  return {
+    tabs: [],
+    fallback: songs.length ? { label: 'More in this genre', songs } : null,
+  };
+}
+
 module.exports = {
   SPACE_LABELS, spaceLabel, discoverSpaces, mapRows,
   NOT_CODED, COLOUR_DIMENSIONS, codeFor, mapPayload,
   GENRE_TOP_N, OTHER_GENRES, OTHER_GENRES_LABEL, genreFold,
-  SIMILARITY, similarByEmbedding,
+  SIMILARITY, similarByEmbedding, genreFallback, similarFor,
 };

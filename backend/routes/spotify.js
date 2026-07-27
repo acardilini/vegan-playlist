@@ -596,61 +596,6 @@ router.get('/artist-filter-options', async (req, res) => {
   }
 });
 
-// Get similar songs based on vegan categories and audio features
-router.get('/songs/:id/similar', async (req, res) => {
-  try {
-    const songId = req.params.id;
-    const limit = parseInt(req.query.limit) || 6;
-    
-    // Simple approach: get songs with similar genre or audio features
-    const result = await pool.query(`
-      WITH current_song AS (
-        SELECT genre, energy, danceability, valence
-        FROM songs
-        WHERE id = $1
-      )
-      SELECT
-        s.id,
-        s.spotify_id,
-        s.title,
-        s.duration_ms,
-        s.popularity,
-        s.spotify_url,
-        s.energy,
-        s.danceability,
-        s.valence,
-        al.name as album_name,
-        al.release_date,
-        al.images as album_images,
-        ARRAY_AGG(DISTINCT a.name) as artists
-      FROM songs s
-      LEFT JOIN albums al ON s.album_id = al.id
-      JOIN song_artists sa ON s.id = sa.song_id
-      JOIN artists a ON sa.artist_id = a.id
-      CROSS JOIN current_song cs
-      WHERE s.id != $1
-        AND s.status = 'included' AND s.published = true
-        AND (
-          (cs.genre IS NOT NULL AND s.genre = cs.genre)
-          OR (
-            cs.energy IS NOT NULL AND s.energy IS NOT NULL
-            AND ABS(s.energy - cs.energy) <= 0.3
-          )
-        )
-      GROUP BY s.id, al.id
-      ORDER BY s.popularity DESC, RANDOM()
-      LIMIT $2
-    `, [songId, limit]);
-    
-    res.json({
-      similar_songs: result.rows
-    });
-  } catch (error) {
-    console.error('Error fetching similar songs:', error);
-    res.status(500).json({ error: 'Failed to fetch similar songs' });
-  }
-});
-
 // Search and filter artists (must come before /:id route)
 router.get('/artists/search', async (req, res) => {
   try {

@@ -304,6 +304,28 @@ test('sound similarity standardises dimensions and ignores 1024-dim rows', async
     + 'this fails if the z-scoring is removed and the metric becomes raw Euclidean');
 });
 
+test('similarFor omits a tab with no embedding and falls back to genre when both are missing', async () => {
+  // A song with neither embedding, sharing a genre with two others.
+  const lonely = await mkSong('ZZZEXP Lonely', { genre: 'zzzexp-genre' });
+  const mate1 = await mkSong('ZZZEXP Mate one', { genre: 'zzzexp-genre' });
+  const mate2 = await mkSong('ZZZEXP Mate two', { genre: 'zzzexp-genre' });
+
+  const none = await explore.similarFor(pool, lonely, 6);
+  assert.deepEqual(none.tabs, [], 'no embeddings means no tabs');
+  assert.ok(none.fallback, 'the genre fallback fires');
+  assert.equal(none.fallback.label, 'More in this genre');
+  const fallbackIds = none.fallback.songs.map(s => s.id);
+  assert.ok(fallbackIds.includes(mate1) && fallbackIds.includes(mate2));
+  assert.ok(!fallbackIds.includes(lonely), 'the song itself is excluded');
+
+  // A song with only a lyric embedding gets one tab and no fallback.
+  const messageOnly = await mkSong('ZZZEXP Message only');
+  await addLyricEmbedding(messageOnly, [1, 0, 0]);
+  const one = await explore.similarFor(pool, messageOnly, 6);
+  assert.deepEqual(one.tabs.map(t => t.key), ['message']);
+  assert.equal(one.fallback, null, 'no fallback when at least one tab exists');
+});
+
 after(async () => {
   if (made.songs.length) {
     await pool.query('DELETE FROM song_coordinates WHERE song_id = ANY($1::int[])', [made.songs]);
