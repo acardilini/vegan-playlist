@@ -262,6 +262,48 @@ test('message similarity ranks by cosine and respects the publish filter', async
   assert.ok(ids.indexOf(near) < ids.indexOf(far), 'nearer song ranks first');
 });
 
+async function addAudioEmbedding(songId, vec) {
+  await pool.query(
+    `INSERT INTO song_embeddings (song_id, audio_embedding, updated_at)
+     VALUES ($1, $2::float8[], now())
+     ON CONFLICT (song_id) DO UPDATE SET audio_embedding = EXCLUDED.audio_embedding`,
+    [songId, vec]);
+}
+
+test('sound similarity standardises dimensions and ignores 1024-dim rows', async () => {
+  const target = await mkSong('ZZZEXP Sound target');
+  const bigSdNeighbour = await mkSong('ZZZEXP Sound bigsd');
+  const smallSdNeighbour = await mkSong('ZZZEXP Sound smallsd');
+  const oldShape = await mkSong('ZZZEXP Sound legacy');
+
+  // These fixtures exist to make a DROPPED z-score fail, not just to rank. Measured over
+  // the live 6-dim set: dimension 3 (danceability) has sd 0.66, dimension 4 (acousticness)
+  // sd 0.023 — a ~30x spread, because these are Librosa proxies, not Spotify's 0-1
+  // features. So:
+  //   bigSdNeighbour   differs by 0.30 on dim 3 -> raw 0.30, z 0.30/0.66 = 0.45
+  //   smallSdNeighbour differs by 0.05 on dim 4 -> raw 0.05, z 0.05/0.023 = 2.22
+  // RAW Euclidean ranks smallSd first (0.05 < 0.30); Z-SCORED ranks bigSd first
+  // (0.45 < 2.22). The order flips, so the assertion below is only satisfiable by the
+  // standardised metric. Every value sits inside the live observed range for its
+  // dimension, so the fixtures do not distort the stats they are measured against.
+  await addAudioEmbedding(target,           [0.2275, 1.0, 1.30, 0.030, 0.11, 0.55]);
+  await addAudioEmbedding(bigSdNeighbour,   [0.2275, 1.0, 1.60, 0.030, 0.11, 0.55]);
+  await addAudioEmbedding(smallSdNeighbour, [0.2275, 1.0, 1.30, 0.080, 0.11, 0.55]);
+  await addAudioEmbedding(oldShape, new Array(1024).fill(0.2));
+
+  const entry = explore.SIMILARITY.find(s => s.key === 'sound');
+  const rows = await explore.similarByEmbedding(pool, target, entry, 500);
+  const ids = rows.map(r => r.id);
+
+  assert.ok(!ids.includes(oldShape), '1024-dim rows never enter the distance');
+  assert.ok(!ids.includes(target), 'the song itself is excluded');
+  assert.ok(ids.includes(bigSdNeighbour) && ids.includes(smallSdNeighbour),
+    'both 6-dim songs rank');
+  assert.ok(ids.indexOf(bigSdNeighbour) < ids.indexOf(smallSdNeighbour),
+    'a big-sd dimension difference is scored as SMALLER than a small-sd one — '
+    + 'this fails if the z-scoring is removed and the metric becomes raw Euclidean');
+});
+
 after(async () => {
   if (made.songs.length) {
     await pool.query('DELETE FROM song_coordinates WHERE song_id = ANY($1::int[])', [made.songs]);

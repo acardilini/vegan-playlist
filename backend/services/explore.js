@@ -277,7 +277,47 @@ function cosineSql(entry) {
      LIMIT $2`;
 }
 
-function zEuclideanSql() { throw new Error('not implemented until Task 9'); }
+// Euclidean distance AFTER per-dimension z-scoring over the live set. Without this the
+// result is a danceability ranking wearing a disguise: danceability's sd is 0.67 where
+// acousticness's is 0.02, a 30x spread (these are Librosa proxies, not Spotify's 0-1
+// features). The array_length constraint is not optional — the column still holds 1,041
+// rows of the old 1024-dim vectors.
+function zEuclideanSql(entry) {
+  return `
+    WITH live AS (
+      SELECT se.song_id, se.${entry.column} AS v
+        FROM song_embeddings se
+        JOIN songs s2 ON s2.id = se.song_id
+       WHERE s2.status = 'included' AND s2.published = true
+         AND array_length(se.${entry.column}, 1) = ${entry.dims}
+    ),
+    stats AS (
+      SELECT u.ord, avg(u.val) AS mu, stddev_pop(u.val) AS sd
+        FROM live, unnest(live.v) WITH ORDINALITY AS u(val, ord)
+       GROUP BY u.ord
+    ),
+    z AS (
+      SELECT l.song_id, u.ord,
+             (u.val - st.mu) / NULLIF(st.sd, 0) AS zv
+        FROM live l
+        CROSS JOIN LATERAL unnest(l.v) WITH ORDINALITY AS u(val, ord)
+        JOIN stats st ON st.ord = u.ord
+    ),
+    tgt AS (SELECT ord, zv FROM z WHERE song_id = $1),
+    d AS (
+      SELECT z.song_id,
+             sqrt(SUM(power(COALESCE(z.zv, 0) - COALESCE(tgt.zv, 0), 2))) AS dist
+        FROM z JOIN tgt ON tgt.ord = z.ord
+       WHERE z.song_id <> $1
+       GROUP BY z.song_id
+    )
+    SELECT ${SIMILAR_SELECT}
+      FROM d
+      JOIN songs s ON s.id = d.song_id
+      LEFT JOIN albums al ON al.id = s.album_id
+     ORDER BY d.dist ASC, s.id
+     LIMIT $2`;
+}
 
 async function similarByEmbedding(db, songId, entry, limit = 6) {
   if (!entry) return [];
