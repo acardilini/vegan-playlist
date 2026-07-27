@@ -1305,7 +1305,33 @@
   margin: 0;
 }
 
-/* Similar songs */
+/* Similar songs — the two embedding tabs, and the genre-fallback note that replaces
+   them when a song has no embeddings. Chip styling matches .explore-chip. */
+.similar-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.similar-tab {
+  border: 1px solid var(--border-hairline);
+  background: none;
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+}
+
+.similar-tab.active {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.similar-note {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
 .similar-songs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

@@ -93,16 +93,12 @@ export const spotifyService = {
     }
   },
 
-  // Get similar songs
+  // Two embedding tabs plus the genre fallback. Relative URL (Vite proxy) — the analysis
+  // API is not on the spotify base.
   getSimilarSongs: async (songId, limit = 6) => {
-    try {
-      const response = await fetch(`${API_BASE}/songs/${songId}/similar?limit=${limit}`);
-      if (!response.ok) throw new Error('Failed to fetch similar songs');
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching similar songs:', error);
-      throw error;
-    }
+    const response = await fetch(`/api/analysis/songs/${songId}/similar?limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch similar songs');
+    return await response.json();
   },
 
   // Get single artist by ID with their songs

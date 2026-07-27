@@ -3,12 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
 import YouTubeEmbed from '../components/YouTubeEmbed';
 import LyricalAnalysis from '../components/LyricalAnalysis';
+import SimilarSongs from '../components/SimilarSongs';
 
 function SongDetailPage() {
   const { songId } = useParams();
   const navigate = useNavigate();
   const [song, setSong] = useState(null);
-  const [similarSongs, setSimilarSongs] = useState([]);
   const [youtubeVideo, setYoutubeVideo] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,12 +18,8 @@ function SongDetailPage() {
     const fetchSongData = async () => {
       try {
         setLoading(true);
-        const [songData, similarData, youtubeData, analysisData] = await Promise.all([
+        const [songData, youtubeData, analysisData] = await Promise.all([
           spotifyService.getSong(songId),
-          spotifyService.getSimilarSongs(songId, 6).catch(err => {
-            console.warn('Could not load similar songs:', err);
-            return { similar_songs: [] };
-          }),
           fetch(`http://localhost:5000/api/youtube/songs/${songId}/video/primary`)
             .then(res => res.json())
             .catch(err => {
@@ -34,7 +30,6 @@ function SongDetailPage() {
         ]);
 
         setSong(songData);
-        setSimilarSongs(similarData.similar_songs || []);
         setYoutubeVideo(youtubeData.success ? youtubeData.video : null);
         setAnalysis(analysisData);
       } catch (err) {
@@ -223,47 +218,7 @@ function SongDetailPage() {
         </section>
       )}
 
-      {similarSongs.length > 0 && (
-        <section className="detail-section">
-          <h2>You might also like</h2>
-          <div className="similar-songs-grid">
-            {similarSongs.map((similarSong) => (
-              <div
-                key={similarSong.id}
-                className="similar-song-card"
-                role="button"
-                tabIndex={0}
-                aria-label={`Open song ${similarSong.title}`}
-                onClick={() => navigate(`/song/${similarSong.id}`)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    navigate(`/song/${similarSong.id}`);
-                  }
-                }}
-              >
-                <div className="similar-artwork">
-                  {similarSong.album_images?.[0]?.url && (
-                    <img
-                      src={similarSong.album_images[0].url}
-                      alt=""
-                    />
-                  )}
-                </div>
-
-                <div className="similar-info">
-                  <h3 className="similar-title">{similarSong.title}</h3>
-                  <p className="similar-artist">
-                    {Array.isArray(similarSong.artists)
-                      ? similarSong.artists.join(', ')
-                      : similarSong.artists}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <SimilarSongs songId={songId} />
     </div>
   );
 }
