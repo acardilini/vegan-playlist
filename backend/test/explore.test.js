@@ -233,10 +233,40 @@ test('a non-genre dimension is completely unaffected by the genre fold', async (
   assert.equal(songC.codes.sonic_energy, explore.NOT_CODED);
 });
 
+async function addLyricEmbedding(songId, vec) {
+  await pool.query(
+    `INSERT INTO song_embeddings (song_id, lyric_embedding, updated_at)
+     VALUES ($1, $2::float8[], now())
+     ON CONFLICT (song_id) DO UPDATE SET lyric_embedding = EXCLUDED.lyric_embedding`,
+    [songId, vec]);
+}
+
+test('message similarity ranks by cosine and respects the publish filter', async () => {
+  const target = await mkSong('ZZZEXP Target');
+  const near = await mkSong('ZZZEXP Near');
+  const far = await mkSong('ZZZEXP Far');
+  const hidden = await mkSong('ZZZEXP Hidden', { published: false });
+
+  // 3-dim vectors: `near` points almost the same way as the target, `far` is orthogonal.
+  await addLyricEmbedding(target, [1, 0, 0]);
+  await addLyricEmbedding(near, [0.98, 0.2, 0]);
+  await addLyricEmbedding(far, [0, 1, 0]);
+  await addLyricEmbedding(hidden, [1, 0, 0]);   // a perfect match, but unpublished
+
+  const entry = explore.SIMILARITY.find(s => s.key === 'message');
+  const rows = await explore.similarByEmbedding(pool, target, entry, 10);
+  const ids = rows.map(r => r.id);
+
+  assert.ok(!ids.includes(target), 'the song itself is excluded');
+  assert.ok(!ids.includes(hidden), 'unpublished songs are excluded');
+  assert.ok(ids.indexOf(near) < ids.indexOf(far), 'nearer song ranks first');
+});
+
 after(async () => {
   if (made.songs.length) {
     await pool.query('DELETE FROM song_coordinates WHERE song_id = ANY($1::int[])', [made.songs]);
     await pool.query('DELETE FROM song_lyric_analysis WHERE song_id = ANY($1::int[])', [made.songs]);
+    await pool.query('DELETE FROM song_embeddings WHERE song_id = ANY($1::int[])', [made.songs]);
     await pool.query('DELETE FROM songs WHERE id = ANY($1::int[])', [made.songs]);
   }
   await pool.end();

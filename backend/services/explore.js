@@ -222,8 +222,73 @@ async function mapPayload(db) {
   };
 }
 
+// Similarity metrics are a REGISTRY, not discovery. Coordinates are interchangeable — every
+// one is an (x, y) to plot — but each embedding needs a metric and a normalisation
+// judgement that code must not guess. Adding a third tab is one entry plus a test.
+const SIMILARITY = [
+  { key: 'message', label: 'Similar message', column: 'lyric_embedding',
+    dims: null, metric: 'cosine' },
+  { key: 'sound', label: 'Similar sound', column: 'audio_embedding',
+    dims: 6, metric: 'zeuclidean' },
+];
+
+// The card fields the song page already renders. LEFT JOIN albums: non-Spotify songs have
+// no album row.
+const SIMILAR_SELECT = `
+  s.id, s.title, s.spotify_url,
+  al.name AS album_name, al.images AS album_images,
+  (SELECT ARRAY_AGG(a.name ORDER BY sa.id)
+     FROM song_artists sa JOIN artists a ON a.id = sa.artist_id
+    WHERE sa.song_id = s.id) AS artists`;
+
+// Cosine over the full embedding. Candidates are matched on the TARGET's dimensionality, so
+// a mixed-width column can never compare vectors of different lengths.
+function cosineSql(entry) {
+  return `
+    WITH target AS (
+      SELECT ${entry.column} AS v FROM song_embeddings WHERE song_id = $1
+    ),
+    t AS (
+      SELECT u.ord, u.val FROM target, unnest(target.v) WITH ORDINALITY AS u(val, ord)
+    ),
+    cand AS (
+      SELECT se.song_id, u.ord, u.val
+        FROM song_embeddings se
+        JOIN songs s2 ON s2.id = se.song_id
+        CROSS JOIN LATERAL unnest(se.${entry.column}) WITH ORDINALITY AS u(val, ord)
+       WHERE se.song_id <> $1
+         AND s2.status = 'included' AND s2.published = true
+         AND array_length(se.${entry.column}, 1)
+             = (SELECT array_length(v, 1) FROM target)
+    ),
+    sim AS (
+      SELECT c.song_id,
+             SUM(c.val * t.val)
+               / NULLIF(sqrt(SUM(c.val * c.val)) * sqrt(SUM(t.val * t.val)), 0) AS score
+        FROM cand c JOIN t ON t.ord = c.ord
+       GROUP BY c.song_id
+    )
+    SELECT ${SIMILAR_SELECT}
+      FROM sim
+      JOIN songs s ON s.id = sim.song_id
+      LEFT JOIN albums al ON al.id = s.album_id
+     WHERE sim.score IS NOT NULL
+     ORDER BY sim.score DESC, s.id
+     LIMIT $2`;
+}
+
+function zEuclideanSql() { throw new Error('not implemented until Task 9'); }
+
+async function similarByEmbedding(db, songId, entry, limit = 6) {
+  if (!entry) return [];
+  const sql = entry.metric === 'cosine' ? cosineSql(entry) : zEuclideanSql(entry);
+  const r = await db.query(sql, [songId, limit]);
+  return r.rows;
+}
+
 module.exports = {
   SPACE_LABELS, spaceLabel, discoverSpaces, mapRows,
   NOT_CODED, COLOUR_DIMENSIONS, codeFor, mapPayload,
   GENRE_TOP_N, OTHER_GENRES, OTHER_GENRES_LABEL, genreFold,
+  SIMILARITY, similarByEmbedding,
 };
