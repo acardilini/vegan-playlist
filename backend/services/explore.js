@@ -84,11 +84,10 @@ async function mapRows(db, spaces) {
 const NOT_CODED = 'NOT_CODED';
 const NOT_CODED_LABEL = 'Not coded';
 
-// Genre carries far more codes (13 parent genres, live-catalogue count) than the frontend's
-// colour palette has slots for (5, one of which is the grey NOT_CODED). Folded to the top-N
-// parent genres by count + one "Other genres" catch-all, that's N + 2 legend entries — so
-// N=3 is exactly the palette budget (3 named + Other genres + Not coded = 5). Task 4b,
-// 2026-07-27 curator decision.
+// Genre carries more parent values than the palette has colour slots — 11 on the live map
+// against 4 validated categorical slots. GENRE_TOP_N sets how many genres get their OWN
+// colour; the rest share slot 4 as one "Other genres" group but are still listed and still
+// individually spotlightable. It does not control how many genres the reader can see.
 const GENRE_TOP_N = 3;
 const OTHER_GENRES = 'OTHER_GENRES';
 const OTHER_GENRES_LABEL = 'Other genres';
@@ -120,53 +119,49 @@ function codeFor(dimensionKey, row) {
 function labelFor(dim, code) {
   if (code === NOT_CODED) return NOT_CODED_LABEL;
   if (code === OTHER_GENRES) return OTHER_GENRES_LABEL;
+  // getParentGenre returns the literal 'other' for a genre string it does not recognise —
+  // the song HAS a genre, it just is not one we map. That is a different claim from
+  // "Not coded", and naming it "Other" inside "Other genres" would blur both.
+  if (dim.source === 'genre' && code === 'other') return 'Unclassified genre';
   if (dim.source === 'acoustic') return acoustic.codeLabel(dim.key, code);
   if (dim.source === 'scalar') return codebook.codeLabel(dim.key, code);
   return titleCase(code);
 }
 
-// Computes the top-N parent genres by count over `rows` (excluding NOT_CODED and the
-// literal 'other' parent — rule 1: 'other' already means "unclassified", so it never
-// competes for a named slot) and returns a fold function: identity for every dimension
-// except genre; for genre, codes in the top N (and NOT_CODED) pass through unchanged, and
-// everything else collapses to OTHER_GENRES.
-//
-// This is the ONE place the fold is computed. `legendFor` and mapPayload's per-song `codes`
-// loop both call `genreFold(rows)` on the SAME `rows` array and apply the returned function
-// to `codeFor`'s raw output — that is what keeps a song's folded bucket always present in
-// its own legend (brief rule 4). Folding inside one consumer but not the other would strand
-// some songs in a bucket the legend never lists.
-function genreFold(rows) {
+// The parent genres that get their own colour slot: the top N by count, excluding NOT_CODED
+// and the literal 'other' parent (which already means "unclassified", so it never competes
+// for a named slot). Every OTHER genre still appears in the legend by name — as a child of
+// the "Other genres" group — because the palette caps how many colours can coexist, not how
+// many genres a reader may see. Four simultaneous categorical colours is a measured hard
+// ceiling at scatter rigor; see the 2026-08-02 spec.
+function genreTopSet(rows) {
   const counts = new Map();
   for (const r of rows) {
     const code = codeFor('genre', r);
     if (code === NOT_CODED || code === 'other') continue;
     counts.set(code, (counts.get(code) || 0) + 1);
   }
-  const top = new Set(
+  return new Set(
     [...counts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, GENRE_TOP_N)
       .map(([code]) => code));
-  return (dimensionKey, code) => {
-    if (dimensionKey !== 'genre') return code;
-    if (code === NOT_CODED || top.has(code)) return code;
-    return OTHER_GENRES;
-  };
 }
 
 // Legend entries for one dimension, counted over the songs actually on the map. Codebook
 // order first (so the legend reads the way the codebook does), then any observed
 // off-codebook code by descending count, then "Not coded" last. Zero-count codes are
-// omitted — the legend describes what is on screen.
-function legendFor(dim, rows, fold) {
+// omitted — the legend describes what is on screen. For genre, the top-N parents by count
+// each get their own leaf entry; everything else is named as a `children` entry nested
+// under one "Other genres" group, so the palette's slot cap never hides a genre's name.
+function legendFor(dim, rows, top) {
   const counts = new Map();
   for (const r of rows) {
-    const code = fold(dim.key, codeFor(dim.key, r));
+    const code = codeFor(dim.key, r);
     counts.set(code, (counts.get(code) || 0) + 1);
   }
   const ordered = [];
-  const seen = new Set([NOT_CODED, OTHER_GENRES]);
+  const seen = new Set([NOT_CODED]);
   const known = dim.source === 'acoustic' ? acoustic.optionsFor(dim.key)
     : dim.source === 'scalar' ? codebook.optionsFor(dim.key)
     : [];
@@ -174,17 +169,35 @@ function legendFor(dim, rows, fold) {
     seen.add(o.code);
     if (counts.has(o.code)) ordered.push({ code: o.code, label: o.label, count: counts.get(o.code) });
   }
-  const extras = [...counts.entries()]
-    .filter(([code]) => !seen.has(code))
-    .sort((a, b) => b[1] - a[1]);
-  for (const [code, count] of extras) {
-    ordered.push({ code, label: labelFor(dim, code), count });
+
+  if (dim.source === 'genre') {
+    // Top-N first, in count order, each its own coloured entry.
+    const ranked = [...counts.entries()]
+      .filter(([code]) => code !== NOT_CODED)
+      .sort((a, b) => b[1] - a[1]);
+    for (const [code, count] of ranked.filter(([code]) => top.has(code))) {
+      ordered.push({ code, label: labelFor(dim, code), count });
+    }
+    // Everything else becomes one group that SHARES a colour but names its members, so a
+    // 1-song genre is still visible and still clickable.
+    const rest = ranked.filter(([code]) => !top.has(code));
+    if (rest.length) {
+      ordered.push({
+        code: OTHER_GENRES,
+        label: OTHER_GENRES_LABEL,
+        count: rest.reduce((n, [, c]) => n + c, 0),
+        children: rest.map(([code, count]) => ({ code, label: labelFor(dim, code), count })),
+      });
+    }
+  } else {
+    const extras = [...counts.entries()]
+      .filter(([code]) => !seen.has(code))
+      .sort((a, b) => b[1] - a[1]);
+    for (const [code, count] of extras) {
+      ordered.push({ code, label: labelFor(dim, code), count });
+    }
   }
-  // Other genres (genre-only) sorts immediately before Not coded, regardless of its count —
-  // rule 3 pins the ordering, not the count, once the fold has already decided membership.
-  if (counts.has(OTHER_GENRES)) {
-    ordered.push({ code: OTHER_GENRES, label: OTHER_GENRES_LABEL, count: counts.get(OTHER_GENRES) });
-  }
+
   if (counts.has(NOT_CODED)) {
     ordered.push({ code: NOT_CODED, label: NOT_CODED_LABEL, count: counts.get(NOT_CODED) });
   }
@@ -199,16 +212,17 @@ async function mapPayload(db) {
   const rows = await mapRows(db, spaces);
   const live = await db.query(
     `SELECT COUNT(*)::int AS n FROM songs WHERE status = 'included' AND published = true`);
-  // Computed once from `rows` and passed to both consumers below — see genreFold's comment
-  // for why that single shared computation is what keeps a song's bucket and the legend in
-  // sync (brief rule 4).
-  const fold = genreFold(rows);
+  // Computed once and shared with legendFor below: the legend and the colour assignment must
+  // agree on which genres own a slot, or a dot could take a colour its legend never explains.
+  const top = genreTopSet(rows);
 
   const songs = rows.map(r => {
     const coords = {};
     for (const s of spaces) coords[s.key] = r[s.column];
     const codes = {};
-    for (const d of COLOUR_DIMENSIONS) codes[d.key] = fold(d.key, codeFor(d.key, r));
+    // Raw codes, deliberately unfolded: the spotlight targets an exact genre, and the
+    // frontend derives a dot's COLOUR from the legend's nesting instead.
+    for (const d of COLOUR_DIMENSIONS) codes[d.key] = codeFor(d.key, r);
     return {
       id: r.id,
       title: r.title,
@@ -222,7 +236,7 @@ async function mapPayload(db) {
 
   return {
     spaces: spaces.map(s => ({ key: s.key, label: s.label })),
-    colourBy: COLOUR_DIMENSIONS.map(d => ({ key: d.key, label: d.label, codes: legendFor(d, rows, fold) })),
+    colourBy: COLOUR_DIMENSIONS.map(d => ({ key: d.key, label: d.label, codes: legendFor(d, rows, top) })),
     coverage: { mapped: songs.length, live: live.rows[0].n },
     songs,
   };
@@ -377,6 +391,6 @@ async function similarFor(db, songId, limit = 6) {
 module.exports = {
   SPACE_LABELS, spaceLabel, discoverSpaces, mapRows,
   NOT_CODED, COLOUR_DIMENSIONS, codeFor, mapPayload,
-  GENRE_TOP_N, OTHER_GENRES, OTHER_GENRES_LABEL, genreFold,
+  GENRE_TOP_N, OTHER_GENRES, OTHER_GENRES_LABEL, genreTopSet, legendFor,
   SIMILARITY, similarByEmbedding, genreFallback, similarFor,
 };

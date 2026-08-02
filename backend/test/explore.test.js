@@ -134,64 +134,111 @@ test('mapPayload assembles spaces, legends, coverage and songs', async () => {
   assert.equal(song.artist, '', 'a song with no artist rows serves an empty artist string');
 });
 
-test('genreFold folds outside-top-3 and the literal other parent into Other genres', () => {
-  // A synthetic rows array, independent of anything in the database: metal(4) >
-  // hardcore(3) > punk(2) > folk(1) — folk sits outside the top 3. 'christian' maps to
-  // the literal 'other' parent and is given the highest count of all, to prove rule 1:
-  // 'other' is excluded from the top-N ranking regardless of count. This test never
-  // touches the DB, so it cannot fail for a live-catalogue-genre-distribution reason.
+test('genreTopSet picks the top-N named parents and never the literal other', () => {
+  // Synthetic rows, independent of the live catalogue: metal(4) > hardcore(3) > punk(2) >
+  // folk(1). 'christian' maps to the literal 'other' parent and is given the highest count
+  // of all, to prove it is excluded from the ranking regardless of count.
   const rows = [
     ...Array(4).fill({ genre: 'metalcore' }),  // -> metal
     ...Array(3).fill({ genre: 'hardcore' }),   // -> hardcore
     ...Array(2).fill({ genre: 'punk' }),       // -> punk
-    { genre: 'folk' },                         // -> folk (outside top 3)
-    ...Array(5).fill({ genre: 'christian' }),  // -> other (literal parent, excluded from ranking)
+    { genre: 'folk' },                         // -> folk (outside the top 3)
+    ...Array(5).fill({ genre: 'christian' }),  // -> other (literal parent, never ranked)
     { genre: null },                           // -> NOT_CODED
   ];
-  const fold = explore.genreFold(rows);
-  const bucket = row => fold('genre', explore.codeFor('genre', row));
+  const top = explore.genreTopSet(rows);
 
-  assert.equal(bucket({ genre: 'metalcore' }), 'metal');
-  assert.equal(bucket({ genre: 'hardcore' }), 'hardcore');
-  assert.equal(bucket({ genre: 'punk' }), 'punk');
-  // A genre outside the top 3 lands in Other genres, not a bucket of its own.
-  assert.equal(bucket({ genre: 'folk' }), explore.OTHER_GENRES);
-  // The literal 'other' parent lands in Other genres even though it out-counts everything.
-  assert.equal(bucket({ genre: 'christian' }), explore.OTHER_GENRES);
-  // No genre at all still buckets to NOT_CODED, not Other genres.
-  assert.equal(bucket({ genre: null }), explore.NOT_CODED);
+  assert.ok(top.has('metal'));
+  assert.ok(top.has('hardcore'));
+  assert.ok(top.has('punk'));
+  assert.ok(!top.has('folk'), 'a genre outside the top 3 gets no colour slot');
+  assert.ok(!top.has('other'), 'the literal other parent is never ranked, whatever its count');
+  assert.ok(!top.has(explore.NOT_CODED));
+  assert.equal(top.size, 3);
+});
 
-  // Non-genre dimensions pass through unchanged — the fold is genre-only.
-  assert.equal(fold('sonic_energy', 'EXPLOSIVE_HIGH_INTENSITY'), 'EXPLOSIVE_HIGH_INTENSITY');
-  assert.equal(fold('focus_amount', explore.NOT_CODED), explore.NOT_CODED);
+test('the genre legend names every genre, nesting the small ones under Other genres', () => {
+  const rows = [
+    ...Array(4).fill({ genre: 'metalcore' }),
+    ...Array(3).fill({ genre: 'hardcore' }),
+    ...Array(2).fill({ genre: 'punk' }),
+    { genre: 'folk' },
+    ...Array(5).fill({ genre: 'christian' }),  // -> other
+    { genre: null },
+  ];
+  const codes = explore.legendFor(
+    { key: 'genre', label: 'Genre', source: 'genre' }, rows, explore.genreTopSet(rows));
 
-  assert.equal(explore.OTHER_GENRES_LABEL, 'Other genres');
+  // Top 3 are their own entries, in count order, with no children.
+  assert.deepEqual(codes.slice(0, 3).map(c => c.code), ['metal', 'hardcore', 'punk']);
+  assert.equal(codes[0].count, 4);
+  assert.ok(!codes[0].children, 'a top-3 genre is a leaf');
+
+  // Then the group, carrying its members. Its count is the sum of theirs.
+  const group = codes.find(c => c.code === explore.OTHER_GENRES);
+  assert.ok(group, 'the Other genres group exists');
+  assert.equal(group.label, 'Other genres');
+  assert.equal(group.count, 6, 'folk(1) + other(5)');
+  assert.deepEqual(group.children.map(c => c.code), ['other', 'folk'],
+    'members sort by descending count');
+  assert.equal(group.children[0].label, 'Unclassified genre',
+    'the literal other parent is NOT labelled "Other" inside a group called "Other genres"');
+  assert.equal(group.children[1].label, 'Folk');
+
+  // Not coded stays its own last entry and is never swept into the group.
+  const last = codes[codes.length - 1];
+  assert.equal(last.code, explore.NOT_CODED);
+  assert.equal(last.count, 1);
+  assert.ok(!group.children.some(c => c.code === explore.NOT_CODED));
+});
+
+test('a song carries its raw parent genre, so a small genre can be spotlit by name', async () => {
+  const folkId = await mkSong('ZZZEXP Folk', { genre: 'folk' });
+  await addCoords(folkId);
+
+  const p = await explore.mapPayload(pool);
+  const song = p.songs.find(s => s.id === folkId);
+
+  assert.equal(song.codes.genre, 'folk',
+    'raw parent genre, not OTHER_GENRES — the spotlight targets this value');
+
+  // And that raw code is reachable in the legend: either as its own entry or as a
+  // named child of the group. This is the invariant — a dot is always explained.
+  const genre = p.colourBy.find(c => c.key === 'genre');
+  const flat = genre.codes.flatMap(c => [c, ...(c.children || [])]);
+  assert.ok(flat.some(c => c.code === 'folk'), 'every raw code appears in its own legend');
 });
 
 test('genre colour-by via mapPayload: no-genre stays NOT_CODED, legend fits the palette, ' +
   'and every song codes.genre is in its own legend', async () => {
   // This test goes through the real DB/mapPayload path, so it deliberately asserts only
   // structural properties that hold no matter what the live catalogue's genre distribution
-  // is — never "genre X is/isn't in the top 3", which the pure genreFold test above already
+  // is — never "genre X is/isn't in the top 3", which the pure genreTopSet test above already
   // covers deterministically.
   const noGenreId = await mkSong('ZZZEXP Genre none');
   await addCoords(noGenreId);
 
   const p = await explore.mapPayload(pool);
   const genreLegend = p.colourBy.find(c => c.key === 'genre');
-  const codes = genreLegend.codes.map(c => c.code);
+  const topLevelCodes = genreLegend.codes.map(c => c.code);
+  // Flattened view: every top-level entry plus any children of the Other genres group.
+  // This is what "in the legend" means now that small genres are named, not folded away.
+  const flatCodes = genreLegend.codes.flatMap(c => [c.code, ...(c.children || []).map(ch => ch.code)]);
 
-  // At most 5 entries: 3 named genres + "Other genres" + "Not coded" is the palette budget.
-  assert.ok(genreLegend.codes.length <= 5, `genre legend fits the palette, got ${codes}`);
-  assert.ok(!codes.includes('other'), 'the literal other parent never appears as its own bucket');
+  // At most 5 top-level entries: 3 named genres + "Other genres" + "Not coded" is the
+  // palette budget. Members nested inside "Other genres" don't count against this — the
+  // palette caps colour slots, not how many genres are named.
+  assert.ok(genreLegend.codes.length <= 5, `genre legend fits the palette, got ${topLevelCodes}`);
+  assert.ok(!topLevelCodes.includes('other'),
+    'the literal other parent never appears as its own TOP-LEVEL bucket');
 
   // Not coded is present (this fixture guarantees it) and sorts last; if Other genres is
   // present it sits immediately before Not coded.
-  assert.ok(codes.includes(explore.NOT_CODED));
-  assert.equal(codes[codes.length - 1], explore.NOT_CODED, 'Not coded sorts last');
-  const otherIdx = codes.indexOf(explore.OTHER_GENRES);
+  assert.ok(topLevelCodes.includes(explore.NOT_CODED));
+  assert.equal(topLevelCodes[topLevelCodes.length - 1], explore.NOT_CODED, 'Not coded sorts last');
+  const otherIdx = topLevelCodes.indexOf(explore.OTHER_GENRES);
   if (otherIdx !== -1) {
-    assert.equal(otherIdx, codes.length - 2, 'Other genres sits immediately before Not coded');
+    assert.equal(otherIdx, topLevelCodes.length - 2, 'Other genres sits immediately before Not coded');
     const otherEntry = genreLegend.codes[otherIdx];
     assert.equal(otherEntry.label, explore.OTHER_GENRES_LABEL);
   }
@@ -200,12 +247,11 @@ test('genre colour-by via mapPayload: no-genre stays NOT_CODED, legend fits the 
   const noGenreSong = p.songs.find(s => s.id === noGenreId);
   assert.equal(noGenreSong.codes.genre, explore.NOT_CODED);
 
-  // The invariant: every song's codes.genre value appears somewhere in the genre legend.
-  // Checked over the whole payload (not just this fixture) so a fold applied to only one
-  // of legendFor/mapPayload's consumers would be caught even by songs outside this test.
+  // The invariant: every song's codes.genre value appears somewhere in the genre legend,
+  // either as a top-level entry or nested as a child of Other genres.
   for (const song of p.songs) {
-    assert.ok(codes.includes(song.codes.genre),
-      `song ${song.id} codes.genre=${song.codes.genre} missing from genre legend ${codes}`);
+    assert.ok(flatCodes.includes(song.codes.genre),
+      `song ${song.id} codes.genre=${song.codes.genre} missing from genre legend ${flatCodes}`);
   }
 });
 
