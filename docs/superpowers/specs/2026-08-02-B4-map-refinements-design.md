@@ -36,37 +36,55 @@ sits in Batch B rather than being treated as a defect.
 
 ## 3. Batch A — ships on this branch, then merge
 
-### 3.1 The genre palette: eleven colours, and a fold that is raised rather than deleted
+### 3.1 The genre legend: every genre named, four colours, spotlight as the identity channel
 
-`--explore-cat-*` grows from 5 slots to **11**: the eight `dataviz`-documented hues, then three shades
-within already-used hues. Values are **not fixed in this spec** — they come from running the `dataviz`
-validator at scatter rigor (`--pairs all`, because any two categories' dots can be spatially adjacent)
-in **both** light and dark. The output is recorded in the `components.css` comment that already carries
-the slot-5 record, and in the session report.
+**An earlier draft of this spec specified an 11-colour palette. That was measured and is impossible.**
+It is recorded here rather than quietly dropped, because the measurement is the reason for the design.
 
-Two constraints bind that run, so it is not a free choice: **a shade must clear the validator against
-its own base hue**, not merely against the other ten — a shade pair is the most likely thing to collapse
-at dot size; and the **base hue a shade derives from should be one assigned far from it in legend
-order**, so the pair is never adjacent in the legend where the eye compares them directly.
+Run against the `dataviz` validator at scatter rigor (`--pairs all`, because any two categories' dots
+can be spatially adjacent), on the dark surface:
 
-Genre has no codebook, so `legendFor` orders it by descending count. Assignment therefore puts the eight
-**distinct hues on metal → rock** (96 down to 4 songs) and the three **shade variants on pop, other and
-soul — 5 songs between them**, where a near-miss costs least. If a pair cannot clear the validator, the
-failing pair is pushed onto the two smallest genres rather than accepted silently.
+| Simultaneous colours | Worst pair, normal vision | Result |
+|---:|---|---|
+| 4 (today's) | 19.3 | **PASS** — one CVD warn, mitigated by the legend's text labels |
+| 5 | violet↔blue **9.8** | FAIL |
+| 6 | red↔magenta **7.8** | FAIL |
+| 8 (every documented hue) | red↔orange **7.1** | FAIL; magenta↔aqua CVD ΔE **1.6** under deuteranopia |
 
-**`GENRE_TOP_N` moves 3 → 11 rather than the fold being removed.** Today nothing folds, which is what the
-curator asked for. But the fold is the mechanism enforcing the invariant from the B4 spec — *a dot can
-never carry a bucket its own legend does not explain* — so deleting it would mean a 12th genre, whenever
-the pipeline emits one, either overflowing into an unvalidated colour or being drawn in the neutral grey
-that means "Not coded", which would be a lie about the data. Raising it costs nothing and keeps the
-guarantee. `VALIDATED_CATS` moves 4 → 11 so `colourScale`'s console warning keeps guarding the real edge.
+The floor is 15, below which the skill's own wording is "hard to tell apart even with full color vision".
+**Four simultaneous categorical colours is a hard ceiling on a scatter plot**, and shades are worse than
+hues, since a shade sits closer to its own base than any two different hues do. The `dataviz`
+non-negotiable — *a 9th series is never a generated hue; it folds, facets, or uses composite encoding* —
+is therefore binding, not advisory.
+
+**The curator's actual objection was visibility, not colour count**, and this map has a second identity
+channel a static chart does not: the legend is a spotlight control, and the hover card names a dot's
+value. So:
+
+- **The legend names all eleven genres**, each with its count. Nothing is hidden behind an opaque bucket.
+- **Colour keeps four validated slots.** The top three by count (metal, hardcore, punk — 34% of the map
+  between them) take categorical slots 1–3. The remaining eight named genres form an **"Other genres"
+  group that shares slot 4**, and the group is rendered as a heading with its eight members listed
+  beneath it, each individually clickable. This is the existing nested pattern — `FilterSection` and the
+  theme tree already read this way — not a new one.
+- **Every genre is individually spotlightable, including the one-song ones.** Spotlighting reduces the
+  plot to a two-colour scene (lit vs dimmed), which is legible regardless of palette budget. That is
+  what makes a 1-song genre findable, and no palette ever could.
+- **"Other genres" takes slot 4, not the neutral grey.** "A smaller genre" and "no genre at all" are
+  different claims, and the neutral is reserved for the second — the same reasoning as the 2026-07-27
+  decision not to merge `NOT_CODED` into the fold.
+
+The colour bucket and the spotlight identity therefore come apart: a song's `codes.genre` carries its
+**raw parent genre** (so spotlight can target folk specifically), while the **colour scale** maps top-3
+to slots 1–3, any other named genre to slot 4, and `NOT_CODED` to the neutral. `GENRE_TOP_N` stays **3** —
+it now sets how many genres get their own hue, not how many are visible.
+
+**The invariant survives in a sharper form:** a dot's colour is always explained by a legend entry, and
+its exact genre is always named in the legend and reachable by one click.
 
 **Scope:** genre only. The five acoustic dimensions and Focus carry 3–4 codes each, already fit inside
-the validated hues, and the curator confirmed they look right. Nothing about them is re-validated.
-
-**Stated limitation, because it is load-bearing:** eight of these genres have ≤10 songs on a 640-point
-map. Colour separates metal/hardcore/punk well; it cannot make one soul song findable by scanning. The
-**legend spotlight** is what finds it — the palette's job is to make it legible *once spotlit*.
+the validated four, and the curator confirmed they look right. Nothing about them is re-validated, and
+`VALIDATED_CATS` stays 4.
 
 ### 3.2 Dot radius
 
@@ -99,9 +117,11 @@ the smoke; it is not a precedent for reintroducing sidebar prose elsewhere.
 
 ### 3.5 Batch A verification
 
-- Backend `node:test`: nothing folds at 11 with today's data; a synthetic 12-genre fixture does fold;
-  descriptions are served for the three known spaces and absent for an unknown one.
-- The `dataviz` validator output for all 11 slots, both themes, recorded.
+- Backend `node:test`: every named genre appears in the legend with its own count and its raw code; the
+  top three carry their own colour slot and the rest carry the group's; `NOT_CODED` is never merged into
+  the group; descriptions are served for the three known spaces and absent for an unknown one.
+- The `dataviz` validator run recorded above stands as the palette evidence — no new colours are
+  introduced, so nothing further needs validating.
 - Gates: backend suite green, lint 0 errors, build clean.
 - Curator eyeball on the live map — the palette question is one only their eyes can close, which is why
   the values are judged on the real map at real dot size rather than in a mockup.
