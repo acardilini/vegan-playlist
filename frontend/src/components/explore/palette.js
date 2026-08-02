@@ -29,7 +29,7 @@ function cssVar(name, fallback) {
 
 // Colour lookup for one legend. Entries arrive in legend order; NOT_CODED always takes the
 // neutral, never a categorical slot. A group's `children` share the group's colour — that is
-// what lets the legend name 11 genres while the palette stays at its 4 validated slots, and
+// what lets the legend name every genre while the palette stays at its 4 validated slots, and
 // it keeps the invariant that every dot's colour is explained by a legend entry on screen.
 // `dimensionLabel` is optional and used only to name the dimension in the overflow warning.
 export function colourScale(entries, dimensionLabel) {

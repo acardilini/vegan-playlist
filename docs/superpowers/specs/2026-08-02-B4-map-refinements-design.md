@@ -22,11 +22,20 @@ an unmerged branch keeps working code off `main` for no benefit, so:
 Both of these were measured against the live database before designing, and both change what the
 curator's observations mean.
 
-**Genre on the map is mostly empty.** Of the 640 mapped songs: Not coded 379 (59.2%), metal 96 (15.0%),
-hardcore 77 (12.0%), punk 48 (7.5%), folk 10, hip-hop 7, reggae 7, electronic 7, rock 4, pop 3, other 1,
-soul 1. That is **11 real genre buckets**, not the 13 the catalogue-wide figure in the B4 spec reported —
-the map population is a different population. "Other genres" is currently hiding **40 songs across 8
-genres**, and below punk every genre is ≤10 songs.
+**Genre on the map has a long, thin tail.** Of the 640 mapped songs: metal 213 (33.3%), hardcore 149
+(23.3%), punk 122 (19.1%), then a tail of unclassified 22, folk 12, electronic 8, reggae 8, hip-hop 7,
+pop 4, rock 4, soul 1, blues 1 — and Not coded 89 (13.9%). That is **12 genre buckets**, not the 13 the
+B4 spec's catalogue-wide figure reported: the map is a different population. The top three carry
+**75.6%** of the map; the whole tail is **67 songs (10.5%)**, which is what "Other genres" was hiding.
+
+> **Correction, 2026-08-02.** An earlier revision of this section reported Not coded at 379 (59.2%) and
+> metal at 96, and concluded that genre was "mostly empty". **Those numbers were wrong.** They came from
+> a scratch query reading the raw `songs.genre` column, whereas `mapRows` selects
+> `genres.EFFECTIVE_GENRE_EXPR` — the B3 effective-genre fix, which falls back to artist genres and
+> roughly doubles coverage. Genre is in fact a well-populated colour dimension, not a mostly-grey one.
+> The design conclusions below are unaffected — the palette ceiling is a property of colour, not of this
+> data, and the tail is still small enough to group — but the "genre is mostly empty" reasoning is
+> withdrawn, including the case it appeared to make for dropping Genre from the Colour by menu.
 
 **The far-away clusters are not a scaling bug.** The middle 99% of points already occupies **96–99%** of
 the plot extent on every axis of every space (thematic x: 14.1 of 14.7; audio y: 15.7 of 16.0; holistic
@@ -61,11 +70,11 @@ is therefore binding, not advisory.
 channel a static chart does not: the legend is a spotlight control, and the hover card names a dot's
 value. So:
 
-- **The legend names all eleven genres**, each with its count. Nothing is hidden behind an opaque bucket.
+- **The legend names every genre**, each with its count. Nothing is hidden behind an opaque bucket.
 - **Colour keeps four validated slots.** The top three by count (metal, hardcore, punk — 34% of the map
-  between them) take categorical slots 1–3. The remaining eight named genres form an **"Other genres"
-  group that shares slot 4**, and the group is rendered as a heading with its eight members listed
-  beneath it, each individually clickable. This is the existing nested pattern — `FilterSection` and the
+  between them — 75.6% of the map) take categorical slots 1–3. Every remaining named genre forms an
+  **"Other genres" group that shares slot 4** (nine members today, 67 songs), rendered as a heading with
+  its members listed beneath it, each individually clickable. This is the existing nested pattern — `FilterSection` and the
   theme tree already read this way — not a new one.
 - **Every genre is individually spotlightable, including the one-song ones.** Spotlighting reduces the
   plot to a two-colour scene (lit vs dimmed), which is legible regardless of palette budget. That is

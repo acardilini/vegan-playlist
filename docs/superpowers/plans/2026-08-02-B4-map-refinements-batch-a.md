@@ -479,9 +479,9 @@ npm run build
 ```
 
 Expected: 0 errors (6 pre-existing warnings), build clean. Then load `/explore`, choose **Colour by →
-Genre**, and confirm: eleven genres named; metal/hardcore/punk have their own swatches; "Other genres"
-has a swatch and eight indented members without swatches; clicking a member dims everything else;
-clicking the group lights all eight; the counts still sum to 640.
+Genre**, and confirm: every genre named; metal/hardcore/punk have their own swatches; "Other genres"
+has a swatch and its members are indented without swatches (nine of them on today's data); clicking a
+member dims everything else; clicking the group lights all of them; the counts still sum to 640.
 
 - [ ] **Step 7: Commit**
 
@@ -687,7 +687,7 @@ Message subject: `feat(explore): larger dots and a quieter coverage line`
 ## Done when
 
 - Backend suite green (expect **165**), lint 0 errors, frontend build clean.
-- `/explore` → Colour by → Genre lists all eleven genres, counts summing to 640, with the eight small
+- `/explore` → Colour by → Genre lists every genre, counts summing to 640, with the small
   ones nested under "Other genres" and each individually spotlightable.
 - The space note changes with the selected chip; the coverage line is quieter; dots are larger.
 - Curator confirms the dot size and the legend by eye — then the B4 branch is ready for its final
