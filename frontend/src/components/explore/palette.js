@@ -27,28 +27,32 @@ function cssVar(name, fallback) {
   return v || fallback;
 }
 
-// Colour lookup for one legend. Codes arrive in legend order; NOT_CODED always takes the
-// neutral, never a categorical slot. `dimensionLabel` is optional and used only to name the
-// dimension in the overflow warning below — it never affects the colours returned.
-export function colourScale(codes, dimensionLabel) {
+// Colour lookup for one legend. Entries arrive in legend order; NOT_CODED always takes the
+// neutral, never a categorical slot. A group's `children` share the group's colour — that is
+// what lets the legend name 11 genres while the palette stays at its 4 validated slots, and
+// it keeps the invariant that every dot's colour is explained by a legend entry on screen.
+// `dimensionLabel` is optional and used only to name the dimension in the overflow warning.
+export function colourScale(entries, dimensionLabel) {
   const cats = CAT_VARS.map(v => cssVar(v, '#888'));
   const neutral = cssVar('--explore-not-coded', '#8a8a8a');
   const map = new Map();
   let i = 0;
-  for (const code of codes) {
-    if (code === NOT_CODED) { map.set(code, neutral); continue; }
+  for (const entry of entries) {
+    if (entry.code === NOT_CODED) { map.set(entry.code, neutral); continue; }
     if (i >= VALIDATED_CATS) {
       // Silent-and-visual is the worst failure mode here: a wrong colour looks plausible,
       // not broken. Loud in the console instead — names the dimension and the code so the
       // next person sees it the first time it happens, rather than discovering it by eye.
       console.warn(
         `explore palette: "${dimensionLabel || 'this dimension'}" needs a ${i + 1}th `
-        + `categorical colour ("${code}"), past the ${VALIDATED_CATS} validated slots. `
-        + 'Using the unvalidated --explore-cat-5 fallback. Fold this dimension server-side '
-        + "instead (see genre's fold in backend/services/explore.js) rather than relying on "
-        + 'this colour.');
+        + `categorical colour ("${entry.code}"), past the ${VALIDATED_CATS} validated slots. `
+        + 'Group the surplus codes server-side under one parent entry with `children` '
+        + "(see genre's Other genres group in backend/services/explore.js) rather than "
+        + 'relying on this colour.');
     }
-    map.set(code, cats[i % cats.length]);
+    const colour = cats[i % cats.length];
+    map.set(entry.code, colour);
+    for (const child of entry.children || []) map.set(child.code, colour);
     i += 1;
   }
   return (code) => map.get(code) || neutral;

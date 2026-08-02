@@ -78,7 +78,7 @@ function ExploreMap() {
     [data, colour]);
 
   const scale = useMemo(
-    () => colourScale(legend ? legend.codes.map(c => c.code) : [], legend && legend.label),
+    () => colourScale(legend ? legend.codes : [], legend && legend.label),
     [legend]);
 
   const matches = useMemo(() => {
@@ -190,6 +190,20 @@ function ExploreMap() {
     );
   }
 
+  // A group toggles all of its members at once; a leaf toggles itself. Spotlight state holds
+  // raw codes only, because that is what a song carries — the group is a legend construct.
+  const codesOf = (entry) => (entry.children && entry.children.length
+    ? entry.children.map(c => c.code)
+    : [entry.code]);
+
+  const toggleEntry = (entry) => {
+    const codes = codesOf(entry);
+    const next = new Set(spotlit);
+    if (codes.every(c => next.has(c))) codes.forEach(c => next.delete(c));
+    else codes.forEach(c => next.add(c));
+    setParam('codes', [...next].join(','));
+  };
+
   return (
     <div className="explore-map">
       <div className="explore-toolbar">
@@ -261,23 +275,38 @@ function ExploreMap() {
         <aside className="explore-rail">
           <div className="explore-rail-label">{(legend || {}).label}</div>
           <ul className="explore-legend">
-            {legend && legend.codes.map(c => (
-              <li key={c.code}>
-                <button
-                  type="button"
-                  className={`explore-legend-toggle ${spotlit.size && !spotlit.has(c.code) ? 'off' : ''}`}
-                  aria-pressed={spotlit.has(c.code)}
-                  onClick={() => {
-                    const next = new Set(spotlit);
-                    if (next.has(c.code)) next.delete(c.code); else next.add(c.code);
-                    setParam('codes', [...next].join(','));
-                  }}
-                >
-                  <span className="explore-swatch" style={{ background: scale(c.code) }} />
-                  {c.label} <span className="explore-legend-count">({c.count})</span>
-                </button>
-              </li>
-            ))}
+            {legend && legend.codes.map(c => {
+              const on = codesOf(c).every(code => spotlit.has(code));
+              return (
+                <li key={c.code}>
+                  <button
+                    type="button"
+                    className={`explore-legend-toggle ${spotlit.size && !on ? 'off' : ''}`}
+                    aria-pressed={on}
+                    onClick={() => toggleEntry(c)}
+                  >
+                    <span className="explore-swatch" style={{ background: scale(c.code) }} />
+                    {c.label} <span className="explore-legend-count">({c.count})</span>
+                  </button>
+                  {c.children && c.children.length > 0 && (
+                    <ul className="explore-legend-children">
+                      {c.children.map(ch => (
+                        <li key={ch.code}>
+                          <button
+                            type="button"
+                            className={`explore-legend-toggle ${spotlit.size && !spotlit.has(ch.code) ? 'off' : ''}`}
+                            aria-pressed={spotlit.has(ch.code)}
+                            onClick={() => toggleEntry(ch)}
+                          >
+                            {ch.label} <span className="explore-legend-count">({ch.count})</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
           </ul>
 
           {matches && (

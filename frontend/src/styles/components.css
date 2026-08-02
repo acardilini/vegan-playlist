@@ -2538,8 +2538,22 @@
 .explore-rail-label { font: var(--text-label); color: var(--text-secondary); }
 
 .explore-legend { list-style: none; padding: 0; margin: var(--space-2) 0 0; }
-.explore-legend li { display: flex; align-items: center; gap: var(--space-2); padding: 2px 0; }
+.explore-legend li { display: block; padding: 2px 0; }
+.explore-legend > li > .explore-legend-toggle { display: flex; align-items: center; gap: var(--space-2); }
 .explore-legend-count { color: var(--text-secondary); }
+
+/* Members of a colour group: indented under their parent, no swatch of their own — they
+   share the parent's colour, and eight repeated swatches would imply eight distinct
+   colours the validated palette does not have. The hairline is the grouping cue. */
+.explore-legend-children {
+  list-style: none;
+  margin: 0 0 var(--space-1);
+  padding: 0 0 0 var(--space-3);
+  border-left: 1px solid var(--border-hairline);
+  margin-left: 5px;
+}
+.explore-legend-children li { display: flex; align-items: center; padding: 1px 0; }
+.explore-legend-children .explore-legend-toggle { font-size: 0.85rem; color: var(--text-secondary); }
 
 .explore-swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 
