@@ -7,7 +7,7 @@ import SelectedSongCard from './SelectedSongCard';
 const DOT_RADIUS = 3.2;
 const PAD = 18;
 
-// Each space is projected on its own scale (semantic_2d x spans -3.6..14.0 where
+// Each space is projected on its own scale (audio_2d x spans -2.9..12.3 where
 // holistic_2d spans -4.7..5.1), so extents are recomputed per space — never assume a
 // shared domain.
 function extentsFor(songs, spaceKey) {
@@ -36,7 +36,11 @@ function ExploreMap() {
 
   const [params, setParams] = useSearchParams();
 
-  const space = params.get('space') || (data && data.spaces[0] && data.spaces[0].key) || null;
+  // A space from the URL is honoured only if the catalogue still serves it. Without this,
+  // a link shared before a space was retired draws an empty plot with no chip lit.
+  const requestedSpace = params.get('space');
+  const space = (data && data.spaces.some(s => s.key === requestedSpace) ? requestedSpace : null)
+    || (data && data.spaces[0] && data.spaces[0].key) || null;
   const colour = params.get('colour')
     || (data && (data.colourBy.find(c => c.key === 'sonic_energy') || data.colourBy[0] || {}).key)
     || null;

@@ -6,18 +6,21 @@ const explore = require('../services/explore');
 // Unique fixture sentinel per test file: ZZZEXP.
 
 test('spaceLabel maps audio to the site word and title-cases anything unknown', () => {
-  assert.equal(explore.spaceLabel('semantic'), 'Semantic');
+  assert.equal(explore.spaceLabel('thematic'), 'Thematic');
   assert.equal(explore.spaceLabel('audio'), 'Sound');
   assert.equal(explore.spaceLabel('holistic'), 'Holistic');
   assert.equal(explore.spaceLabel('some_new_space'), 'Some New Space');
 });
 
-test('discoverSpaces reads the *_2d columns from the live table', async () => {
+test('discoverSpaces reads the *_2d columns from the live table, minus the hidden ones', async () => {
   const spaces = await explore.discoverSpaces(pool);
   const keys = spaces.map(s => s.key);
-  for (const expected of ['semantic', 'thematic', 'audio', 'holistic']) {
+  for (const expected of ['thematic', 'audio', 'holistic']) {
     assert.ok(keys.includes(expected), `expected space ${expected}`);
   }
+  // semantic_2d is still a populated column; it is hidden by HIDDEN_SPACES, so proving it
+  // is absent here is proving the hide-list works — not that the data went away.
+  assert.ok(!keys.includes('semantic'), 'the hidden semantic space is not served');
   for (const s of spaces) {
     assert.ok(s.column.endsWith('_2d'), 'column is a 2d column');
     assert.ok(s.label, 'every space has a label');
@@ -79,7 +82,8 @@ test('mapRows returns live mapped songs only', async () => {
   assert.ok(!ids.includes(unmapped), 'song without coordinates is excluded');
 
   const row = rows.find(r => r.id === live);
-  assert.deepEqual(row.semantic_2d, [1, 2], 'coordinates come through as numbers');
+  assert.deepEqual(row.thematic_2d, [3, 4], 'coordinates come through as numbers');
+  assert.ok(!('semantic_2d' in row), 'a hidden space is not even selected');
   assert.equal(row.sonic_energy, 'EXPLOSIVE_HIGH_INTENSITY', 'latest-pass codes come through');
   assert.equal(row.title, 'ZZZEXP Live');
 });
@@ -123,7 +127,8 @@ test('mapPayload assembles spaces, legends, coverage and songs', async () => {
     'Not coded sorts last');
 
   const song = p.songs.find(s => s.id === id);
-  assert.deepEqual(song.coords.semantic, [1, 2]);
+  assert.deepEqual(song.coords.thematic, [3, 4]);
+  assert.ok(!('semantic' in song.coords), 'no coordinates are served for a hidden space');
   assert.equal(song.codes.sonic_energy, 'EXPLOSIVE_HIGH_INTENSITY');
   assert.equal(song.codes.focus_amount, explore.NOT_CODED, 'suppressed code is bucketed');
   assert.equal(song.artist, '', 'a song with no artist rows serves an empty artist string');

@@ -11,11 +11,16 @@ const { getParentGenre } = require('../utils/genreMapping');
 // for the acoustic dimensions everywhere else. Unknown spaces title-case rather than
 // vanish, so a space the pipeline adds appears without a code change.
 const SPACE_LABELS = {
-  semantic: 'Semantic',
   thematic: 'Thematic',
   audio: 'Sound',
   holistic: 'Holistic',
 };
+
+// Discovery stays data-driven; this is the one named exception. The curator's smoke
+// (2026-08-02) dropped `semantic` from the map — three spaces that mean something beat
+// four where one is redundant. Un-hiding it is deleting a word from this set; the label
+// needs no entry above because titleCase already yields "Semantic".
+const HIDDEN_SPACES = new Set(['semantic']);
 
 function titleCase(key) {
   return String(key).toLowerCase().split('_')
@@ -42,7 +47,8 @@ async function discoverSpaces(db) {
     .map(c => {
       const key = c.slice(0, -3);
       return { key, column: c, label: spaceLabel(key) };
-    });
+    })
+    .filter(s => !HIDDEN_SPACES.has(s.key));
 }
 
 // One row per live, mapped song. Artists come from a scalar subquery rather than an
