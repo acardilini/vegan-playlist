@@ -63,7 +63,11 @@ function legendToggleClass({ allOn, someOn }, spotlit) {
 
 function ExploreMap() {
   const { data, loading, error, reload } = useExplorePoints();
-  const canvasRef = useRef(null);
+  // State, not a plain ref: while `data` is loading this component returns early and the
+  // canvas never mounts, so a ref alone would sit at null through that render with nothing
+  // to notice when it later attaches. Tracking the element in state makes its arrival a
+  // dependency the wheel-attach effect below can react to.
+  const [canvasEl, setCanvasEl] = useState(null);
   const wrapRef = useRef(null);
   const positionsRef = useRef([]);
   const [size, setSize] = useState({ w: 800, h: 520 });
@@ -140,11 +144,15 @@ function ExploreMap() {
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedId, params, setParams]);
 
+  // Depends on `canvasEl`, not just `attachWheel`: on first load the canvas is unmounted
+  // (the loading-state early return below fires instead), so the effect commit that runs
+  // while `attachWheel`'s identity is fresh would otherwise attach to `null` and never
+  // re-run once the canvas actually appears, leaving the wheel permanently unbound.
   const { attachWheel } = transform;
-  useEffect(() => attachWheel(canvasRef.current), [attachWheel]);
+  useEffect(() => attachWheel(canvasEl), [attachWheel, canvasEl]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = canvasEl;
     if (!canvas || !data || !space) return;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(size.w * dpr);
@@ -191,7 +199,7 @@ function ExploreMap() {
         ctx.stroke();
       }
     }
-  }, [data, space, colour, scale, size, spotlit, matchIds, selectedId, transform.view]);
+  }, [canvasEl, data, space, colour, scale, size, spotlit, matchIds, selectedId, transform.view]);
 
   const nearest = (mx, my) => {
     let best = null, bestD = 12 * 12;   // 12px grab radius, squared
@@ -279,7 +287,7 @@ function ExploreMap() {
       <div className="explore-body">
         <div className="explore-plot" ref={wrapRef}>
           <canvas
-            ref={canvasRef}
+            ref={setCanvasEl}
             role="img"
             className={transform.isDragging ? 'explore-canvas grabbing' : 'explore-canvas'}
             aria-label={`Map of ${data.coverage.mapped} songs positioned by ${

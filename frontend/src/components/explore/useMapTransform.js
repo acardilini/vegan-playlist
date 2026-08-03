@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FIT_VIEW, clampView, zoomAtPoint } from './mapGeometry';
-import { deriveView, formatView } from './exploreUrlState';
+// Explicit .js extensions: every module in this directory is plain ESM that `node --test`
+// may load directly (no bundler), and Node's ESM resolver does not infer extensions.
+import { FIT_VIEW, clampView, zoomAtPoint } from './mapGeometry.js';
+import { deriveView, formatView } from './exploreUrlState.js';
 
 // Below this a pointer-up is a click, not a pan — without it every attempt to drag the map
 // would also select whichever song happened to be under the press.
@@ -23,9 +25,19 @@ export function useMapTransform({ size, params, onCommit }) {
   const movedRef = useRef(false);
   const wheelTimerRef = useRef(null);
   const sizeRef = useRef(size);
+  // `onCommit` (ExploreMap's `commitView`) is re-created on every URL param write in the
+  // page — song select, colour change, search text, not just a view commit — because it
+  // closes over `setParam`, which closes over `params`. Reading it through a ref instead of
+  // a useCallback dependency keeps `commit`, and everything built on it (`attachWheel`
+  // included), referentially stable across those unrelated writes. Without this, a param
+  // write inside the 300ms wheel-settle window tears down and rebuilds the wheel listener,
+  // and the rebuild's cleanup cancels the pending debounced commit before it ever fires —
+  // the zoom stays on screen but silently never reaches the URL.
+  const onCommitRef = useRef(onCommit);
 
   useEffect(() => { viewRef.current = view; }, [view]);
   useEffect(() => { sizeRef.current = size; }, [size]);
+  useEffect(() => { onCommitRef.current = onCommit; }, [onCommit]);
 
   useEffect(() => {
     if (urlView === committedRef.current) return;
@@ -48,8 +60,8 @@ export function useMapTransform({ size, params, onCommit }) {
   const commit = useCallback((next) => {
     const serialised = formatView(next);
     committedRef.current = serialised;
-    onCommit(serialised);
-  }, [onCommit]);
+    onCommitRef.current(serialised);
+  }, []);
 
   const zoomBy = useCallback((factor) => {
     const current = viewRef.current;
