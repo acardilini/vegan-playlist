@@ -91,7 +91,10 @@ function ExploreMap() {
   const requestedSpace = params.get('space');
   const space = (data && data.spaces.some(s => s.key === requestedSpace) ? requestedSpace : null)
     || (data && data.spaces[0] && data.spaces[0].key) || null;
-  const colour = params.get('colour')
+  // Same guard as `space` just above: a colour key from the URL is honoured only if the
+  // catalogue still serves it, otherwise it falls back to the sonic_energy default.
+  const requestedColour = params.get('colour');
+  const colour = (data && data.colourBy.some(c => c.key === requestedColour) ? requestedColour : null)
     || (data && (data.colourBy.find(c => c.key === 'sonic_energy') || data.colourBy[0] || {}).key)
     || null;
   const query = params.get('q') || '';
@@ -142,8 +145,10 @@ function ExploreMap() {
       s.title.toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q));
   }, [data, query]);
 
+  // An empty (but non-null) match list must dim nothing — only a non-empty list narrows the
+  // plot. "No songs match" is driven by `matches` itself (see the rail below), not by this.
   const matchIds = useMemo(
-    () => (matches ? new Set(matches.map(s => s.id)) : null), [matches]);
+    () => (matches && matches.length > 0 ? new Set(matches.map(s => s.id)) : null), [matches]);
 
   const selected = useMemo(
     () => (data && selectedId ? data.songs.find(s => s.id === selectedId) || null : null),
@@ -307,7 +312,7 @@ function ExploreMap() {
               className="explore-hovercard"
               style={{
                 left: Math.min(hover.x + 14, size.w - 190),
-                top: Math.max(hover.y - 10, 0),
+                top: Math.min(Math.max(hover.y - 10, 0), size.h - 100),
               }}
             >
               <div className="explore-song-title">{hover.song.title}</div>
@@ -367,7 +372,11 @@ function ExploreMap() {
           {matches && (
             <div className="explore-matches">
               <div className="explore-rail-label">
-                {matches.length === 0 ? 'No songs match' : `${matches.length} match${matches.length === 1 ? '' : 'es'}`}
+                {matches.length === 0
+                  ? 'No songs match'
+                  : matches.length > 20
+                    ? `Showing 20 of ${matches.length} matches`
+                    : `${matches.length} match${matches.length === 1 ? '' : 'es'}`}
               </div>
               <ul>
                 {matches.slice(0, 20).map(s => (

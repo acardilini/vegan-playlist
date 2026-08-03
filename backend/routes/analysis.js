@@ -33,7 +33,7 @@ router.get('/songs/:id/similar', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (!Number.isFinite(id)) return res.status(400).json({ error: 'Bad song id' });
-    const limit = Math.min(parseInt(req.query.limit, 10) || 6, 24);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 6, 1), 24);
     res.json(await explore.similarFor(pool, id, limit));
   } catch (e) {
     console.error('similar songs error:', e);

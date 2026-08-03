@@ -44,6 +44,11 @@ function SimilarSongs({ songId }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Reset so a song-to-song navigation shows the loading state instead of the previous
+    // song's recommendations while the new fetch is in flight. `cancelled` (below) still
+    // guards against a slow response for an old song overwriting a newer one.
+    setData(null);
+    setActive(null);
     spotifyService.getSimilarSongs(songId, 6)
       .then((d) => {
         if (cancelled) return;
