@@ -31,9 +31,10 @@ test('each known space is served with a description, and an unknown one with nul
   const spaces = await explore.discoverSpaces(pool);
   const byKey = Object.fromEntries(spaces.map(s => [s.key, s]));
 
-  assert.match(byKey.thematic.description, /lyrics/i);
-  assert.match(byKey.audio.description, /acoustic/i);
-  assert.match(byKey.holistic.description, /both/i);
+  // Curator-approved copy pinned exactly; drift in these strings fails the test.
+  assert.equal(byKey.thematic.description, 'Positioned by an analysis of the lyrics.');
+  assert.equal(byKey.audio.description, "Positioned by an analysis of the song's acoustic properties.");
+  assert.equal(byKey.holistic.description, 'Positioned by an analysis of both the lyrics and the sound.');
 
   // Discovery is data-driven, so a space the pipeline adds later has no copy written for it.
   // It must serve null rather than an invented sentence.
