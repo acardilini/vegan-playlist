@@ -3,12 +3,12 @@ import { useSearchParams } from 'react-router-dom';
 import { useExplorePoints } from './useExplorePoints';
 import { colourScale, dimColour } from './palette';
 import SelectedSongCard from './SelectedSongCard';
+import { FIT_VIEW, layout } from './mapGeometry';
 import {
   deriveColour, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit, withParam,
 } from './exploreUrlState';
 
 const DOT_RADIUS = 4;
-const PAD = 18;
 
 // A group toggles all of its members at once; a leaf toggles itself. Spotlight state holds
 // raw codes only, because that is what a song carries — the group is a legend construct.
@@ -58,25 +58,6 @@ function legendToggleClass({ allOn, someOn }, spotlit) {
   if (someOn) return 'explore-legend-toggle explore-legend-toggle--partial';
   const dimmed = spotlit.size > 0 && !allOn;
   return `explore-legend-toggle ${dimmed ? 'off' : ''}`;
-}
-
-// Each space is projected on its own scale (audio_2d x spans -2.9..12.3 where
-// holistic_2d spans -4.7..5.1), so extents are recomputed per space — never assume a
-// shared domain.
-function extentsFor(songs, spaceKey) {
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const s of songs) {
-    const c = s.coords[spaceKey];
-    if (!c) continue;
-    if (c[0] < minX) minX = c[0];
-    if (c[0] > maxX) maxX = c[0];
-    if (c[1] < minY) minY = c[1];
-    if (c[1] > maxY) maxY = c[1];
-  }
-  if (!Number.isFinite(minX)) return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
-  if (minX === maxX) { minX -= 0.5; maxX += 0.5; }
-  if (minY === maxY) { minY -= 0.5; maxY += 0.5; }
-  return { minX, maxX, minY, maxY };
 }
 
 function ExploreMap() {
@@ -164,26 +145,16 @@ function ExploreMap() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
 
-    const { minX, maxX, minY, maxY } = extentsFor(data.songs, space);
-    const sx = (size.w - PAD * 2) / (maxX - minX);
-    const sy = (size.h - PAD * 2) / (maxY - minY);
-
+    const points = layout(data.songs, space, size, FIT_VIEW);
     const dim = dimColour();
-    const positions = [];
     const lit = [];
-    for (const song of data.songs) {
-      const c = song.coords[space];
-      if (!c) continue;
-      const x = PAD + (c[0] - minX) * sx;
-      // Canvas y grows downward; flip so the plot reads like a chart.
-      const y = size.h - PAD - (c[1] - minY) * sy;
-      positions.push({ id: song.id, x, y });
-      const passesSpotlight = spotlit.size === 0 || spotlit.has(song.codes[colour]);
-      const passesSearch = !matchIds || matchIds.has(song.id);
-      if (passesSpotlight && passesSearch) lit.push({ song, x, y });
+    for (const p of points) {
+      const passesSpotlight = spotlit.size === 0 || spotlit.has(p.song.codes[colour]);
+      const passesSearch = !matchIds || matchIds.has(p.id);
+      if (passesSpotlight && passesSearch) lit.push(p);
       else {
         ctx.beginPath();
-        ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, DOT_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = dim;
         ctx.fill();
       }
@@ -196,10 +167,10 @@ function ExploreMap() {
       ctx.fill();
     }
     ctx.globalAlpha = 1;
-    positionsRef.current = positions;
+    positionsRef.current = points;
 
     if (selectedId) {
-      const hit = positions.find(p => p.id === selectedId);
+      const hit = points.find(p => p.id === selectedId);
       if (hit) {
         ctx.beginPath();
         ctx.arc(hit.x, hit.y, DOT_RADIUS + 4, 0, Math.PI * 2);
@@ -223,11 +194,8 @@ function ExploreMap() {
 
   const onMove = (e) => {
     const r = e.currentTarget.getBoundingClientRect();
-    const mx = e.clientX - r.left, my = e.clientY - r.top;
-    const hit = nearest(mx, my);
-    if (!hit) { setHover(null); return; }
-    const song = data.songs.find(s => s.id === hit.id);
-    setHover(song ? { song, x: hit.x, y: hit.y } : null);
+    const hit = nearest(e.clientX - r.left, e.clientY - r.top);
+    setHover(hit ? { song: hit.song, x: hit.x, y: hit.y } : null);
   };
 
   const onClick = (e) => {
