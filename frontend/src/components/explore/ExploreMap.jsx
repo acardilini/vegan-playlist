@@ -7,6 +7,56 @@ import SelectedSongCard from './SelectedSongCard';
 const DOT_RADIUS = 3.2;
 const PAD = 18;
 
+// A group toggles all of its members at once; a leaf toggles itself. Spotlight state holds
+// raw codes only, because that is what a song carries — the group is a legend construct.
+// Module-level (not a component closure) because it is pure and shared by rendering and the
+// click handler alike.
+function codesOf(entry) {
+  return entry.children && entry.children.length
+    ? entry.children.map(c => c.code)
+    : [entry.code];
+}
+
+// Finds a legend entry by code across BOTH the top-level array and every group's `children`.
+// Most genres live only inside a group's `children` (see backend/services/explore.js's
+// "Other genres" grouping), so a plain top-level `.find` misses them and renders a blank
+// label for any song in the tail — the dot is still correctly coloured/spotlightable, only
+// the text lookup was too narrow. This is the single lookup every label-resolving call site
+// must use instead of duplicating the two-level search.
+function findLegendEntry(legend, code) {
+  if (!legend) return null;
+  for (const entry of legend.codes) {
+    if (entry.code === code) return entry;
+    const child = (entry.children || []).find(c => c.code === code);
+    if (child) return child;
+  }
+  return null;
+}
+
+// Tri-state for a legend toggle button: none of its codes are spotlit, all of them are, or
+// (group only) some but not all — the last case needs its own visual language, since it is
+// neither "fully selected" nor "irrelevant to the current spotlight".
+function legendToggleState(entry, spotlit) {
+  const codes = codesOf(entry);
+  const litCount = codes.filter(code => spotlit.has(code)).length;
+  const allOn = litCount === codes.length;
+  const someOn = litCount > 0 && !allOn;
+  return { allOn, someOn };
+}
+
+function legendAriaPressed({ allOn, someOn }) {
+  return someOn ? 'mixed' : allOn;
+}
+
+// A group with lit children must not look identical to a fully-dimmed group — that is the
+// distinction the "mixed" case exists to preserve — so `someOn` gets its own class rather
+// than falling into the plain `off` dimming.
+function legendToggleClass({ allOn, someOn }, spotlit) {
+  if (someOn) return 'explore-legend-toggle explore-legend-toggle--partial';
+  const dimmed = spotlit.size > 0 && !allOn;
+  return `explore-legend-toggle ${dimmed ? 'off' : ''}`;
+}
+
 // Each space is projected on its own scale (audio_2d x spans -2.9..12.3 where
 // holistic_2d spans -4.7..5.1), so extents are recomputed per space — never assume a
 // shared domain.
@@ -190,12 +240,6 @@ function ExploreMap() {
     );
   }
 
-  // A group toggles all of its members at once; a leaf toggles itself. Spotlight state holds
-  // raw codes only, because that is what a song carries — the group is a legend construct.
-  const codesOf = (entry) => (entry.children && entry.children.length
-    ? entry.children.map(c => c.code)
-    : [entry.code]);
-
   const toggleEntry = (entry) => {
     const codes = codesOf(entry);
     const next = new Set(spotlit);
@@ -265,7 +309,7 @@ function ExploreMap() {
               {legend && (
                 <div className="explore-song-meta">
                   {legend.label}: {
-                    (legend.codes.find(c => c.code === hover.song.codes[colour]) || {}).label
+                    (findLegendEntry(legend, hover.song.codes[colour]) || {}).label
                   }
                 </div>
               )}
@@ -276,13 +320,13 @@ function ExploreMap() {
           <div className="explore-rail-label">{(legend || {}).label}</div>
           <ul className="explore-legend">
             {legend && legend.codes.map(c => {
-              const on = codesOf(c).every(code => spotlit.has(code));
+              const state = legendToggleState(c, spotlit);
               return (
                 <li key={c.code}>
                   <button
                     type="button"
-                    className={`explore-legend-toggle ${spotlit.size && !on ? 'off' : ''}`}
-                    aria-pressed={on}
+                    className={legendToggleClass(state, spotlit)}
+                    aria-pressed={legendAriaPressed(state)}
                     onClick={() => toggleEntry(c)}
                   >
                     <span className="explore-swatch" style={{ background: scale(c.code) }} />
@@ -290,18 +334,21 @@ function ExploreMap() {
                   </button>
                   {c.children && c.children.length > 0 && (
                     <ul className="explore-legend-children">
-                      {c.children.map(ch => (
-                        <li key={ch.code}>
-                          <button
-                            type="button"
-                            className={`explore-legend-toggle ${spotlit.size && !spotlit.has(ch.code) ? 'off' : ''}`}
-                            aria-pressed={spotlit.has(ch.code)}
-                            onClick={() => toggleEntry(ch)}
-                          >
-                            {ch.label} <span className="explore-legend-count">({ch.count})</span>
-                          </button>
-                        </li>
-                      ))}
+                      {c.children.map(ch => {
+                        const childState = legendToggleState(ch, spotlit);
+                        return (
+                          <li key={ch.code}>
+                            <button
+                              type="button"
+                              className={legendToggleClass(childState, spotlit)}
+                              aria-pressed={legendAriaPressed(childState)}
+                              onClick={() => toggleEntry(ch)}
+                            >
+                              {ch.label} <span className="explore-legend-count">({ch.count})</span>
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </li>
@@ -331,7 +378,7 @@ function ExploreMap() {
             song={selected}
             colourLabel={(legend || {}).label}
             colourValue={selected && legend
-              ? (legend.codes.find(c => c.code === selected.codes[colour]) || {}).label
+              ? (findLegendEntry(legend, selected.codes[colour]) || {}).label
               : null}
           />
         </aside>
