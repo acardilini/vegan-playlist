@@ -164,32 +164,36 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   line-break preservation) — see the Decision Log. **A one-time reshape of 25 songs' `lyrics_highlights`
   was applied to the live DB** (`\n`→`\n\n` so separate highlights stayed separate; not a migration
   file — see the Decision Log). Merged `main`: backend **130/130**, build clean.
-- **⏳ ONE BRANCH PENDING — `session-B4-explore-map` (27 commits from `3f479c7`, NOT merged).**
-  **All 12 plan tasks plus post-smoke Batch A are built, and the final whole-branch opus review is done.**
-  The curator smoked the branch on 2026-08-02: **§1–§3 and §6/§6.4 all passed** (nav, routing, the map, the
-  full interaction layer, and all three song-page coverage cases), which is the first end-to-end human
-  confirmation the feature works. §4/§5 produced nine items, split into **Batch A** (shipped here) and
-  **Batch B** (specced, next session). The branch is held for a **second, much smaller smoke** — only
-  [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md) **§7** needs re-checking. Merged-`main` state is unchanged
-  by this branch. Backend **165/165**, lint 0 errors, build clean.
+- **✅ NOTHING PENDING — B4 is MERGED.** `session-B4-explore-map` (30 commits from `3f479c7`) merged
+  **no-ff to `main`** as merge **`16629c5`** on 2026-08-03, after **two curator smoke rounds both passing**.
+  Round 1 (2026-08-02) passed §1–§3 and §6/§6.4 outright — the first end-to-end human confirmation — and
+  produced nine items, split into **Batch A** (shipped on the branch) and **Batch B** (specced, next
+  session). Round 2 passed §7 and found one gap: a selected song could not be cleared, fixed in `76ffb1f`
+  with a **×** on the rail card and **Escape**, both deleting the `song` URL param so a cleared view is as
+  shareable as a selected one. Merged `main` re-verified: backend **165/165**, lint 0 errors, build clean.
+  Branch deleted local + remote.
 - **✅ NOTHING PENDING — the acoustic dimensions are merged.** `session-acoustic-dimensions` merged
   no-ff to `main` after the curator's smoke; merged `main` re-verified backend **151/151**, lint 0 errors,
   build clean. Branch deleted local + remote. **Two curator-known follow-ups deliberately NOT done:**
   the pre-existing **Year range** control shares both patterns the tempo fixes addressed (clipping
   `From 1970` placeholders and an ellipsis chip for a single-ended range) — a two-line change whenever
   wanted; and the **acoustic derivation itself needs a pipeline re-run** (see the Decision Log).
-- **Next session:** **the curator's §7 re-smoke, then merge.** Only
-  [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md) **§7** is outstanding — §1–§3 and §6 already passed and
-  were not touched. The final whole-branch opus review is **done** (READY TO MERGE = YES WITH FIXES → the
-  2 Important + 5 Minor it found are fixed in `d6fc20a` and re-review-confirmed; the **17 Minor findings
-  from Tasks 1–6** were triaged and **all carry**). After the re-smoke: merge, then **Batch B** — zoom/pan
-  with the viewport in the URL, hover growth + a tweened space switch, and the narrow-width bottom-sheet
-  layout, all specced in
+- **Next session: BATCH B — the Explore map's interaction layer.** Fully specced, no brainstorm needed;
+  start from
+  [`specs/2026-08-02-B4-map-refinements-design.md`](./superpowers/specs/2026-08-02-B4-map-refinements-design.md)
+  §4 and write the plan. Three pieces: **zoom/pan** (wheel toward the cursor + drag + `+`/`−`/Reset
+  buttons, 1×–12×, dot radius constant under zoom, a 4px drag-vs-click threshold, and the viewport in the
+  URL as `view=k,tx,ty`); **motion** (hover growth and a ~450ms tween between spaces, with
+  `prefers-reduced-motion` snapping instead); and the **narrow-width layout** (legend above, song card as a
+  capped ~30vh bottom sheet — the curator's choice over the recommended stack). **Do these two things
+  first, both carried from the final review:** extract `exploreUrlState.js` **before** adding the `view`
+  param — all three URL-derivation defects the review found lived in that one block — and keep **text
+  labels beside legend swatches** in the new narrow layout, because the dark green/yellow pair sits in the
+  CVD warn band and the labels are its only compensating control. Real touchscreen pinch is deliberately
+  deferred. Batch B was split out of the B4 smoke precisely because it rewrites the canvas draw loop; the
+  spec is at
   [`specs/2026-08-02-B4-map-refinements-design.md`](./superpowers/specs/2026-08-02-B4-map-refinements-design.md) §4.
-  **Two carried items Batch B must honour:** extract `exploreUrlState.js` **before** adding the `view`
-  param (all three URL-derivation defects the final review found lived in that one block), and keep **text
-  labels beside legend swatches** in the new narrow layout — the dark green/yellow pair sits in the CVD
-  warn band and the labels are the compensating control. Then **triage 6 —
+  **After Batch B:** **triage 6 —
   the About analysis-explainer + AI-disclosure page** (the seven metadata-component + five
   thematic-dimension descriptions are served by the API and deliberately unused in browse — that page is
   where they land; now with the renamed **"Speaking to"** / **"Subjects"** labels). **`vector_space.json`
@@ -212,9 +216,14 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   (Explore vector map, with the vector "You might also like" — **brainstorm in progress, paused
   2026-07-27**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-08-03 _(**The B4 curator smoke PASSED §1–§3 and §6; Batch A of its follow-ups is
-  built and the final whole-branch opus review is done.** Branch `session-B4-explore-map`, **27 commits**,
-  held for a **§7-only** re-smoke. Semantic space dropped (a named `HIDDEN_SPACES` exception, with the
+- **Last updated:** 2026-08-03 _(**B4 MERGED to `main`** — merge **`16629c5`**, no-ff, branch
+  `session-B4-explore-map` (30 commits) deleted local + remote. **Both curator smoke rounds passed**;
+  round 2 found only that a selected song couldn't be cleared, fixed with a **×** and **Escape**
+  (`76ffb1f`). Merged `main` re-verified: backend **165/165**, lint 0, build clean. **Next: Batch B** —
+  zoom/pan with the viewport in the URL, hover growth + a tweened space switch, and the narrow-width
+  bottom-sheet layout; already specced, so it starts at the plan.)_
+- **Previously updated:** 2026-08-03 _(**The B4 curator smoke PASSED §1–§3 and §6; Batch A of its
+  follow-ups is built and the final whole-branch opus review is done.** Semantic space dropped (a named `HIDDEN_SPACES` exception, with the
   `space` param now validated); genre's legend names **every** value with the top 3 coloured and the rest as
   spotlightable children sharing slot 4; per-space descriptions; dots 3.2 → 4; a quieter coverage line.
   **Two of my own premises were measured false and are dated in the spec:** the 11-colour palette I specced

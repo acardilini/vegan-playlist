@@ -285,9 +285,10 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     whole-branch reviews; curator-confirmed all four rounds. Specs/plans under `superpowers/`
     (`2026-07-19-B3-browse-search*`, `2026-07-19-B3-rework-*`, `2026-07-20-B3-facet-selection-*`,
     `2026-07-20-B3-theme-tree-restyle-*`).
-  - ◐ **B4 — Explore vector map** _(brainstorm **completed** 2026-07-27; spec `491733c`, plan `3f479c7`.
-    **ALL 12 TASKS BUILT + CURATOR-SMOKED + POST-SMOKE BATCH A BUILT + FINAL OPUS REVIEW DONE** on branch
-    `session-B4-explore-map` — 27 commits, backend **165/165**, lint 0 errors, build clean. **The
+  - ☑ **B4 — Explore vector map** _(brainstorm **completed** 2026-07-27; spec `491733c`, plan `3f479c7`.
+    **MERGED to `main` 2026-08-03 — merge `16629c5`, no-ff, branch deleted.** All 12 tasks + post-smoke
+    Batch A, **both curator smoke rounds passed**, final opus review done and its findings fixed —
+    30 commits, backend **165/165**, lint 0 errors, build clean. **The
     2026-08-02 curator smoke passed §1–§3 and §6/§6.4 outright** — the first end-to-end human confirmation.
     Its §4/§5 answers were **split**: **Batch A** shipped here (Semantic space dropped behind a named
     `HIDDEN_SPACES` exception, with the `space` **and** `colour` URL params now validated; the genre legend
