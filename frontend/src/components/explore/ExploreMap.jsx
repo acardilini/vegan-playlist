@@ -4,7 +4,7 @@ import { useExplorePoints } from './useExplorePoints';
 import { colourScale, dimColour } from './palette';
 import SelectedSongCard from './SelectedSongCard';
 
-const DOT_RADIUS = 3.2;
+const DOT_RADIUS = 4;
 const PAD = 18;
 
 // A group toggles all of its members at once; a leaf toggles itself. Spotlight state holds
