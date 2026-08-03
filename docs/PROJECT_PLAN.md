@@ -294,14 +294,36 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     `HIDDEN_SPACES` exception, with the `space` **and** `colour` URL params now validated; the genre legend
     **names every value**, colouring the top 3 and nesting the rest as spotlightable children sharing slot
     4, because **four simultaneous categorical colours is a measured hard ceiling** on a scatter; per-space
-    descriptions; dots 3.2 → 4; a quieter coverage line), while **Batch B** — zoom/pan with the viewport in
-    the URL, hover growth + a tweened space switch, and a narrow-width bottom-sheet layout — is **specced as
-    its own session** ([`specs/2026-08-02-B4-map-refinements-design.md`](./superpowers/specs/2026-08-02-B4-map-refinements-design.md) §4).
+    descriptions; dots 3.2 → 4; a quieter coverage line).
     Two premises are recorded as **measured false** in that spec: the 11-colour palette, and a 59%-uncoded
     genre figure that was really 13.9% (raw `songs.genre` read instead of `EFFECTIVE_GENRE_EXPR`). The final
     review verified every project invariant against the code and caught 2 Important — a zero-result search
     dimmed all 640 dots, and the `colour` param was unvalidated — fixed in `d6fc20a`; the 17 carried Minors
-    were triaged and all carry. **Held for a §7-only re-smoke, then merges.**
+    were triaged and all carry.
+    **☑ Batch B — the map's interaction layer — BUILT (2026-08-04), branch `session-B4-batch-b`,
+    plan [`2026-08-03-B4-batch-b-map-interaction.md`](./superpowers/plans/2026-08-03-B4-batch-b-map-interaction.md).**
+    Zoom/pan with the viewport carried in the URL as `view=k,tx,ty` (wheel toward the cursor, drag,
+    `+`/`−`/Reset, 1×–12×, a 4px drag-vs-click threshold), hover growth + a ~450ms tweened space
+    switch (interruptible, `prefers-reduced-motion`-aware), and the narrow-width (≤860px) layout —
+    legend above the plot, selected song as a bottom sheet capped at 30vh. Five code tasks
+    (`exploreUrlState.js` and `mapGeometry.js` extracted first, per the final B4 review's request,
+    before the `view` param was added) plus this docs/smoke task. **Three of the five code tasks
+    had review findings that were defects in the plan's own sample code** — a wheel listener that
+    never attached on a normal page load, a hover halo that ignored the dim/lit split, and a CSS
+    media block that lost the cascade — all caught by per-task review and fixed on branch, not by
+    any test. Backend **165/165** (unchanged — no backend file touched), 26 frontend module tests,
+    lint 0 errors, build clean. **Puppeteer smoke 17/17** on isolated `:5001`/`:5199`, but only
+    after two of its own checks turned out to be flawed comparisons, not app defects: reading pixel
+    data via `getImageData` (for a dot-radius measurement) silently switches a Chromium canvas onto
+    a different internal rendering path for everything drawn on it afterwards, so a byte-exact
+    `canvas.toDataURL()` comparison taken after that read no longer matches one taken before it —
+    fixed by moving those reads onto disposable pages; and the URL's `view` param deliberately
+    rounds the pan to the nearest whole pixel and the zoom to 2 decimals ("nobody can see a
+    hundredth of one"), which a live gesture's unrounded state does not exactly equal — fixed by
+    asserting the redrawn dot position is within 1px instead of demanding identical bytes. Both
+    were verified by tracing the actual `arc()` calls the draw loop made, not by guessing. See
+    [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md). **Held for the curator's smoke before
+    merge**, as every session since triage 1.
     See [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). The map half (1–7) was per-task reviewed and
     stopped for the first smoke; the curator was away from a computer and asked for the recommendations half
     (8–12: similarity registry, 768-dim cosine, z-scored 6-dim sound distance, genre fallback, song-page
