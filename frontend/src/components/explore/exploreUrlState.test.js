@@ -7,6 +7,8 @@ import {
   deriveSelectedId,
   deriveSpace,
   deriveSpotlit,
+  deriveView,
+  formatView,
   withParam,
 } from './exploreUrlState.js';
 
@@ -78,4 +80,30 @@ test('changing colour drops a spotlight expressed in the old dimension codes', (
   const next = withParam(p('colour=genre&codes=metal,punk'), 'colour', 'sonic_energy');
   assert.equal(next.get('colour'), 'sonic_energy');
   assert.equal(next.has('codes'), false);
+});
+
+test('deriveView reads a well-formed viewport', () => {
+  assert.deepEqual(deriveView(p('view=2.5,-120,-64')), { k: 2.5, tx: -120, ty: -64 });
+});
+
+test('deriveView falls back to fit for anything malformed', () => {
+  // A stale or hand-edited link must draw the default map, never a blank one.
+  for (const qs of ['', 'view=', 'view=abc', 'view=2,3', 'view=2,3,4,5', 'view=NaN,0,0']) {
+    assert.deepEqual(deriveView(p(qs)), { k: 1, tx: 0, ty: 0 }, qs);
+  }
+});
+
+test('deriveView falls back to fit for an out-of-range zoom', () => {
+  assert.deepEqual(deriveView(p('view=0.2,0,0')), { k: 1, tx: 0, ty: 0 });
+  assert.deepEqual(deriveView(p('view=99,0,0')), { k: 1, tx: 0, ty: 0 });
+});
+
+test('formatView rounds, and writes nothing at fit', () => {
+  assert.equal(formatView({ k: 1, tx: 0, ty: 0 }), '');
+  assert.equal(formatView({ k: 2.4567, tx: -120.7, ty: -64.2 }), '2.46,-121,-64');
+});
+
+test('a formatted view round-trips back through deriveView', () => {
+  const v = { k: 3.25, tx: -240, ty: -96 };
+  assert.deepEqual(deriveView(p(`view=${formatView(v)}`)), v);
 });

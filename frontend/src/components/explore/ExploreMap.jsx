@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useExplorePoints } from './useExplorePoints';
 import { colourScale, dimColour } from './palette';
 import SelectedSongCard from './SelectedSongCard';
-import { FIT_VIEW, layout } from './mapGeometry';
+import { layout } from './mapGeometry';
+import { useMapTransform } from './useMapTransform';
 import {
   deriveColour, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit, withParam,
 } from './exploreUrlState';
@@ -78,7 +79,14 @@ function ExploreMap() {
   const selectedId = deriveSelectedId(params);
   const spotlit = useMemo(() => deriveSpotlit(params), [params]);
 
-  const setParam = (key, value) => setParams(withParam(params, key, value), { replace: true });
+  const setParam = useCallback((key, value) => {
+    setParams(withParam(params, key, value), { replace: true });
+  }, [params, setParams]);
+
+  // The viewport is committed to the URL at the end of a gesture, never per pixel — a pan
+  // writing 60 history entries would make Back useless.
+  const commitView = useCallback((serialised) => setParam('view', serialised), [setParam]);
+  const transform = useMapTransform({ size, params, onCommit: commitView });
 
   // Track the plot box so the canvas can be backing-store accurate.
   useEffect(() => {
@@ -132,6 +140,9 @@ function ExploreMap() {
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedId, params, setParams]);
 
+  const { attachWheel } = transform;
+  useEffect(() => attachWheel(canvasRef.current), [attachWheel]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !data || !space) return;
@@ -145,7 +156,7 @@ function ExploreMap() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
 
-    const points = layout(data.songs, space, size, FIT_VIEW);
+    const points = layout(data.songs, space, size, transform.view);
     const dim = dimColour();
     const lit = [];
     for (const p of points) {
@@ -180,7 +191,7 @@ function ExploreMap() {
         ctx.stroke();
       }
     }
-  }, [data, space, colour, scale, size, spotlit, matchIds, selectedId]);
+  }, [data, space, colour, scale, size, spotlit, matchIds, selectedId, transform.view]);
 
   const nearest = (mx, my) => {
     let best = null, bestD = 12 * 12;   // 12px grab radius, squared
@@ -193,12 +204,17 @@ function ExploreMap() {
   };
 
   const onMove = (e) => {
+    // A pan owns the pointer; showing a hover card mid-drag is noise.
+    if (transform.onPointerMove(e)) { setHover(null); return; }
     const r = e.currentTarget.getBoundingClientRect();
     const hit = nearest(e.clientX - r.left, e.clientY - r.top);
     setHover(hit ? { song: hit.song, x: hit.x, y: hit.y } : null);
   };
 
   const onClick = (e) => {
+    // `click` fires after the pointer-up that ended a pan; without this every drag would
+    // also select a song.
+    if (transform.didDrag()) return;
     const r = e.currentTarget.getBoundingClientRect();
     const hit = nearest(e.clientX - r.left, e.clientY - r.top);
     if (hit) setParam('song', String(hit.id));
@@ -265,13 +281,23 @@ function ExploreMap() {
           <canvas
             ref={canvasRef}
             role="img"
+            className={transform.isDragging ? 'explore-canvas grabbing' : 'explore-canvas'}
             aria-label={`Map of ${data.coverage.mapped} songs positioned by ${
               (data.spaces.find(s => s.key === space) || {}).label} similarity, coloured by ${
               (legend || {}).label}.`}
-            onMouseMove={onMove}
-            onMouseLeave={() => setHover(null)}
+            onPointerDown={transform.onPointerDown}
+            onPointerMove={onMove}
+            onPointerUp={transform.onPointerUp}
+            onPointerLeave={() => { transform.onPointerUp(); setHover(null); }}
             onClick={onClick}
           />
+          <div className="explore-zoom">
+            <button type="button" aria-label="Zoom in" onClick={transform.zoomIn}>+</button>
+            <button type="button" aria-label="Zoom out" onClick={transform.zoomOut}>−</button>
+            <button type="button" className="explore-zoom-reset" onClick={transform.reset}>
+              Reset
+            </button>
+          </div>
           {hover && (
             <div
               className="explore-hovercard"

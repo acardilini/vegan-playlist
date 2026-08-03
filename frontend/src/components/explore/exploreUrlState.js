@@ -8,6 +8,8 @@
 // The rule every `derive*` follows: a value from the URL is honoured only if the catalogue
 // still serves it. A shared link must degrade to the default view, never to an empty one.
 
+import { FIT_VIEW, MAX_K, MIN_K } from './mapGeometry.js';
+
 export const DEFAULT_COLOUR = 'sonic_energy';
 
 export function deriveSpace(params, spaces = []) {
@@ -49,4 +51,26 @@ export function withParam(params, key, value) {
   // Changing the colour dimension invalidates a spotlight expressed in its codes.
   if (key === 'colour') next.delete('codes');
   return next;
+}
+
+// The viewport travels as one `view=k,tx,ty` param. Anything unparseable falls back to fit
+// rather than to a blank plot — the same guard `space` and `colour` carry, and for the same
+// reason: this page's whole contract is that the view lives in the URL.
+export function deriveView(params) {
+  const raw = params.get('view');
+  if (!raw) return FIT_VIEW;
+  const parts = raw.split(',');
+  if (parts.length !== 3) return FIT_VIEW;
+  const [k, tx, ty] = parts.map(Number);
+  if (![k, tx, ty].every(Number.isFinite)) return FIT_VIEW;
+  if (k < MIN_K || k > MAX_K) return FIT_VIEW;
+  return { k, tx, ty };
+}
+
+// Fit serialises to the empty string so the param is deleted, not written as `1,0,0` — an
+// unzoomed map should share as a clean URL. Translates round to whole pixels; nobody can see
+// a hundredth of one, and it keeps shared links short.
+export function formatView(view) {
+  if (view.k <= MIN_K) return '';
+  return `${Math.round(view.k * 100) / 100},${Math.round(view.tx)},${Math.round(view.ty)}`;
 }

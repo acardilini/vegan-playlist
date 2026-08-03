@@ -51,13 +51,16 @@ test('applyView scales about the origin then translates', () => {
 });
 
 test('zoomAtPoint keeps the content under the cursor under the cursor', () => {
-  // The whole point of cursor-anchored zoom: the base position that mapped to screen 100
-  // must still map to 100 afterwards.
+  // The whole point of cursor-anchored zoom: the base position that mapped to screen (px, py)
+  // must still map to (px, py) afterwards. `before` is the identity view, so that base
+  // position is (px, py) itself. px and py are deliberately distinct — a formula that mixed
+  // up the axes (e.g. computed ty from px instead of py) would slip through if they matched.
   const before = { k: 1, tx: 0, ty: 0 };
-  const base = 100;
-  const after = zoomAtPoint(before, 3, 100, 100);
-  assert.equal(base * after.k + after.tx, 100);
-  assert.equal(base * after.k + after.ty, 100);
+  const px = 100;
+  const py = 260;
+  const after = zoomAtPoint(before, 3, px, py);
+  assert.equal(px * after.k + after.tx, px);
+  assert.equal(py * after.k + after.ty, py);
 });
 
 test('zoomAtPoint clamps k to the 1x-12x range', () => {

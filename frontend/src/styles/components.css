@@ -2528,6 +2528,37 @@
   position: relative;
 }
 
+/* Keyboard and touch get the same power as the wheel — buttons-only would take several
+   clicks to reach a cluster, and wheel-only leaves both out entirely. */
+.explore-zoom {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: flex;
+  gap: var(--space-1);
+  z-index: 1;
+}
+
+.explore-zoom button {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.explore-zoom button:hover { color: var(--text-primary); }
+
+/* touch-action: none is what makes drag-pan work on a touchscreen — without it the browser
+   claims the gesture for page scrolling before the canvas ever sees it. */
+.explore-canvas { touch-action: none; cursor: grab; }
+.explore-canvas.grabbing { cursor: grabbing; }
+
 .explore-rail {
   width: 232px;
   flex: none;
