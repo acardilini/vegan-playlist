@@ -175,6 +175,16 @@ raw `songs.genre` column instead of the effective genre the map actually uses. T
 and the top three genres cover **75.6%**. Genre is a well-populated colour dimension. No design changed as
 a result, but the "genre is mostly empty" reasoning is withdrawn.
 
+### 7.5 Found in the §7 re-smoke — the one remaining check
+
+Selecting a song was a one-way door: you could swap to another song but never empty the rail, and the
+ring stayed on the map. Fixed in `76ffb1f`.
+
+- [ ] Select a dot, then press the **×** beside the song's title in the rail. The card returns to
+      "Click a song to see what it is." and the ring leaves the map.
+- [ ] Select a dot and press **Escape** — same result.
+- [ ] The cleared state survives a copy-paste of the URL, exactly as the selected state does.
+
 ---
 
 ## What is left
