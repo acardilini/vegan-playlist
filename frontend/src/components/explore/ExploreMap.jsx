@@ -61,6 +61,29 @@ function legendToggleClass({ allOn, someOn }, spotlit) {
   return `explore-legend-toggle ${dimmed ? 'off' : ''}`;
 }
 
+// A full-canvas animation is exactly the case the media query exists for, so the tween is
+// not merely shortened under it — it is skipped, and the new space snaps into place.
+function usePrefersReducedMotion() {
+  const [reduce, setReduce] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduce(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return reduce;
+}
+
+// Long enough to read a song travelling between two spaces, short enough not to be a wait.
+const TWEEN_MS = 450;
+const HOVER_GROWTH = 3;   // px added to the hovered dot's radius
+
+// Decelerating: the arrival is the informative part of the motion, so it gets the time.
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 function ExploreMap() {
   const { data, loading, error, reload } = useExplorePoints();
   // State, not a plain ref: while `data` is loading this component returns early and the
@@ -70,6 +93,9 @@ function ExploreMap() {
   const [canvasEl, setCanvasEl] = useState(null);
   const wrapRef = useRef(null);
   const positionsRef = useRef([]);
+  const lastFrameRef = useRef(null);   // Map<id, {x, y}> — the most recent frame actually drawn
+  const tweenRef = useRef(null);       // { from: Map<id,{x,y}>, start: number }
+  const reduceMotion = usePrefersReducedMotion();
   const [size, setSize] = useState({ w: 800, h: 520 });
   const [hover, setHover] = useState(null);   // { song, x, y }
 
@@ -132,6 +158,10 @@ function ExploreMap() {
     () => (data && selectedId ? data.songs.find(s => s.id === selectedId) || null : null),
     [data, selectedId]);
 
+  // The id, not the hover object: `hover` is rebuilt on every mousemove even while the
+  // pointer stays on one dot, and it is a draw dependency now.
+  const hoverId = hover ? hover.song.id : null;
+
   // Escape clears the selection — the keyboard equivalent of the card's × button. Bound only
   // while something is selected, so this component adds no global key handler at rest.
   useEffect(() => {
@@ -151,6 +181,15 @@ function ExploreMap() {
   const { attachWheel } = transform;
   useEffect(() => attachWheel(canvasEl), [attachWheel, canvasEl]);
 
+  // Switching space tweens every dot from where it is to where it belongs — that motion is
+  // the answer to "which songs travel together between Thematic and Sound", which is the
+  // question the map exists to raise. `from` is the last frame DRAWN, not the last space's
+  // final layout, so interrupting mid-tween resumes from the current position.
+  useEffect(() => {
+    if (!lastFrameRef.current || reduceMotion) return;
+    tweenRef.current = { from: lastFrameRef.current, start: performance.now() };
+  }, [space, reduceMotion]);
+
   useEffect(() => {
     const canvas = canvasEl;
     if (!canvas || !data || !space) return;
@@ -164,42 +203,85 @@ function ExploreMap() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
 
-    const points = layout(data.songs, space, size, transform.view);
+    const target = layout(data.songs, space, size, transform.view);
     const dim = dimColour();
-    const lit = [];
-    for (const p of points) {
-      const passesSpotlight = spotlit.size === 0 || spotlit.has(p.song.codes[colour]);
-      const passesSearch = !matchIds || matchIds.has(p.id);
-      if (passesSpotlight && passesSearch) lit.push(p);
-      else {
+    const ringColour = getComputedStyle(document.documentElement)
+      .getPropertyValue('--text-primary').trim() || '#fff';
+
+    const drawFrame = (points) => {
+      ctx.clearRect(0, 0, size.w, size.h);
+      const lit = [];
+      for (const p of points) {
+        const passesSpotlight = spotlit.size === 0 || spotlit.has(p.song.codes[colour]);
+        const passesSearch = !matchIds || matchIds.has(p.id);
+        if (passesSpotlight && passesSearch) lit.push(p);
+        else {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, DOT_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = dim;
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 0.85;
+      for (const p of lit) {
         ctx.beginPath();
-        ctx.arc(p.x, p.y, DOT_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = dim;
+        ctx.arc(p.x, p.y, p.id === hoverId ? DOT_RADIUS + HOVER_GROWTH : DOT_RADIUS,
+          0, Math.PI * 2);
+        ctx.fillStyle = scale(p.song.codes[colour]);
         ctx.fill();
       }
-    }
-    ctx.globalAlpha = 0.85;
-    for (const p of lit) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, DOT_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = scale(p.song.codes[colour]);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    positionsRef.current = points;
+      ctx.globalAlpha = 1;
 
-    if (selectedId) {
-      const hit = points.find(p => p.id === selectedId);
-      if (hit) {
-        ctx.beginPath();
-        ctx.arc(hit.x, hit.y, DOT_RADIUS + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = getComputedStyle(document.documentElement)
-          .getPropertyValue('--text-primary').trim() || '#fff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+      // A soft halo, drawn in the dot's own colour, so the hovered song is findable without
+      // reading the card — and without a second colour entering the palette.
+      if (hoverId != null) {
+        const h = points.find(p => p.id === hoverId);
+        if (h) {
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, DOT_RADIUS + HOVER_GROWTH + 3, 0, Math.PI * 2);
+          ctx.globalAlpha = 0.35;
+          ctx.strokeStyle = scale(h.song.codes[colour]);
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
       }
-    }
-  }, [canvasEl, data, space, colour, scale, size, spotlit, matchIds, selectedId, transform.view]);
+
+      if (selectedId) {
+        const hit = points.find(p => p.id === selectedId);
+        if (hit) {
+          ctx.beginPath();
+          ctx.arc(hit.x, hit.y, DOT_RADIUS + 4, 0, Math.PI * 2);
+          ctx.strokeStyle = ringColour;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+
+      positionsRef.current = points;
+      lastFrameRef.current = new Map(points.map(p => [p.id, { x: p.x, y: p.y }]));
+    };
+
+    let raf = 0;
+    const frame = (now) => {
+      const tween = tweenRef.current;
+      if (!tween) { drawFrame(target); return; }
+      const t = Math.min(1, (now - tween.start) / TWEEN_MS);
+      const e = easeOutCubic(t);
+      drawFrame(target.map(p => {
+        const from = tween.from.get(p.id);
+        if (!from) return p;   // a song with no coordinates in the old space simply appears
+        return { ...p, x: from.x + (p.x - from.x) * e, y: from.y + (p.y - from.y) * e };
+      }));
+      if (t < 1) raf = requestAnimationFrame(frame);
+      else tweenRef.current = null;
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [
+    canvasEl, data, space, colour, scale, size, spotlit, matchIds, selectedId, transform.view,
+    hoverId,
+  ]);
 
   const nearest = (mx, my) => {
     let best = null, bestD = 12 * 12;   // 12px grab radius, squared
