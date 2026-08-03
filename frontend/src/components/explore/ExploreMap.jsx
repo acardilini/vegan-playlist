@@ -3,6 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useExplorePoints } from './useExplorePoints';
 import { colourScale, dimColour } from './palette';
 import SelectedSongCard from './SelectedSongCard';
+import {
+  deriveColour, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit, withParam,
+} from './exploreUrlState';
 
 const DOT_RADIUS = 4;
 const PAD = 18;
@@ -86,33 +89,15 @@ function ExploreMap() {
 
   const [params, setParams] = useSearchParams();
 
-  // A space from the URL is honoured only if the catalogue still serves it. Without this,
-  // a link shared before a space was retired draws an empty plot with no chip lit.
-  const requestedSpace = params.get('space');
-  const space = (data && data.spaces.some(s => s.key === requestedSpace) ? requestedSpace : null)
-    || (data && data.spaces[0] && data.spaces[0].key) || null;
-  // Same guard as `space` just above: a colour key from the URL is honoured only if the
-  // catalogue still serves it, otherwise it falls back to the sonic_energy default.
-  const requestedColour = params.get('colour');
-  const colour = (data && data.colourBy.some(c => c.key === requestedColour) ? requestedColour : null)
-    || (data && (data.colourBy.find(c => c.key === 'sonic_energy') || data.colourBy[0] || {}).key)
-    || null;
-  const query = params.get('q') || '';
-  const selectedId = params.get('song') ? Number(params.get('song')) : null;
-  const spotlit = useMemo(() => {
-    const raw = params.get('codes');
-    return new Set(raw ? raw.split(',').filter(Boolean) : []);
-  }, [params]);
+  // Every rule about what the URL may say lives in exploreUrlState.js — see the comment
+  // there for why this is not inlined.
+  const space = data ? deriveSpace(params, data.spaces) : null;
+  const colour = data ? deriveColour(params, data.colourBy) : null;
+  const query = deriveQuery(params);
+  const selectedId = deriveSelectedId(params);
+  const spotlit = useMemo(() => deriveSpotlit(params), [params]);
 
-  // One writer for every param, so a change never clobbers its neighbours.
-  const setParam = (key, value) => {
-    const next = new URLSearchParams(params);
-    if (value == null || value === '') next.delete(key);
-    else next.set(key, value);
-    // Changing the colour dimension invalidates a spotlight expressed in its codes.
-    if (key === 'colour') next.delete('codes');
-    setParams(next, { replace: true });
-  };
+  const setParam = (key, value) => setParams(withParam(params, key, value), { replace: true });
 
   // Track the plot box so the canvas can be backing-store accurate.
   useEffect(() => {
@@ -160,9 +145,7 @@ function ExploreMap() {
     if (!selectedId) return undefined;
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      const next = new URLSearchParams(params);
-      next.delete('song');
-      setParams(next, { replace: true });
+      setParams(withParam(params, 'song', null), { replace: true });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
