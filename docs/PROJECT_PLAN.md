@@ -300,6 +300,25 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     review verified every project invariant against the code and caught 2 Important — a zero-result search
     dimmed all 640 dots, and the `colour` param was unvalidated — fixed in `d6fc20a`; the 17 carried Minors
     were triaged and all carry.
+    See [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). The map half (1–7) was per-task reviewed and
+    stopped for the first smoke; the curator was away from a computer and asked for the recommendations half
+    (8–12: similarity registry, 768-dim cosine, z-scored 6-dim sound distance, genre fallback, song-page
+    tabs, deleting `vector_space.json`, docs) to proceed meanwhile. **3D remains a deliberate follow-up
+    session, not an omission** — 2D needs no charting dependency, where 3D adds ~150KB of WebGL plus
+    raycast hit-testing and roughly doubles the surface to test. Marked ☑ once the smoke passes and it
+    merges.)_ **Reshaped by data that landed
+    mid-brainstorm:** the analysis project created a
+    **`song_coordinates`** table (664 rows, one per song, eight `float8[]` columns — semantic/thematic/
+    **audio**/**holistic** × 2D/3D), so B4 reads the **DB through a publish-filtered API endpoint** instead
+    of `frontend/public/vector_space.json`, which is superseded and gets deleted (it leaked 24 non-live
+    songs). Scope now: **2D canvas scatter only — no new frontend dependency — with 3D as its own
+    follow-up**; a four-way space toggle; a curated low-cardinality colour-by menu (absence codes as neutral
+    grey); spotlight via a clickable legend + song search. Coverage is a first-class concern: the map can
+    show **640 of 1,333 live songs**. _(with the vector "You might also like" rework — now **two tabs**,
+    message (768-dim `lyric_embedding` cosine) and sound (6D `audio_embedding`, which needs per-dimension
+    standardisation), plus an honest "More in this genre" fallback for the 52% of live songs with no
+    embeddings). **Sequenced after curator-triage items 1–5** — see the reprioritised order in the Fixes
+    Round 1 note below and `CURATOR_TRIAGE_BACKLOG.md`._
     **☑ Batch B — the map's interaction layer — BUILT (2026-08-04), branch `session-B4-batch-b`,
     plan [`2026-08-03-B4-batch-b-map-interaction.md`](./superpowers/plans/2026-08-03-B4-batch-b-map-interaction.md).**
     Zoom/pan with the viewport carried in the URL as `view=k,tx,ty` (wheel toward the cursor, drag,
@@ -324,25 +343,6 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     were verified by tracing the actual `arc()` calls the draw loop made, not by guessing. See
     [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md). **Held for the curator's smoke before
     merge**, as every session since triage 1.
-    See [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). The map half (1–7) was per-task reviewed and
-    stopped for the first smoke; the curator was away from a computer and asked for the recommendations half
-    (8–12: similarity registry, 768-dim cosine, z-scored 6-dim sound distance, genre fallback, song-page
-    tabs, deleting `vector_space.json`, docs) to proceed meanwhile. **3D remains a deliberate follow-up
-    session, not an omission** — 2D needs no charting dependency, where 3D adds ~150KB of WebGL plus
-    raycast hit-testing and roughly doubles the surface to test. Marked ☑ once the smoke passes and it
-    merges.)_ **Reshaped by data that landed
-    mid-brainstorm:** the analysis project created a
-    **`song_coordinates`** table (664 rows, one per song, eight `float8[]` columns — semantic/thematic/
-    **audio**/**holistic** × 2D/3D), so B4 reads the **DB through a publish-filtered API endpoint** instead
-    of `frontend/public/vector_space.json`, which is superseded and gets deleted (it leaked 24 non-live
-    songs). Scope now: **2D canvas scatter only — no new frontend dependency — with 3D as its own
-    follow-up**; a four-way space toggle; a curated low-cardinality colour-by menu (absence codes as neutral
-    grey); spotlight via a clickable legend + song search. Coverage is a first-class concern: the map can
-    show **640 of 1,333 live songs**. _(with the vector "You might also like" rework — now **two tabs**,
-    message (768-dim `lyric_embedding` cosine) and sound (6D `audio_embedding`, which needs per-dimension
-    standardisation), plus an honest "More in this genre" fallback for the 52% of live songs with no
-    embeddings). **Sequenced after curator-triage items 1–5** — see the reprioritised order in the Fixes
-    Round 1 note below and `CURATOR_TRIAGE_BACKLOG.md`._
 - ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
   To-be-processed / spam. Reuses `staging.addSubmissionAsPending`.
 - ☐ **D — YouTube assist.** Search YouTube from the workbench, present candidates, pick best.

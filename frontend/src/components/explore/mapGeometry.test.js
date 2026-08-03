@@ -63,6 +63,22 @@ test('zoomAtPoint keeps the content under the cursor under the cursor', () => {
   assert.equal(py * after.k + after.ty, py);
 });
 
+test('zoomAtPoint keeps the anchor from a non-identity view too', () => {
+  // `before` here is not the identity view, so ratio (nextK / view.k) is numerically
+  // different from nextK itself — unlike the identity-view case above, where they collapse
+  // to the same number and a formula using nextK where it should use ratio would still pass.
+  // k=3, tx=-200, ty=-100 and nextK=6 are chosen so the base position divides out to whole
+  // numbers, keeping the assertion exact rather than tolerance-based.
+  const before = { k: 3, tx: -200, ty: -100 };
+  const px = 100;
+  const py = 260;
+  const baseX = (px - before.tx) / before.k;   // 100
+  const baseY = (py - before.ty) / before.k;   // 120
+  const after = zoomAtPoint(before, 6, px, py);
+  assert.equal(baseX * after.k + after.tx, px);
+  assert.equal(baseY * after.k + after.ty, py);
+});
+
 test('zoomAtPoint clamps k to the 1x-12x range', () => {
   assert.equal(zoomAtPoint({ k: 1, tx: 0, ty: 0 }, 40, 0, 0).k, MAX_K);
   assert.equal(zoomAtPoint({ k: 4, tx: 0, ty: 0 }, 0.2, 0, 0).k, 1);
@@ -79,4 +95,8 @@ test('clampView keeps the plot covered when panned at zoom', () => {
   assert.equal(clampView({ k: 2, tx: 50, ty: 0 }, size).tx, 0);
   assert.equal(clampView({ k: 2, tx: -5000, ty: 0 }, size).tx, -800);
   assert.equal(clampView({ k: 2, tx: -400, ty: -100 }, size).tx, -400);
+  // ty is never asserted above — both bounds collapse to 0 at 1x, so this is the only case
+  // that can catch a minTy formula that (e.g.) reused size.w instead of size.h. Same
+  // axis-confusion class already caught once in zoomAtPoint, swept here too.
+  assert.equal(clampView({ k: 2, tx: 0, ty: -5000 }, size).ty, -520);
 });

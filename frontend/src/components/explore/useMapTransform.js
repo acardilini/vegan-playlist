@@ -12,7 +12,7 @@ const ZOOM_STEP = 1.5;
 // A wheel gesture has no end event, so the URL write is debounced instead of fired per notch.
 const WHEEL_SETTLE_MS = 300;
 
-export function useMapTransform({ size, params, onCommit }) {
+export function useMapTransform({ size, params, onCommit, hasMeasuredRef }) {
   const urlView = params.get('view') || '';
   const [view, setView] = useState(() => deriveView(params));
   const [isDragging, setIsDragging] = useState(false);
@@ -50,12 +50,24 @@ export function useMapTransform({ size, params, onCommit }) {
   // ResizeObserver hands back a fresh `size` object on every observation and clampView always
   // returns a fresh view, so returning it unconditionally would re-render on every
   // observation — a render loop with a redraw inside it.
+  //
+  // This effect also runs on mount, before ResizeObserver has measured anything, with `size`
+  // still at ExploreMap's placeholder value. Clamping is a one-way ratchet — once tx/ty are
+  // narrowed against a too-small size they stay narrowed, because when the real (wider) size
+  // arrives the already-narrowed view sits comfortably inside the new, more permissive bounds
+  // and the identity check above sees no change to make. A shared high-zoom link would be
+  // silently truncated on load. So skip the clamp entirely until `hasMeasuredRef` says the
+  // plot has been measured at least once; the first *real* size still clamps normally.
   useEffect(() => {
+    if (hasMeasuredRef && !hasMeasuredRef.current) return;
     setView(v => {
       const next = clampView(v, size);
       return (next.k === v.k && next.tx === v.tx && next.ty === v.ty) ? v : next;
     });
-  }, [size]);
+    // hasMeasuredRef's identity is stable across renders (created once in ExploreMap via
+    // useRef), so listing it changes no behaviour — it only silences the exhaustive-deps
+    // warning for the ref access above.
+  }, [size, hasMeasuredRef]);
 
   const commit = useCallback((next) => {
     const serialised = formatView(next);
@@ -132,17 +144,32 @@ export function useMapTransform({ size, params, onCommit }) {
   const onPointerUp = useCallback(() => {
     if (!dragRef.current) return;
     dragRef.current = null;
+    // Cleared unconditionally, not just inside the movedRef branch below: no path should be
+    // able to leave `isDragging` stuck true once the pointer is up.
+    setIsDragging(false);
     if (movedRef.current) {
-      setIsDragging(false);
       commit(viewRef.current);
     }
   }, [commit]);
+
+  // The browser can end a gesture with `pointercancel` instead of `pointerup` — an OS
+  // gesture taking over on touch, palm rejection, some Android edge-swipes. `pointerup` then
+  // never arrives, so without this, dragRef/movedRef/isDragging would stay set: every later
+  // pointermove would pan the map with no button held, the cursor would stay stuck on
+  // "grabbing", and the next click would be swallowed by didDrag(). Unlike onPointerUp, this
+  // never commits — the gesture was interrupted, not completed, so the partial pan is
+  // discarded rather than written to the URL.
+  const cancelDrag = useCallback(() => {
+    dragRef.current = null;
+    movedRef.current = false;
+    setIsDragging(false);
+  }, []);
 
   const didDrag = useCallback(() => movedRef.current, []);
 
   return {
     view, isDragging,
-    onPointerDown, onPointerMove, onPointerUp, didDrag,
+    onPointerDown, onPointerMove, onPointerUp, onPointerCancel: cancelDrag, didDrag,
     zoomIn, zoomOut, reset, attachWheel,
   };
 }

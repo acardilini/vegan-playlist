@@ -2555,8 +2555,11 @@
 .explore-zoom button:hover { color: var(--text-primary); }
 
 /* touch-action: none is what makes drag-pan work on a touchscreen — without it the browser
-   claims the gesture for page scrolling before the canvas ever sees it. */
-.explore-canvas { touch-action: none; cursor: grab; }
+   claims the gesture for page scrolling before the canvas ever sees it. display: block strips
+   the inline-level baseline descender gap, which would otherwise add a sliver to .explore-plot's
+   content height in the narrow (column) layout where that height is content-driven — cheap
+   hardening against a resize-observer growth loop, not a confirmed defect. */
+.explore-canvas { touch-action: none; cursor: grab; display: block; }
 .explore-canvas.grabbing { cursor: grabbing; }
 
 .explore-rail {
@@ -2630,6 +2633,7 @@
 .explore-hovercard {
   position: absolute;
   pointer-events: none;
+  z-index: 2;
   width: 180px;
   padding: var(--space-2);
   border: 1px solid var(--border-hairline);
@@ -2674,10 +2678,10 @@
 }
 
 /* Narrow layout media block lives at the END of the explore section, after all the base rules
-   it overrides (.explore-song-art width at 2725, .explore-legend-toggle width at 2671,
-   .explore-song-card margin-top at 2703). Earlier placement would let those later,
-   unconditional rules win via source order. This position ensures the media query declarations
-   take effect at ≤860px without specificity wars. */
+   it overrides (.explore-song-art width, .explore-legend-toggle width, .explore-song-card
+   margin-top). Earlier placement would let those later, unconditional rules win via source
+   order. This position ensures the media query declarations take effect at ≤860px without
+   specificity wars. */
 /* Narrow: the legend becomes a wrapping strip ABOVE the plot, the map takes the full width, and
    the selected song becomes a bottom sheet. The curator chose the sheet over stacking the rail
    under the plot. The risk a sheet carries is that it covers the dots just clicked, so it is

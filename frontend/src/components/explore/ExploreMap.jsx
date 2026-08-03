@@ -97,6 +97,12 @@ function ExploreMap() {
   const tweenRef = useRef(null);       // { from: Map<id,{x,y}>, start: number }
   const reduceMotion = usePrefersReducedMotion();
   const [size, setSize] = useState({ w: 800, h: 520 });
+  // Flips true the first time ResizeObserver reports a real measurement. useMapTransform's
+  // resize-clamp effect reads this to skip clamping on mount, while `size` itself keeps this
+  // placeholder value — everything else that reads `size` (the draw effect, hover-card
+  // clamping, zoomBy's centre point) is fine drawing against a plausible guess for one frame;
+  // only the clamp is a one-way ratchet that must not run against an unmeasured size.
+  const hasMeasuredRef = useRef(false);
   const [hover, setHover] = useState(null);   // { song, x, y }
 
   const [params, setParams] = useSearchParams();
@@ -116,7 +122,7 @@ function ExploreMap() {
   // The viewport is committed to the URL at the end of a gesture, never per pixel — a pan
   // writing 60 history entries would make Back useless.
   const commitView = useCallback((serialised) => setParam('view', serialised), [setParam]);
-  const transform = useMapTransform({ size, params, onCommit: commitView });
+  const transform = useMapTransform({ size, params, onCommit: commitView, hasMeasuredRef });
 
   // Track the plot box so the canvas can be backing-store accurate.
   useEffect(() => {
@@ -124,6 +130,7 @@ function ExploreMap() {
     if (!el) return undefined;
     const ro = new ResizeObserver(([entry]) => {
       const r = entry.contentRect;
+      hasMeasuredRef.current = true;
       setSize({ w: Math.max(240, r.width), h: Math.max(280, r.height) });
     });
     ro.observe(el);
@@ -379,6 +386,7 @@ function ExploreMap() {
             onPointerMove={onMove}
             onPointerUp={transform.onPointerUp}
             onPointerLeave={() => { transform.onPointerUp(); setHover(null); }}
+            onPointerCancel={() => { transform.onPointerCancel(); setHover(null); }}
             onClick={onClick}
           />
           <div className="explore-zoom">

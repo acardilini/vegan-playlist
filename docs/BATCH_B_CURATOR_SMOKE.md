@@ -62,8 +62,13 @@ git checkout session-B4-batch-b
 - [ ] Switch spaces again **while a previous switch is still animating** (click a different chip
       mid-tween). The motion should resume smoothly from wherever the dots currently are — it
       should not visibly jump or restart from the old space's final positions.
-- [ ] Hover a dot: it should visibly grow a little and gain a soft halo in its own colour, making it
-      easy to tell which one you're pointing at.
+- [ ] Hover a dot **with no spotlight active**: it should visibly grow a little and gain a soft
+      halo in its own colour, making it easy to tell which one you're pointing at.
+- [ ] Now click a legend entry to spotlight it (dimming the rest), and hover a **dimmed** dot.
+      The info card still appears (hit-testing doesn't care about dimming), but the dot itself
+      does **not** grow or halo — that's gated to un-dimmed dots on purpose. Does that read as
+      correct (the card is enough on its own), or does it feel like a bug that the card has no
+      visible anchor on the map? Say which.
 - [ ] If your OS/browser has **"reduce motion"** turned on (macOS: System Settings → Accessibility →
       Display → Reduce motion; Windows: Settings → Accessibility → Visual effects → Animation
       effects off), switching spaces should **snap instantly** with no tween at all.
@@ -84,6 +89,10 @@ git checkout session-B4-batch-b
       first selection?
 - [ ] Resize back up past 860px and confirm the layout returns to the normal side-by-side rail —
       nothing should look stuck in the narrow arrangement.
+- [ ] At narrow width, slowly drag the window edge to resize it a few times. **Does the map stay
+      the same height, or does it creep taller** each time you resize? (The plot's height is
+      content-driven at this width, and its content is a canvas — a slow growth loop is possible
+      in principle; this hasn't been confirmed in a real browser.)
 
 ## §6 Regressions — things this batch should not have touched
 
