@@ -154,6 +154,20 @@ function ExploreMap() {
     () => (data && selectedId ? data.songs.find(s => s.id === selectedId) || null : null),
     [data, selectedId]);
 
+  // Escape clears the selection — the keyboard equivalent of the card's × button. Bound only
+  // while something is selected, so this component adds no global key handler at rest.
+  useEffect(() => {
+    if (!selectedId) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      const next = new URLSearchParams(params);
+      next.delete('song');
+      setParams(next, { replace: true });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedId, params, setParams]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !data || !space) return;
@@ -397,6 +411,7 @@ function ExploreMap() {
             colourValue={selected && legend
               ? (findLegendEntry(legend, selected.codes[colour]) || {}).label
               : null}
+            onClear={() => setParam('song', null)}
           />
         </aside>
       </div>
