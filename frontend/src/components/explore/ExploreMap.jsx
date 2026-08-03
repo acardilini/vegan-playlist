@@ -235,7 +235,7 @@ function ExploreMap() {
       // A soft halo, drawn in the dot's own colour, so the hovered song is findable without
       // reading the card — and without a second colour entering the palette.
       if (hoverId != null) {
-        const h = points.find(p => p.id === hoverId);
+        const h = lit.find(p => p.id === hoverId);
         if (h) {
           ctx.beginPath();
           ctx.arc(h.x, h.y, DOT_RADIUS + HOVER_GROWTH + 3, 0, Math.PI * 2);
