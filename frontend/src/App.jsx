@@ -1,6 +1,6 @@
 import './App.css'
 import './styles/components.css' // design system — must come after App.css to win the cascade
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import NavigationMenu from './components/NavigationMenu';
 import HomePage from './pages/HomePage';
 import SongDetailPage from './pages/SongDetailPage';
@@ -12,6 +12,8 @@ import ArtistSearchResults from './components/ArtistSearchResults';
 import ArtistDetailPage from './components/ArtistDetailPage';
 import SongSubmissionForm from './components/SongSubmissionForm';
 import DataDashboard from './components/DataDashboard';
+import ExplorePage from './pages/ExplorePage';
+import ExploreMap from './components/explore/ExploreMap';
 import './styles/admin.css';
 import AdminLayout from './components/admin/AdminLayout';
 import Dashboard from './components/admin/Dashboard';
@@ -41,7 +43,11 @@ function App() {
           <Route path="/playlists" element={<PlaylistsPage />} />
           <Route path="/playlist/:playlistId" element={<PlaylistDetailPage />} />
           <Route path="/submit" element={<SongSubmissionForm />} />
-          <Route path="/dashboard" element={<DataDashboard />} />
+          <Route path="/explore" element={<ExplorePage />}>
+            <Route index element={<ExploreMap />} />
+            <Route path="data" element={<DataDashboard />} />
+          </Route>
+          <Route path="/dashboard" element={<Navigate to="/explore/data" replace />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />

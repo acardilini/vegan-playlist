@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../database/db');
 const analysis = require('../services/analysis');
+const explore = require('../services/explore');
 
 // Public, read-only qualitative analysis surface. Reads song_lyric_analysis only —
 // the local-only full-text and its translated copy stay out of this router
@@ -13,6 +14,30 @@ router.get('/facets', async (req, res) => {
   } catch (e) {
     console.error('facets error:', e);
     res.status(500).json({ error: 'Failed to load facets' });
+  }
+});
+
+// The whole Explore map in one response: spaces, colour-by legends, coverage and points.
+// Publish-filtered — unlike the retired public/vector_space.json, which leaked 24 non-live songs.
+router.get('/explore/points', async (req, res) => {
+  try {
+    res.json(await explore.mapPayload(pool));
+  } catch (e) {
+    console.error('explore points error:', e);
+    res.status(500).json({ error: 'Failed to load explore points' });
+  }
+});
+
+// Two tabs (message / sound) plus the genre fallback, in one response.
+router.get('/songs/:id/similar', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: 'Bad song id' });
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 6, 1), 24);
+    res.json(await explore.similarFor(pool, id, limit));
+  } catch (e) {
+    console.error('similar songs error:', e);
+    res.status(500).json({ error: 'Failed to load similar songs' });
   }
 });
 

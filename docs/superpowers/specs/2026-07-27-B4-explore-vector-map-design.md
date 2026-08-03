@@ -142,7 +142,7 @@ published=true`; colour codes read from each song's **latest analysis pass** via
 }
 ```
 
-**Size:** ~250KB, ~60KB gzipped. Deliberate: switching space, switching colour-by, spotlighting and
+**Size:** ~393KB (measured). Deliberate: switching space, switching colour-by, spotlighting and
 searching then need **zero further requests**, and the selected-song card needs no second fetch.
 
 **Space discovery:** enumerate `song_coordinates`' `*_2d` columns from `information_schema.columns`
@@ -344,7 +344,7 @@ sound" on this same page, the "Sound" filter group).
 | The page implies it shows the whole catalogue | Coverage line under the plot; the genre fallback never claims similarity |
 | Cosine query too slow | Measured during the build and recorded; cache only if the number is bad |
 | Palette unreadable in one theme | `dataviz` skill before palette code; check both themes in smoke |
-| Payload growth as the pipeline adds spaces | ~60KB gzipped today; revisit if it doubles |
+| Payload growth as the pipeline adds spaces | ~393KB measured today, one request, well under the 1MB threshold; revisit if it doubles |
 
 ---
 

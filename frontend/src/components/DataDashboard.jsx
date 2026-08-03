@@ -184,7 +184,7 @@ function DataDashboard() {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>Vegan music analytics</h1>
+        <h2>Vegan music analytics</h2>
         <p>Explore patterns and trends across the collection.</p>
       </div>
 

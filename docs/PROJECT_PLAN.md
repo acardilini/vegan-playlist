@@ -285,9 +285,30 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     whole-branch reviews; curator-confirmed all four rounds. Specs/plans under `superpowers/`
     (`2026-07-19-B3-browse-search*`, `2026-07-19-B3-rework-*`, `2026-07-20-B3-facet-selection-*`,
     `2026-07-20-B3-theme-tree-restyle-*`).
-  - ◐ **B4 — Explore vector map** _(brainstorm started 2026-07-27 and **paused mid-way** at the curator's
-    request; resume as the first task next session from `.superpowers/sdd/b4-brainstorm-handoff.md`. No code,
-    no spec yet.)_ **Reshaped by data that landed mid-brainstorm:** the analysis project created a
+  - ◐ **B4 — Explore vector map** _(brainstorm **completed** 2026-07-27; spec `491733c`, plan `3f479c7`.
+    **ALL 12 TASKS BUILT + CURATOR-SMOKED + POST-SMOKE BATCH A BUILT + FINAL OPUS REVIEW DONE** on branch
+    `session-B4-explore-map` — 27 commits, backend **165/165**, lint 0 errors, build clean. **The
+    2026-08-02 curator smoke passed §1–§3 and §6/§6.4 outright** — the first end-to-end human confirmation.
+    Its §4/§5 answers were **split**: **Batch A** shipped here (Semantic space dropped behind a named
+    `HIDDEN_SPACES` exception, with the `space` **and** `colour` URL params now validated; the genre legend
+    **names every value**, colouring the top 3 and nesting the rest as spotlightable children sharing slot
+    4, because **four simultaneous categorical colours is a measured hard ceiling** on a scatter; per-space
+    descriptions; dots 3.2 → 4; a quieter coverage line), while **Batch B** — zoom/pan with the viewport in
+    the URL, hover growth + a tweened space switch, and a narrow-width bottom-sheet layout — is **specced as
+    its own session** ([`specs/2026-08-02-B4-map-refinements-design.md`](./superpowers/specs/2026-08-02-B4-map-refinements-design.md) §4).
+    Two premises are recorded as **measured false** in that spec: the 11-colour palette, and a 59%-uncoded
+    genre figure that was really 13.9% (raw `songs.genre` read instead of `EFFECTIVE_GENRE_EXPR`). The final
+    review verified every project invariant against the code and caught 2 Important — a zero-result search
+    dimmed all 640 dots, and the `colour` param was unvalidated — fixed in `d6fc20a`; the 17 carried Minors
+    were triaged and all carry. **Held for a §7-only re-smoke, then merges.**
+    See [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md). The map half (1–7) was per-task reviewed and
+    stopped for the first smoke; the curator was away from a computer and asked for the recommendations half
+    (8–12: similarity registry, 768-dim cosine, z-scored 6-dim sound distance, genre fallback, song-page
+    tabs, deleting `vector_space.json`, docs) to proceed meanwhile. **3D remains a deliberate follow-up
+    session, not an omission** — 2D needs no charting dependency, where 3D adds ~150KB of WebGL plus
+    raycast hit-testing and roughly doubles the surface to test. Marked ☑ once the smoke passes and it
+    merges.)_ **Reshaped by data that landed
+    mid-brainstorm:** the analysis project created a
     **`song_coordinates`** table (664 rows, one per song, eight `float8[]` columns — semantic/thematic/
     **audio**/**holistic** × 2D/3D), so B4 reads the **DB through a publish-filtered API endpoint** instead
     of `frontend/public/vector_space.json`, which is superseded and gets deleted (it leaked 24 non-live

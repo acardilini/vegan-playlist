@@ -332,12 +332,14 @@ test('mapPayload assembles spaces, legends, coverage and songs', async () => {
   assert.ok(energy.codes.every(c => c.count > 0), 'legend lists only codes actually present');
   assert.ok(energy.codes.some(c => c.code === 'EXPLOSIVE_HIGH_INTENSITY'));
 
-  const notCoded = energy.codes.find(c => c.code === explore.NOT_CODED);
-  if (notCoded) {
-    assert.equal(notCoded.label, 'Not coded');
-    assert.equal(energy.codes[energy.codes.length - 1].code, explore.NOT_CODED,
-      'Not coded sorts last');
-  }
+  // The fixture's focus_amount is ABSENCE_OF_FOCUS, so this bucket is guaranteed present —
+  // assert on it unconditionally rather than skipping when it happens to be absent.
+  const focus = p.colourBy.find(c => c.key === 'focus_amount');
+  const notCoded = focus.codes.find(c => c.code === explore.NOT_CODED);
+  assert.ok(notCoded, 'the Not coded bucket exists');
+  assert.equal(notCoded.label, 'Not coded');
+  assert.equal(focus.codes[focus.codes.length - 1].code, explore.NOT_CODED,
+    'Not coded sorts last');
 
   const song = p.songs.find(s => s.id === id);
   assert.deepEqual(song.coords.semantic, [1, 2]);
@@ -1707,11 +1709,6 @@ test('sound similarity standardises dimensions and ignores 1024-dim rows', async
   assert.ok(!ids.includes(target), 'the song itself is excluded');
   assert.ok(ids.includes(nearOnSmallSd) && ids.includes(nearOnBigSd), 'both 6-dim songs rank');
 });
-
-test('every audio_embedding query constrains the array length', () => {
-  const entry = explore.SIMILARITY.find(s => s.key === 'sound');
-  assert.equal(entry.dims, 6, 'the registry records the expected width');
-});
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
@@ -1772,7 +1769,7 @@ function zEuclideanSql(entry) {
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `cd backend && npx node --test test/explore.test.js`
-Expected: PASS, 8 tests.
+Expected: PASS, 7 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -1885,7 +1882,7 @@ Update the exports line to add `genreFallback, similarFor`.
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `cd backend && npx node --test test/explore.test.js`
-Expected: PASS, 9 tests.
+Expected: PASS, 8 tests.
 
 - [ ] **Step 5: Add the route**
 
@@ -1920,7 +1917,7 @@ Expected: only the new route in `routes/analysis.js`.
 - [ ] **Step 7: Run the full suite**
 
 Run: `cd backend && npm test`
-Expected: all pass — 151 baseline + 9 new = 160.
+Expected: all pass — 151 baseline + 8 new = 159.
 
 - [ ] **Step 8: Commit**
 
@@ -2166,7 +2163,7 @@ Expected: no matches.
 - [ ] **Step 5: Full verification**
 
 Run: `cd backend && npm test`
-Expected: 160/160.
+Expected: 159/159.
 
 Run: `cd frontend && npm run lint && npm run build`
 Expected: 0 errors; build clean.
