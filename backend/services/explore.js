@@ -31,6 +31,20 @@ function spaceLabel(key) {
   return SPACE_LABELS[key] || titleCase(key);
 }
 
+// What each projection was built from. Curator's wording, 2026-08-02 smoke — the three
+// spaces do mean distinct things and the page should say so. Discovery is data-driven, so a
+// space with no entry here serves null and the page simply shows no line, exactly as labels
+// fall back to titleCase.
+const SPACE_DESCRIPTIONS = {
+  thematic: 'Positioned by an analysis of the lyrics.',
+  audio: "Positioned by an analysis of the song's acoustic properties.",
+  holistic: 'Positioned by an analysis of both the lyrics and the sound.',
+};
+
+function spaceDescription(key) {
+  return SPACE_DESCRIPTIONS[key] || null;
+}
+
 // Which 2D coordinate sets exist right now. Column names come from the catalogue, never
 // from user input, and are re-checked against a strict pattern before being spliced into
 // SQL as identifiers.
@@ -46,7 +60,7 @@ async function discoverSpaces(db) {
     .filter(c => SPACE_COLUMN.test(c))
     .map(c => {
       const key = c.slice(0, -3);
-      return { key, column: c, label: spaceLabel(key) };
+      return { key, column: c, label: spaceLabel(key), description: spaceDescription(key) };
     })
     .filter(s => !HIDDEN_SPACES.has(s.key));
 }
@@ -235,7 +249,7 @@ async function mapPayload(db) {
   });
 
   return {
-    spaces: spaces.map(s => ({ key: s.key, label: s.label })),
+    spaces: spaces.map(s => ({ key: s.key, label: s.label, description: s.description })),
     colourBy: COLOUR_DIMENSIONS.map(d => ({ key: d.key, label: d.label, codes: legendFor(d, rows, top) })),
     coverage: { mapped: songs.length, live: live.rows[0].n },
     songs,
@@ -389,7 +403,7 @@ async function similarFor(db, songId, limit = 6) {
 }
 
 module.exports = {
-  SPACE_LABELS, spaceLabel, discoverSpaces, mapRows,
+  SPACE_LABELS, spaceLabel, SPACE_DESCRIPTIONS, spaceDescription, discoverSpaces, mapRows,
   NOT_CODED, COLOUR_DIMENSIONS, codeFor, mapPayload,
   GENRE_TOP_N, OTHER_GENRES, OTHER_GENRES_LABEL, genreTopSet, legendFor,
   SIMILARITY, similarByEmbedding, genreFallback, similarFor,

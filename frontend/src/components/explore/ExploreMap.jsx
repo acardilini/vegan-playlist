@@ -127,6 +127,10 @@ function ExploreMap() {
     () => (data && data.colourBy.find(c => c.key === colour)) || null,
     [data, colour]);
 
+  const spaceMeta = useMemo(
+    () => (data && data.spaces.find(s => s.key === space)) || null,
+    [data, space]);
+
   const scale = useMemo(
     () => colourScale(legend ? legend.codes : [], legend && legend.label),
     [legend]);
@@ -281,6 +285,10 @@ function ExploreMap() {
           />
         </label>
       </div>
+
+      {spaceMeta && spaceMeta.description && (
+        <p className="explore-space-note">{spaceMeta.description}</p>
+      )}
 
       <div className="explore-body">
         <div className="explore-plot" ref={wrapRef}>

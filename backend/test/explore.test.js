@@ -27,6 +27,19 @@ test('discoverSpaces reads the *_2d columns from the live table, minus the hidde
   }
 });
 
+test('each known space is served with a description, and an unknown one with null', async () => {
+  const spaces = await explore.discoverSpaces(pool);
+  const byKey = Object.fromEntries(spaces.map(s => [s.key, s]));
+
+  assert.match(byKey.thematic.description, /lyrics/i);
+  assert.match(byKey.audio.description, /acoustic/i);
+  assert.match(byKey.holistic.description, /both/i);
+
+  // Discovery is data-driven, so a space the pipeline adds later has no copy written for it.
+  // It must serve null rather than an invented sentence.
+  assert.equal(explore.spaceDescription('some_new_space'), null);
+});
+
 // --- fixtures -------------------------------------------------------------
 const made = { songs: [] };
 
