@@ -2601,9 +2601,65 @@
   font-size: 0.8rem;
 }
 
+/* Narrow: the legend becomes a wrapping strip ABOVE the plot, the map takes the full width, and
+   the selected song becomes a bottom sheet. The curator chose the sheet over stacking the rail
+   under the plot. The risk a sheet carries is that it covers the dots just clicked, so it is
+   capped hard at 30vh and never becomes a full-height overlay. */
 @media (max-width: 860px) {
   .explore-body { flex-direction: column; }
-  .explore-rail { width: auto; border-left: 0; padding-left: 0; }
+
+  .explore-rail {
+    width: auto;
+    order: -1;
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .explore-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-3);
+  }
+  .explore-legend > li { padding: 0; }
+  .explore-legend-toggle { width: auto; }
+
+  /* Group members wrap inline too, keeping the hairline as the only grouping cue. Text
+     labels stay beside every swatch here as everywhere else: in dark mode the green/yellow
+     pair sits in the CVD warn band and the label is its only compensating control. */
+  .explore-legend-children {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-2);
+    margin-left: 0;
+    padding-left: var(--space-2);
+  }
+
+  .explore-rail-label--selected { display: none; }
+
+  .explore-song-card {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    max-height: 30vh;
+    overflow-y: auto;
+    margin: 0;
+    padding: var(--space-3);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-hairline);
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* Small inline cover art — the sheet's whole budget is 30vh, and a full-width image would
+     spend all of it before the title. */
+  .explore-song-art {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    float: left;
+    margin-right: var(--space-3);
+  }
 }
 
 .explore-search { display: flex; align-items: center; gap: var(--space-2); }

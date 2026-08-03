@@ -471,7 +471,7 @@ function ExploreMap() {
             </div>
           )}
 
-          <div className="explore-rail-label">Selected</div>
+          <div className="explore-rail-label explore-rail-label--selected">Selected</div>
           <SelectedSongCard
             song={selected}
             colourLabel={(legend || {}).label}
