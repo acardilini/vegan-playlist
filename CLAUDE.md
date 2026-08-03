@@ -94,12 +94,22 @@ Run before ending every working session:
 - **services/explore.js**: the read-only consumer of `song_coordinates` + `song_embeddings` behind the
   Explore map and the song page's "You might also like". Two halves. **The map:** space discovery is
   *data-driven* — it reads whichever `*_2d` columns the catalogue holds, so a space the pipeline adds
-  appears with no code change — and `mapPayload` serves spaces, colour-by legends, coverage and all 640
+  appears with no code change — with **one named exception, `HIDDEN_SPACES`** (currently `semantic`, dropped
+  at the curator's 2026-08-02 smoke); un-hiding is deleting a word from that set. Each space also carries a
+  short `description` saying what it was built from (`SPACE_DESCRIPTIONS`; unknown spaces serve `null` and
+  the page renders nothing). `mapPayload` serves spaces, colour-by legends, coverage and all 640
   points in **one** response (~393KB), which is why switching space/colour/spotlight/search costs no
-  further request. Colour-by is a curated low-cardinality menu; **parent genre folds to the top 3 +
-  "Other genres"** because it carries 13 values against a 5-slot palette, and the fold is computed **once**
-  and shared by the legend builder and the per-song code map so a point can never carry a bucket its own
-  legend doesn't explain. **Similarity is a REGISTRY, not discovery** (`SIMILARITY`) — coordinates are
+  further request. **Both the `space` and `colour` URL params are validated against what the catalogue
+  actually serves** — a stale shared link falls back to the default rather than drawing an empty or all-grey
+  map. Colour-by is a curated low-cardinality menu. **Genre names every value but colours only
+  the top 3**: a song carries its *raw* parent genre, while the legend gives slots 1–3 to the top three by
+  count and lists every remaining genre as a named `child` of an "Other genres" group that **shares slot 4**
+  — so a 1-song genre is visible and individually spotlightable without a colour of its own. That split
+  exists because **four simultaneous categorical colours is a measured hard ceiling** on a scatter (5 colours
+  score 9.8 on the `dataviz` all-pairs normal-vision gate against a floor of 15; 8 score 7.1). The top-N set
+  is computed **once** and shared by the legend builder and the colour assignment, so a point can never carry
+  a bucket its own legend doesn't explain. Spotlight state holds raw codes, and a group toggle is tri-state
+  (`aria-pressed="mixed"` when only some members are lit). **Similarity is a REGISTRY, not discovery** (`SIMILARITY`) — coordinates are
   interchangeable, but each embedding needs a metric and a normalisation judgement code must not guess:
   `message` is cosine over the full 768-dim `lyric_embedding`, `sound` is Euclidean **after per-dimension
   z-scoring** (without it the tab is a danceability ranking in disguise — sd 0.66 vs acousticness' 0.023).

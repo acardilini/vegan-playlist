@@ -164,26 +164,32 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   line-break preservation) — see the Decision Log. **A one-time reshape of 25 songs' `lyrics_highlights`
   was applied to the live DB** (`\n`→`\n\n` so separate highlights stayed separate; not a migration
   file — see the Decision Log). Merged `main`: backend **130/130**, build clean.
-- **⏳ ONE BRANCH PENDING — `session-B4-explore-map` (15 commits from `3f479c7`, NOT merged).**
-  **All 12 plan tasks are now built** — the map half (1–7) plus the recommendations half (8–12). Held for
-  the curator's smoke ([`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md)) exactly as triage 1–5 and the
-  acoustic session were; the checklist now covers **both** halves (§1–§4 map, §6 song page). Merged-`main`
-  state is unchanged by this branch. **The "restart the `:5000` backend" instruction has been removed as
-  incorrect** — that backend is **nodemon** (`npm run dev`), verified live picking up newly-written routes
-  within seconds, not the plain `node server.js` an earlier note claimed.
+- **⏳ ONE BRANCH PENDING — `session-B4-explore-map` (27 commits from `3f479c7`, NOT merged).**
+  **All 12 plan tasks plus post-smoke Batch A are built, and the final whole-branch opus review is done.**
+  The curator smoked the branch on 2026-08-02: **§1–§3 and §6/§6.4 all passed** (nav, routing, the map, the
+  full interaction layer, and all three song-page coverage cases), which is the first end-to-end human
+  confirmation the feature works. §4/§5 produced nine items, split into **Batch A** (shipped here) and
+  **Batch B** (specced, next session). The branch is held for a **second, much smaller smoke** — only
+  [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md) **§7** needs re-checking. Merged-`main` state is unchanged
+  by this branch. Backend **165/165**, lint 0 errors, build clean.
 - **✅ NOTHING PENDING — the acoustic dimensions are merged.** `session-acoustic-dimensions` merged
   no-ff to `main` after the curator's smoke; merged `main` re-verified backend **151/151**, lint 0 errors,
   build clean. Branch deleted local + remote. **Two curator-known follow-ups deliberately NOT done:**
   the pre-existing **Year range** control shares both patterns the tempo fixes addressed (clipping
   `From 1970` placeholders and an ellipsis chip for a single-ended range) — a two-line change whenever
   wanted; and the **acoustic derivation itself needs a pipeline re-run** (see the Decision Log).
-- **Next session:** **The curator's smoke of the WHOLE B4 branch comes FIRST** — work through
-  [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md), which now covers the map (§1–§4) **and** the song page
-  (§6). No backend restart is needed (see above). The build is complete: **all 12 tasks**, gates green
-  (backend **162/162**, lint 0 errors, build clean, headless smoke **15/15**). After the smoke, the
-  sequence is: fix whatever it finds → **final whole-branch opus review**, into which the **17 Minor
-  findings from Tasks 1–6** (`.superpowers/sdd/progress.md`) are carried for triage → merge. Then
-  **triage 6 —
+- **Next session:** **the curator's §7 re-smoke, then merge.** Only
+  [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md) **§7** is outstanding — §1–§3 and §6 already passed and
+  were not touched. The final whole-branch opus review is **done** (READY TO MERGE = YES WITH FIXES → the
+  2 Important + 5 Minor it found are fixed in `d6fc20a` and re-review-confirmed; the **17 Minor findings
+  from Tasks 1–6** were triaged and **all carry**). After the re-smoke: merge, then **Batch B** — zoom/pan
+  with the viewport in the URL, hover growth + a tweened space switch, and the narrow-width bottom-sheet
+  layout, all specced in
+  [`specs/2026-08-02-B4-map-refinements-design.md`](./superpowers/specs/2026-08-02-B4-map-refinements-design.md) §4.
+  **Two carried items Batch B must honour:** extract `exploreUrlState.js` **before** adding the `view`
+  param (all three URL-derivation defects the final review found lived in that one block), and keep **text
+  labels beside legend swatches** in the new narrow layout — the dark green/yellow pair sits in the CVD
+  warn band and the labels are the compensating control. Then **triage 6 —
   the About analysis-explainer + AI-disclosure page** (the seven metadata-component + five
   thematic-dimension descriptions are served by the API and deliberately unused in browse — that page is
   where they land; now with the renamed **"Speaking to"** / **"Subjects"** labels). **`vector_space.json`
@@ -206,7 +212,19 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   (Explore vector map, with the vector "You might also like" — **brainstorm in progress, paused
   2026-07-27**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-07-27 _(**B4 COMPLETE — all 12 tasks built**; branch `session-B4-explore-map`,
+- **Last updated:** 2026-08-03 _(**The B4 curator smoke PASSED §1–§3 and §6; Batch A of its follow-ups is
+  built and the final whole-branch opus review is done.** Branch `session-B4-explore-map`, **27 commits**,
+  held for a **§7-only** re-smoke. Semantic space dropped (a named `HIDDEN_SPACES` exception, with the
+  `space` param now validated); genre's legend names **every** value with the top 3 coloured and the rest as
+  spotlightable children sharing slot 4; per-space descriptions; dots 3.2 → 4; a quieter coverage line.
+  **Two of my own premises were measured false and are dated in the spec:** the 11-colour palette I specced
+  is impossible (5 colours score 9.8 against a floor of 15; four is the hard ceiling), and the "genre is 59%
+  uncoded" figure was wrong — it is **13.9%**, because I measured raw `songs.genre` instead of
+  `EFFECTIVE_GENRE_EXPR`. Final review verified every invariant against code and found 2 Important — a
+  zero-result search dimmed all 640 dots, and the `colour` param was unvalidated — both fixed in `d6fc20a`.
+  17 carried minors triaged: all carry. Backend **165/165**, lint 0, build clean. **Batch B** (zoom/pan,
+  motion, narrow-width bottom sheet) is specced and waiting.)_
+- **Previously updated:** 2026-07-27 _(**B4 COMPLETE — all 12 tasks built**; branch `session-B4-explore-map`,
   15 commits, held for the curator's smoke of **both** halves. Tasks 8–12 added the similarity registry,
   768-dim cosine, z-scored 6-dim sound distance, the "More in this genre" fallback,
   `GET /api/analysis/songs/:id/similar`, the song page's `SimilarSongs`, and deleted both the dead
@@ -395,6 +413,53 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-08-02/03 — The B4 curator smoke PASSED, and its follow-ups exposed two of my own false premises.
+  Batch A shipped; Batch B specced.** The curator worked the whole checklist: **§1–§3 and §6/§6.4 passed
+  outright** — nav, routing, the map, all nine interaction checks, and all three song-page coverage cases.
+  That is the first end-to-end human confirmation of B4. §4/§5 produced nine items, deliberately **split**:
+  Batch A (cheap answers to built work) ships on this branch so it can merge, Batch B (new features that
+  rewrite the canvas draw loop) becomes its own session. Spec:
+  [`2026-08-02-B4-map-refinements-design.md`](./superpowers/specs/2026-08-02-B4-map-refinements-design.md).
+  **Decisions:** **(1) Semantic dropped** from the map (`062b38f`) — implemented as a named `HIDDEN_SPACES`
+  exception beside the data-driven discovery rather than by abandoning discovery, so a space the pipeline
+  adds still appears free. The `space` URL param is now validated, because otherwise a link shared while
+  Semantic existed would draw an empty plot with no chip lit, and this page's whole contract is that the
+  view lives in the URL. **(2) Genre names every value but colours only three.**
+  **THE 11-COLOUR PALETTE I SPECCED IS IMPOSSIBLE, AND I SPECCED IT WITHOUT CHECKING.** The curator asked
+  for a palette covering every genre, hues or shades; I wrote it into an approved spec, then measured it
+  against the `dataviz` validator at scatter rigor and found the worst normal-vision pair scores **19.3 at
+  four colours (PASS), 9.8 at five, 7.8 at six, 7.1 at all eight documented hues** — against a floor of
+  **15**, below which the skill's own wording is "hard to tell apart even with full color vision". At eight
+  hues, magenta↔aqua measures CVD ΔE **1.6**. Shades are worse than hues, since a shade sits closer to its
+  own base than any two hues do. **Four simultaneous categorical colours is a hard ceiling on a scatter.**
+  The curator's actual objection was *visibility*, not colour count, so the fix moved channels: the legend
+  **names every genre**, the top 3 keep their own colour, the rest are **named children of an "Other
+  genres" group sharing slot 4**, and **every genre is individually spotlightable** — which reduces the
+  plot to a legible two-colour scene and has no palette ceiling. "Other genres" takes slot 4 rather than
+  the neutral, because "a smaller genre" and "no genre at all" are different claims. The literal `other`
+  parent is relabelled **"Unclassified genre"** so it does not read as "Other" nested inside "Other
+  genres". `GENRE_TOP_N` stays **3** — it now sets how many genres get a *colour*, not how many are
+  *visible*. **(3) THE SECOND FALSE PREMISE: I reported genre as 59% uncoded on the map. It is 13.9%.**
+  My scratch query read the raw `songs.genre` column; `mapRows` selects `genres.EFFECTIVE_GENRE_EXPR` (the
+  B3 effective-genre fix, which falls back to artist genres and roughly doubles coverage). Real figures:
+  metal 213 · hardcore 149 · punk 122 · a 67-song tail across nine genres · Not coded 89 = 640, with the
+  top three carrying **75.6%**. No design changed — the palette ceiling is a property of colour, not of
+  this data — but the "genre is mostly empty" reasoning is **withdrawn**, including the case it appeared
+  to make for dropping Genre from the Colour by menu. Both corrections are dated in the spec rather than
+  quietly edited away. **(4) Per-space descriptions** served from the backend (unknown spaces serve
+  `null`), recorded as an explicit **exception** to the standing rule that definitional copy belongs on
+  About pages — the curator asked for it directly, and it is not a precedent. **(5) Dots 3.2 → 4**;
+  coverage line quietened to match the new space line.
+  **The final whole-branch opus review verified every project invariant against the code** — `explore.js`
+  read-only, the publish filter on all four read paths, `array_length(audio_embedding,1)=6`, no
+  `song_lyrics`, `VALIDATED_CATS=4` with nothing reaching slot 5 — and traced the similarity maths clean.
+  It found **2 Important**: a zero-result search dimmed **all 640 dots** (an empty match Set is truthy), and
+  the `colour` param was unvalidated where `space` had just been fixed, rendering an all-grey map that
+  reads as data loss. Both fixed in `d6fc20a` with five Minors, re-review-confirmed. The **17 Minor findings
+  from Tasks 1–6 were triaged: all carry.**
+  **Verified:** backend **165/165**; lint 0 errors; build clean. Read-only — no migrations, no writes to any
+  analysis table. **Held for a much smaller second smoke (§7 only) before merge.**
 
 - **2026-07-27 (third entry, same day) — B4 COMPLETED: Tasks 8–12 built while the curator was away from a
   computer. The similarity half, and a test that was passing for the wrong reason.** The map half had been

@@ -129,9 +129,59 @@ replaced by two embedding tabs, with an honest fallback for songs that have no e
 
 ---
 
+---
+
+## 7. Round two — what changed after your smoke (2026-08-03)
+
+Your §1–§3 and §6 answers all passed, so nothing there was touched. These are the §4 answers, plus the
+fixes a final whole-branch review found. **Only this section needs re-smoking.**
+
+### 7.1 What you asked for
+
+- [ ] **Semantic is gone.** Three chips: **Thematic · Sound · Holistic**, opening on Thematic.
+      A link you saved earlier carrying `space=semantic` must fall back to Thematic, not draw an empty plot.
+- [ ] **Each space now says what it is.** One quiet line under the toolbar that changes with the chip:
+      lyrics / acoustic properties / both.
+- [ ] **Dots are bigger** (radius 3.2 → 4).
+- [ ] **The coverage line is smaller and greyer**, matched to the new space line beneath the plot.
+- [ ] **Colour by → Genre names every genre.** Metal · Hardcore · Punk have their own colours; the rest are
+      **indented under "Other genres"**, sharing its colour, each with a count and **each individually
+      clickable**. Click **Soul (1)** — the map should dim to a single lit dot. Counts still total **640**.
+- [ ] Clicking *some* members of the group leaves the group heading in a **third, in-between state** — it
+      must not look identical to "nothing selected".
+
+### 7.2 Why genre isn't eleven separate colours
+
+You asked for a palette that works, with shades if needed. **It was measured and isn't possible.** Against
+the contrast validator at scatter rigor, the worst pair scores 19.3 at four colours (passes), **9.8 at
+five, 7.1 at eight** — against a floor of 15, below which colours are hard to tell apart *even with full
+colour vision*. Shades are worse than hues. So the legend gives you every genre by **name and click**,
+which has no such ceiling, while colour stays at the four that are honest. If the small genres still feel
+buried, say so — the next lever is making a spotlit genre louder, not adding colours.
+
+### 7.3 Fixes from the final review — quick checks
+
+- [ ] Type nonsense (**"zzzz"**) into *Find a song*. The map must stay **normal**, with a "No songs match"
+      line. Previously every dot went grey, which looked broken.
+- [ ] Hover a dot near the **bottom edge** — the card must stay inside the plot.
+- [ ] With >20 search results, the list says **"Showing 20 of N"** rather than silently truncating.
+- [ ] On a song page, click a card in "You might also like" — the new song's recommendations must not
+      briefly show the **previous** song's six.
+
+### 7.4 One correction you should know about
+
+I told you during the smoke that genre was **59% uncoded** on the map. **That was wrong** — I measured the
+raw `songs.genre` column instead of the effective genre the map actually uses. The real figure is **13.9%**,
+and the top three genres cover **75.6%**. Genre is a well-populated colour dimension. No design changed as
+a result, but the "genre is mostly empty" reasoning is withdrawn.
+
+---
+
 ## What is left
 
-Nothing in the plan — all 12 tasks are built. Remaining work is decided by this smoke.
+Nothing in the plan — all 12 tasks plus the post-smoke Batch A are built. **Batch B is specced and waiting
+as its own session:** zoom/pan with the viewport in the URL, hover growth and a tweened space switch, and
+the narrow-width layout with the legend above and the song card as a bottom sheet.
 
 Deliberate follow-ups, not omissions: **3D is its own future session** (2D needs no charting dependency;
 3D adds ~150KB of WebGL plus raycast hit-testing), and the **acoustic derivation re-run** is a pipeline
