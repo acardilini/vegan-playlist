@@ -129,33 +129,37 @@ what isn't, without either overselling the tech or hedging so much it reads as a
 - [ ] The rest of the site (Browse, a song page, Explore, Playlists) — quick click-through to
       confirm nothing outside `/about` moved.
 
-## §7 Genre/mood provenance — resolved in final review, please confirm the wording
+## §7 Genre/mood provenance — settled, please confirm the wording
 
-The previous draft of this checklist raised genre/mood provenance as an open question, guessed
-from reading the schema. The final review pass measured it against the live database instead of
-guessing, and the sentence was wrong on both counts:
+This section went through two wrong answers before landing. Both are recorded because the second
+one nearly shipped onto a public transparency page.
 
-- **Genre.** `EFFECTIVE_GENRE_EXPR` prefers the curator-entered `songs.genre` over the Spotify
-  artist genre, not the other way round. **491 of 1,333 live songs (37%)** carry a hand-set genre,
-  so crediting Spotify for genre was wrong for over a third of the catalogue. Album and release
-  date **are** correctly credited to Spotify (1,332 of 1,333 live songs have an album row).
-- **"Moods."** True of `songs.custom_mood` (the mood badge on a song card, 652 live songs,
-  hand-entered) but misleading as a bare word: the Reference tab's Sound family lists a dimension
-  headed **"Mood"** that is machine-measured via Librosa. The old sentence told a reader "Moods are
-  hand-entered" on the same site section that shows a different Mood as measured.
+**Genre — you were right, and the automated review was not.** The final review noticed that
+`EFFECTIVE_GENRE_EXPR` prefers `songs.genre` over the Spotify artist genre, found 491 live songs
+carrying one, and concluded from "only admin routes write that column" that a third of the
+catalogue had hand-set genres. It rewrote the page to say so. **You corrected that, and the data
+agrees with you:** all 491 rows are `data_source = 'spotify'`, all were added in one window
+(2025-07-21 to 2025-07-29) by the import, and the values are Spotify's own vocabulary — `death
+metal`, `hardcore punk`, `groove metal`. `songs.genre` is a denormalised copy of Spotify data
+from the 2025 import, not curator entry. The admin UI *can* write it; nothing has. So genre **is**
+Spotify-derived, exactly as the original sentence said, and that sentence has been restored.
 
-`analysis.md`'s "Where the rest of the information comes from" section has been rewritten to state
-both correctly and to name the mood badge specifically instead of the ambiguous word "Moods":
+**Mood — the one real correction, and it stands.** "Moods are entered by hand" is true of
+`songs.custom_mood` (the mood badge on a song card, 652 live songs), but the Reference tab's Sound
+family lists a dimension headed **"Mood"** that is machine-measured via Librosa. The bare word
+told a reader "Moods are hand-entered" on the same site section that shows a different Mood as
+measured. The page now names the mood badge specifically.
 
-> Album and release date come from Spotify. Genre usually is too — but a genre set by hand on a
-> song always wins over Spotify's, and roughly a third of the catalogue currently has one.
+The section now reads:
+
+> Genre, album and release date all come from Spotify.
 >
 > The mood badge on a song card is entered by hand. That's different from the Mood shown on the
 > Reference page, which is measured from the audio. Languages and the highlighted lyrics on a song
 > page are entered by hand too.
 
-- [ ] **Please read the new wording above (or live, in `analysis.md`) and confirm it reads right to
-      you** — the facts are now measured, but the phrasing is still worth your eyes before merge.
+- [ ] **Please confirm this reads right to you** — particularly the mood distinction, which is the
+      one substantive change to what the page claims.
 
 ---
 

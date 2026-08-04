@@ -46,8 +46,7 @@ usually the interesting case.
 
 ## Where the rest of the information comes from
 
-Album and release date come from Spotify. Genre usually is too — but a genre set by hand on
-a song always wins over Spotify's, and roughly a third of the catalogue currently has one.
+Genre, album and release date all come from Spotify.
 
 The mood badge on a song card is entered by hand. That's different from the Mood shown on
 the [Reference](/about/reference) page, which is measured from the audio. Languages and the

@@ -275,10 +275,20 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   6-dimension reference catalogue) and a new dependency, `react-markdown` + `remark-gfm`, added as a
   deliberate exception to the project's avoid-a-dependency habit. Backend **179/179**; frontend
   module tests **36** (9 utils + 27 explore); lint **0 errors**; build clean, **726.27 kB**;
-  Puppeteer smoke **10/10** — the first live-browser check of every task this session built. One
-  open question is carried to the curator, unresolved: whether `analysis.md`'s genre/mood provenance
-  claim is actually correct. See [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md). **Next:
-  the curator's own smoke, then merge.**)_
+  Puppeteer smoke **10/10** — the first live-browser check of every task this session built.
+  **The genre/mood provenance question is settled, and the curator overruled an automated
+  finding to settle it.** The final review measured 491 live songs carrying `songs.genre` — which
+  `EFFECTIVE_GENRE_EXPR` prefers over the Spotify artist genre — and inferred from "only admin
+  routes write that column" that a third of the catalogue was hand-set, then rewrote the public
+  page to say so. The curator said no genre is curator-set. **The data agrees with the curator:**
+  all 491 rows are `data_source='spotify'`, all added 2025-07-21..29 by the import, holding
+  Spotify's own vocabulary (`death metal`, `hardcore punk`, `groove metal`). `songs.genre` is a
+  denormalised copy from the 2025 import; the admin UI *can* write it and nothing has. The original
+  sentence was right and is restored. **The mood half of that finding was real and stands:** "Moods
+  are entered by hand" is true of the song-card mood badge but collided with the Reference tab's
+  Librosa-measured **"Mood"** dimension, so the page now names the badge specifically. See
+  [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md) §7. **Next: the curator's own smoke,
+  then merge.**)_
 - **Previously updated:** 2026-08-04 _(**Batch B BUILT, CURATOR-SMOKED and MERGED.** Zoom/pan with the
   viewport in the URL, hover growth + a tweened space switch, and the narrow-width bottom-sheet
   layout — all of §4 of the spec. **The curator's smoke passed all four judgement sections**
@@ -1694,12 +1704,22 @@ Newest first. What actually happened each session.
   with disposable repro scripts before either was changed, same pattern as the Batch B smoke.
   **Verified: backend 179/179; frontend module tests 36 (9 utils + 27 explore); lint 0 errors (6
   pre-existing warnings); build clean, JS bundle 726.27 kB.** Owner's `:5000` (nodemon) and `:5173`
-  servers confirmed alive by PID before and after; no app file touched by the smoke task. **One open
-  question carried to the curator, unresolved by design:** `analysis.md`'s "Where the rest of the
-  information comes from" section states that genre/album data come from Spotify while
-  moods/languages/lyric highlights are curator-entered — a reading taken from the schema
-  (`songs.custom_mood`, `EFFECTIVE_GENRE_EXPR`), not confirmed by the curator, and a provenance claim
-  is the worst place to be wrong on a transparency page. New checklist
+  servers confirmed alive by PID before and after; no app file touched by the smoke task.
+  **The provenance question went through two wrong answers before landing, and the curator's
+  correction was the one that held.** `analysis.md`'s "Where the rest of the information comes from"
+  section originally credited Spotify for genre — a reading taken from the schema and flagged as
+  unconfirmed. The final whole-branch review then measured 491 live songs carrying `songs.genre`
+  (which `EFFECTIVE_GENRE_EXPR` prefers over the artist genre), inferred from "only admin routes
+  write that column" that they were hand-set, and rewrote the public page to say a third of the
+  catalogue overrides Spotify. **The curator said no genre is curator-set, and the data agrees with
+  the curator:** all 491 rows are `data_source='spotify'`, added 2025-07-21..29 by the import,
+  holding Spotify's own vocabulary (`death metal`, `hardcore punk`, `groove metal`). The column is a
+  denormalised copy from the 2025 import; the admin UI can write it and nothing has. The original
+  sentence was correct and was restored. **The lesson worth carrying: "which code path writes this
+  column today" is not evidence of where the data in it came from.** The mood half of that same
+  finding was real and stands — "Moods are entered by hand" is true of the song-card badge but
+  collided with the Reference tab's Librosa-measured **"Mood"** dimension, so the page now names the
+  badge specifically. New checklist
   [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md) written for editing instructions plus
   the judgement calls only a person can make (honest vs. defensive tone, whether the AI disclosure is
   specific enough, whether 141 reference terms read as navigable or overwhelming). **Held for the
