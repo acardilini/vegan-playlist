@@ -99,6 +99,15 @@ what isn't, without either overselling the tech or hedging so much it reads as a
 - [ ] Every dimension/component loads **collapsed**. Open a few. Does that default (collapsed,
       not everything expanded) feel right for a first visit, or would you rather land on
       something already open?
+- [ ] **Decision point (found in final review, not yet decided):** because sections are
+      collapsed by default and a closed `FilterSection` removes its contents from the page
+      entirely, none of the 141 terms exist in the page until you click their section open —
+      so your browser's own Ctrl-F/Cmd-F search finds nothing on a fresh load, and a deep link
+      to one term (`/about/reference#targets`) cannot scroll to it, contrary to what the design
+      spec originally promised. Fixing that means defaulting the sections open, which trades a
+      long first-load page for a genuinely searchable/linkable one. **Which do you want: open by
+      default (searchable, long) or collapsed as it is now (tidy, not searchable)?** No code
+      changed for this in the fix wave — it's your call.
 - [ ] Find a term with **`0 songs`** next to it (there are several — the four "absence" codes
       stay hidden everywhere, but plenty of real thematic terms currently have no coded song).
       Its count is plain text, not a link — confirm that reads as intentional ("nothing to click
@@ -120,21 +129,33 @@ what isn't, without either overselling the tech or hedging so much it reads as a
 - [ ] The rest of the site (Browse, a song page, Explore, Playlists) — quick click-through to
       confirm nothing outside `/about` moved.
 
-## §7 Open question this session could NOT resolve — please answer before merge
+## §7 Genre/mood provenance — resolved in final review, please confirm the wording
 
-`analysis.md`'s **"Where the rest of the information comes from"** section currently states:
+The previous draft of this checklist raised genre/mood provenance as an open question, guessed
+from reading the schema. The final review pass measured it against the live database instead of
+guessing, and the sentence was wrong on both counts:
 
-> Genre, album and release data come from Spotify. Moods, languages and the highlighted lyrics on
-> a song page are entered by hand.
+- **Genre.** `EFFECTIVE_GENRE_EXPR` prefers the curator-entered `songs.genre` over the Spotify
+  artist genre, not the other way round. **491 of 1,333 live songs (37%)** carry a hand-set genre,
+  so crediting Spotify for genre was wrong for over a third of the catalogue. Album and release
+  date **are** correctly credited to Spotify (1,332 of 1,333 live songs have an album row).
+- **"Moods."** True of `songs.custom_mood` (the mood badge on a song card, 652 live songs,
+  hand-entered) but misleading as a bare word: the Reference tab's Sound family lists a dimension
+  headed **"Mood"** that is machine-measured via Librosa. The old sentence told a reader "Moods are
+  hand-entered" on the same site section that shows a different Mood as measured.
 
-That claim was written from reading the **schema** (`songs.custom_mood` looks curator-entered;
-genre resolves through `EFFECTIVE_GENRE_EXPR`, which is Spotify-derived with a fallback) — it has
-**not** been confirmed by you. A wrong provenance claim is about the worst thing to get wrong on a
-page whose entire purpose is transparency, so:
+`analysis.md`'s "Where the rest of the information comes from" section has been rewritten to state
+both correctly and to name the mood badge specifically instead of the ambiguous word "Moods":
 
-- [ ] **Please confirm or correct this sentence before the branch merges.** If any of it is wrong
-      — e.g. if genre is sometimes hand-set, or a "mood" sometimes comes from Spotify — edit
-      `analysis.md` directly (it's live on refresh, per §1) or flag it and it'll get fixed.
+> Album and release date come from Spotify. Genre usually is too — but a genre set by hand on a
+> song always wins over Spotify's, and roughly a third of the catalogue currently has one.
+>
+> The mood badge on a song card is entered by hand. That's different from the Mood shown on the
+> Reference page, which is measured from the audio. Languages and the highlighted lyrics on a song
+> page are entered by hand too.
+
+- [ ] **Please read the new wording above (or live, in `analysis.md`) and confirm it reads right to
+      you** — the facts are now measured, but the phrasing is still worth your eyes before merge.
 
 ---
 

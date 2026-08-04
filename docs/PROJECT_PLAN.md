@@ -453,7 +453,12 @@ pages** (item 6), which is now where it belongs. Backend 121/121. Spec:
   locally from env config; confirm secrets not committed._
 - ☐ **Session 5.2 — Deploy pipeline & DB hosting.** Choose final platform; add deploy config
   (e.g. `render.yaml`); provision hosted Postgres; migrate data. _Smoke test: deploy a branch
-  and load the live site._
+  and load the live site._ **Watch out:** `frontend/src/pages/about/*.jsx` imports
+  `../../../../backend/data/*.md?raw`, reaching outside the `frontend/` package. It builds
+  today because Vite's workspace root resolves to the repo root, but a deploy pipeline that
+  builds the frontend with `frontend/` as its own build context (e.g. copying only that
+  directory into a container) will fail with a hard "module not found" — loud, not silent,
+  but plan for it rather than being surprised mid-deploy.
 - ☐ **Session 5.3 — Launch checklist.** Domain, HTTPS, performance/load-time check, backups.
   _Smoke test: full production walkthrough against the PRD's launch success criteria._
 

@@ -5,6 +5,23 @@
 "About / transparency"), plus a curator request made during this brainstorm to make the About copy
 editable from a file.
 
+## Correction (2026-08-04, post-build — final fix wave)
+
+**Decision 5 and §8's "opens and scrolls to its dimension" claim do not hold as built.** Decision 5
+below says "Ctrl-F finds any term on the page and a deep link to one term always works." §8 says a
+fragment like `/about/reference#targets` "opens and scrolls to its dimension." Neither is true of what
+shipped: every dimension on the Reference page renders through `FilterSection`, which **unmounts its
+body when closed** and defaults to closed (`defaultOpen` is not passed anywhere in
+`AnalysisReference.jsx`). So none of the 141 terms is in the DOM until a reader clicks it open — Ctrl-F
+finds nothing until then — and only the three family-level ids (`#themes`, `#lyric-metadata`, `#sound`)
+exist; nothing in the page reads `location.hash`, so a link to one term does not scroll to it.
+
+This is being **recorded, not silently fixed**: whether the glossary should default open (findable via
+Ctrl-F and deep-linkable, but a very long initial page) or stay collapsed (tidy on first load, but
+unsearchable by browser find) is a real trade-off the curator should choose, not one to guess at this
+late in the branch. It is raised as an explicit decision point in
+[`TRIAGE_6_CURATOR_SMOKE.md`](../../TRIAGE_6_CURATOR_SMOKE.md) §5. No code changed for this correction.
+
 ## 1. Why this exists
 
 Two things meet here.

@@ -132,8 +132,10 @@ Run before ending every working session:
   acoustic dimensions — a term nobody's song currently carries is itself information on a glossary
   page. Two small getters were added to `acousticCodebook.js` for this (`derivationSource(key)`,
   `codeThreshold(key, code)`), following the existing `componentDescription`/`codeDefinition` shape.
-  Counts are three queries (thematic/scalar/acoustic) reusing the shared `LATEST_ANALYSIS` fragment
-  and the `status='included' AND published=true` gate, exactly like every other public read — this is
+  Counts are **17 count queries** — one per family member (5 thematic dimensions + 7 metadata
+  components + 5 acoustic dimensions) — **plus 5 coverage queries**, all reusing the shared
+  `LATEST_ANALYSIS` fragment and the `status='included' AND published=true` gate, exactly like every
+  other public read — this is
   the one invariant a future change here must not drift from, or the reference page will disagree
   with the browse sidebar. The response also carries a `coverage` block (live-song/artist/analysed/
   mapped counts, plus the latest coding pass's models and date) that both the Reference tab and the
