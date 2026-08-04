@@ -84,6 +84,8 @@ test('catalogue lists six acoustic dimensions, each with a derivation source', (
   assert.deepEqual(c.acoustic.find(a => a.key === 'tempo_bpm').codes, []);
 });
 
+const express = require('express');
+
 after(async () => { await pool.end(); });
 
 test('payload fills real counts and keeps zero-count terms', async () => {
@@ -168,4 +170,32 @@ test('coverage reports live, analysed and mapped songs plus the latest-pass mode
   // Every analysed song has exactly one latest pass.
   assert.equal(counts.reduce((a, b) => a + b, 0), c.analysed_songs);
   assert.ok(!Number.isNaN(Date.parse(c.latest_pass_at)), 'latest_pass_at parses as a date');
+});
+
+// Mount the real router on an ephemeral port rather than assuming a server is running —
+// the curator's :5000 may be serving older code, and we must not disturb it.
+async function withServer(fn) {
+  const app = express();
+  app.use('/api/analysis', require('../routes/analysis'));
+  const server = app.listen(0);
+  await new Promise(r => server.once('listening', r));
+  try {
+    return await fn(`http://127.0.0.1:${server.address().port}`);
+  } finally {
+    await new Promise(r => server.close(r));
+  }
+}
+
+test('GET /api/analysis/codebook serves the whole reference payload', async () => {
+  await withServer(async (base) => {
+    const res = await fetch(`${base}/api/analysis/codebook`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.thematic.length, 5);
+    assert.equal(body.metadata.length, 7);
+    assert.equal(body.acoustic.length, 6);
+    assert.ok(body.coverage.live_songs > 1000);
+    const codes = body.metadata.flatMap(m => m.codes.map(c => c.code));
+    assert.ok(!codes.includes('UNSPECIFIED'), 'suppressed codes never reach the wire');
+  });
 });

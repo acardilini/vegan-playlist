@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../database/db');
 const analysis = require('../services/analysis');
 const explore = require('../services/explore');
+const referenceCodebook = require('../services/referenceCodebook');
 
 // Public, read-only qualitative analysis surface. Reads song_lyric_analysis only —
 // the local-only full-text and its translated copy stay out of this router
@@ -14,6 +15,18 @@ router.get('/facets', async (req, res) => {
   } catch (e) {
     console.error('facets error:', e);
     res.status(500).json({ error: 'Failed to load facets' });
+  }
+});
+
+// The About → Reference page in one response: the complete vocabulary with definitions and
+// live counts, plus the coverage block the explainer's honesty section renders. Unlike
+// /facets this keeps zero-count terms — a term no song carries is information on a glossary.
+router.get('/codebook', async (req, res) => {
+  try {
+    res.json(await referenceCodebook.payload(pool));
+  } catch (e) {
+    console.error('codebook error:', e);
+    res.status(500).json({ error: 'Failed to load the codebook' });
   }
 });
 
