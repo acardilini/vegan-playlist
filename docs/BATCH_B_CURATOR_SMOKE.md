@@ -1,10 +1,10 @@
 # Batch B — Explore map interaction layer: curator smoke checklist
 
 **Branch:** `session-B4-batch-b` · **Status:** all 5 code tasks built (Tasks 1–5), plus this task's
-Puppeteer smoke. Everything below has passed automated checks (backend 165/165 — unchanged,
-26 frontend module tests, lint 0 errors, build clean, and headless-browser runs 17/17) and been
-reviewed statically, task by task. **None of it has been looked at by a human in a live browser.**
-That is what this list is for.
+Puppeteer smoke, plus the final whole-branch review's fixes. Everything below has passed automated
+checks (backend 165/165 — unchanged, 27 frontend module tests, lint 0 errors, build clean, and
+headless-browser runs 17/17) and been reviewed statically, task by task. **Almost none of it has
+been looked at by a human in a live browser.** That is what this list is for.
 
 No §0 restart step this time: your `:5000` backend is nodemon, and this batch touches **no backend
 file at all** — it is pure frontend (`frontend/src/components/explore/`). Just make sure you're on
@@ -93,6 +93,14 @@ git checkout session-B4-batch-b
       the same height, or does it creep taller** each time you resize? (The plot's height is
       content-driven at this width, and its content is a canvas — a slow growth loop is possible
       in principle; this hasn't been confirmed in a real browser.)
+- [ ] **Known pre-existing issue, not from this batch — please confirm what you see.** While
+      verifying the ResizeObserver fix, a reviewer found that `.explore-page` has a
+      **content-driven width floor of roughly 1080px**, coming from a toolbar row that never
+      wraps. Below that the page itself scrolls sideways rather than reflowing, which pins the
+      plot's width no matter how narrow the window gets. It reproduces identically before and
+      after this batch — it dates from the original B4 map — so it is **not** a Batch B
+      regression and was left alone rather than fixed blind here. At phone width, does the whole
+      page scroll left-to-right? If so, that is this, and it becomes its own small triage item.
 
 ## §6 Regressions — things this batch should not have touched
 

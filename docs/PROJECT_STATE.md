@@ -193,7 +193,17 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   were defects in the plan's own sample code** (a wheel listener that never attached on a normal page
   load, a hover halo ignoring the dim/lit split, a CSS media block that lost the cascade), all fixed on
   branch. Task 6's Puppeteer smoke (17/17) found two more issues, both in the smoke script itself —
-  see the 2026-08-04 Decision Log entry. Backend **165/165** unchanged, lint 0, build clean. Real
+  see the 2026-08-04 Decision Log entry. **The final whole-branch opus review then found 2 Important**
+  (a mount-time clamp against the placeholder plot size silently truncating a shared high-zoom link,
+  and no `pointercancel` handling leaving a stuck-pan state) **plus 7 Minor, all fixed in one wave**
+  (`141eff9`) and re-review-confirmed. **That review's out-of-scope note then led to the branch's
+  fourth plan-independent defect, and the worst of them:** the plot's `ResizeObserver` never attached
+  at all — its effect has `[]` deps and reads a ref belonging to a div that does not exist during
+  `loading`, so `ro.observe` was never called, the canvas never sized itself to the plot, and the
+  clamp fix minutes earlier was **inert** because the observer callback is the only writer of the
+  flag gating it. Confirmed by live instrumentation and fixed in `7d6d378` with the element-in-state
+  pattern the same file already used for the canvas. **Pre-existing since the original B4 map and
+  already on `main`.** Backend **165/165** unchanged, 27 frontend module tests, lint 0, build clean. Real
   touchscreen pinch remains deliberately deferred. **Next session: triage 6 —
   the About analysis-explainer + AI-disclosure page** (the seven metadata-component + five
   thematic-dimension descriptions are served by the API and deliberately unused in browse — that page is
@@ -303,7 +313,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > Work through [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md) — **no restart needed**, the
 > `:5000` backend is nodemon and this batch touches no backend file at all; just `git checkout
 > session-B4-batch-b` and let Vite reload. Everything on that branch has passed automated checks
-> (backend 165/165 unchanged, 26 frontend module tests, lint 0 errors, build clean, and a genuine
+> (backend 165/165 unchanged, 27 frontend module tests, lint 0 errors, build clean, and a genuine
 > 17/17 headless-browser smoke) but **nothing has been driven by a human in a live browser** — §1 and
 > §4 hold the judgement questions no test can answer: does 12× zoom feel like enough, does the space
 > tween actually show you which songs travel together, and does the narrow-width bottom sheet cover
@@ -366,6 +376,23 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
   site spot-check (keep as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
+- **`/explore` has a ~1080px content-driven minimum width (pre-existing, NOT a Batch B regression).**
+  Found 2026-08-04 by a reviewer trying to pixel-verify the ResizeObserver fix, and confirmed to
+  reproduce identically on both sides of that fix, so it dates from the original B4 map. A toolbar
+  row in `.explore-page` never wraps, so below roughly 1080px the **page itself scrolls sideways**
+  instead of reflowing, which pins the plot's width however narrow the window gets. The ≤860px
+  media query still fires (media queries read the viewport, not the content box), so the narrow
+  layout does engage — it just sits inside a horizontally-scrolling page. Deliberately **not** fixed
+  blind at the end of Batch B; it is a small triage item, and `BATCH_B_CURATOR_SMOKE.md` §5 asks the
+  curator to confirm what they actually see at phone width before anyone changes CSS for it.
+- **A React effect with `[]` deps that reads a ref is unreliable on any page with a loading gate.**
+  This bit `/explore` twice in one branch — the wheel listener (`32ee2ea`) and then the plot's
+  `ResizeObserver` (`7d6d378`, the more serious of the two: the canvas had never sized itself to its
+  container). Both times the element belongs to markup that does not exist on the first commit,
+  because the component early-returns a loading div while `useExplorePoints` fetches, so the ref is
+  `null` on the only render the effect ever sees. The fix both times is to hold the element in state
+  via a callback ref, making its arrival a dependency. **Worth checking any other component that
+  pairs a loading early-return with a mount-only effect over a ref.**
 - **Truth source is live (1.1) + publication staging (1.2b):** the public site shows
   `status='included' AND published=true` — **1,341 live / 39 to-finalise / 177 to-process
   (pending) / 243 rejected** (1,380 included total; 1,800 songs after the 1.3 dedup).
