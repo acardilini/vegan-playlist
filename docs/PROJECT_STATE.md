@@ -10,14 +10,38 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**NONE IN PROGRESS. Nothing is held for smoke, no branch is open, the tree is
-  clean** (bar the untracked `docs/examples/`, left as-is per the curator). **Last session: Batch B —
-  the Explore map's interaction layer**, curator-smoked and **merged to `main` on 2026-08-04**
-  (merge **`2acbe77`**, no-ff, branch deleted local + remote). **Next up: triage 6 — the About
-  analysis-explainer + AI-disclosure page**; see "Next Tasks" below, which is the section to start
-  from. **Everything from here to the end of this bullet is prior-session history**, newest first,
-  kept for context and NOT a description of current state — this field had drifted several sessions
-  out of date before 2026-08-04, so treat any "HELD FOR SMOKE" wording below as historical._
+- **Current session:** _**Triage 6 — About: analysis explainer, AI disclosure, and editable page
+  copy — BUILT (2026-08-04), branch `session-triage-6-about-analysis` (from `main` at `84e0841`).
+  HELD FOR THE CURATOR'S SMOKE — NOT merged.** `/about` becomes a three-tab section (About · "How
+  the analysis works" · Reference) over a shell mirroring `ExplorePage`. Two new backend reads:
+  `GET /api/content/:slug` (curator-editable Markdown from `backend/data/{about,analysis}.md`) and
+  `GET /api/analysis/codebook` (the full reference catalogue — 141 thematic terms including
+  zero-count ones, 7 lyric-metadata components, 6 acoustic dimensions with derivation sources and
+  thresholds — plus a coverage block), built by a new `services/referenceCodebook.js` that composes
+  the existing codebook services rather than re-reading their JSON. Frontend: a shared
+  `<MarkdownPage>` with a build-time bundled fallback, `contentTokens.js` for `{{token}}`
+  substitution, `termHref` on `browseUrlState.js`, `useCodebook.js`, and three page components under
+  `src/pages/about/`. One new dependency pair: **`react-markdown` + `remark-gfm`** — a deliberate
+  exception to the project's avoid-a-dependency habit (see Decision Log). Ten tasks, subagent-driven,
+  each per-task reviewed; Task 8 surfaced two Important findings that were **plan-mandated** defects
+  (a two-meaning count badge on the Reference page, an unreused `Term` component), both fixed in one
+  round. **Verified:** backend **179/179**; frontend module tests **36** (9 utils + 27 explore); lint
+  **0 errors** (6 pre-existing warnings); build clean, JS bundle **726.27 kB**; Puppeteer smoke
+  **10/10** — the first browser verification of all nine build tasks: real DOM, real navigation, a
+  real filter-click round-trip to the browse grid, real fallback-with-API-blocked behaviour, and a
+  real 390px layout check, not just build/lint/payload-shape proxies. **One open question for the
+  curator, unresolved:** `analysis.md`'s "Where the rest of the information comes from" section
+  claims genre/album data come from Spotify and moods/languages/lyric highlights are entered by
+  hand — that reading came from the schema, not from the curator, and needs their confirmation
+  before merge. See [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md). **Next up: the
+  curator's own smoke, then merge** — see "Next Tasks" below. Spec:
+  [`2026-08-04-triage-6-about-analysis-explainer-design.md`](./superpowers/specs/2026-08-04-triage-6-about-analysis-explainer-design.md).
+  **Everything from here to the end of this bullet is prior-session history**, newest first, kept
+  for context and NOT a description of current state — this field had drifted several sessions out
+  of date before 2026-08-04, so treat any "HELD FOR SMOKE" wording below (other than triage 6's own,
+  above) as historical._
+  _Prior session:_ **Batch B — the Explore map's interaction layer**, curator-smoked and **merged to
+  `main` on 2026-08-04** (merge **`2acbe77`**, no-ff, branch deleted local + remote).
   _Prior session:_ **B4 — Explore vector map: the map half built 2026-07-27 on branch
   `session-B4-explore-map` (since merged as `16629c5`).**
   The paused brainstorm resumed and finished (spec `491733c`, plan `3f479c7`), then Tasks 1–7 of 12 were
@@ -239,10 +263,23 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   (lyric highlights from translation + multi-language — ☑ **merged `577d139`, curator-confirmed**) →
   **song-page Lyrical Analysis / Themes layout** (☑ **merged `47229bb` 2026-07-25, curator-confirmed**;
   latest-pass source + Option C + renames + summary from `lyric_summary`) → **B4**
-  (Explore vector map, with the vector "You might also like" — **brainstorm in progress, paused
-  2026-07-27**) → triage **6** (About
-  analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-08-04 _(**Batch B BUILT, CURATOR-SMOKED and MERGED.** Zoom/pan with the
+  (Explore vector map, with the vector "You might also like" — ☑ **merged `2acbe77` 2026-08-04,
+  curator-confirmed**) → triage **6** (About
+  analysis-explainer + AI disclosure — ◐ **BUILT 2026-08-04, held for curator smoke, not yet
+  merged**) → sub-projects **C–F**.
+- **Last updated:** 2026-08-04 _(**Triage 6 — About analysis explainer + AI disclosure — BUILT,
+  every gate green, HELD FOR THE CURATOR'S SMOKE.** Branch `session-triage-6-about-analysis`, NOT
+  merged. `/about` is now a three-tab section (About · How the analysis works · Reference) over an
+  `ExplorePage`-mirroring shell, backed by two new read-only routes (`GET /api/content/:slug` for
+  curator-editable Markdown, `GET /api/analysis/codebook` for the full 141-term/7-component/
+  6-dimension reference catalogue) and a new dependency, `react-markdown` + `remark-gfm`, added as a
+  deliberate exception to the project's avoid-a-dependency habit. Backend **179/179**; frontend
+  module tests **36** (9 utils + 27 explore); lint **0 errors**; build clean, **726.27 kB**;
+  Puppeteer smoke **10/10** — the first live-browser check of every task this session built. One
+  open question is carried to the curator, unresolved: whether `analysis.md`'s genre/mood provenance
+  claim is actually correct. See [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md). **Next:
+  the curator's own smoke, then merge.**)_
+- **Previously updated:** 2026-08-04 _(**Batch B BUILT, CURATOR-SMOKED and MERGED.** Zoom/pan with the
   viewport in the URL, hover growth + a tweened space switch, and the narrow-width bottom-sheet
   layout — all of §4 of the spec. **The curator's smoke passed all four judgement sections**
   (tween, narrow layout, zoom/URL, dimmed-dot hover) and produced **one call**: the sideways page
@@ -331,23 +368,24 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ FIRST TASK NEXT SESSION: triage 6 — the About analysis-explainer + AI-disclosure page.**
-> **Nothing is pending and no branch is open** — Batch B merged 2026-08-04 (`2acbe77`) after its
-> curator smoke passed. Triage 6 needs a brainstorm before a spec: the raw material is the seven
-> metadata-component and five thematic-dimension descriptions the API already serves
-> (`scalarFacets`/`facetTree` `description`) but the browse sidebar deliberately never shows — see
-> `CLAUDE.md`'s `ScalarFacetGroups` note, where that omission is a **standing decision**, not an
-> oversight: definitional copy belongs on an About page, and only usage help sits beside a control.
-> Use the renamed **"Speaking to"** / **"Subjects"** labels. The page also owes an **AI disclosure**:
-> the analysis is model-generated by the curator's separate pipeline, read here read-only, and each
-> song shows its *latest* coding pass — worth saying plainly rather than implying human coding.
+> **⏭ FIRST TASK NEXT SESSION: the curator's own smoke of triage 6 — the About analysis-explainer +
+> AI-disclosure page**, using [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md). Branch
+> `session-triage-6-about-analysis` is **built, every gate green, held for that smoke — NOT
+> merged.** See the Current State bullet above and the Changelog for what shipped (a three-tab
+> `/about`, two new backend reads, `react-markdown`-rendered curator-editable copy). The smoke
+> checklist carries one **open question the curator must answer before merge**: whether
+> `analysis.md`'s claim that genre/album data comes from Spotify and moods/languages/highlights are
+> curator-entered is actually correct. Once the smoke passes (and any fixes it produces land),
+> merge and move to the next sub-project — **C, D, E, F** remain (see the numbered list below).
 >
 > **Two carried follow-ups, both cheap, neither urgent.** (1) The **Year range** control still has
 > both bugs the tempo range fixed in the acoustic session — clipping `From 1970` placeholders and an
-> ellipsis chip for a single-ended range; a two-line change whenever wanted. (2) The other page
-> components share `.explore-page`'s old `max-width` + `margin: 0 auto` pattern and may carry the
-> same latent no-stretch bug Batch B found; they look right today only because their grid content
-> fills the space. Worth a sweep next time a page is touched — see the Watch-outs.
+> ellipsis chip for a single-ended range; a two-line change whenever wanted. (2) The container
+> `margin: 0 auto` no-stretch sweep is **narrowed, not closed**: triage 6 checked
+> `.page-container` and `.about-container` (opening `/about`) and **both already carry
+> `width: 100%`**, so neither carries the bug Batch B found on `.explore-page`. The *other* page
+> components still share the old `max-width` + `margin: 0 auto` pattern and remain unchecked — worth
+> a sweep next time one of them is touched — see the Watch-outs.
 
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
    complete.** A1 merged (`145efbb`); A2 (`b5ec26f`, 2026-07-14); A3 (`8579b4e`, 2026-07-16). **A4
@@ -401,6 +439,15 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
   site spot-check (keep as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
+- **Two CSS custom properties used in `components.css` are undefined, pre-existing, not from
+  triage 6** (found by that session's Task 9 token audit while confirming `.about-container`/
+  `.page-container`). `components.css:846` uses `var(--accent-ember)` and `:2317`/`:2335` use
+  `var(--text-body)` — neither token exists anywhere in `tokens/`; only `--accent-ember-{40,50,60,80}`
+  and `--text-body-{lg,md,sm}` do, and neither use site has a fallback, so both resolve to nothing
+  (the property is simply absent, not a visible bug — but a trap if either rule is ever debugged in
+  isolation). `:2359`'s `var(--radius-full, 999px)` is also undefined but degrades gracefully via
+  its own fallback, so it's fine as-is. Left untouched — fold into whichever session next opens the
+  rules those lines belong to.
 - ~~**`/explore` has a ~1080px content-driven minimum width**~~ **Fixed 2026-08-04 during the
   curator's smoke** (`.explore-canvas` out of flow + `width:100%` on `.explore-page`). Two things
   worth keeping from it. **(1) A canvas sized from its own container is a ratchet.** ResizeObserver
@@ -493,6 +540,42 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-08-04 (triage 6) — a new endpoint rather than bending `/facets`.** `analysis.facetTree`
+  keeps only codes whose count is > 0 and carries no per-term definition — right for a filter
+  sidebar, wrong for a glossary, where a term no song carries is itself information. So the
+  Reference page got its own read, `GET /api/analysis/codebook`, via a new
+  `services/referenceCodebook.js` that composes the existing `metadataCodebook.js`/
+  `acousticCodebook.js`/taxonomy rather than re-reading their JSON.
+- **2026-08-04 (triage 6) — the AI-disclosure line is computed, not typed.** `{{codingModels}}` and
+  `{{codingDate}}` render from each song's latest coding pass, because a hand-typed model name goes
+  stale silently the moment the pipeline changes models — the exact failure the dating was meant to
+  prevent.
+- **2026-08-04 (triage 6) — the human/machine split is stated in that order, deliberately.** The
+  codebooks were designed and iterated by a person over multiple rounds; the per-song coding is
+  model-generated and **currently unchecked**, with human checking as possible future work. Both
+  halves are the curator's own wording; the page says the human part first because it is what makes
+  the machine part mean anything.
+- **2026-08-04 (triage 6) — `react-markdown` added as a deliberate exception** to this project's
+  avoid-a-dependency habit. That habit was formed against a *charting* library (the Explore
+  scatter), where the hand-rolled replacement is drawing code fully under our control. A Markdown
+  parser is a different problem: correctness-critical, thoroughly solved, and a hand-rolled subset
+  fails by *silently* rendering a construct as literal text — the worst failure mode for a file the
+  curator writes prose into. Added with `remark-gfm` only, no raw-HTML plugin, so HTML escaping
+  stays on by default (load-bearing: the Markdown arrives over HTTP from a file on disk).
+- **2026-08-04 (triage 6) — the content whitelist is a `Map`, not a plain object.** A plain-object
+  lookup of the slug `constructor` returns a truthy inherited function that would then be used as a
+  filename — a real prototype-pollution-shaped path, not a theoretical one. `routes/content.js`
+  uses a `Map` instead, and a test asserts a `constructor`-shaped slug 404s rather than 500ing.
+- **2026-08-04 (triage 6) — the Reference page's section headers carry no count badge** (curator
+  ruling during the build). It had shown song counts for Themes but code counts for Lyric metadata
+  and Sound — one visual affordance, two unrelated meanings. Per-term song counts already sit on
+  every row, so the fix was to omit the `count` prop at every `FilterSection` call site on this page
+  (which hides the badge at count 0) rather than modify `FilterSection` itself.
+- **2026-08-04 (triage 6) — zero-count terms are listed, and their count renders as plain text, not
+  a link.** A link to an empty result set is a dead end; the term itself (label + definition) still
+  belongs on the page because the gap between the taxonomy's size and the coded corpus is
+  information in its own right.
 
 - **2026-08-04 (later the same day) — the Batch B smoke PASSED and produced one design call, whose
   fix required withdrawing a diagnosis I had already written into the docs.** The curator worked the
@@ -1577,6 +1660,50 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-08-04 (Triage 6 — About analysis explainer BUILT, held for smoke, branch not yet
+  pushed)** — Ten
+  tasks, subagent-driven, on `session-triage-6-about-analysis` (from `main` at `84e0841`) per plan
+  [`2026-08-04-triage-6-about-analysis-explainer.md`](./superpowers/plans/2026-08-04-triage-6-about-analysis-explainer.md),
+  spec [`2026-08-04-triage-6-about-analysis-explainer-design.md`](./superpowers/specs/2026-08-04-triage-6-about-analysis-explainer-design.md).
+  `/about` becomes a three-tab section — **About** (unchanged content, now editable Markdown),
+  **"How the analysis works"** (a new narrative explainer with an AI disclosure), and
+  **Reference** (a glossary of all 141 thematic terms including zero-count ones, all 7
+  lyric-metadata components, and all 6 acoustic dimensions with their Librosa derivation sources and
+  per-code thresholds) — over a shell mirroring `ExplorePage`. Backend gains two read-only routes:
+  `GET /api/content/:slug` serving curator-editable Markdown from `backend/data/{about,analysis}.md`
+  through a `Map`-based slug whitelist (never a plain object — see Decision Log), and
+  `GET /api/analysis/codebook` via a new `services/referenceCodebook.js` that composes the existing
+  codebook services rather than re-reading their JSON. Frontend gains a shared `<MarkdownPage>`
+  (fetches live, falls back to a build-time `?raw` bundled snapshot on failure, no visible error UI),
+  `contentTokens.js` for `{{token}}` substitution (`{{songs}}`, `{{artists}}`, `{{analysed}}`,
+  `{{analysedPct}}`, `{{mapped}}`, `{{codingModels}}`, `{{codingDate}}` — an unknown token renders as
+  itself so a typo is visible), a `termHref` helper on `browseUrlState.js`, `useCodebook.js`, and
+  three page components under `src/pages/about/`. One new dependency pair, `react-markdown` +
+  `remark-gfm`, added as a deliberate exception to the project's avoid-a-dependency habit (Decision
+  Log). Task 8's review surfaced 2 Important findings, **both defects in the plan's own sample
+  code**, fixed in one round: a count badge that carried two unrelated meanings across the page
+  (removed — per-term counts already sit on every row) and a `Term` helper that was defined but not
+  reused (now shared with the acoustic-code rendering path via an optional `threshold` prop). Task
+  10 split into 10a (Puppeteer smoke) and 10b (this docs close-out). **10a: 10/10 passing** — the
+  first browser verification of all nine prior build tasks, covering real DOM/navigation, a
+  filter-click round-trip to the browse grid landing on non-empty results, the bundled fallback
+  actually rendering with the API blocked, and no horizontal overflow at 390px. Two initial script
+  failures were both diagnosed as flaws in the check (a raw-`textContent` whitespace comparison, and
+  a same-run Chromium tab-count resource-contention timeout in this sandbox), not the app — proven
+  with disposable repro scripts before either was changed, same pattern as the Batch B smoke.
+  **Verified: backend 179/179; frontend module tests 36 (9 utils + 27 explore); lint 0 errors (6
+  pre-existing warnings); build clean, JS bundle 726.27 kB.** Owner's `:5000` (nodemon) and `:5173`
+  servers confirmed alive by PID before and after; no app file touched by the smoke task. **One open
+  question carried to the curator, unresolved by design:** `analysis.md`'s "Where the rest of the
+  information comes from" section states that genre/album data come from Spotify while
+  moods/languages/lyric highlights are curator-entered — a reading taken from the schema
+  (`songs.custom_mood`, `EFFECTIVE_GENRE_EXPR`), not confirmed by the curator, and a provenance claim
+  is the worst place to be wrong on a transparency page. New checklist
+  [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md) written for editing instructions plus
+  the judgement calls only a person can make (honest vs. defensive tone, whether the AI disclosure is
+  specific enough, whether 141 reference terms read as navigable or overwhelming). **Held for the
+  curator's own smoke before merge — branch NOT merged.**
 
 - **2026-08-04 (Batch B — CURATOR-SMOKED and MERGED, merge `2acbe77`)** — The curator worked
   [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md) live. **All four judgement sections

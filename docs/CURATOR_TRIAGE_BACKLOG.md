@@ -98,11 +98,24 @@ merged `577d139`, 2026-07-25, curator-confirmed)**
   [`specs/2026-07-23-triage-5-translation-highlights-and-multi-language-design.md`](./superpowers/specs/2026-07-23-triage-5-translation-highlights-and-multi-language-design.md),
   [`plans/2026-07-23-triage-5-translation-highlights-and-multi-language.md`](./superpowers/plans/2026-07-23-triage-5-translation-highlights-and-multi-language.md).
 
-**About / transparency** _(→ "About / AI-disclosure page" round)_
-- **New page explaining the analysis** — what types of analysis we do (thematic taxonomy, vector
-  spaces, moods/genres) and **how** they're produced.
-- **AI-use disclosure** — disclose where AI is used in the analysis (the `gemma4:latest` lyric coding,
-  embeddings, etc.).
+**About / transparency** — ✅ **RESOLVED (triage 6, 2026-08-04 — BUILT on
+`session-triage-6-about-analysis`, held for the curator's own smoke before merge, not yet merged)**
+- ✅ **New page explaining the analysis.** `/about` gains a **"How the analysis works"** tab (a
+  narrative explainer covering what gets analysed, the codebooks, the LLM lyric coding, the audio
+  dimensions, the vector spaces, and where the rest of the data comes from) and a **Reference** tab
+  (a glossary rendered live from a new `GET /api/analysis/codebook`, listing all 141 thematic terms
+  including zero-count ones, all 7 lyric-metadata components, and all 6 acoustic dimensions with
+  their Librosa derivation sources and per-code thresholds — composed from the existing codebook
+  services, not duplicated).
+- ✅ **AI-use disclosure.** The explainer states plainly which steps are model-generated (the LLM
+  lyric coding — currently unchecked), which are measured (the six audio dimensions, by signal
+  analysis), and which are human work (the codebooks themselves, designed and iterated over multiple
+  rounds) — in that order, deliberately, because the human part is what makes the machine part mean
+  anything. A dated line (`{{codingModels}}` / `{{codingDate}}`) is computed from each song's latest
+  coding pass, not hand-typed, so it can't go stale silently.
+  Spec: [`specs/2026-08-04-triage-6-about-analysis-explainer-design.md`](./superpowers/specs/2026-08-04-triage-6-about-analysis-explainer-design.md);
+  plan: [`plans/2026-08-04-triage-6-about-analysis-explainer.md`](./superpowers/plans/2026-08-04-triage-6-about-analysis-explainer.md);
+  curator smoke checklist: [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md).
 
 **Song pages** _(→ B4 / vector work)_
 - **"You might also like" determination.** Root cause: `GET /api/spotify/songs/:id/similar` currently

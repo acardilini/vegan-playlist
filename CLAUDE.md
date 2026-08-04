@@ -58,12 +58,18 @@ Run before ending every working session:
 ## Architecture
 
 ### Backend Structure (`backend/`)
-- **server.js**: Main Express server; mounts 7 routers: `/api/spotify`, `/api/admin`,
-  `/api/playlists`, `/api/youtube`, `/api/submissions`, `/api/analytics`, `/api/analysis`
+- **server.js**: Main Express server; mounts 8 routers: `/api/spotify`, `/api/admin`,
+  `/api/playlists`, `/api/youtube`, `/api/submissions`, `/api/analytics`, `/api/analysis`,
+  `/api/content`
 - **routes/**: `spotify.js` (public site API), `admin.js` (~2,200 lines, password-protected
   curation API — 29 routes in six banner-named domains: Songs/curation · Enrichment ·
   Data quality · Sync (import-only) · Artists · Staging/lifecycle; see
-  `docs/ADMIN_AUDIT.md`), `playlists.js`, `youtube.js`, `submissions.js`, `analytics.js`.
+  `docs/ADMIN_AUDIT.md`), `playlists.js`, `youtube.js`, `submissions.js`, `analytics.js`,
+  `content.js` (triage 6 — the two-route `GET /api/content/:slug` read behind the About
+  section's Markdown pages; the `slug` is looked up in a hard-coded `Map` of `{about, analysis}`
+  → filename, deliberately **not** a plain object, since a plain-object lookup of `constructor`
+  returns a truthy inherited function that would then be used as a filename — 404 for anything
+  else, so path traversal is impossible by construction rather than by sanitising).
   Dead code pruned in Session 2.2 (`admin_simple.js`, `lyrics.js`, ~33 endpoints).
   Note: `/api/submissions/admin*` is currently unauthenticated (Phase 4 item)
 - **services/staging.js**: staging-queue service (queues, include/reject/publish, candidate
@@ -117,6 +123,32 @@ Run before ending every working session:
   still holds 1,041 old 1024-dim rows. A tab is omitted when its embedding is missing; only when no tab
   has anything does the honest **"More in this genre"** fallback fire (692 of 1,333 live songs, 52%, have
   no embeddings). Read-only — never writes to any analysis table
+- **services/referenceCodebook.js**: the read behind the About section's Reference tab
+  (`GET /api/analysis/codebook`). **Composes** `metadataCodebook.js`, `acousticCodebook.js` and the
+  taxonomy rather than re-reading their JSON, so label rules and suppression stay owned in one place
+  each. Deliberately a **different** shape from `analysis.facetTree`: the facet tree drops any code
+  with a zero count and carries no definition (right for a filter sidebar), while the reference lists
+  **all 141 thematic terms including zero-count ones**, all 7 lyric-metadata components and all 6
+  acoustic dimensions — a term nobody's song currently carries is itself information on a glossary
+  page. Two small getters were added to `acousticCodebook.js` for this (`derivationSource(key)`,
+  `codeThreshold(key, code)`), following the existing `componentDescription`/`codeDefinition` shape.
+  Counts are three queries (thematic/scalar/acoustic) reusing the shared `LATEST_ANALYSIS` fragment
+  and the `status='included' AND published=true` gate, exactly like every other public read — this is
+  the one invariant a future change here must not drift from, or the reference page will disagree
+  with the browse sidebar. The response also carries a `coverage` block (live-song/artist/analysed/
+  mapped counts, plus the latest coding pass's models and date) that both the Reference tab and the
+  explainer's `{{tokens}}` read
+- **`backend/data/{about,analysis}.md`**: **curator-editable copy served live** by
+  `GET /api/content/:slug` — edit the file, refresh the browser, no rebuild needed. Both ship with a
+  complete first draft; the curator's prose replaces the drafted text in place. Live figures reach the
+  prose as `{{tokens}}` (`frontend/src/utils/contentTokens.js`'s `substituteTokens`, pure/DOM-free/
+  node-tested) — `{{songs}}`, `{{artists}}`, `{{analysed}}`, `{{analysedPct}}`, `{{mapped}}`,
+  `{{codingModels}}`, `{{codingDate}}` — so the sentence stays under curator control while the number
+  in it tracks the live data. An **unrecognised token renders as itself** rather than vanishing, which
+  is what makes a typo visible. The same two files are also imported at build time via Vite's `?raw`
+  as a **bundled fallback** (one file in git, not two, so it can't drift from the live copy) — a
+  build-time snapshot that goes stale until the next build if the curator edits after deploying, which
+  is correct: the fallback exists for an unreachable API, not for freshness
 - **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
 - **scripts/**: 4 documented maintenance scripts (see `backend/scripts/README.md`);
   the ~37 one-off scripts were deleted in Session 2.3 (git history preserves them)
@@ -128,9 +160,19 @@ Run before ending every working session:
 ### Frontend Structure (`frontend/`)
 - **src/App.jsx** (~50 lines): router shell only — routes, header/nav, footer
 - **src/pages/**: one file per route — HomePage, SongDetailPage, PlaylistsPage,
-  PlaylistDetailPage, AboutPage, **ExplorePage** (a tab shell over `/explore` = Map and
+  PlaylistDetailPage, **ExplorePage** (a tab shell over `/explore` = Map and
   `/explore/data` = the analytics dashboard; **the standalone Dashboard nav item is retired and
-  `/dashboard` redirects to `/explore/data`**). Single-consumer helpers stay local to their page file
+  `/dashboard` redirects to `/explore/data`**), **AboutPage** (triage 6 — became a second tab
+  shell mirroring `ExplorePage`'s pattern, `NavLink` × 3 + `Outlet`, over three routes:
+  `/about` → `pages/about/AboutOverview.jsx`, `/about/analysis` →
+  `pages/about/AnalysisExplainer.jsx` ("How the analysis works" — the AI-disclosure explainer),
+  `/about/reference` → `pages/about/AnalysisReference.jsx` (the 141-term/7-component/6-dimension
+  glossary, one scroll with a sticky jump nav, each term's count linking through to a filtered
+  browse via `termHref` on `utils/browseUrlState.js` — a zero-count term's count renders as plain
+  text instead, since a link to an empty result set is a dead end). `/about` keeps working exactly
+  as before, so no existing link breaks. All three consume `pages/about/useCodebook.js`, a small
+  hook fetching `GET /api/analysis/codebook` once and sharing it across the tabs. Single-consumer
+  helpers stay local to their page file
 - **src/components/**: 42 components (27 public + 15 admin) — public (SearchAndFilter,
   ArtistSearchResults, ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge,
   YouTubeEmbed, **SimilarSongs** (the song page's two embedding tabs + genre fallback), plus
@@ -164,7 +206,17 @@ Run before ending every working session:
   pages, not here — the API serves it (`scalarFacets`/`facetTree` `description`) but the
   browse UI deliberately ignores it. `InfoTip` — the tooltip used instead of the native
   `title` attribute (which waits ~1s and can't be styled); wraps its trigger, no icon
-  variant (icons were removed as clutter). Use it for any new hover help. **Public playlists are read-only (browse-only)** — Session 3.3
+  variant (icons were removed as clutter). Use it for any new hover help. **A third, from triage 6:
+  `MarkdownPage`** — fetches `GET /api/content/:slug`, substitutes `{{tokens}}` via
+  `utils/contentTokens.js`, then renders with `react-markdown` + `remark-gfm` (the project's first
+  new frontend dependency in a long while — a deliberate exception to the avoid-a-dependency habit
+  formed against the *charting* library the Explore scatter hand-rolls instead of importing; a
+  Markdown parser is a different problem, correctness-critical and thoroughly solved, where a
+  hand-rolled subset fails by *silently* rendering a construct as literal text). On fetch failure it
+  falls back to the matching `backend/data/*.md` file bundled at build time via Vite's `?raw`, with
+  no visible error UI — a visitor should never see the site's own plumbing. `react-markdown` escapes
+  raw HTML by default and no raw-HTML plugin is added; that default is load-bearing, since the
+  Markdown arrives over HTTP from a file on disk. **Public playlists are read-only (browse-only)** — Session 3.3
   deleted `AddToPlaylistModal` and the create/remove-song UI (curator decision, no auth
   story yet); the backend playlist routes are untouched and still serve the admin
   Manage Playlists tab. Playlist creation returns to the public site in Phase 4+ once
