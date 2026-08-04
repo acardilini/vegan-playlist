@@ -1430,28 +1430,20 @@ In `frontend/src/App.jsx`, replace the single About route (line 51) with:
 <Route path="/about" element={<AboutPage />}>
   <Route index element={<AboutOverview />} />
   <Route path="analysis" element={<AnalysisExplainer />} />
-  <Route path="reference" element={<AnalysisReference />} />
 </Route>
 ```
 
-and add the three imports beside the existing page imports:
+and add the two imports beside the existing page imports:
 
 ```jsx
 import AboutOverview from './pages/about/AboutOverview';
 import AnalysisExplainer from './pages/about/AnalysisExplainer';
-import AnalysisReference from './pages/about/AnalysisReference';
 ```
 
-`AnalysisReference` does not exist until Task 8. To keep this task's build green, create a
-placeholder now and replace it wholesale in Task 8:
-
-```jsx
-// frontend/src/pages/about/AnalysisReference.jsx — replaced in full by Task 8.
-function AnalysisReference() {
-  return <div className="about-container" />;
-}
-export default AnalysisReference;
-```
+**The Reference tab is deliberately not wired here.** Task 8 creates the component *and*
+adds its route in one commit — no placeholder stub. Until then the third tab renders the
+shell with an empty outlet, which is the correct intermediate state for a half-built
+section: nothing dead is committed.
 
 - [ ] **Step 6: Verify by hand**
 
@@ -1478,7 +1470,8 @@ git commit -m "feat(about): tab shell with the overview and analysis explainer"
 ## Task 8: The Reference glossary
 
 **Files:**
-- Create (replacing the Task 7 placeholder): `frontend/src/pages/about/AnalysisReference.jsx`
+- Create: `frontend/src/pages/about/AnalysisReference.jsx`
+- Modify: `frontend/src/App.jsx` (add the `reference` child route + its import)
 
 **Interfaces:**
 - Consumes: `useCodebook()` (Task 7), `termHref` (Task 5), `FilterSection` (`frontend/src/components/FilterSection.jsx`)
@@ -1491,7 +1484,7 @@ Read `frontend/src/components/FilterSection.jsx` in full. It takes
 
 - [ ] **Step 2: Write the page**
 
-Replace `frontend/src/pages/about/AnalysisReference.jsx` entirely:
+Create `frontend/src/pages/about/AnalysisReference.jsx`:
 
 ```jsx
 import { Link } from 'react-router-dom';
@@ -1624,7 +1617,20 @@ add an effect that reads a DOM ref (e.g. to scroll to a `#fragment`), it **must*
 element in state via a callback ref — a `[]`-deps effect reading a ref does not work behind a
 loading gate, and this exact bug hit `/explore` twice.
 
-- [ ] **Step 3: Verify by hand**
+- [ ] **Step 3: Wire the route**
+
+In `frontend/src/App.jsx`, add the import beside the other two About page imports and the
+child route inside the existing `/about` route element:
+
+```jsx
+import AnalysisReference from './pages/about/AnalysisReference';
+```
+
+```jsx
+<Route path="reference" element={<AnalysisReference />} />
+```
+
+- [ ] **Step 4: Verify by hand**
 
 Visit `http://localhost:5173/about/reference` and confirm:
 - three families render, each dimension collapsed, opening on click
@@ -1633,12 +1639,12 @@ Visit `http://localhost:5173/about/reference` and confirm:
 - a Sound dimension shows "Measured from: …" and its codes show thresholds
 - Tempo renders its description with no code list
 
-- [ ] **Step 4: Lint, build, commit**
+- [ ] **Step 5: Lint, build, commit**
 
 ```bash
 npm run lint
 npm run build
-git add frontend/src/pages/about/AnalysisReference.jsx
+git add frontend/src/pages/about/AnalysisReference.jsx frontend/src/App.jsx
 git commit -m "feat(about): the reference glossary"
 ```
 
