@@ -93,14 +93,17 @@ git checkout session-B4-batch-b
       the same height, or does it creep taller** each time you resize? (The plot's height is
       content-driven at this width, and its content is a canvas — a slow growth loop is possible
       in principle; this hasn't been confirmed in a real browser.)
-- [ ] **Known pre-existing issue, not from this batch — please confirm what you see.** While
-      verifying the ResizeObserver fix, a reviewer found that `.explore-page` has a
-      **content-driven width floor of roughly 1080px**, coming from a toolbar row that never
-      wraps. Below that the page itself scrolls sideways rather than reflowing, which pins the
-      plot's width no matter how narrow the window gets. It reproduces identically before and
-      after this batch — it dates from the original B4 map — so it is **not** a Batch B
-      regression and was left alone rather than fixed blind here. At phone width, does the whole
-      page scroll left-to-right? If so, that is this, and it becomes its own small triage item.
+- [ ] **The sideways page scroll is FIXED (2026-08-04, on your call during the smoke).** It was
+      pre-existing, not a Batch B regression, and the first diagnosis of it — "a toolbar row that
+      never wraps" — was **wrong**. Measuring it showed the plot pinned at exactly 800px at every
+      viewport from 390px to 1440px: the canvas carried an explicit pixel width *in flow*, so it
+      acted as a floor on its own container, which could grow but never shrink. Moving the canvas
+      out of flow exposed a second, older bug underneath — `.explore-page` sits in a column flex
+      container and its `margin: 0 auto` switches off cross-axis stretch, so the page had never
+      filled its 1200px max-width; the canvas floor had been the only thing giving it width.
+      Both are fixed. **Please confirm:** the map now resizes with the window at every width, the
+      page never scrolls sideways, and at desktop the map is noticeably **wider than before**
+      (920px rather than 800px at a 1280px window) — the rail should still be the same size.
 
 ## §6 Regressions — things this batch should not have touched
 

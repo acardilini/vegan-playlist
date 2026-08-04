@@ -2417,7 +2417,15 @@
 }
 
 /* ===== Explore page ===== */
+/* width:100% is required, not belt-and-braces. .app-container is a column flex container, so
+   this page is a flex item, and `margin: 0 auto` on the cross axis switches off the default
+   `align-items: stretch` — leaving the page shrink-to-fit and centred rather than filling up to
+   its max-width. That went unnoticed because the canvas used to carry an explicit pixel width
+   in flow and acted as the page's width floor; once the canvas moved out of flow the page
+   collapsed to its next-widest content. Both halves are needed: this line gives the page its
+   width, the absolute canvas stops the map from dictating it. */
 .explore-page {
+  width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding: var(--space-5) var(--space-4);
@@ -2558,8 +2566,17 @@
    claims the gesture for page scrolling before the canvas ever sees it. display: block strips
    the inline-level baseline descender gap, which would otherwise add a sliver to .explore-plot's
    content height in the narrow (column) layout where that height is content-driven — cheap
-   hardening against a resize-observer growth loop, not a confirmed defect. */
-.explore-canvas { touch-action: none; cursor: grab; display: block; }
+   hardening against a resize-observer growth loop, not a confirmed defect.
+
+   position:absolute is the load-bearing one, and it is not cosmetic. ResizeObserver measures
+   .explore-plot and JS writes that pixel width onto the canvas; an IN-FLOW canvas carrying an
+   explicit width then becomes a floor on its own container's intrinsic width, so the plot could
+   grow but never shrink. The page ratcheted to whatever width it had once been and scrolled
+   sideways below that — measured identically at 390px and 700px viewports, both pinned at 800px.
+   Out of flow, the canvas contributes nothing to its parent's size, so the plot is driven purely
+   by the flex layout, the observer follows it down as well as up, and the map reflows at every
+   width. Do not return this to static positioning. */
+.explore-canvas { touch-action: none; cursor: grab; display: block; position: absolute; top: 0; left: 0; }
 .explore-canvas.grabbing { cursor: grabbing; }
 
 .explore-rail {

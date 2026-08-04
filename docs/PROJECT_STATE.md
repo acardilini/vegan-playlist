@@ -228,14 +228,22 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   (Explore vector map, with the vector "You might also like" — **brainstorm in progress, paused
   2026-07-27**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-08-04 _(**Batch B BUILT** — branch `session-B4-batch-b` pushed, held for the
-  curator's smoke. Zoom/pan with the viewport in the URL, hover growth + a tweened space switch, and
-  the narrow-width bottom-sheet layout, all specced work now shipped. Three of five code tasks had
-  review findings that were defects in the plan's own sample code (all fixed on branch). Puppeteer
-  smoke genuinely **17/17** after diagnosing and fixing two flawed checks in the smoke script itself
-  (a `getImageData` canvas-taint false equality, and a byte-exact comparison across the URL's
-  documented sub-pixel rounding) — see the Decision Log. Backend **165/165** unchanged, lint 0, build
-  clean. **Next: triage 6** — the About analysis-explainer + AI-disclosure page.)_
+- **Last updated:** 2026-08-04 _(**Batch B BUILT, CURATOR-SMOKED and MERGED.** Zoom/pan with the
+  viewport in the URL, hover growth + a tweened space switch, and the narrow-width bottom-sheet
+  layout — all of §4 of the spec. **The curator's smoke passed all four judgement sections**
+  (tween, narrow layout, zoom/URL, dimmed-dot hover) and produced **one call**: the sideways page
+  scroll at narrow width should not be the answer — the page should reflow and the map should
+  handle its own space by panning. Fixed during the smoke, and the diagnosis mattered: the first
+  explanation (a non-wrapping toolbar row) was **wrong**, and measuring found **the canvas was
+  pinning its own container** — sized from `.explore-plot` by ResizeObserver, then floored that
+  same container at 800px from 390px to 1440px. Moving it out of flow exposed an older bug
+  beneath: `.explore-page` had never filled its 1200px max-width, because a flex item with
+  `margin: 0 auto` does not stretch. Both fixed; the desktop map is now **920px rather than
+  800px**. Three of five code tasks, plus two post-review rounds, had findings that were defects
+  in the plan's own sample code — including the plot's ResizeObserver never attaching at all, which
+  had made an earlier fix inert. Backend **165/165** unchanged, 27 frontend module tests, lint 0,
+  build clean, Puppeteer smoke 17/17 plus a 10/10 layout regression check. **Next: triage 6** — the
+  About analysis-explainer + AI-disclosure page.)_
 - **Previously updated:** 2026-08-03 _(**B4 MERGED to `main`** — merge **`16629c5`**, no-ff, branch
   `session-B4-explore-map` (30 commits) deleted local + remote. **Both curator smoke rounds passed**;
   round 2 found only that a selected song couldn't be cleared, fixed with a **×** and **Escape**
@@ -376,15 +384,19 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
   site spot-check (keep as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
-- **`/explore` has a ~1080px content-driven minimum width (pre-existing, NOT a Batch B regression).**
-  Found 2026-08-04 by a reviewer trying to pixel-verify the ResizeObserver fix, and confirmed to
-  reproduce identically on both sides of that fix, so it dates from the original B4 map. A toolbar
-  row in `.explore-page` never wraps, so below roughly 1080px the **page itself scrolls sideways**
-  instead of reflowing, which pins the plot's width however narrow the window gets. The ≤860px
-  media query still fires (media queries read the viewport, not the content box), so the narrow
-  layout does engage — it just sits inside a horizontally-scrolling page. Deliberately **not** fixed
-  blind at the end of Batch B; it is a small triage item, and `BATCH_B_CURATOR_SMOKE.md` §5 asks the
-  curator to confirm what they actually see at phone width before anyone changes CSS for it.
+- ~~**`/explore` has a ~1080px content-driven minimum width**~~ **Fixed 2026-08-04 during the
+  curator's smoke** (`.explore-canvas` out of flow + `width:100%` on `.explore-page`). Two things
+  worth keeping from it. **(1) A canvas sized from its own container is a ratchet.** ResizeObserver
+  measured `.explore-plot` and JS wrote that pixel width onto an in-flow canvas, which then floored
+  the container's intrinsic width — it could grow, never shrink, so the plot measured exactly 800px
+  at every viewport from 390 to 1440 and the page scrolled sideways below that. Any future canvas
+  sized from its parent must be out of flow. **(2) A flex item with `margin: 0 auto` does not
+  stretch.** `.app-container` is a column flex container, so every page component is a flex item,
+  and auto cross-axis margins switch off the default `align-items: stretch` — `.explore-page` had
+  never filled its 1200px max-width, and the canvas floor was the only thing that had ever given it
+  a width. **The other page components share the `max-width` + `margin: 0 auto` pattern and may
+  have the same latent bug**; they look right today only because their grid content fills the space.
+  Worth a sweep when a page next gets touched.
 - **A React effect with `[]` deps that reads a ref is unreliable on any page with a loading gate.**
   This bit `/explore` twice in one branch — the wheel listener (`32ee2ea`) and then the plot's
   `ResizeObserver` (`7d6d378`, the more serious of the two: the canvas had never sized itself to its
