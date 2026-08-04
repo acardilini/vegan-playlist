@@ -34,10 +34,10 @@ page lists what is measured for each dimension and exactly where the thresholds 
 
 Each song's lyrics are turned into an *embedding* — a long list of numbers that puts songs
 saying similar things near one another. That embedding is what positions a song on the
-[Explore map](/explore)'s Thematic and Holistic spaces; its Sound space is positioned by the
-same measured audio dimensions described above instead. The map is a flattened picture of
-whichever space you're looking at, and the "You might also like" suggestions on a song page
-read from the same sources directly.
+[Explore map](/explore)'s Thematic space. Its Sound space is positioned by the measured audio
+dimensions described above instead, and its Holistic space by both together. The map is a
+flattened picture of whichever space you're looking at, and the "You might also like"
+suggestions on a song page read from the same sources directly.
 
 There are two of those, and they measure different things. One compares what songs *say*,
 using the lyric embedding; the other compares what they *sound like*, using the measured
@@ -62,8 +62,9 @@ Plainly, so there is no guessing:
   same measurements place a song on the Explore map's Sound space and drive the "Similar
   sound" tab on a song page.
 - **The song positions and similarity everywhere else — AI.** An embedding model reading the
-  lyrics; it drives the "Similar message" tab and the Explore map's Thematic and Holistic
-  spaces.
+  lyrics; it drives the "Similar message" tab and the Explore map's Thematic space. The
+  Holistic space mixes that model's reading with the measured sound, so it is part AI and
+  part measurement.
 - **Curation — human.** Which songs are here at all, and whether a song belongs, is always
   a person's decision.
 
