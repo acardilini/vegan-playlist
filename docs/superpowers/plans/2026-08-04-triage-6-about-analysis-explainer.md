@@ -111,23 +111,28 @@ test('catalogue lists all five thematic dimensions with descriptions', () => {
 
 test('catalogue keeps every taxonomy term, including ones no song carries', () => {
   const c = ref.catalogue();
-  const seen = new Set();
+  // A term ID is unique WITHIN its dimension, not globally: the five dimensions are five
+  // independent columns, and the curator deliberately uses e.g. `boycott` as both an Action
+  // and a Tactic, `apathy` as both a Theme and a Subject. Nine IDs are shared this way, so
+  // a global Set would collapse 141 terms into 132. Count per dimension — which also catches
+  // a duplicate placement inside one dimension, something a global check cannot see.
+  // (The taxonomy key and the public dimension key coincide for all five.)
   for (const d of c.thematic) {
+    const codes = [];
     for (const sd of d.sub_dimensions) {
       for (const g of sd.groups) {
         for (const t of g.terms) {
-          assert.ok(t.definition.length > 0, `${t.code} has a definition`);
+          assert.ok(t.definition.length > 0, `${d.key}/${t.code} has a definition`);
           assert.equal(t.count, 0, 'catalogue() is count-free');
-          seen.add(t.code);
+          codes.push(t.code);
         }
       }
     }
+    assert.equal(codes.length, taxonomy[d.key].length,
+      `${d.key}: every taxonomy term appears, none dropped for being unused`);
+    assert.equal(new Set(codes).size, codes.length,
+      `${d.key}: no term is placed in two groups`);
   }
-  // 141 terms across the five dimensions — nothing dropped for being unused. The taxonomy
-  // keys and the public dimension keys happen to coincide for all five.
-  const expected = ['themes', 'targets', 'actions', 'tactics', 'moral_frames']
-    .reduce((n, k) => n + taxonomy[k].length, 0);
-  assert.equal(seen.size, expected, 'every taxonomy term appears exactly once');
 });
 
 test('catalogue lists the seven metadata components and hides the four absence codes', () => {
