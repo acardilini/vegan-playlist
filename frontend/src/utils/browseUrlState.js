@@ -123,3 +123,10 @@ export function readBrowseState(searchParams) {
   }
   return readStoredBrowseState();
 }
+
+// Link from a Reference-page term to a browse filtered to it. This module already owns the
+// browse param vocabulary, so the link format lives here rather than being reinvented on the
+// About page — readFilterState below parses exactly these keys back.
+export function termHref(key, code) {
+  return `/?${new URLSearchParams([[key, code]]).toString()}`;
+}
