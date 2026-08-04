@@ -135,7 +135,18 @@ Run before ending every working session:
   ArtistSearchResults, ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge,
   YouTubeEmbed, **SimilarSongs** (the song page's two embedding tabs + genre fallback), plus
   **`components/explore/`** — `ExploreMap` (hand-rolled canvas scatter, **no charting
-  dependency**), `SelectedSongCard`, `useExplorePoints`, `palette.js` (categorical colours live in
+  dependency**), `exploreUrlState.js` (every `derive*`/`format*` that reads or writes the map's URL
+  params — space, colour, spotlight, search, selection, and the `view=k,tx,ty` viewport — pulled
+  into one pure, DOM-free module because the B4 final review found three separate URL-state
+  defects all living in one unextracted block of `ExploreMap.jsx`; being pure lets `node --test`
+  exercise it directly with no frontend test runner), `mapGeometry.js` (pure fit/zoom/pan geometry
+  — `layout()`, `clampView`, `zoomAtPoint`, `FIT_VIEW`, `MIN_K`/`MAX_K` — shared by the gesture
+  hook and the draw loop so the maths that moves the map and the maths that draws it can never
+  disagree; also pure and node-tested), `useMapTransform.js` (the gesture hook: a non-passive
+  wheel listener zooming toward the cursor, drag-pan with a 4px click-vs-drag threshold, the
+  `+`/`−`/Reset buttons, and a 300ms debounced URL commit — kept out of `ExploreMap.jsx` because
+  it is imperative pointer/wheel-event plumbing, not rendering), `SelectedSongCard`,
+  `useExplorePoints`, `palette.js` (categorical colours live in
   CSS as `--explore-cat-*` so theming stays in the token layer; JS only reads them) — plus the
   shared NavigationMenu, SongCard, PaginationControls) and admin
   (AdminInterface is a

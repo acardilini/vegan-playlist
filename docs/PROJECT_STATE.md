@@ -178,27 +178,39 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   the pre-existing **Year range** control shares both patterns the tempo fixes addressed (clipping
   `From 1970` placeholders and an ellipsis chip for a single-ended range) — a two-line change whenever
   wanted; and the **acoustic derivation itself needs a pipeline re-run** (see the Decision Log).
-- **Next session: BATCH B — the Explore map's interaction layer.** Fully specced, no brainstorm needed;
-  start from
+- **✅ BATCH B — the Explore map's interaction layer — BUILT (2026-08-04), branch `session-B4-batch-b`
+  pushed, HELD FOR THE CURATOR'S SMOKE — the checklist is
+  [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md); read it before touching anything else.**
+  Plan [`2026-08-03-B4-batch-b-map-interaction.md`](./superpowers/plans/2026-08-03-B4-batch-b-map-interaction.md),
+  six tasks subagent-driven from
   [`specs/2026-08-02-B4-map-refinements-design.md`](./superpowers/specs/2026-08-02-B4-map-refinements-design.md)
-  §4 and write the plan. Three pieces: **zoom/pan** (wheel toward the cursor + drag + `+`/`−`/Reset
-  buttons, 1×–12×, dot radius constant under zoom, a 4px drag-vs-click threshold, and the viewport in the
-  URL as `view=k,tx,ty`); **motion** (hover growth and a ~450ms tween between spaces, with
-  `prefers-reduced-motion` snapping instead); and the **narrow-width layout** (legend above, song card as a
-  capped ~30vh bottom sheet — the curator's choice over the recommended stack). **Do these two things
-  first, both carried from the final review:** extract `exploreUrlState.js` **before** adding the `view`
-  param — all three URL-derivation defects the review found lived in that one block — and keep **text
-  labels beside legend swatches** in the new narrow layout, because the dark green/yellow pair sits in the
-  CVD warn band and the labels are its only compensating control. Real touchscreen pinch is deliberately
-  deferred. Batch B was split out of the B4 smoke precisely because it rewrites the canvas draw loop; the
-  spec is at
-  [`specs/2026-08-02-B4-map-refinements-design.md`](./superpowers/specs/2026-08-02-B4-map-refinements-design.md) §4.
-  **After Batch B:** **triage 6 —
+  §4. Shipped: **zoom/pan** (wheel toward the cursor + drag + `+`/`−`/Reset buttons, 1×–12×, dot radius
+  constant under zoom, a 4px drag-vs-click threshold, and the viewport in the URL as `view=k,tx,ty`);
+  **motion** (hover growth and a ~450ms tween between spaces, interruptible mid-flight, snapping instead
+  under `prefers-reduced-motion`); and the **narrow-width layout** (legend above, song card as a capped
+  ~30vh bottom sheet). `exploreUrlState.js` and `mapGeometry.js` were extracted first, as the final B4
+  review asked, before the `view` param landed. **Three of the five code tasks had review findings that
+  were defects in the plan's own sample code** (a wheel listener that never attached on a normal page
+  load, a hover halo ignoring the dim/lit split, a CSS media block that lost the cascade), all fixed on
+  branch. Task 6's Puppeteer smoke (17/17) found two more issues, both in the smoke script itself —
+  see the 2026-08-04 Decision Log entry. **The final whole-branch opus review then found 2 Important**
+  (a mount-time clamp against the placeholder plot size silently truncating a shared high-zoom link,
+  and no `pointercancel` handling leaving a stuck-pan state) **plus 7 Minor, all fixed in one wave**
+  (`141eff9`) and re-review-confirmed. **That review's out-of-scope note then led to the branch's
+  fourth plan-independent defect, and the worst of them:** the plot's `ResizeObserver` never attached
+  at all — its effect has `[]` deps and reads a ref belonging to a div that does not exist during
+  `loading`, so `ro.observe` was never called, the canvas never sized itself to the plot, and the
+  clamp fix minutes earlier was **inert** because the observer callback is the only writer of the
+  flag gating it. Confirmed by live instrumentation and fixed in `7d6d378` with the element-in-state
+  pattern the same file already used for the canvas. **Pre-existing since the original B4 map and
+  already on `main`.** Backend **165/165** unchanged, 27 frontend module tests, lint 0, build clean. Real
+  touchscreen pinch remains deliberately deferred. **Next session: triage 6 —
   the About analysis-explainer + AI-disclosure page** (the seven metadata-component + five
   thematic-dimension descriptions are served by the API and deliberately unused in browse — that page is
   where they land; now with the renamed **"Speaking to"** / **"Subjects"** labels). **`vector_space.json`
-  is now DELETED** (Task 12) — superseded by `song_coordinates`, and a real publication-staging leak while
-  it lived. The untracked `docs/examples/` remains in the working tree, left as-is per the curator. Its two
+  is now DELETED** (Task 12 of the original B4 plan) — superseded by `song_coordinates`, and a real
+  publication-staging leak while it lived. The untracked `docs/examples/` remains in the working tree,
+  left as-is per the curator. Its two
   screenshots were **opened 2026-07-27 and are NOT
   new triage items** — both are already fixed: `Themes Filter Dimension Text Missalignment.png` is the B3
   theme-tree centring bug, fixed at `components.css:875` (a `<button>` defaults to `text-align:center`),
@@ -216,7 +228,23 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   (Explore vector map, with the vector "You might also like" — **brainstorm in progress, paused
   2026-07-27**) → triage **6** (About
   analysis-explainer + AI disclosure) → sub-projects **C–F**.
-- **Last updated:** 2026-08-03 _(**B4 MERGED to `main`** — merge **`16629c5`**, no-ff, branch
+- **Last updated:** 2026-08-04 _(**Batch B BUILT, CURATOR-SMOKED and MERGED.** Zoom/pan with the
+  viewport in the URL, hover growth + a tweened space switch, and the narrow-width bottom-sheet
+  layout — all of §4 of the spec. **The curator's smoke passed all four judgement sections**
+  (tween, narrow layout, zoom/URL, dimmed-dot hover) and produced **one call**: the sideways page
+  scroll at narrow width should not be the answer — the page should reflow and the map should
+  handle its own space by panning. Fixed during the smoke, and the diagnosis mattered: the first
+  explanation (a non-wrapping toolbar row) was **wrong**, and measuring found **the canvas was
+  pinning its own container** — sized from `.explore-plot` by ResizeObserver, then floored that
+  same container at 800px from 390px to 1440px. Moving it out of flow exposed an older bug
+  beneath: `.explore-page` had never filled its 1200px max-width, because a flex item with
+  `margin: 0 auto` does not stretch. Both fixed; the desktop map is now **920px rather than
+  800px**. Three of five code tasks, plus two post-review rounds, had findings that were defects
+  in the plan's own sample code — including the plot's ResizeObserver never attaching at all, which
+  had made an earlier fix inert. Backend **165/165** unchanged, 27 frontend module tests, lint 0,
+  build clean, Puppeteer smoke 17/17 plus a 10/10 layout regression check. **Next: triage 6** — the
+  About analysis-explainer + AI-disclosure page.)_
+- **Previously updated:** 2026-08-03 _(**B4 MERGED to `main`** — merge **`16629c5`**, no-ff, branch
   `session-B4-explore-map` (30 commits) deleted local + remote. **Both curator smoke rounds passed**;
   round 2 found only that a selected song couldn't be cleared, fixed with a **×** and **Escape**
   (`76ffb1f`). Merged `main` re-verified: backend **165/165**, lint 0, build clean. **Next: Batch B** —
@@ -289,15 +317,20 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ FIRST TASK NEXT SESSION: the curator's smoke of the B4 map half.** Work through
-> [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md) — **starting with its §0, which restarts the `:5000`
-> backend on the branch.** Everything on that branch has passed automated checks (backend 159/159, lint 0
-> errors, build clean, headless browser runs) and **nothing has been seen by a human**, which is precisely
-> why the build stopped at Task 7 of 12. The checklist's §4 holds the questions no test can answer: whether
-> 640 dots read as structure or mush, whether the "Other genres" fold is honest at a glance, whether the
-> coverage line reads as an honest limit or as a bug, and whether the four spaces are visibly distinct.
-> Resume the plan at **Task 8** afterwards. The brainstorm handoff
-> `.superpowers/sdd/b4-brainstorm-handoff.md` is now **superseded by the spec** and needs no reading.
+> **⏭ FIRST TASK NEXT SESSION: the curator's smoke of Batch B (zoom/pan, motion, narrow layout).**
+> Work through [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md) — **no restart needed**, the
+> `:5000` backend is nodemon and this batch touches no backend file at all; just `git checkout
+> session-B4-batch-b` and let Vite reload. Everything on that branch has passed automated checks
+> (backend 165/165 unchanged, 27 frontend module tests, lint 0 errors, build clean, and a genuine
+> 17/17 headless-browser smoke) but **nothing has been driven by a human in a live browser** — §1 and
+> §4 hold the judgement questions no test can answer: does 12× zoom feel like enough, does the space
+> tween actually show you which songs travel together, and does the narrow-width bottom sheet cover
+> the dots you just clicked badly enough to matter. Once it passes, merge (no-ff, held for the
+> curator as every session since triage 1), then start **triage 6 — the About analysis-explainer +
+> AI-disclosure page**: the seven metadata-component and five thematic-dimension descriptions the
+> API already serves (`scalarFacets`/`facetTree` `description`) but the browse sidebar deliberately
+> never shows (see `CLAUDE.md`'s `ScalarFacetGroups` note) are that page's actual content, now with
+> the renamed **"Speaking to"** / **"Subjects"** labels from the lyrical-analysis rework.
 
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
    complete.** A1 merged (`145efbb`); A2 (`b5ec26f`, 2026-07-14); A3 (`8579b4e`, 2026-07-16). **A4
@@ -351,6 +384,27 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
   site spot-check (keep as archive; still gitignored — lyrics).
 
 ### Known Context / Watch-outs
+- ~~**`/explore` has a ~1080px content-driven minimum width**~~ **Fixed 2026-08-04 during the
+  curator's smoke** (`.explore-canvas` out of flow + `width:100%` on `.explore-page`). Two things
+  worth keeping from it. **(1) A canvas sized from its own container is a ratchet.** ResizeObserver
+  measured `.explore-plot` and JS wrote that pixel width onto an in-flow canvas, which then floored
+  the container's intrinsic width — it could grow, never shrink, so the plot measured exactly 800px
+  at every viewport from 390 to 1440 and the page scrolled sideways below that. Any future canvas
+  sized from its parent must be out of flow. **(2) A flex item with `margin: 0 auto` does not
+  stretch.** `.app-container` is a column flex container, so every page component is a flex item,
+  and auto cross-axis margins switch off the default `align-items: stretch` — `.explore-page` had
+  never filled its 1200px max-width, and the canvas floor was the only thing that had ever given it
+  a width. **The other page components share the `max-width` + `margin: 0 auto` pattern and may
+  have the same latent bug**; they look right today only because their grid content fills the space.
+  Worth a sweep when a page next gets touched.
+- **A React effect with `[]` deps that reads a ref is unreliable on any page with a loading gate.**
+  This bit `/explore` twice in one branch — the wheel listener (`32ee2ea`) and then the plot's
+  `ResizeObserver` (`7d6d378`, the more serious of the two: the canvas had never sized itself to its
+  container). Both times the element belongs to markup that does not exist on the first commit,
+  because the component early-returns a loading div while `useExplorePoints` fetches, so the ref is
+  `null` on the only render the effect ever sees. The fix both times is to hold the element in state
+  via a callback ref, making its arrival a dependency. **Worth checking any other component that
+  pairs a loading early-return with a mount-only effect over a ref.**
 - **Truth source is live (1.1) + publication staging (1.2b):** the public site shows
   `status='included' AND published=true` — **1,341 live / 39 to-finalise / 177 to-process
   (pending) / 243 rejected** (1,380 included total; 1,800 songs after the 1.3 dedup).
@@ -422,6 +476,39 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-08-04 — Batch B built; two Puppeteer smoke FAILs turned out to be flaws in the check, not
+  the app, and I proved it before touching either script or code.** The plan's own sample smoke
+  script (17 checks) failed 2 reproducibly on first run: "Reset restores the fit view" and "view
+  round-trips through a copied URL", both exact `canvas.toDataURL()` equality checks. Rather than
+  weaken either check to green, I diagnosed both with disposable diagnostic scripts before deciding
+  what to change. **Root cause 1 (affected both checks):** `topDotWidth`/`topDot` read the canvas
+  back with `getImageData` to measure dot size and find a click target. Chromium quietly switches a
+  canvas onto a different internal rendering path the first time it is read back that way, which
+  very slightly changes anti-aliasing on every draw after that point — invisible to a person,
+  fatal to byte-exact comparison against a snapshot taken *before* the first read. Fixed by moving
+  those measurements onto disposable throwaway pages, so the pages whose snapshots need to match
+  exactly are never read back with `getImageData`. That alone fixed "Reset restores the fit view"
+  outright (Reset's target view is bit-identical to the initial fit view, so once the taint was
+  removed the comparison held with zero tolerance needed). **Root cause 2 (the URL round-trip
+  check only):** `formatView` deliberately rounds the pan to the nearest whole pixel and the zoom
+  to 2 decimal places — the code's own comment says so ("nobody can see a hundredth of one"). I
+  proved this by monkey-patching `CanvasRenderingContext2D.prototype.arc` before page load and
+  diffing the actual draw calls: X coordinates matched exactly; every Y was off by precisely 0.5px.
+  Hand-tracing three `zoomAtPoint` calls showed why — the live gesture lands at `ty = -617.5`,
+  which the URL can only store as `-617`. That is the feature working exactly as designed and
+  documented, so I did not touch the app; I changed the check from "the two canvases are
+  byte-identical" to "the topmost dot's position matches within 1px", which is what the feature
+  actually promises and is what a curator comparing two tabs by eye would judge it against. Smoke
+  is genuinely 17/17 now, reproducibly (~5 repeat runs), not weakened. **Also confirmed:** the
+  narrow-layout legend, screenshotted at 800px per the Task 5 review's carried-over request, wraps
+  swatches into a labelled strip with text and counts intact rather than stacking one per line —
+  the open question from that review is answered, no fix needed. Isolated-server hygiene: backend
+  `:5001` needs `PORT=5001 node server.js` run **from inside `backend/`** — `dotenv.config()` has
+  no explicit path, so run from the repo root it silently loads zero vars and every DB call 500s
+  with a SASL error, which looks like a credentials problem but is a cwd problem. Backend
+  **165/165** unchanged, lint 0, build clean; curator's `:5000`/`:5173` confirmed to survive by PID
+  before and after. **Held for the curator's live smoke before merge.**
 
 - **2026-08-02/03 — The B4 curator smoke PASSED, and its follow-ups exposed two of my own false premises.
   Batch A shipped; Batch B specced.** The curator worked the whole checklist: **§1–§3 and §6/§6.4 passed
@@ -1441,6 +1528,31 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-08-04 (Batch B — Explore map interaction layer BUILT, branch pushed, held for smoke)** —
+  Six tasks, subagent-driven, on `session-B4-batch-b` from plan
+  [`2026-08-03-B4-batch-b-map-interaction.md`](./superpowers/plans/2026-08-03-B4-batch-b-map-interaction.md).
+  Tasks 1–2 extracted `exploreUrlState.js` and `mapGeometry.js` — pure, node-tested, no React/DOM —
+  ahead of Task 3 adding the `view=k,tx,ty` URL param, per the final B4 review's request that the
+  URL logic stop living unextracted inside `ExploreMap.jsx`. Task 3 added zoom/pan: wheel-toward-
+  cursor, drag-pan with a 4px click threshold, `+`/`−`/Reset buttons, 1×–12×, dot radius held
+  constant under zoom, the viewport debounce-committed to the URL. Task 4 added hover growth and a
+  ~450ms tween between spaces (interruptible mid-flight, snapping instead under
+  `prefers-reduced-motion`). Task 5 added the ≤860px narrow layout — legend above the plot, selected
+  song as a bottom sheet capped at 30vh. Task 6 (this one) ran the first live-browser look any of
+  Tasks 3–5 had ever had. **Three of the five code tasks had review findings that were defects in
+  the plan's own sample code**, not in what the implementer wrote: a wheel listener that never
+  attached on a normal page load (the effect depended on an unstable callback identity), a hover
+  halo that ignored the dim/lit split (so a dimmed dot still grew a halo), and a CSS media block
+  that lost the cascade (the bottom sheet's cover art rendered as a full-width banner) — all three
+  fixed on branch by their respective per-task reviews before Task 6 ever opened a browser.
+  **The Puppeteer smoke (17/17) found two more issues, both in the smoke script itself, not the
+  app** — see the Decision Log entry below for the full diagnosis. The narrow legend was
+  screenshotted at 800px width per the Task 5 review's request: swatches wrap into a labelled strip
+  with every colour's text and count intact, not one per line. Backend **165/165** (unchanged, no
+  backend file touched), 26 frontend module tests, lint 0 errors, build clean. New
+  [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md) checklist written; **held for the
+  curator's live smoke before merge**, as every session since triage 1.
 
 - **2026-07-27 (B4 — brainstorm finished, map half built; branch pushed, held for smoke)** — Resumed the
   paused brainstorm, finished it (spec `491733c`), wrote the 12-task plan (`3f479c7`), and executed Tasks

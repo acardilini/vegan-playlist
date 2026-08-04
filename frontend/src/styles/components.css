@@ -2417,7 +2417,15 @@
 }
 
 /* ===== Explore page ===== */
+/* width:100% is required, not belt-and-braces. .app-container is a column flex container, so
+   this page is a flex item, and `margin: 0 auto` on the cross axis switches off the default
+   `align-items: stretch` — leaving the page shrink-to-fit and centred rather than filling up to
+   its max-width. That went unnoticed because the canvas used to carry an explicit pixel width
+   in flow and acted as the page's width floor; once the canvas moved out of flow the page
+   collapsed to its next-widest content. Both halves are needed: this line gives the page its
+   width, the absolute canvas stops the map from dictating it. */
 .explore-page {
+  width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding: var(--space-5) var(--space-4);
@@ -2528,6 +2536,49 @@
   position: relative;
 }
 
+/* Keyboard and touch get the same power as the wheel — buttons-only would take several
+   clicks to reach a cluster, and wheel-only leaves both out entirely. */
+.explore-zoom {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: flex;
+  gap: var(--space-1);
+  z-index: 1;
+}
+
+.explore-zoom button {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.explore-zoom button:hover { color: var(--text-primary); }
+
+/* touch-action: none is what makes drag-pan work on a touchscreen — without it the browser
+   claims the gesture for page scrolling before the canvas ever sees it. display: block strips
+   the inline-level baseline descender gap, which would otherwise add a sliver to .explore-plot's
+   content height in the narrow (column) layout where that height is content-driven — cheap
+   hardening against a resize-observer growth loop, not a confirmed defect.
+
+   position:absolute is the load-bearing one, and it is not cosmetic. ResizeObserver measures
+   .explore-plot and JS writes that pixel width onto the canvas; an IN-FLOW canvas carrying an
+   explicit width then becomes a floor on its own container's intrinsic width, so the plot could
+   grow but never shrink. The page ratcheted to whatever width it had once been and scrolled
+   sideways below that — measured identically at 390px and 700px viewports, both pinned at 800px.
+   Out of flow, the canvas contributes nothing to its parent's size, so the plot is driven purely
+   by the flex layout, the observer follows it down as well as up, and the map reflows at every
+   width. Do not return this to static positioning. */
+.explore-canvas { touch-action: none; cursor: grab; display: block; position: absolute; top: 0; left: 0; }
+.explore-canvas.grabbing { cursor: grabbing; }
+
 .explore-rail {
   width: 232px;
   flex: none;
@@ -2570,11 +2621,6 @@
   font-size: 0.8rem;
 }
 
-@media (max-width: 860px) {
-  .explore-body { flex-direction: column; }
-  .explore-rail { width: auto; border-left: 0; padding-left: 0; }
-}
-
 .explore-search { display: flex; align-items: center; gap: var(--space-2); }
 
 .explore-legend-toggle {
@@ -2604,6 +2650,7 @@
 .explore-hovercard {
   position: absolute;
   pointer-events: none;
+  z-index: 2;
   width: 180px;
   padding: var(--space-2);
   border: 1px solid var(--border-hairline);
@@ -2645,4 +2692,70 @@
 .explore-matches button {
   background: none; border: 0; padding: 2px 0; color: inherit;
   text-align: left; cursor: pointer; width: 100%;
+}
+
+/* Narrow layout media block lives at the END of the explore section, after all the base rules
+   it overrides (.explore-song-art width, .explore-legend-toggle width, .explore-song-card
+   margin-top). Earlier placement would let those later, unconditional rules win via source
+   order. This position ensures the media query declarations take effect at ≤860px without
+   specificity wars. */
+/* Narrow: the legend becomes a wrapping strip ABOVE the plot, the map takes the full width, and
+   the selected song becomes a bottom sheet. The curator chose the sheet over stacking the rail
+   under the plot. The risk a sheet carries is that it covers the dots just clicked, so it is
+   capped hard at 30vh and never becomes a full-height overlay. */
+@media (max-width: 860px) {
+  .explore-body { flex-direction: column; }
+
+  .explore-rail {
+    width: auto;
+    order: -1;
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .explore-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-3);
+  }
+  .explore-legend > li { padding: 0; }
+  .explore-legend-toggle { width: auto; }
+
+  /* Group members wrap inline too, keeping the hairline as the only grouping cue. Text
+     labels stay beside every swatch here as everywhere else: in dark mode the green/yellow
+     pair sits in the CVD warn band and the label is its only compensating control. */
+  .explore-legend-children {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-2);
+    margin-left: 0;
+    padding-left: var(--space-2);
+  }
+
+  .explore-rail-label--selected { display: none; }
+
+  .explore-song-card {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    max-height: 30vh;
+    overflow-y: auto;
+    margin: 0;
+    padding: var(--space-3);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-hairline);
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* Small inline cover art — the sheet's whole budget is 30vh, and a full-width image would
+     spend all of it before the title. */
+  .explore-song-art {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    float: left;
+    margin-right: var(--space-3);
+  }
 }

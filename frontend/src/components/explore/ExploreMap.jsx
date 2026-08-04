@@ -1,11 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useExplorePoints } from './useExplorePoints';
 import { colourScale, dimColour } from './palette';
 import SelectedSongCard from './SelectedSongCard';
+import { layout } from './mapGeometry';
+import { useMapTransform } from './useMapTransform';
+import {
+  deriveColour, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit, withParam,
+} from './exploreUrlState';
 
 const DOT_RADIUS = 4;
-const PAD = 18;
 
 // A group toggles all of its members at once; a leaf toggles itself. Spotlight state holds
 // raw codes only, because that is what a song carries — the group is a legend construct.
@@ -57,74 +61,89 @@ function legendToggleClass({ allOn, someOn }, spotlit) {
   return `explore-legend-toggle ${dimmed ? 'off' : ''}`;
 }
 
-// Each space is projected on its own scale (audio_2d x spans -2.9..12.3 where
-// holistic_2d spans -4.7..5.1), so extents are recomputed per space — never assume a
-// shared domain.
-function extentsFor(songs, spaceKey) {
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const s of songs) {
-    const c = s.coords[spaceKey];
-    if (!c) continue;
-    if (c[0] < minX) minX = c[0];
-    if (c[0] > maxX) maxX = c[0];
-    if (c[1] < minY) minY = c[1];
-    if (c[1] > maxY) maxY = c[1];
-  }
-  if (!Number.isFinite(minX)) return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
-  if (minX === maxX) { minX -= 0.5; maxX += 0.5; }
-  if (minY === maxY) { minY -= 0.5; maxY += 0.5; }
-  return { minX, maxX, minY, maxY };
+// A full-canvas animation is exactly the case the media query exists for, so the tween is
+// not merely shortened under it — it is skipped, and the new space snaps into place.
+function usePrefersReducedMotion() {
+  const [reduce, setReduce] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduce(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return reduce;
+}
+
+// Long enough to read a song travelling between two spaces, short enough not to be a wait.
+const TWEEN_MS = 450;
+const HOVER_GROWTH = 3;   // px added to the hovered dot's radius
+
+// Decelerating: the arrival is the informative part of the motion, so it gets the time.
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 function ExploreMap() {
   const { data, loading, error, reload } = useExplorePoints();
-  const canvasRef = useRef(null);
-  const wrapRef = useRef(null);
+  // State, not a plain ref: while `data` is loading this component returns early and the
+  // canvas never mounts, so a ref alone would sit at null through that render with nothing
+  // to notice when it later attaches. Tracking the element in state makes its arrival a
+  // dependency the wheel-attach effect below can react to.
+  const [canvasEl, setCanvasEl] = useState(null);
+  // State, not a plain ref, for the same reason as `canvasEl` above: while `data` is loading
+  // this component returns the loading `<div>` instead of the real markup, so `.explore-plot`
+  // does not exist on that first commit. A ref would sit at null through that render with
+  // nothing to notice when the element later attaches, and with an empty dependency array the
+  // observer effect below would never run again — tracking the element in state makes its
+  // arrival a dependency the effect can react to.
+  const [plotEl, setPlotEl] = useState(null);
   const positionsRef = useRef([]);
+  const lastFrameRef = useRef(null);   // Map<id, {x, y}> — the most recent frame actually drawn
+  const tweenRef = useRef(null);       // { from: Map<id,{x,y}>, start: number }
+  const reduceMotion = usePrefersReducedMotion();
   const [size, setSize] = useState({ w: 800, h: 520 });
+  // Flips true the first time ResizeObserver reports a real measurement. useMapTransform's
+  // resize-clamp effect reads this to skip clamping on mount, while `size` itself keeps this
+  // placeholder value — everything else that reads `size` (the draw effect, hover-card
+  // clamping, zoomBy's centre point) is fine drawing against a plausible guess for one frame;
+  // only the clamp is a one-way ratchet that must not run against an unmeasured size.
+  const hasMeasuredRef = useRef(false);
   const [hover, setHover] = useState(null);   // { song, x, y }
 
   const [params, setParams] = useSearchParams();
 
-  // A space from the URL is honoured only if the catalogue still serves it. Without this,
-  // a link shared before a space was retired draws an empty plot with no chip lit.
-  const requestedSpace = params.get('space');
-  const space = (data && data.spaces.some(s => s.key === requestedSpace) ? requestedSpace : null)
-    || (data && data.spaces[0] && data.spaces[0].key) || null;
-  // Same guard as `space` just above: a colour key from the URL is honoured only if the
-  // catalogue still serves it, otherwise it falls back to the sonic_energy default.
-  const requestedColour = params.get('colour');
-  const colour = (data && data.colourBy.some(c => c.key === requestedColour) ? requestedColour : null)
-    || (data && (data.colourBy.find(c => c.key === 'sonic_energy') || data.colourBy[0] || {}).key)
-    || null;
-  const query = params.get('q') || '';
-  const selectedId = params.get('song') ? Number(params.get('song')) : null;
-  const spotlit = useMemo(() => {
-    const raw = params.get('codes');
-    return new Set(raw ? raw.split(',').filter(Boolean) : []);
-  }, [params]);
+  // Every rule about what the URL may say lives in exploreUrlState.js — see the comment
+  // there for why this is not inlined.
+  const space = data ? deriveSpace(params, data.spaces) : null;
+  const colour = data ? deriveColour(params, data.colourBy) : null;
+  const query = deriveQuery(params);
+  const selectedId = deriveSelectedId(params);
+  const spotlit = useMemo(() => deriveSpotlit(params), [params]);
 
-  // One writer for every param, so a change never clobbers its neighbours.
-  const setParam = (key, value) => {
-    const next = new URLSearchParams(params);
-    if (value == null || value === '') next.delete(key);
-    else next.set(key, value);
-    // Changing the colour dimension invalidates a spotlight expressed in its codes.
-    if (key === 'colour') next.delete('codes');
-    setParams(next, { replace: true });
-  };
+  const setParam = useCallback((key, value) => {
+    setParams(withParam(params, key, value), { replace: true });
+  }, [params, setParams]);
 
-  // Track the plot box so the canvas can be backing-store accurate.
+  // The viewport is committed to the URL at the end of a gesture, never per pixel — a pan
+  // writing 60 history entries would make Back useless.
+  const commitView = useCallback((serialised) => setParam('view', serialised), [setParam]);
+  const transform = useMapTransform({ size, params, onCommit: commitView, hasMeasuredRef });
+
+  // Track the plot box so the canvas can be backing-store accurate. Depends on `plotEl`, not
+  // just an empty array: on first load the plot wrapper is unmounted (the loading-state early
+  // return below fires instead), so an effect that only ran once on mount would observe
+  // nothing and `size` would be stuck at the placeholder for the life of the page.
   useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return undefined;
+    if (!plotEl) return undefined;
     const ro = new ResizeObserver(([entry]) => {
       const r = entry.contentRect;
+      hasMeasuredRef.current = true;
       setSize({ w: Math.max(240, r.width), h: Math.max(280, r.height) });
     });
-    ro.observe(el);
+    ro.observe(plotEl);
     return () => ro.disconnect();
-  }, []);
+  }, [plotEl]);
 
   const legend = useMemo(
     () => (data && data.colourBy.find(c => c.key === colour)) || null,
@@ -154,22 +173,40 @@ function ExploreMap() {
     () => (data && selectedId ? data.songs.find(s => s.id === selectedId) || null : null),
     [data, selectedId]);
 
+  // The id, not the hover object: `hover` is rebuilt on every mousemove even while the
+  // pointer stays on one dot, and it is a draw dependency now.
+  const hoverId = hover ? hover.song.id : null;
+
   // Escape clears the selection — the keyboard equivalent of the card's × button. Bound only
   // while something is selected, so this component adds no global key handler at rest.
   useEffect(() => {
     if (!selectedId) return undefined;
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      const next = new URLSearchParams(params);
-      next.delete('song');
-      setParams(next, { replace: true });
+      setParams(withParam(params, 'song', null), { replace: true });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedId, params, setParams]);
 
+  // Depends on `canvasEl`, not just `attachWheel`: on first load the canvas is unmounted
+  // (the loading-state early return below fires instead), so the effect commit that runs
+  // while `attachWheel`'s identity is fresh would otherwise attach to `null` and never
+  // re-run once the canvas actually appears, leaving the wheel permanently unbound.
+  const { attachWheel } = transform;
+  useEffect(() => attachWheel(canvasEl), [attachWheel, canvasEl]);
+
+  // Switching space tweens every dot from where it is to where it belongs — that motion is
+  // the answer to "which songs travel together between Thematic and Sound", which is the
+  // question the map exists to raise. `from` is the last frame DRAWN, not the last space's
+  // final layout, so interrupting mid-tween resumes from the current position.
   useEffect(() => {
-    const canvas = canvasRef.current;
+    if (!lastFrameRef.current || reduceMotion) return;
+    tweenRef.current = { from: lastFrameRef.current, start: performance.now() };
+  }, [space, reduceMotion]);
+
+  useEffect(() => {
+    const canvas = canvasEl;
     if (!canvas || !data || !space) return;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(size.w * dpr);
@@ -181,52 +218,85 @@ function ExploreMap() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
 
-    const { minX, maxX, minY, maxY } = extentsFor(data.songs, space);
-    const sx = (size.w - PAD * 2) / (maxX - minX);
-    const sy = (size.h - PAD * 2) / (maxY - minY);
-
+    const target = layout(data.songs, space, size, transform.view);
     const dim = dimColour();
-    const positions = [];
-    const lit = [];
-    for (const song of data.songs) {
-      const c = song.coords[space];
-      if (!c) continue;
-      const x = PAD + (c[0] - minX) * sx;
-      // Canvas y grows downward; flip so the plot reads like a chart.
-      const y = size.h - PAD - (c[1] - minY) * sy;
-      positions.push({ id: song.id, x, y });
-      const passesSpotlight = spotlit.size === 0 || spotlit.has(song.codes[colour]);
-      const passesSearch = !matchIds || matchIds.has(song.id);
-      if (passesSpotlight && passesSearch) lit.push({ song, x, y });
-      else {
+    const ringColour = getComputedStyle(document.documentElement)
+      .getPropertyValue('--text-primary').trim() || '#fff';
+
+    const drawFrame = (points) => {
+      ctx.clearRect(0, 0, size.w, size.h);
+      const lit = [];
+      for (const p of points) {
+        const passesSpotlight = spotlit.size === 0 || spotlit.has(p.song.codes[colour]);
+        const passesSearch = !matchIds || matchIds.has(p.id);
+        if (passesSpotlight && passesSearch) lit.push(p);
+        else {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, DOT_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = dim;
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 0.85;
+      for (const p of lit) {
         ctx.beginPath();
-        ctx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = dim;
+        ctx.arc(p.x, p.y, p.id === hoverId ? DOT_RADIUS + HOVER_GROWTH : DOT_RADIUS,
+          0, Math.PI * 2);
+        ctx.fillStyle = scale(p.song.codes[colour]);
         ctx.fill();
       }
-    }
-    ctx.globalAlpha = 0.85;
-    for (const p of lit) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, DOT_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = scale(p.song.codes[colour]);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    positionsRef.current = positions;
+      ctx.globalAlpha = 1;
 
-    if (selectedId) {
-      const hit = positions.find(p => p.id === selectedId);
-      if (hit) {
-        ctx.beginPath();
-        ctx.arc(hit.x, hit.y, DOT_RADIUS + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = getComputedStyle(document.documentElement)
-          .getPropertyValue('--text-primary').trim() || '#fff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+      // A soft halo, drawn in the dot's own colour, so the hovered song is findable without
+      // reading the card — and without a second colour entering the palette.
+      if (hoverId != null) {
+        const h = lit.find(p => p.id === hoverId);
+        if (h) {
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, DOT_RADIUS + HOVER_GROWTH + 3, 0, Math.PI * 2);
+          ctx.globalAlpha = 0.35;
+          ctx.strokeStyle = scale(h.song.codes[colour]);
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
       }
-    }
-  }, [data, space, colour, scale, size, spotlit, matchIds, selectedId]);
+
+      if (selectedId) {
+        const hit = points.find(p => p.id === selectedId);
+        if (hit) {
+          ctx.beginPath();
+          ctx.arc(hit.x, hit.y, DOT_RADIUS + 4, 0, Math.PI * 2);
+          ctx.strokeStyle = ringColour;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+
+      positionsRef.current = points;
+      lastFrameRef.current = new Map(points.map(p => [p.id, { x: p.x, y: p.y }]));
+    };
+
+    let raf = 0;
+    const frame = (now) => {
+      const tween = tweenRef.current;
+      if (!tween) { drawFrame(target); return; }
+      const t = Math.min(1, (now - tween.start) / TWEEN_MS);
+      const e = easeOutCubic(t);
+      drawFrame(target.map(p => {
+        const from = tween.from.get(p.id);
+        if (!from) return p;   // a song with no coordinates in the old space simply appears
+        return { ...p, x: from.x + (p.x - from.x) * e, y: from.y + (p.y - from.y) * e };
+      }));
+      if (t < 1) raf = requestAnimationFrame(frame);
+      else tweenRef.current = null;
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [
+    canvasEl, data, space, colour, scale, size, spotlit, matchIds, selectedId, transform.view,
+    hoverId,
+  ]);
 
   const nearest = (mx, my) => {
     let best = null, bestD = 12 * 12;   // 12px grab radius, squared
@@ -239,15 +309,17 @@ function ExploreMap() {
   };
 
   const onMove = (e) => {
+    // A pan owns the pointer; showing a hover card mid-drag is noise.
+    if (transform.onPointerMove(e)) { setHover(null); return; }
     const r = e.currentTarget.getBoundingClientRect();
-    const mx = e.clientX - r.left, my = e.clientY - r.top;
-    const hit = nearest(mx, my);
-    if (!hit) { setHover(null); return; }
-    const song = data.songs.find(s => s.id === hit.id);
-    setHover(song ? { song, x: hit.x, y: hit.y } : null);
+    const hit = nearest(e.clientX - r.left, e.clientY - r.top);
+    setHover(hit ? { song: hit.song, x: hit.x, y: hit.y } : null);
   };
 
   const onClick = (e) => {
+    // `click` fires after the pointer-up that ended a pan; without this every drag would
+    // also select a song.
+    if (transform.didDrag()) return;
     const r = e.currentTarget.getBoundingClientRect();
     const hit = nearest(e.clientX - r.left, e.clientY - r.top);
     if (hit) setParam('song', String(hit.id));
@@ -310,17 +382,28 @@ function ExploreMap() {
       )}
 
       <div className="explore-body">
-        <div className="explore-plot" ref={wrapRef}>
+        <div className="explore-plot" ref={setPlotEl}>
           <canvas
-            ref={canvasRef}
+            ref={setCanvasEl}
             role="img"
+            className={transform.isDragging ? 'explore-canvas grabbing' : 'explore-canvas'}
             aria-label={`Map of ${data.coverage.mapped} songs positioned by ${
               (data.spaces.find(s => s.key === space) || {}).label} similarity, coloured by ${
               (legend || {}).label}.`}
-            onMouseMove={onMove}
-            onMouseLeave={() => setHover(null)}
+            onPointerDown={transform.onPointerDown}
+            onPointerMove={onMove}
+            onPointerUp={transform.onPointerUp}
+            onPointerLeave={() => { transform.onPointerUp(); setHover(null); }}
+            onPointerCancel={() => { transform.onPointerCancel(); setHover(null); }}
             onClick={onClick}
           />
+          <div className="explore-zoom">
+            <button type="button" aria-label="Zoom in" onClick={transform.zoomIn}>+</button>
+            <button type="button" aria-label="Zoom out" onClick={transform.zoomOut}>−</button>
+            <button type="button" className="explore-zoom-reset" onClick={transform.reset}>
+              Reset
+            </button>
+          </div>
           {hover && (
             <div
               className="explore-hovercard"
@@ -404,7 +487,7 @@ function ExploreMap() {
             </div>
           )}
 
-          <div className="explore-rail-label">Selected</div>
+          <div className="explore-rail-label explore-rail-label--selected">Selected</div>
           <SelectedSongCard
             song={selected}
             colourLabel={(legend || {}).label}
