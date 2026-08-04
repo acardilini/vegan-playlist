@@ -95,4 +95,128 @@ function catalogue() {
   };
 }
 
-module.exports = { catalogue, DIMENSIONS };
+const PUBLISHED = `s.status = 'included' AND s.published = true`;
+
+// (song_id, code) pairs for one thematic dimension's latest pass. `column` comes from the
+// DIMENSIONS whitelist — never user input.
+async function thematicPairs(db, column) {
+  return (await db.query(
+    `SELECT DISTINCT s.id AS song_id, elem->>'code' AS code
+       FROM songs s
+       JOIN ${analysis.LATEST_ANALYSIS} sa ON sa.song_id = s.id
+       CROSS JOIN LATERAL jsonb_array_elements(sa.${column}) AS elem
+      WHERE ${PUBLISHED}`)).rows;
+}
+
+// (song_id, code) pairs for one scalar column. `multi` columns are TEXT[]; the rest are TEXT.
+async function scalarPairs(db, column, multi) {
+  const sql = multi
+    ? `SELECT DISTINCT s.id AS song_id, e.code AS code
+         FROM songs s
+         JOIN ${analysis.LATEST_ANALYSIS} sa ON sa.song_id = s.id
+         CROSS JOIN LATERAL unnest(sa.${column}) AS e(code)
+        WHERE ${PUBLISHED}`
+    : `SELECT DISTINCT s.id AS song_id, sa.${column} AS code
+         FROM songs s
+         JOIN ${analysis.LATEST_ANALYSIS} sa ON sa.song_id = s.id
+        WHERE ${PUBLISHED} AND sa.${column} IS NOT NULL`;
+  return (await db.query(sql)).rows;
+}
+
+// Distinct-song counts keyed by code, from (song_id, code) rows.
+function countByCode(rows) {
+  const m = new Map();
+  for (const { song_id, code } of rows) {
+    if (!code) continue;
+    let s = m.get(code);
+    if (!s) { s = new Set(); m.set(code, s); }
+    s.add(song_id);
+  }
+  return m;
+}
+
+async function coverage(db) {
+  const one = async (sql) => (await db.query(sql)).rows[0].n;
+
+  const live_songs = await one(
+    `SELECT COUNT(*)::int AS n FROM songs s WHERE ${PUBLISHED}`);
+  const artists = await one(
+    `SELECT COUNT(DISTINCT ar.id)::int AS n
+       FROM artists ar
+       JOIN song_artists sa ON sa.artist_id = ar.id
+       JOIN songs s ON s.id = sa.song_id
+      WHERE ${PUBLISHED}`);
+  const analysed_songs = await one(
+    `SELECT COUNT(DISTINCT s.id)::int AS n
+       FROM songs s JOIN song_lyric_analysis a ON a.song_id = s.id
+      WHERE ${PUBLISHED}`);
+  const mapped_songs = await one(
+    `SELECT COUNT(DISTINCT s.id)::int AS n
+       FROM songs s JOIN song_coordinates c ON c.song_id = s.id
+      WHERE ${PUBLISHED}`);
+
+  // Which model produced each live song's LATEST pass. Deliberately computed rather than
+  // written into the copy: a hand-typed model name goes stale silently, which is exactly
+  // what dating the disclosure was meant to prevent.
+  const models = (await db.query(
+    `SELECT la.model_used AS model, COUNT(*)::int AS songs, MAX(la.analyzed_at) AS latest
+       FROM songs s
+       JOIN ${analysis.LATEST_ANALYSIS} la ON la.song_id = s.id
+      WHERE ${PUBLISHED}
+      GROUP BY la.model_used
+      ORDER BY songs DESC, model ASC`)).rows;
+
+  const latest = models.reduce(
+    (max, m) => (m.latest && (!max || m.latest > max) ? m.latest : max), null);
+
+  return {
+    live_songs, artists, analysed_songs, mapped_songs,
+    latest_pass_models: models.map(m => ({ model: m.model, songs: m.songs })),
+    latest_pass_at: latest ? new Date(latest).toISOString() : null,
+  };
+}
+
+// The catalogue with real counts, plus the coverage block. One call serves the whole page.
+async function payload(db) {
+  const out = catalogue();
+
+  for (const { column, key } of DIMENSIONS) {
+    const rows = await thematicPairs(db, column);
+    const byCode = countByCode(rows);
+    const dim = out.thematic.find(d => d.key === key);
+    const dimSongs = new Set();
+    for (const sd of dim.sub_dimensions) {
+      const subSongs = new Set();
+      for (const g of sd.groups) {
+        const groupSongs = new Set();
+        for (const t of g.terms) {
+          const songs = byCode.get(t.code);
+          t.count = songs ? songs.size : 0;
+          if (songs) for (const id of songs) { groupSongs.add(id); subSongs.add(id); dimSongs.add(id); }
+        }
+        g.count = groupSongs.size;
+      }
+      sd.count = subSongs.size;
+    }
+    dim.count = dimSongs.size;
+  }
+
+  for (const c of metadata.COMPONENTS) {
+    const byCode = countByCode(await scalarPairs(db, c.column, c.multi));
+    for (const code of out.metadata.find(m => m.key === c.key).codes) {
+      code.count = (byCode.get(code.code) || new Set()).size;
+    }
+  }
+
+  for (const c of acoustic.COMPONENTS) {
+    const byCode = countByCode(await scalarPairs(db, c.column, false));
+    for (const code of out.acoustic.find(a => a.key === c.key).codes) {
+      code.count = (byCode.get(code.code) || new Set()).size;
+    }
+  }
+
+  out.coverage = await coverage(db);
+  return out;
+}
+
+module.exports = { catalogue, payload, coverage, DIMENSIONS };
