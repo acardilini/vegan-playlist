@@ -91,7 +91,13 @@ function ExploreMap() {
   // to notice when it later attaches. Tracking the element in state makes its arrival a
   // dependency the wheel-attach effect below can react to.
   const [canvasEl, setCanvasEl] = useState(null);
-  const wrapRef = useRef(null);
+  // State, not a plain ref, for the same reason as `canvasEl` above: while `data` is loading
+  // this component returns the loading `<div>` instead of the real markup, so `.explore-plot`
+  // does not exist on that first commit. A ref would sit at null through that render with
+  // nothing to notice when the element later attaches, and with an empty dependency array the
+  // observer effect below would never run again — tracking the element in state makes its
+  // arrival a dependency the effect can react to.
+  const [plotEl, setPlotEl] = useState(null);
   const positionsRef = useRef([]);
   const lastFrameRef = useRef(null);   // Map<id, {x, y}> — the most recent frame actually drawn
   const tweenRef = useRef(null);       // { from: Map<id,{x,y}>, start: number }
@@ -124,18 +130,20 @@ function ExploreMap() {
   const commitView = useCallback((serialised) => setParam('view', serialised), [setParam]);
   const transform = useMapTransform({ size, params, onCommit: commitView, hasMeasuredRef });
 
-  // Track the plot box so the canvas can be backing-store accurate.
+  // Track the plot box so the canvas can be backing-store accurate. Depends on `plotEl`, not
+  // just an empty array: on first load the plot wrapper is unmounted (the loading-state early
+  // return below fires instead), so an effect that only ran once on mount would observe
+  // nothing and `size` would be stuck at the placeholder for the life of the page.
   useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return undefined;
+    if (!plotEl) return undefined;
     const ro = new ResizeObserver(([entry]) => {
       const r = entry.contentRect;
       hasMeasuredRef.current = true;
       setSize({ w: Math.max(240, r.width), h: Math.max(280, r.height) });
     });
-    ro.observe(el);
+    ro.observe(plotEl);
     return () => ro.disconnect();
-  }, []);
+  }, [plotEl]);
 
   const legend = useMemo(
     () => (data && data.colourBy.find(c => c.key === colour)) || null,
@@ -374,7 +382,7 @@ function ExploreMap() {
       )}
 
       <div className="explore-body">
-        <div className="explore-plot" ref={wrapRef}>
+        <div className="explore-plot" ref={setPlotEl}>
           <canvas
             ref={setCanvasEl}
             role="img"
