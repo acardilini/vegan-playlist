@@ -1735,7 +1735,7 @@ spacing.
 
 .markdown-body strong { color: var(--text-primary); }
 
-.markdown-body a { color: var(--accent-primary); }
+.markdown-body a { color: var(--accent-ember-60); }
 
 /* --- About: reference glossary ---------------------------------------------------- */
 .reference-intro,
@@ -1751,8 +1751,8 @@ spacing.
   top: 0;
   z-index: 1;
   padding: var(--space-3) 0;
-  background: var(--bg-base);
-  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .reference-jump a {
@@ -1771,7 +1771,7 @@ spacing.
 
 .reference-group-title {
   font: var(--text-label);
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   margin-bottom: var(--space-2);
 }
 
@@ -1783,7 +1783,7 @@ spacing.
 
 .reference-term {
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .reference-term-label {
@@ -1793,20 +1793,20 @@ spacing.
 }
 
 .reference-term-count {
-  color: var(--accent-primary);
+  color: var(--accent-ember-60);
   font: var(--text-label);
   text-decoration: none;
 }
 
-.reference-term-count.is-empty { color: var(--text-tertiary); }
+.reference-term-count.is-empty { color: var(--text-muted); }
 
 .reference-term-def { margin: var(--space-1) 0 0; }
 
 .reference-derivation,
 .reference-threshold {
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   font-size: 0.85em;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   margin: var(--space-1) 0 0;
 }
 ```
