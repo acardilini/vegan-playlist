@@ -2759,3 +2759,136 @@
     margin-right: var(--space-3);
   }
 }
+
+/* --- About: tab shell ------------------------------------------------------------- */
+/* Mirrors .explore-head / .explore-tabs. .page-container already carries width: 100%,
+   so this needs no no-stretch guard of its own (see the 2026-08-04 Watch-outs). */
+.about-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+.about-tabs {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.about-tab {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font: var(--text-label);
+}
+
+.about-tab:hover { color: var(--text-primary); }
+
+.about-tab.active {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+/* --- Rendered Markdown ------------------------------------------------------------ */
+/* Curator-authored prose. Element selectors are scoped to .markdown-body because the
+   author writes plain Markdown and cannot add classes. */
+.markdown-body h2 {
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-3);
+}
+
+.markdown-body h2:first-child { margin-top: 0; }
+
+.markdown-body p,
+.markdown-body ul,
+.markdown-body ol {
+  margin-bottom: var(--space-4);
+  color: var(--text-secondary);
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: var(--space-5);
+}
+
+.markdown-body li { margin-bottom: var(--space-2); }
+
+.markdown-body strong { color: var(--text-primary); }
+
+.markdown-body a { color: var(--accent-ember-60); }
+
+/* --- About: reference glossary ---------------------------------------------------- */
+.reference-intro,
+.reference-dimension-desc,
+.reference-term-def {
+  color: var(--text-secondary);
+}
+
+.reference-jump {
+  display: flex;
+  gap: var(--space-4);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--space-3) 0;
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.reference-jump a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font: var(--text-label);
+}
+
+.reference-jump a:hover { color: var(--text-primary); }
+
+.reference-family { margin-top: var(--space-6); }
+
+.reference-family > h2 { margin-bottom: var(--space-3); }
+
+.reference-group { margin-bottom: var(--space-4); }
+
+.reference-group-title {
+  font: var(--text-label);
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.reference-terms {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.reference-term {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.reference-term-label {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-right: var(--space-2);
+}
+
+.reference-term-count {
+  color: var(--accent-ember-60);
+  font: var(--text-label);
+  text-decoration: none;
+}
+
+.reference-term-count.is-empty { color: var(--text-muted); }
+
+.reference-term-def { margin: var(--space-1) 0 0; }
+
+.reference-derivation,
+.reference-threshold {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--text-muted);
+  margin: var(--space-1) 0 0;
+}
