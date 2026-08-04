@@ -341,8 +341,18 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     hundredth of one"), which a live gesture's unrounded state does not exactly equal — fixed by
     asserting the redrawn dot position is within 1px instead of demanding identical bytes. Both
     were verified by tracing the actual `arc()` calls the draw loop made, not by guessing. See
-    [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md). **Held for the curator's smoke before
-    merge**, as every session since triage 1.
+    [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md).
+    **MERGED to `main` 2026-08-04 — merge `2acbe77`, no-ff, branch deleted local + remote.** The
+    curator's smoke **passed all four judgement sections** (the tween genuinely shows which songs
+    travel together; the narrow layout and capped sheet work; zoom and the URL round-trip; the
+    gated dimmed-dot hover reads as correct) and asked for **one change**: no sideways page scroll
+    at narrow width — the page should reflow and the map should pan. Fixed in `8339ff7`, where the
+    real cause turned out to be neither of the two things previously written down: an **in-flow
+    canvas sized from its own container floors that container**, pinning the plot to exactly 800px
+    at every viewport from 390 to 1440, and beneath that `.explore-page` had never filled its
+    1200px max-width because **a flex item with `margin: 0 auto` does not stretch**. Desktop map
+    800px → **920px**. Merged `main` re-verified: backend **165/165**, 27 frontend module tests,
+    lint 0 errors, build clean, plus a 10/10 layout regression pass.
 - ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
   To-be-processed / spam. Reuses `staging.addSubmissionAsPending`.
 - ☐ **D — YouTube assist.** Search YouTube from the workbench, present candidates, pick best.

@@ -1,10 +1,14 @@
 # Batch B — Explore map interaction layer: curator smoke checklist
 
-**Branch:** `session-B4-batch-b` · **Status:** all 5 code tasks built (Tasks 1–5), plus this task's
-Puppeteer smoke, plus the final whole-branch review's fixes. Everything below has passed automated
-checks (backend 165/165 — unchanged, 27 frontend module tests, lint 0 errors, build clean, and
-headless-browser runs 17/17) and been reviewed statically, task by task. **Almost none of it has
-been looked at by a human in a live browser.** That is what this list is for.
+**Status: ✅ SMOKED AND MERGED — 2026-08-04, merge `2acbe77` (no-ff), branch deleted.**
+All four judgement sections passed. One change came out of it — no sideways page scroll at narrow
+width; the page reflows and the map pans instead — fixed in `8339ff7` before the merge (see §5).
+This file is kept as the record of what was checked, not as a to-do.
+
+_Original header:_ branch `session-B4-batch-b`, all 5 code tasks built plus the Puppeteer smoke and
+the final whole-branch review's fixes; backend 165/165 unchanged, 27 frontend module tests, lint 0
+errors, build clean, headless runs 17/17 — reviewed statically, task by task, with almost none of it
+looked at by a human in a live browser. That is what this list was for.
 
 No §0 restart step this time: your `:5000` backend is nodemon, and this batch touches **no backend
 file at all** — it is pure frontend (`frontend/src/components/explore/`). Just make sure you're on
@@ -124,8 +128,8 @@ questions are design answers, not bugs — say what you'd rather have instead.
 
 ## What is left
 
-Nothing in the plan for the Explore map — Batch A and Batch B both built and smoked (this smoke
-still needs your pass before merge). Deliberately deferred, not omitted: **real touchscreen pinch**
+Nothing in the plan for the Explore map — Batch A and Batch B are both built, smoked and merged.
+Deliberately deferred, not omitted: **real touchscreen pinch**
 (the wheel/drag/button controls cover mouse and trackpad; a dedicated touch gesture was scoped out
 of this batch) and **3D**, which remains its own future session.
 

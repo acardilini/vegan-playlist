@@ -10,9 +10,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**B4 — Explore vector map: brainstorm COMPLETED and the MAP HALF BUILT (2026-07-27).
-  Branch `session-B4-explore-map`, 8 commits from `3f479c7`, pushed. HELD FOR THE CURATOR'S SMOKE — the
-  checklist is [`B4_CURATOR_SMOKE.md`](./B4_CURATOR_SMOKE.md); read it before touching anything else.**
+- **Current session:** _**NONE IN PROGRESS. Nothing is held for smoke, no branch is open, the tree is
+  clean** (bar the untracked `docs/examples/`, left as-is per the curator). **Last session: Batch B —
+  the Explore map's interaction layer**, curator-smoked and **merged to `main` on 2026-08-04**
+  (merge **`2acbe77`**, no-ff, branch deleted local + remote). **Next up: triage 6 — the About
+  analysis-explainer + AI-disclosure page**; see "Next Tasks" below, which is the section to start
+  from. **Everything from here to the end of this bullet is prior-session history**, newest first,
+  kept for context and NOT a description of current state — this field had drifted several sessions
+  out of date before 2026-08-04, so treat any "HELD FOR SMOKE" wording below as historical._
+  _Prior session:_ **B4 — Explore vector map: the map half built 2026-07-27 on branch
+  `session-B4-explore-map` (since merged as `16629c5`).**
   The paused brainstorm resumed and finished (spec `491733c`, plan `3f479c7`), then Tasks 1–7 of 12 were
   executed subagent-driven, each per-task reviewed. **Shipped:** a new read-only `services/explore.js`
   (catalogue-driven space discovery, publish-filtered `song_coordinates` read, colour-by legends, coverage);
@@ -178,9 +185,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   the pre-existing **Year range** control shares both patterns the tempo fixes addressed (clipping
   `From 1970` placeholders and an ellipsis chip for a single-ended range) — a two-line change whenever
   wanted; and the **acoustic derivation itself needs a pipeline re-run** (see the Decision Log).
-- **✅ BATCH B — the Explore map's interaction layer — BUILT (2026-08-04), branch `session-B4-batch-b`
-  pushed, HELD FOR THE CURATOR'S SMOKE — the checklist is
-  [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md); read it before touching anything else.**
+- **✅ NOTHING PENDING — BATCH B IS MERGED.** `session-B4-batch-b` (14 commits from `0d9763a`) merged
+  **no-ff to `main`** as merge **`2acbe77`** on 2026-08-04, after the curator's smoke
+  ([`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md)) **passed all four judgement sections** —
+  the tween, the narrow layout, zoom + the URL, and the dimmed-dot hover call. It produced **one
+  change**: the sideways page scroll at narrow width was rejected in favour of the page reflowing
+  and the map handling its own space by panning. Fixed on branch in `8339ff7` before the merge —
+  and the fix mattered twice over, because the first diagnosis was wrong and the correct one
+  uncovered an older bug beneath it (see the Decision Log). Merged `main` re-verified: backend
+  **165/165**, 27 frontend module tests, lint 0 errors, build clean. Branch deleted local + remote.
+- ~~**BATCH B — BUILT, held for the curator's smoke**~~ — superseded by the entry above.
   Plan [`2026-08-03-B4-batch-b-map-interaction.md`](./superpowers/plans/2026-08-03-B4-batch-b-map-interaction.md),
   six tasks subagent-driven from
   [`specs/2026-08-02-B4-map-refinements-design.md`](./superpowers/specs/2026-08-02-B4-map-refinements-design.md)
@@ -317,20 +331,23 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ FIRST TASK NEXT SESSION: the curator's smoke of Batch B (zoom/pan, motion, narrow layout).**
-> Work through [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md) — **no restart needed**, the
-> `:5000` backend is nodemon and this batch touches no backend file at all; just `git checkout
-> session-B4-batch-b` and let Vite reload. Everything on that branch has passed automated checks
-> (backend 165/165 unchanged, 27 frontend module tests, lint 0 errors, build clean, and a genuine
-> 17/17 headless-browser smoke) but **nothing has been driven by a human in a live browser** — §1 and
-> §4 hold the judgement questions no test can answer: does 12× zoom feel like enough, does the space
-> tween actually show you which songs travel together, and does the narrow-width bottom sheet cover
-> the dots you just clicked badly enough to matter. Once it passes, merge (no-ff, held for the
-> curator as every session since triage 1), then start **triage 6 — the About analysis-explainer +
-> AI-disclosure page**: the seven metadata-component and five thematic-dimension descriptions the
-> API already serves (`scalarFacets`/`facetTree` `description`) but the browse sidebar deliberately
-> never shows (see `CLAUDE.md`'s `ScalarFacetGroups` note) are that page's actual content, now with
-> the renamed **"Speaking to"** / **"Subjects"** labels from the lyrical-analysis rework.
+> **⏭ FIRST TASK NEXT SESSION: triage 6 — the About analysis-explainer + AI-disclosure page.**
+> **Nothing is pending and no branch is open** — Batch B merged 2026-08-04 (`2acbe77`) after its
+> curator smoke passed. Triage 6 needs a brainstorm before a spec: the raw material is the seven
+> metadata-component and five thematic-dimension descriptions the API already serves
+> (`scalarFacets`/`facetTree` `description`) but the browse sidebar deliberately never shows — see
+> `CLAUDE.md`'s `ScalarFacetGroups` note, where that omission is a **standing decision**, not an
+> oversight: definitional copy belongs on an About page, and only usage help sits beside a control.
+> Use the renamed **"Speaking to"** / **"Subjects"** labels. The page also owes an **AI disclosure**:
+> the analysis is model-generated by the curator's separate pipeline, read here read-only, and each
+> song shows its *latest* coding pass — worth saying plainly rather than implying human coding.
+>
+> **Two carried follow-ups, both cheap, neither urgent.** (1) The **Year range** control still has
+> both bugs the tempo range fixed in the acoustic session — clipping `From 1970` placeholders and an
+> ellipsis chip for a single-ended range; a two-line change whenever wanted. (2) The other page
+> components share `.explore-page`'s old `max-width` + `margin: 0 auto` pattern and may carry the
+> same latent no-stretch bug Batch B found; they look right today only because their grid content
+> fills the space. Worth a sweep next time a page is touched — see the Watch-outs.
 
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
    complete.** A1 merged (`145efbb`); A2 (`b5ec26f`, 2026-07-14); A3 (`8579b4e`, 2026-07-16). **A4
@@ -476,6 +493,38 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-08-04 (later the same day) — the Batch B smoke PASSED and produced one design call, whose
+  fix required withdrawing a diagnosis I had already written into the docs.** The curator worked the
+  checklist: **the tween, the narrow layout, zoom + the URL, and the dimmed-dot hover call all
+  passed** — including the two questions the whole batch existed to answer, whether the tween shows
+  which songs travel together (yes) and whether the capped bottom sheet covers the dots you just
+  clicked (no). **The one call:** the sideways page scroll at narrow width is the wrong answer;
+  the page should reflow and the map should handle its own space by **panning**, which it can since
+  this batch. Merged as **`2acbe77`** (no-ff) after the fix.
+  **THE DIAGNOSIS SHIPPED IN THE DOCS WAS WRONG, AND IT TOOK MEASURING TO SEE IT.** A reviewer had
+  attributed the width floor to "a toolbar row that never wraps"; I recorded that in
+  `PROJECT_STATE` and the smoke checklist without checking it. `.explore-toolbar` has carried
+  `flex-wrap: wrap` since it was written. Probing the live page at 390/500/700/860/1000/1280/1440
+  found the plot pinned at **exactly 800px at every one of them** — the real cause being a
+  **ratchet**: `ResizeObserver` measures `.explore-plot`, JS writes that pixel width onto the
+  canvas, and an **in-flow** canvas carrying an explicit width then floors its own container's
+  intrinsic width. It could grow and never shrink, so the page held whatever width it had once had
+  and scrolled below it. **Any canvas sized from its own container must be out of flow** — now
+  fixed with `position: absolute` and a comment saying why.
+  **That fix exposed an older bug underneath, which is the more useful finding.** With the floor
+  gone, `.explore-page` collapsed to 765px inside a 1200px max-width. `.app-container` is a
+  **column flex container**, so every page component is a flex item, and **`margin: 0 auto` on the
+  cross axis switches off the default `align-items: stretch`** — the page had never filled its
+  max-width in its life, and the canvas floor had been the only thing giving it a width. Fixed with
+  `width: 100%`. **The other page components share that same pattern and may carry the same latent
+  bug**; they look correct today only because their grid content fills the space. Recorded in the
+  Watch-outs for the next time a page is touched, deliberately **not** swept blind at merge time.
+  **Net effect the curator will see:** the page reflows at every width, no horizontal scroll from
+  390px to 1440px, and the desktop map is **920px rather than 800px**. **Verified:** backend
+  **165/165**, 27 frontend module tests, lint 0 errors, build clean, plus a **10/10** targeted
+  regression pass over the things that CSS could plausibly have broken — canvas/plot alignment,
+  hit-testing, zoom, Reset, control stacking, the narrow legend and the capped sheet.
 
 - **2026-08-04 — Batch B built; two Puppeteer smoke FAILs turned out to be flaws in the check, not
   the app, and I proved it before touching either script or code.** The plan's own sample smoke
@@ -1528,6 +1577,23 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-08-04 (Batch B — CURATOR-SMOKED and MERGED, merge `2acbe77`)** — The curator worked
+  [`BATCH_B_CURATOR_SMOKE.md`](./BATCH_B_CURATOR_SMOKE.md) live. **All four judgement sections
+  passed**: the space tween does show which songs travel together, the narrow layout and its capped
+  bottom sheet work, zoom and the URL round-trip work, and the deliberately-gated dimmed-dot hover
+  reads as correct. **One change requested** — the sideways page scroll at narrow width should be a
+  reflow, with the map panning to cover its own space. Fixed in `8339ff7`: `.explore-canvas` moved
+  out of flow (an in-flow canvas sized from its own container floors that container — it had pinned
+  the plot to exactly 800px at every viewport from 390 to 1440), which exposed `.explore-page` never
+  filling its 1200px max-width because a flex item with `margin: 0 auto` does not stretch; fixed
+  with `width: 100%`. The desktop map went 800px → **920px**. The reviewer's original explanation of
+  the width floor — a non-wrapping toolbar row — was **wrong and is withdrawn**; `.explore-toolbar`
+  has always had `flex-wrap: wrap`. Merged no-ff to `main`, branch deleted local + remote; merged
+  `main` re-verified backend **165/165**, 27 frontend module tests, lint 0, build clean, plus a
+  **10/10** layout regression pass. Carried forward: the same `margin: 0 auto` no-stretch pattern
+  may affect the other page components (Watch-outs), and the Year-range control still has the two
+  bugs the tempo range fixed. **Next: triage 6 — the About analysis-explainer + AI-disclosure page.**
 
 - **2026-08-04 (Batch B — Explore map interaction layer BUILT, branch pushed, held for smoke)** —
   Six tasks, subagent-driven, on `session-B4-batch-b` from plan
