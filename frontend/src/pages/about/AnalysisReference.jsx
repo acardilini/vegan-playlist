@@ -5,8 +5,9 @@ import { useCodebook } from './useCodebook';
 
 // One term: its label, its definition, and how many songs currently carry it. The count links
 // through to a browse filtered to exactly that code — a zero-count term renders the count as
-// plain text, because a link to an empty result set is a dead end.
-function Term({ filterKey, code, label, definition, count }) {
+// plain text, because a link to an empty result set is a dead end. `threshold` is optional —
+// only acoustic codes carry it.
+function Term({ filterKey, code, label, definition, count, threshold }) {
   return (
     <li className="reference-term">
       <span className="reference-term-label">{label}</span>
@@ -18,16 +19,17 @@ function Term({ filterKey, code, label, definition, count }) {
         <span className="reference-term-count is-empty">0 songs</span>
       )}
       <p className="reference-term-def">{definition}</p>
+      {threshold && <p className="reference-threshold">{threshold}</p>}
     </li>
   );
 }
 
 function ThematicDimension({ dimension }) {
   return (
-    <FilterSection title={dimension.label} count={dimension.count}>
+    <FilterSection title={dimension.label}>
       <p className="reference-dimension-desc">{dimension.description}</p>
       {dimension.sub_dimensions.map(sub => (
-        <FilterSection key={sub.id} title={sub.label} count={sub.count}>
+        <FilterSection key={sub.id} title={sub.label}>
           {sub.groups.map(group => (
             <div key={group.id} className="reference-group">
               <h4 className="reference-group-title">{group.label}</h4>
@@ -46,23 +48,12 @@ function ThematicDimension({ dimension }) {
 
 function CodedComponent({ component, extra }) {
   return (
-    <FilterSection title={component.heading} count={component.codes.length}>
+    <FilterSection title={component.heading}>
       <p className="reference-dimension-desc">{component.description}</p>
       {extra}
       <ul className="reference-terms">
         {component.codes.map(c => (
-          <li key={c.code} className="reference-term">
-            <span className="reference-term-label">{c.label}</span>
-            {c.count > 0 ? (
-              <Link className="reference-term-count" to={termHref(component.key, c.code)}>
-                {c.count.toLocaleString()} songs
-              </Link>
-            ) : (
-              <span className="reference-term-count is-empty">0 songs</span>
-            )}
-            <p className="reference-term-def">{c.definition}</p>
-            {c.threshold && <p className="reference-threshold">{c.threshold}</p>}
-          </li>
+          <Term key={c.code} filterKey={component.key} {...c} />
         ))}
       </ul>
     </FilterSection>
