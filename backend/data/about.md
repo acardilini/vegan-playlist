@@ -1,10 +1,17 @@
-7 years of curating music that speaks to animals, the environment, and compassionate living.
+Since 2017 I've been collecting songs about animals, animal liberation, and veganism.
 
-## Our mission
+## The Purpose
 
 The Vegan Playlist is a searchable database of songs with vegan, animal-rights,
-animal-liberation, care, and appreciation themes. We believe music can shift how people
-think about the treatment of animals.
+animal-liberation, care, and appreciation themes.
+
+Music has power and can deeply effect how we feel and think. Song lyrics tell stories and motivate action, they can demand justice and drive passion, and we can learn from them.
+
+I started collecting songs about animals, veganism, animal liberation, and activism becuse they inspired me. Their pleas for justice and unflinching conviction that animals matter articulated what I feel. I wanted to find as many songs as I could.
+
+When I started looking I found hundreds of songs that advocated for animals. Songs that I thought others might find inspiration in or learn from. They include many genres, cover dozens of topics and messages.
+
+A simple long list of songs wasn't really accessible because it didn't allow people to find the type of song they were looking for. So I decided to make the songs accessible to others by categorising them by their sound and lyrics. 
 
 Right now it holds **{{songs}} songs** by **{{artists}} artists**.
 
