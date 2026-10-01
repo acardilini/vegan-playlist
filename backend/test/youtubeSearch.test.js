@@ -183,3 +183,27 @@ test('findCandidatesForSong for a song with no artist searches by title alone', 
   const r = await yt.findCandidatesForSong(pool, s.id, { fetchImpl: f, apiKey: KEY });
   assert.equal(r.query, 'ZZZYT Orphan Song');
 });
+
+// --- review fixes (final whole-branch review) ---
+
+test('a bad/disabled key maps to CONFIG, not UPSTREAM, so the curator is told to fix the key', async () => {
+  const warn = mock.method(console, 'warn', () => {});
+  try {
+    for (const [status, reason] of [[400, 'keyInvalid'], [403, 'accessNotConfigured'], [403, 'ipRefererBlocked'], [403, 'forbidden'], [400, 'badRequest']]) {
+      const f = fakeFetch({ status, search: { error: { errors: [{ reason }], message: `secret ${KEY}` } } });
+      await assert.rejects(() => yt.searchVideos('q', { fetchImpl: f, apiKey: KEY }), (e) => {
+        assert.equal(e.code, 'CONFIG', `${status} ${reason}`);
+        assert.ok(!String(e.message).includes(KEY));
+        return true;
+      });
+    }
+  } finally { warn.mock.restore(); }
+});
+
+test('quota and a plain 5xx are still QUOTA / UPSTREAM (CONFIG must not swallow them)', async () => {
+  const warn = mock.method(console, 'warn', () => {});
+  try {
+    await assert.rejects(() => yt.searchVideos('q', { fetchImpl: fakeFetch({ status: 403, search: { error: { errors: [{ reason: 'quotaExceeded' }] } } }), apiKey: KEY }), (e) => e.code === 'QUOTA');
+    await assert.rejects(() => yt.searchVideos('q', { fetchImpl: fakeFetch({ status: 503, search: { error: { errors: [{ reason: 'backendError' }] } } }), apiKey: KEY }), (e) => e.code === 'UPSTREAM');
+  } finally { warn.mock.restore(); }
+});

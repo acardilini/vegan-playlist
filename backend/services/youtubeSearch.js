@@ -50,7 +50,11 @@ async function callApi(fetchImpl, path, params) {
     const reason = body?.error?.errors?.[0]?.reason || body?.error?.status || 'unknown';
     console.warn(`youtube api ${path} failed: HTTP ${res.status} (${reason})`);
     const quota = reason === 'quotaExceeded' || reason === 'dailyLimitExceeded';
-    throw coded(quota ? 'QUOTA' : 'UPSTREAM', `YouTube API error (HTTP ${res.status})`);
+    // A rejected/disabled/restricted key is permanent until the curator fixes it, so it gets its own
+    // code (CONFIG) instead of the "try again later" UPSTREAM. `reason` is Google's token, not the key.
+    const config = ['keyInvalid', 'accessNotConfigured', 'ipRefererBlocked', 'forbidden', 'badRequest'].includes(reason)
+      || (res.status === 400 && reason === 'unknown');
+    throw coded(quota ? 'QUOTA' : config ? 'CONFIG' : 'UPSTREAM', `YouTube API error (HTTP ${res.status})`);
   }
   return body || {};
 }

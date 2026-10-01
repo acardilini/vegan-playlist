@@ -22,13 +22,14 @@ function VideoPanel({ wb, id, reload }) {
   const [results, setResults] = useState(null);     // null | candidate[]
   const [searching, setSearching] = useState(false);
   const [searchMsg, setSearchMsg] = useState('');
+  const [usedQuery, setUsedQuery] = useState(''); // what the API search actually used (first artist + title)
   const [ticked, setTicked] = useState({});         // { [youtube_id]: true }
   const [types, setTypes] = useState({});           // { [youtube_id]: chosen type }
   const [adding, setAdding] = useState(false);
   const idRef = useRef(id);
   useEffect(() => {
     idRef.current = id;
-    setResults(null); setSearching(false); setSearchMsg(''); setTicked({}); setTypes({}); setAdding(false);
+    setResults(null); setSearching(false); setSearchMsg(''); setUsedQuery(''); setTicked({}); setTypes({}); setAdding(false);
   }, [id]);
 
   const find = async () => {
@@ -38,10 +39,11 @@ function VideoPanel({ wb, id, reload }) {
       const r = await adminFetch(`/api/admin/workbench/${forId}/video-search`);
       const d = await r.json().catch(() => ({}));
       if (idRef.current !== forId) return;
+      if (d.query) setUsedQuery(d.query);
       if (r.status === 429) setSearchMsg("Today's YouTube search quota is used up — try again tomorrow, or paste a URL below.");
       else if (!r.ok) setSearchMsg(d.message || d.error || 'Search failed');
       else if (!d.configured) setSearchMsg("YouTube search isn't configured — add YOUTUBE_API_KEY to backend/.env. You can still paste a URL below.");
-      else if (!d.candidates || d.candidates.length === 0) setSearchMsg('No results — try Search YouTube.');
+      else if (!d.candidates || d.candidates.length === 0) setSearchMsg(`No results for “${d.query}” — try Search YouTube, or paste a URL below.`);
       else setResults(d.candidates);
     } catch {
       if (idRef.current === forId) setSearchMsg('Request failed');
@@ -123,7 +125,8 @@ function VideoPanel({ wb, id, reload }) {
 
   const videos = wb.videos || [];
   const artist = (wb.artists || []).map((a) => a.name).join(' ');
-  const ytSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${wb.title || ''} ${artist}`.trim())}`;
+  // After a Find-videos search the fallback link reuses that exact query, so the two never disagree.
+  const ytSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(usedQuery || `${wb.title || ''} ${artist}`.trim())}`;
   return (
     <section className="wb-panel">
       <h2>Video <SaveTag status={status} /></h2>

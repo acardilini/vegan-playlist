@@ -1979,6 +1979,7 @@ router.get('/workbench/:id/video-search', async (req, res) => {
   } catch (e) {
     if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
     if (e.code === 'QUOTA') return res.status(429).json({ error: 'quota', message: "Today's YouTube search quota is used up" });
+    if (e.code === 'CONFIG') return res.status(502).json({ error: 'config', message: 'YouTube rejected the API key — check YOUTUBE_API_KEY in backend/.env and that YouTube Data API v3 is enabled for it' });
     if (e.code === 'UPSTREAM') return res.status(502).json({ error: 'upstream', message: 'YouTube search is unavailable right now' });
     console.error('video search error:', e.message); // message only: never the request URL (it holds the key)
     res.status(500).json({ error: 'Failed to search YouTube' });
