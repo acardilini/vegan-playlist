@@ -7,8 +7,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-01): Sub-project C — Submissions Inbox — BUILT, HELD FOR THE CURATOR'S SMOKE,
-  NOT merged.** Branch `session-C-submissions-inbox` (from `main` at `153919f`). The admin Songs area gains an
+- **Current session (2026-10-01): Sub-project C — Submissions Inbox — DONE, curator-smoke-confirmed (4/4) and
+  MERGED to `main` (merge `4cc0284`, no-ff).** Merged `main` re-verified: backend 200/200, build clean. Branch
+  `session-C-submissions-inbox` (from `main` at `153919f`) deleted local + remote. The admin Songs area gains an
   **Inbox** queue (oldest first) over `song_submissions`: **Add to To be processed** (bridges via
   `staging.addSubmissionAsPending`) or **Dismiss** (optional note). Catalogue matches stay in the Inbox with an
   "Already in catalogue (live / not live)" badge and a link. The public form now tells a submitter when the
@@ -396,9 +397,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
 > (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
-> **⏭ NEXT: the curator smokes sub-project C (the Inbox), then it merges; after that D, E, F remain.** What to
-> try: submit two songs at `/submit` (one already live), open Admin → Songs → Inbox, accept one, dismiss one, and
-> confirm the order is oldest first. Clean up your test rows afterwards. The two real submissions ("Peacemeal",
+> **⏭ NEXT SESSION: sub-project C is MERGED (2026-10-01, `4cc0284`). D (YouTube assist), E (lyrics-search
+> assist) and F (Spotify push) remain** — pick one and brainstorm it. The two real submissions ("Peacemeal",
 > "Waste not want not", from July) are waiting in the Inbox for a real decision.
 >
 > **Deferred minors from the C review** (none blocking): the failed-action error flash is cleared by the reload;
@@ -1748,7 +1748,7 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
-- **2026-10-01 (sub-project C — Submissions Inbox, BUILT, held for the curator's smoke)** - branch
+- **2026-10-01 (sub-project C — Submissions Inbox, MERGED `4cc0284` after the curator's smoke passed 4/4)** - branch
   `session-C-submissions-inbox`, executed inline from the plan. Earlier the same day: the **Year range**
   control fixed to match Tempo (bare-year placeholders, `From X`/`Up to Y` chips) and `.search-page` given
   `width: 100%`, closing the `margin: 0 auto` sweep (every other live page root already had it) — on
