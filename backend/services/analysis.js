@@ -25,12 +25,13 @@ const hasCodesExists = (alias) =>
      jsonb_array_length(COALESCE(la.themes,'[]'::jsonb)) > 0
      OR jsonb_array_length(COALESCE(la.topics,'[]'::jsonb)) > 0
      OR jsonb_array_length(COALESCE(la.advocacy,'[]'::jsonb)) > 0
-     OR jsonb_array_length(COALESCE(la.tactics,'[]'::jsonb)) > 0
      OR jsonb_array_length(COALESCE(la.moral_frames,'[]'::jsonb)) > 0))`;
 
-// DB column -> taxonomy group key. topics=targets, advocacy=actions.
-const EVIDENCE_DIMS = ['themes', 'topics', 'advocacy', 'tactics', 'moral_frames'];
-const DIM_TO_TAXONOMY = { themes: 'themes', topics: 'targets', advocacy: 'actions', tactics: 'tactics', moral_frames: 'moral_frames' };
+// DB column -> taxonomy group key. topics=targets, advocacy=actions. The `tactics` column and
+// taxonomy list are a mirror of advocacy/actions (one "Advocacy & Tactics" dimension, curator
+// decision 2026-10-01), so nothing here reads them.
+const EVIDENCE_DIMS = ['themes', 'topics', 'advocacy', 'moral_frames'];
+const DIM_TO_TAXONOMY = { themes: 'themes', topics: 'targets', advocacy: 'actions', moral_frames: 'moral_frames' };
 
 function titleCase(code) {
   return String(code).split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : w).join(' ');
@@ -84,7 +85,7 @@ function mapDim(dimension, arr) {
 
 async function getSongAnalysis(db, songId) {
   const r = await db.query(
-    `SELECT sla.themes, sla.topics, sla.advocacy, sla.tactics, sla.moral_frames, sla.lyric_summary,
+    `SELECT sla.themes, sla.topics, sla.advocacy, sla.moral_frames, sla.lyric_summary,
             sla.perspective, sla.lyrical_tone, sla.intensity, sla.clarity, sla.focus_amount,
             sla.target_audience, sla.emotions,
             sla.sonic_energy, sla.emotional_mood, sla.rhythmic_style,
@@ -117,7 +118,6 @@ async function getSongAnalysis(db, songId) {
     themes: mapDim('themes', a.themes),
     targets: mapDim('topics', a.topics),
     actions: mapDim('advocacy', a.advocacy),
-    tactics: mapDim('tactics', a.tactics),
     moral_frames: mapDim('moral_frames', a.moral_frames),
   };
 
@@ -164,7 +164,7 @@ async function getSongAnalysis(db, songId) {
 }
 
 // DB column -> public dimension name used in API output (facetTree, etc.).
-const PUBLIC_DIMS = { themes: 'themes', topics: 'targets', advocacy: 'actions', tactics: 'tactics', moral_frames: 'moral_frames' };
+const PUBLIC_DIMS = { themes: 'themes', topics: 'targets', advocacy: 'actions', moral_frames: 'moral_frames' };
 
 // Public dimension name -> the curator's one-line description (taxonomy.json hierarchy).
 // Read at call time by getSongAnalysis, which is declared above — safe at module scope.
@@ -315,7 +315,7 @@ async function tempoRange(db) {
   return r.rows[0] || { min_bpm: null, max_bpm: null };
 }
 
-const FACET_TO_COLUMN = { themes: 'themes', targets: 'topics', actions: 'advocacy', tactics: 'tactics', moral_frames: 'moral_frames' };
+const FACET_TO_COLUMN = { themes: 'themes', targets: 'topics', actions: 'advocacy', moral_frames: 'moral_frames' };
 
 // Reverse maps (built once): per facet dimension, group id -> [code ids] and sub-dimension id -> [code ids].
 const FACET_GROUP_CODES = {};

@@ -30,7 +30,6 @@ const DIMENSIONS = [
   { column: 'themes', key: 'themes' },
   { column: 'topics', key: 'targets' },
   { column: 'advocacy', key: 'actions' },
-  { column: 'tactics', key: 'tactics' },
   { column: 'moral_frames', key: 'moral_frames' },
 ];
 

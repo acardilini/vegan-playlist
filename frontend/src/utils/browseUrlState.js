@@ -20,7 +20,7 @@ export const EMPTY_FILTERS = {
   lengths: [],
   has_youtube: false, has_analysis: false, on_spotify: false,
   languages: [],
-  themes: [], targets: [], actions: [], tactics: [], moral_frames: [],
+  themes: [], targets: [], actions: [], moral_frames: [],
   facet_groups: [], facet_subdims: [],
   perspective: [], lyrical_tone: [], intensity: [], clarity: [],
   focus_amount: [], target_audience: [], emotions: [],
@@ -31,7 +31,7 @@ export const EMPTY_FILTERS = {
 
 const ARRAY_KEYS = [
   'genres', 'parent_genres', 'lengths', 'languages',
-  'themes', 'targets', 'actions', 'tactics', 'moral_frames',
+  'themes', 'targets', 'actions', 'moral_frames',
   'facet_groups', 'facet_subdims',
   ...SCALAR_KEYS,
   ...ACOUSTIC_KEYS,

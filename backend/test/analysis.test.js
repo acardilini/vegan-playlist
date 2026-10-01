@@ -17,9 +17,9 @@ test('model selection is by latest pass, not a fixed constant', () => {
 test('taxonomy exposes the five evidence dimensions with labels', () => {
   assert.ok(Array.isArray(analysis.taxonomy.themes));
   // topics column is displayed as "targets"; taxonomy stores it under "targets"
-  assert.equal(analysis.label('themes', 'killing'), 'Killing');
+  assert.equal(analysis.label('themes', 'slaughter'), 'Slaughter & Killing');
   assert.equal(analysis.label('topics', 'slaughterhouses'), 'Slaughterhouses');
-  assert.equal(analysis.label('advocacy', 'boycott'), 'Boycott');
+  assert.equal(analysis.label('advocacy', 'boycott_divestment'), 'Boycott & Divestment');
   // unknown code falls back to de-snake-cased Title Case
   assert.equal(analysis.label('themes', 'some_new_code'), 'Some New Code');
 });
@@ -56,7 +56,7 @@ async function addAnalysis(songId, fields = {}, { model = MODEL, analyzedAt = '2
 
 const CODED = {
   lyric_summary: 'Test summary.',
-  themes: JSON.stringify([{ code: 'killing', evidence: 'ground beef' }]),
+  themes: JSON.stringify([{ code: 'slaughter', evidence: 'ground beef' }]),
   topics: JSON.stringify([{ code: 'cows', evidence: 'Run cows run' }]),
   perspective: 'MORAL_JUDGEMENT', lyrical_tone: 'SATIRICAL',
   intensity: 'FORCEFUL', clarity: 'CONTEXTUAL',
@@ -78,12 +78,12 @@ const ACOUSTIC = {
   vocal_delivery: 'SPOKEN', tempo_bpm: 142,
 };
 
-test('getSongAnalysis returns the full coding with display labels', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, async () => {
+test('getSongAnalysis returns the full coding with display labels', async () => {
   const id = await mkCodedSong();
   const a = await analysis.getSongAnalysis(pool, id);
   assert.equal(a.perspective, 'MORAL_JUDGEMENT'); // raw code still exposed
-  assert.equal(a.themes[0].code, 'killing');
-  assert.equal(a.themes[0].label, 'Killing');
+  assert.equal(a.themes[0].code, 'slaughter');
+  assert.equal(a.themes[0].label, 'Slaughter & Killing');
   assert.equal(a.themes[0].evidence, 'ground beef');
   // enriched from the taxonomy hierarchy
   assert.equal(a.themes[0].sub_dimension, 'cruelty_suffering');
@@ -98,11 +98,11 @@ test('getSongAnalysis returns the full coding with display labels', { todo: 'tax
   assert.equal(a.summary, 'Test summary.');
 });
 
-test('getSongAnalysis enriches each code with its taxonomy definition', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, async () => {
+test('getSongAnalysis enriches each code with its taxonomy definition', async () => {
   const id = await mkCodedSong();
   const a = await analysis.getSongAnalysis(pool, id);
   assert.equal(typeof a.themes[0].definition, 'string');
-  assert.ok(a.themes[0].definition.length > 0, 'killing has a non-empty definition');
+  assert.ok(a.themes[0].definition.length > 0, 'slaughter has a non-empty definition');
 });
 
 test('getSongAnalysis resolves scalar attributes to codebook labels with definitions', async () => {
@@ -127,11 +127,11 @@ test('getSongAnalysis returns null for an un-coded song', async () => {
   assert.equal(await analysis.getSongAnalysis(pool, s.id), null);
 });
 
-test('getSongAnalysis returns chips only when the latest row has only thematic codes', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, async () => {
+test('getSongAnalysis returns chips only when the latest row has only thematic codes', async () => {
   const id = await mkSong('ZZZANL CodeOnly');
   await addAnalysis(id, { themes: CODED.themes, topics: CODED.topics, lyric_summary: 'Test summary.' });
   const a = await analysis.getSongAnalysis(pool, id);
-  assert.equal(a.themes[0].code, 'killing');
+  assert.equal(a.themes[0].code, 'slaughter');
   assert.deepEqual(a.attributes, [], 'no scalar row -> no attributes');
   assert.deepEqual(a.emotions, []);
   assert.equal(a.summary, 'Test summary.');
@@ -189,8 +189,8 @@ test('getSongAnalysis drops off-codebook scalar values instead of showing them',
   assert.ok(a.attributes.every(x => !/[A-Z]{2,}_/.test(x.value)));
 });
 
-test('facetTree returns the hierarchy with distinct-song counts', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, async () => {
-  await mkCodedSong(); // themes:[killing] (cruelty_suffering/violence), targets:[cows] (farmed_domesticated/mammals)
+test('facetTree returns the hierarchy with distinct-song counts', async () => {
+  await mkCodedSong(); // themes:[slaughter] (cruelty_suffering/violence), targets:[cows] (farmed_domesticated/mammals)
   const t = await analysis.facetTree(pool);
   assert.equal(t.themes.label, 'Core Sentiments & Themes');
   assert.ok(t.themes.count >= 1);
@@ -199,9 +199,9 @@ test('facetTree returns the hierarchy with distinct-song counts', { todo: 'taxon
   assert.equal(cruelty.label, 'Bodily Harm, Confinement & Suffering');
   const violence = cruelty.groups.find(g => g.id === 'violence');
   assert.ok(violence, 'violence group present');
-  const killing = violence.codes.find(c => c.code === 'killing');
-  assert.ok(killing && killing.count >= 1);
-  assert.equal(killing.label, 'Killing');
+  const slaughter = violence.codes.find(c => c.code === 'slaughter');
+  assert.ok(slaughter && slaughter.count >= 1);
+  assert.equal(slaughter.label, 'Slaughter & Killing');
   // empty nodes omitted
   assert.ok(t.themes.sub_dimensions.every(s => s.groups.length > 0));
   assert.ok(t.themes.sub_dimensions.every(s => s.groups.every(g => g.codes.length > 0)));
@@ -212,13 +212,13 @@ test('facetTree returns the hierarchy with distinct-song counts', { todo: 'taxon
 
 test('facetFilterConditions builds AND clauses with mapped columns', () => {
   const { clauses, params, needsJoin } = analysis.facetFilterConditions(
-    { themes: ['killing', 'suffering'], targets: ['cows'] }, 5);
+    { themes: ['slaughter', 'animal_suffering'], targets: ['cows'] }, 5);
   assert.equal(needsJoin, true);
   assert.equal(clauses.length, 3); // two themes + one target, all ANDed
   assert.ok(clauses.includes('sa.themes @> $5::jsonb'));
   assert.ok(clauses.includes('sa.themes @> $6::jsonb'));
   assert.ok(clauses.includes('sa.topics @> $7::jsonb')); // targets -> topics column
-  assert.deepEqual(JSON.parse(params[0]), [{ code: 'killing' }]);
+  assert.deepEqual(JSON.parse(params[0]), [{ code: 'slaughter' }]);
   assert.deepEqual(JSON.parse(params[2]), [{ code: 'cows' }]);
 });
 
@@ -229,16 +229,16 @@ test('facetFilterConditions with no selections needs no join', () => {
   assert.deepEqual(r.params, []);
 });
 
-test('themeCounts aggregates real themes from song_lyric_analysis', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, async () => {
-  await mkCodedSong(); // themes:[killing]
+test('themeCounts aggregates real themes from song_lyric_analysis', async () => {
+  await mkCodedSong(); // themes:[slaughter]
   const rows = await analysis.themeCounts(pool, 15);
-  const killing = rows.find(r => r.theme === 'killing');
-  assert.ok(killing && killing.song_count >= 1);
-  assert.equal(killing.label, 'Killing');
+  const slaughter = rows.find(r => r.theme === 'slaughter');
+  assert.ok(slaughter && slaughter.song_count >= 1);
+  assert.equal(slaughter.label, 'Slaughter & Killing');
   assert.ok(rows.length <= 15);
 });
 
-test('facetTree rolls up two codes in the same group with distinct-song counts', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, async () => {
+test('facetTree rolls up two codes in the same group with distinct-song counts', async () => {
   // Live CODE_MODEL data already has plenty of coverage for the violence group's other
   // codes (e.g. systemic_violence), so we diff before/after our two fixture songs rather
   // than asserting on raw totals — isolates the property from live-data composition.
@@ -248,79 +248,79 @@ test('facetTree rolls up two codes in the same group with distinct-song counts',
     const violence = cruelty.groups.find(g => g.id === 'violence');
     return {
       violence: violence.count,
-      killing: (violence.codes.find(c => c.code === 'killing') || { count: 0 }).count,
-      brutality: (violence.codes.find(c => c.code === 'brutality') || { count: 0 }).count,
+      slaughter: (violence.codes.find(c => c.code === 'slaughter') || { count: 0 }).count,
+      suffering: (violence.codes.find(c => c.code === 'animal_suffering') || { count: 0 }).count,
     };
   };
   const before = await getViolence();
 
-  // Song A: both violence codes; Song B: only killing. Group "violence" = 2 distinct songs.
+  // Song A: both violence codes; Song B: only slaughter. Group "violence" = 2 distinct songs.
   const a = (await pool.query(
     `INSERT INTO songs (title, status, published, data_source)
      VALUES ('ZZZANL TwoCode A', 'included', true, 'manual') RETURNING id`)).rows[0];
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
-    [a.id, JSON.stringify([{ code: 'killing', evidence: 'x' }, { code: 'brutality', evidence: 'y' }]), MODEL]);
+    [a.id, JSON.stringify([{ code: 'slaughter', evidence: 'x' }, { code: 'animal_suffering', evidence: 'y' }]), MODEL]);
   const b = (await pool.query(
     `INSERT INTO songs (title, status, published, data_source)
      VALUES ('ZZZANL TwoCode B', 'included', true, 'manual') RETURNING id`)).rows[0];
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
-    [b.id, JSON.stringify([{ code: 'killing', evidence: 'z' }]), MODEL]);
+    [b.id, JSON.stringify([{ code: 'slaughter', evidence: 'z' }]), MODEL]);
 
   const after = await getViolence();
-  const dKilling = after.killing - before.killing;
-  const dBrutality = after.brutality - before.brutality;
+  const dSlaughter = after.slaughter - before.slaughter;
+  const dSuffering = after.suffering - before.suffering;
   const dViolence = after.violence - before.violence;
-  // Distinct-song rollup: killing in A+B, brutality in A only, group = 2 distinct songs.
-  assert.equal(dKilling, 2, 'killing counts both new songs');
-  assert.equal(dBrutality, 1, 'brutality counts new song A only');
+  // Distinct-song rollup: slaughter in A+B, animal_suffering in A only, group = 2 distinct songs.
+  assert.equal(dSlaughter, 2, 'slaughter counts both new songs');
+  assert.equal(dSuffering, 1, 'animal_suffering counts new song A only');
   // Discriminating: the violence group's count is the UNION of its codes' distinct songs.
-  // A buggy occurrence-SUM rollup would instead add killing+brutality's occurrence deltas (3).
+  // A buggy occurrence-SUM rollup would instead add slaughter+suffering's occurrence deltas (3).
   assert.equal(dViolence, 2, 'group counts 2 new distinct songs, not 3 new occurrences');
-  assert.ok(dViolence < dKilling + dBrutality, 'group delta is NOT occurrence sum of code deltas');
+  assert.ok(dViolence < dSlaughter + dSuffering, 'group delta is NOT occurrence sum of code deltas');
 });
 
-test('facetTree accepts a constraint that narrows the counted set', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, async () => {
-  // One coded song with theme killing; constrain to a non-matching language -> zero counts.
+test('facetTree accepts a constraint that narrows the counted set', async () => {
+  // One coded song with theme slaughter; constrain to a non-matching language -> zero counts.
   const s = (await pool.query(
     `INSERT INTO songs (title, status, published, data_source, language)
      VALUES ('ZZZANL Constrained', 'included', true, 'manual', ARRAY['English']) RETURNING id`)).rows[0];
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $3, $2::jsonb, '[]', '[]', '[]', '[]')`,
-    [s.id, JSON.stringify([{ code: 'killing', evidence: 'x' }]), MODEL]);
+    [s.id, JSON.stringify([{ code: 'slaughter', evidence: 'x' }]), MODEL]);
 
-  // Constrain to a language that no coded song has -> killing count unaffected by our new row.
+  // Constrain to a language that no coded song has -> slaughter count unaffected by our new row.
   const constrained = await analysis.facetTree(pool, {
     joinSql: '', where: [`s.language && $1::text[]`], params: [['ZZZ-NoSuchLang']],
   });
-  // themes dimension should have no 'killing' contribution from our English song under this constraint
+  // themes dimension should have no 'slaughter' contribution from our English song under this constraint
   const cruelty = (constrained.themes.sub_dimensions || []).find(sd => sd.id === 'cruelty_suffering');
-  const killing = cruelty && cruelty.groups.find(g => g.id === 'violence')?.codes.find(c => c.code === 'killing');
-  const constrainedCount = killing ? killing.count : 0;
+  const slaughter = cruelty && cruelty.groups.find(g => g.id === 'violence')?.codes.find(c => c.code === 'slaughter');
+  const constrainedCount = slaughter ? slaughter.count : 0;
 
   const unconstrained = await analysis.facetTree(pool);
-  const uKilling = unconstrained.themes.sub_dimensions.find(sd => sd.id === 'cruelty_suffering')
-    .groups.find(g => g.id === 'violence').codes.find(c => c.code === 'killing');
-  assert.ok(uKilling.count > constrainedCount, 'constraint reduces the counted set');
+  const uSlaughter = unconstrained.themes.sub_dimensions.find(sd => sd.id === 'cruelty_suffering')
+    .groups.find(g => g.id === 'violence').codes.find(c => c.code === 'slaughter');
+  assert.ok(uSlaughter.count > constrainedCount, 'constraint reduces the counted set');
 });
 
-test('facetSelectionClauses: a group is one OR-term over its codes', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, () => {
+test('facetSelectionClauses: a group is one OR-term over its codes', () => {
   const { clauses, params, needsJoin } = analysis.facetSelectionClauses(
     { groups: ['themes:violence'] }, 1);
   assert.equal(needsJoin, true);
   assert.equal(clauses.length, 1, 'one term = one clause');
-  // violence group = killing, brutality, systemic_violence (3 codes) -> parenthesised OR
+  // violence group = animal_suffering, slaughter, systemic_violence (3 codes) -> parenthesised OR
   assert.match(clauses[0], /^\(sa\.themes @> \$1::jsonb OR sa\.themes @> \$2::jsonb OR sa\.themes @> \$3::jsonb\)$/);
   assert.equal(params.length, 3);
   const codes = params.map(p => JSON.parse(p)[0].code).sort();
-  assert.deepEqual(codes, ['brutality', 'killing', 'systemic_violence']);
+  assert.deepEqual(codes, ['animal_suffering', 'slaughter', 'systemic_violence']);
 });
 
-test('facetSelectionClauses: a sub-dimension ORs all its codes in one term', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, () => {
+test('facetSelectionClauses: a sub-dimension ORs all its codes in one term', () => {
   const { clauses, params } = analysis.facetSelectionClauses(
     { subdims: ['themes:cruelty_suffering'] }, 1);
   assert.equal(clauses.length, 1);
@@ -328,7 +328,7 @@ test('facetSelectionClauses: a sub-dimension ORs all its codes in one term', { t
   assert.ok(params.length > 3, 'cruelty_suffering spans several codes');
 });
 
-test('facetSelectionClauses: codes AND with a group term, indices sequential', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, () => {
+test('facetSelectionClauses: codes AND with a group term, indices sequential', () => {
   const { clauses, params, needsJoin } = analysis.facetSelectionClauses(
     { codes: { targets: ['cows'] }, groups: ['themes:violence'] }, 5);
   assert.equal(needsJoin, true);
@@ -381,10 +381,10 @@ test('scalarFacets applies a per-component constraint', async () => {
   assert.equal(only.count, 1, 'only the constrained song counts');
 });
 
-test('facetTree carries a description for every dimension', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, async () => {
+test('facetTree carries a description for every dimension', async () => {
   await mkCodedSong();
   const t = await analysis.facetTree(pool);
-  for (const dim of ['themes', 'targets', 'actions', 'tactics', 'moral_frames']) {
+  for (const dim of ['themes', 'targets', 'actions', 'moral_frames']) {
     if (!t[dim]) continue; // dimension absent from this dataset — nothing to describe
     assert.equal(typeof t[dim].description, 'string');
     assert.ok(t[dim].description.length > 20, `${dim} has a real description`);
@@ -398,7 +398,7 @@ test('scalarFacets carries a description for every component', async () => {
   }
 });
 
-test('getSongAnalysis exposes component and dimension descriptions for tooltips', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, async () => {
+test('getSongAnalysis exposes component and dimension descriptions for tooltips', async () => {
   const id = await mkCodedSong();
   const a = await analysis.getSongAnalysis(pool, id);
   const persp = a.attributes.find(x => x.label === 'Perspective');

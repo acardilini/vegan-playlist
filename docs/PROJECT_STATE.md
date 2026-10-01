@@ -378,14 +378,12 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ BLOCKED ITEM (2026-10-01): the taxonomy hierarchy.** When the analysis project returns a
-> complete `taxonomy.json` (see [`ANALYSIS_PROJECT_REQUESTS.md`](./ANALYSIS_PROJECT_REQUESTS.md)):
-> drop the 14 `todo` markers in `test/analysis.test.js` and `test/referenceCodebook.test.js`
-> (grep `ANALYSIS_PROJECT_REQUESTS`), and collapse `tactics` into `actions` as one **Advocacy & Tactics**
-> dimension (touchpoints: `analysis.js` x6, `browseFilters.js`, `referenceCodebook.js`, and in the
-> frontend `LyricalAnalysis`, `SearchAndFilter`, `ThemeFacetTree`, `browseUrlState`,
-> `subDimensionPalette`). Also decide how the Explore legend handles **Vocals**: 5 codes are live
-> (7 in the codebook) against the 4-colour validated ceiling - it reaches the unvalidated 5th slot.
+> **Open from the 2026-10-01 analysis sync (not blocking):** (1) decide how the Explore legend handles
+> **Vocals** - 5 codes are live (7 in the codebook) against the 4-colour validated ceiling, so it reaches
+> the unvalidated 5th slot; (2) ask the analysis project to relabel `hierarchy.actions` as
+> "Advocacy & Tactics" (the app's merged dimension still shows their label "Actions & Advocacy" in the
+> browse sidebar and Reference page; the song page already says "Advocacy & tactics"); (3) browser
+> smoke of Explore, Browse filters, a song page and About > Reference after the sync.
 >
 > **⏭ FIRST TASK NEXT SESSION: the curator's own smoke of triage 6 — the About analysis-explainer +
 > AI-disclosure page**, using [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md). Branch
@@ -562,15 +560,16 @@ Newest first. Each entry: date · decision · why.
 
 - **2026-10-01 (analysis sync) - Tactics and Actions are ONE dimension ("Advocacy & Tactics").** The
   V2 taxonomy consolidated them; `taxonomy.json` keeps `tactics` as an exact mirror of `actions` only
-  so legacy code that reads it does not break. Treat `tactics` as an alias, never a distinct
-  vocabulary. (Curator, via the analysis project.)
+  so legacy code that reads it does not break. The app no longer reads `tactics` anywhere (DB column,
+  taxonomy list or hierarchy) and a stale `?tactics=` URL param is simply ignored. (Curator, via the
+  analysis project.)
 - **2026-10-01 (analysis sync) - `ABSENT` (clarity) is suppressed like the old absence codes.** The
   2026-07-22 decision to hide "nothing found" codes is carried over to the new codebook's
   `ABSENT` ("Absent / Incidental"); `focus_amount` no longer has any. Un-hiding is deleting a word
   from `metadataCodebook.SUPPRESSED`.
 - **2026-10-01 (analysis sync) - taxonomy hierarchy is owned by the analysis project.** The app does
-  not invent sub-dimensions/groups for the new themes and moral frames; they are requested at source
-  (curator decision), and the dependent tests are `todo` until they arrive.
+  not invent sub-dimensions/groups for themes and moral frames; they are requested at source (curator
+  decision) and `taxonomy.json` is copied in, not hand-edited here.
 
 - **2026-08-04 (triage 6) — a new endpoint rather than bending `/facets`.** `analysis.facetTree`
   keeps only codes whose count is > 0 and carries no per-term definition — right for a filter
@@ -1707,7 +1706,14 @@ Newest first. What actually happened each session.
   `sub_dimension`/`group` for `themes` (15) and `moral_frames` (19), the `rescue` group is undefined,
   `tactics` is a mirror of `actions`, and all five `hierarchy.*.description` strings are gone - so the
   browse theme tree and the About > Reference thematic section are currently empty/descriptionless.
-  One live song (5266) and eight pending ones still carry old-pipeline values.
+  One live song (5266) and eight pending ones still carried old-pipeline values.
+  **Resolved the same day:** the analysis project completed `taxonomy.json` (every term placed, group
+  ids fixed, descriptions restored) and purged the nine stale rows (those songs have no lyrics, so
+  song 5266 now has no analysis at all). Verified here, then: removed the 14 `todo` markers, moved the
+  fixtures to the new theme ids (`slaughter` ...), and **collapsed Tactics into Actions** - the
+  `tactics` column/list is a mirror, so the facet tree, Reference catalogue, browse filters, URL state
+  and song page now carry four thematic dimensions, not five (107 terms, was 141). Backend 179/179,
+  frontend 36/36, build clean.
 - **2026-08-04 (Triage 6 — About analysis explainer BUILT, held for smoke, branch not yet
   pushed)** — Ten
   tasks, subagent-driven, on `session-triage-6-about-analysis` (from `main` at `84e0841`) per plan

@@ -5,14 +5,14 @@
       "label": "Underground Rescue",
       "definition": "Covert, illegal liberations; night raids, cage cutting, laboratory extractions (e.g. ALF).",
       "sub_dimension": "direct_intervention",
-      "group": "rescue"
+      "group": "rescue_action"
     },
     {
       "id": "open_rescue",
       "label": "Open Rescue",
       "definition": "Daylight liberations where activists enter facilities, remove sick/dying animals, and openly claim responsibility.",
       "sub_dimension": "direct_intervention",
-      "group": "rescue"
+      "group": "rescue_action"
     },
     {
       "id": "property_destruction",
@@ -518,77 +518,107 @@
     {
       "id": "speciesism",
       "label": "Speciesism",
-      "definition": "Ideological hierarchy of human superiority justifying animal subjugation."
+      "definition": "Ideological hierarchy of human superiority justifying animal subjugation.",
+      "sub_dimension": "psychology_barriers",
+      "group": "ideology"
     },
     {
       "id": "commodification",
       "label": "Commodification",
-      "definition": "Turning living sentient individuals into products, meat, inventory, or profit."
+      "definition": "Turning living sentient individuals into products, meat, inventory, or profit.",
+      "sub_dimension": "commercial_ecological",
+      "group": "commercial"
     },
     {
       "id": "industrialization",
       "label": "Industrialization",
-      "definition": "Assembly-line mechanization, breeding technology, and factory farm efficiency of death."
+      "definition": "Assembly-line mechanization, breeding technology, and factory farm efficiency of death.",
+      "sub_dimension": "commercial_ecological",
+      "group": "commercial"
     },
     {
       "id": "captivity",
       "label": "Captivity",
-      "definition": "Physical confinement in cages, gestation crates, feedlots, tanks, and lab kennels."
+      "definition": "Physical confinement in cages, gestation crates, feedlots, tanks, and lab kennels.",
+      "sub_dimension": "cruelty_suffering",
+      "group": "confinement"
     },
     {
       "id": "slaughter",
       "label": "Slaughter & Killing",
-      "definition": "The physical act of butchery, slaughterhouses, abattoir floors, and violent termination of life."
+      "definition": "The physical act of butchery, slaughterhouses, abattoir floors, and violent termination of life.",
+      "sub_dimension": "cruelty_suffering",
+      "group": "violence"
     },
     {
       "id": "animal_suffering",
       "label": "Animal Suffering",
-      "definition": "Physical agony, distress, terror, and bodily mutilation experienced by animals."
+      "definition": "Physical agony, distress, terror, and bodily mutilation experienced by animals.",
+      "sub_dimension": "cruelty_suffering",
+      "group": "violence"
     },
     {
       "id": "separation_trauma",
       "label": "Separation Trauma",
-      "definition": "Psychological anguish of maternal-infant separation (e.g. dairy calf removal, stolen eggs)."
+      "definition": "Psychological anguish of maternal-infant separation (e.g. dairy calf removal, stolen eggs).",
+      "sub_dimension": "cruelty_suffering",
+      "group": "confinement"
     },
     {
       "id": "cognitive_dissonance",
       "label": "Cognitive Dissonance",
-      "definition": "The psychological contradiction of loving pets while paying for farm animal slaughter."
+      "definition": "The psychological contradiction of loving pets while paying for farm animal slaughter.",
+      "sub_dimension": "psychology_barriers",
+      "group": "defenses"
     },
     {
       "id": "hypocrisy",
       "label": "Societal Hypocrisy",
-      "definition": "Cultural double standards ('pet lovers', 'humane meat' myths, ethical inconsistencies)."
+      "definition": "Cultural double standards ('pet lovers', 'humane meat' myths, ethical inconsistencies).",
+      "sub_dimension": "psychology_barriers",
+      "group": "ideology"
     },
     {
       "id": "apathy_denial",
       "label": "Apathy & Denial",
-      "definition": "Willful blindness, looking away, public indifference, and societal normalization of violence."
+      "definition": "Willful blindness, looking away, public indifference, and societal normalization of violence.",
+      "sub_dimension": "psychology_barriers",
+      "group": "defenses"
     },
     {
       "id": "systemic_violence",
       "label": "Systemic Violence",
-      "definition": "State-sanctioned, legal, subsidized, and culturally protected violence against non-humans."
+      "definition": "State-sanctioned, legal, subsidized, and culturally protected violence against non-humans.",
+      "sub_dimension": "cruelty_suffering",
+      "group": "violence"
     },
     {
       "id": "ecological_devastation",
       "label": "Ecological Devastation",
-      "definition": "Deforestation, grazing destruction, climate heating, and pollution caused by animal agriculture."
+      "definition": "Deforestation, grazing destruction, climate heating, and pollution caused by animal agriculture.",
+      "sub_dimension": "commercial_ecological",
+      "group": "ecological"
     },
     {
       "id": "wildlife_extinction",
       "label": "Wildlife Extinction",
-      "definition": "Annihilation of wild species, trophy hunting, predator culls, and biodiversity collapse."
+      "definition": "Annihilation of wild species, trophy hunting, predator culls, and biodiversity collapse.",
+      "sub_dimension": "commercial_ecological",
+      "group": "ecological"
     },
     {
       "id": "human_health",
       "label": "Human Health & Wellness",
-      "definition": "Plant-based nutrition, chronic disease prevention, and bodily well-being."
+      "definition": "Plant-based nutrition, chronic disease prevention, and bodily well-being.",
+      "sub_dimension": "planetary_lifestyle",
+      "group": "practice"
     },
     {
       "id": "straight_edge_sobriety",
       "label": "Sobriety & Straight-Edge",
-      "definition": "Clean living, abstinence from intoxicants, and moral discipline connected to animal defense."
+      "definition": "Clean living, abstinence from intoxicants, and moral discipline connected to animal defense.",
+      "sub_dimension": "planetary_lifestyle",
+      "group": "practice"
     }
   ],
   "tactics": [
@@ -597,14 +627,14 @@
       "label": "Underground Rescue",
       "definition": "Covert, illegal liberations; night raids, cage cutting, laboratory extractions (e.g. ALF).",
       "sub_dimension": "direct_intervention",
-      "group": "rescue"
+      "group": "rescue_action"
     },
     {
       "id": "open_rescue",
       "label": "Open Rescue",
       "definition": "Daylight liberations where activists enter facilities, remove sick/dying animals, and openly claim responsibility.",
       "sub_dimension": "direct_intervention",
-      "group": "rescue"
+      "group": "rescue_action"
     },
     {
       "id": "property_destruction",
@@ -688,97 +718,135 @@
     {
       "id": "animal_rights",
       "label": "Animal Rights",
-      "definition": "The assertion that animals possess intrinsic, non-negotiable legal and moral rights."
+      "definition": "The assertion that animals possess intrinsic, non-negotiable legal and moral rights.",
+      "sub_dimension": "rights_justice",
+      "group": "rights_frameworks"
     },
     {
       "id": "abolitionism",
       "label": "Abolitionism",
-      "definition": "Demanding the complete eradication of animal property status and exploitation, rejecting welfarism."
+      "definition": "Demanding the complete eradication of animal property status and exploitation, rejecting welfarism.",
+      "sub_dimension": "rights_justice",
+      "group": "rights_frameworks"
     },
     {
       "id": "bodily_autonomy",
       "label": "Bodily Autonomy",
-      "definition": "The fundamental right of a sentient individual to govern their own physical body without violation."
+      "definition": "The fundamental right of a sentient individual to govern their own physical body without violation.",
+      "sub_dimension": "rights_justice",
+      "group": "autonomy_frameworks"
     },
     {
       "id": "sentient_equality",
       "label": "Sentient Equality",
-      "definition": "Sentience as the sole and sufficient prerequisite for moral consideration."
+      "definition": "Sentience as the sole and sufficient prerequisite for moral consideration.",
+      "sub_dimension": "rights_justice",
+      "group": "autonomy_frameworks"
     },
     {
       "id": "care_ethics",
       "label": "Care Ethics",
-      "definition": "An ethical framework rooted in relational care, empathy, and the active drive to prevent suffering."
+      "definition": "An ethical framework rooted in relational care, empathy, and the active drive to prevent suffering.",
+      "sub_dimension": "care_duties",
+      "group": "care"
     },
     {
       "id": "moral_duty",
       "label": "Moral Duty",
-      "definition": "Deontological obligation: humans have a direct, non-reciprocal obligation to protect non-humans."
+      "definition": "Deontological obligation: humans have a direct, non-reciprocal obligation to protect non-humans.",
+      "sub_dimension": "care_duties",
+      "group": "obligations"
     },
     {
       "id": "stewardship",
       "label": "Stewardship",
-      "definition": "The ethical responsibility to act as planetary caretakers rather than conquerors."
+      "definition": "The ethical responsibility to act as planetary caretakers rather than conquerors.",
+      "sub_dimension": "justice_stewardship",
+      "group": "environmental"
     },
     {
       "id": "moral_consistency",
       "label": "Moral Consistency",
-      "definition": "The demand to align ethical beliefs with daily behavior (anti-hypocrisy, practice what you preach)."
+      "definition": "The demand to align ethical beliefs with daily behavior (anti-hypocrisy, practice what you preach).",
+      "sub_dimension": "rights_justice",
+      "group": "consistency"
     },
     {
       "id": "moral_witnessing",
       "label": "Moral Witnessing",
-      "definition": "The ethical obligation to face the truth, expose systemic lies, and bear witness to victims."
+      "definition": "The ethical obligation to face the truth, expose systemic lies, and bear witness to victims.",
+      "sub_dimension": "care_duties",
+      "group": "obligations"
     },
     {
       "id": "ethical_veganism",
       "label": "Ethical Veganism",
-      "definition": "Consumption and lifestyle as an active site of moral virtue and commitment to non-harm."
+      "definition": "Consumption and lifestyle as an active site of moral virtue and commitment to non-harm.",
+      "sub_dimension": "care_duties",
+      "group": "obligations"
     },
     {
       "id": "total_liberation",
       "label": "Total Liberation",
-      "definition": "The militant intersectional struggle demanding simultaneous animal, human, and earth liberation."
+      "definition": "The militant intersectional struggle demanding simultaneous animal, human, and earth liberation.",
+      "sub_dimension": "political_critiques",
+      "group": "systemic_critique"
     },
     {
       "id": "anarchism",
       "label": "Anarchism",
-      "definition": "Animal rights grounded in anti-authoritarianism, dismantling state control, and rejecting all hierarchies."
+      "definition": "Animal rights grounded in anti-authoritarianism, dismantling state control, and rejecting all hierarchies.",
+      "sub_dimension": "political_critiques",
+      "group": "systemic_critique"
     },
     {
       "id": "intersectional_solidarity",
       "label": "Intersectional Solidarity",
-      "definition": "Analytical mapping connecting speciesism directly with racism, patriarchy, capitalism, or colonialism."
+      "definition": "Analytical mapping connecting speciesism directly with racism, patriarchy, capitalism, or colonialism.",
+      "sub_dimension": "political_critiques",
+      "group": "systemic_critique"
     },
     {
       "id": "capitalist_critique",
       "label": "Capitalist Critique",
-      "definition": "Evaluating animal exploitation as a direct, structural necessity of capital accumulation and profit."
+      "definition": "Evaluating animal exploitation as a direct, structural necessity of capital accumulation and profit.",
+      "sub_dimension": "political_critiques",
+      "group": "systemic_critique"
     },
     {
       "id": "atrocity_comparison",
       "label": "Atrocity Comparison",
-      "definition": "Drawing direct moral parallels between animal exploitation and historical human genocides or slavery."
+      "definition": "Drawing direct moral parallels between animal exploitation and historical human genocides or slavery.",
+      "sub_dimension": "political_critiques",
+      "group": "parallels"
     },
     {
       "id": "ecocentrism",
       "label": "Ecocentrism",
-      "definition": "Intrinsic value attributed to entire ecosystems, wild habitats, and natural planetary processes."
+      "definition": "Intrinsic value attributed to entire ecosystems, wild habitats, and natural planetary processes.",
+      "sub_dimension": "justice_stewardship",
+      "group": "environmental"
     },
     {
       "id": "biocentrism",
       "label": "Biocentrism",
-      "definition": "Intrinsic value attributed to all individual living organisms and sentient life forms."
+      "definition": "Intrinsic value attributed to all individual living organisms and sentient life forms.",
+      "sub_dimension": "justice_stewardship",
+      "group": "environmental"
     },
     {
       "id": "ecological_justice",
       "label": "Ecological Justice",
-      "definition": "Prioritizing planetary stability, climate health, and intergenerational environmental equity."
+      "definition": "Prioritizing planetary stability, climate health, and intergenerational environmental equity.",
+      "sub_dimension": "justice_stewardship",
+      "group": "environmental"
     },
     {
       "id": "retributive_justice",
       "label": "Retributive Justice",
-      "definition": "The moral justification for punishing oppressors, seeking vengeance, or holding exploiters physically liable."
+      "definition": "The moral justification for punishing oppressors, seeking vengeance, or holding exploiters physically liable.",
+      "sub_dimension": "justice_stewardship",
+      "group": "retribution"
     }
   ],
   "lyrical_tones": [
@@ -912,7 +980,8 @@
             "environment": "Ecological & Environmental Targets"
           }
         }
-      }
+      },
+      "description": "Who or what the song is about: particular animals, the industries that use them, and the systems and roles that keep it running."
     },
     "actions": {
       "label": "Actions & Advocacy",
@@ -935,42 +1004,42 @@
         "personal_practice": {
           "label": "Personal Practice & Stewardship",
           "groups": {
-            "lifestyle": "Ethical Lifestyle Choices",
-            "stewardship": "Environmental Stewardship"
+            "lifestyle": "Ethical Lifestyle Choices"
           }
         }
-      }
+      },
+      "description": "What the song calls for or depicts being done — from direct intervention and rescue to public advocacy and personal practice."
     },
     "tactics": {
       "label": "Tactics & Protest Methods",
+      "description": "The specific activist methods and strategies deployed — from direct intervention and sabotage to outreach, education, and lifestyle practice.",
       "sub_dimensions": {
-        "confrontational_tactics": {
-          "label": "Confrontational & Direct Actions",
+        "direct_intervention": {
+          "label": "Direct Intervention & Resistance",
           "groups": {
-            "radical": "Radical Confrontation & Force",
-            "physical": "Physical Resistance & Rescue"
+            "defiance": "Radical Defiance & Retaliation",
+            "disruption": "Tactical Disruption & Leakage",
+            "rescue_action": "Active Liberation"
           }
         },
-        "public_outreach": {
-          "label": "Public Outreach & Organising",
+        "public_advocacy": {
+          "label": "Public Advocacy & Education",
           "groups": {
-            "protest": "Non-violent Protest & Civil Defiance",
-            "documentation": "Documentation & Infiltration",
-            "organizing": "Grassroots Organizing & Digital Advocacy"
+            "awareness": "Awareness & Documentation",
+            "discourse": "Public Discourse & Demands"
           }
         },
-        "cultural_consumer": {
-          "label": "Cultural Critique & Consumer Leverage",
+        "personal_practice": {
+          "label": "Personal Practice & Stewardship",
           "groups": {
-            "critique": "Cultural Critiques & Parodies",
-            "consumer_leverage": "Consumer Leverage & Divestment",
-            "dietary": "Dietary & Lifestyle Alignments"
+            "lifestyle": "Ethical Lifestyle Choices"
           }
         }
       }
     },
     "moral_frames": {
       "label": "Moral Frames & Ethical Justifications",
+      "description": "The moral reasoning the song argues from — rights and justice, compassion and duty, systemic critique, or environmental stewardship.",
       "sub_dimensions": {
         "rights_justice": {
           "label": "Rights, Justice & Autonomy",
@@ -1005,13 +1074,13 @@
     },
     "themes": {
       "label": "Core Sentiments & Themes",
+      "description": "What the song is about at its core — the harm it describes, the indifference it names, and the hope or defiance it reaches for.",
       "sub_dimensions": {
         "cruelty_suffering": {
           "label": "Bodily Harm, Confinement & Suffering",
           "groups": {
             "violence": "Physical Abuse & Violence",
-            "confinement": "Confinement & Industrialization",
-            "suffering_trauma": "Experiential Trauma & Suffering"
+            "confinement": "Confinement & Industrialization"
           }
         },
         "commercial_ecological": {
@@ -1025,20 +1094,12 @@
           "label": "Psychological Barriers & Activist Responses",
           "groups": {
             "defenses": "Cognitive Defenses & Indifference",
-            "activist_sentiments": "Activist Anger & Indignation"
-          }
-        },
-        "liberation_ethics": {
-          "label": "Liberation, Agency & Solidarity",
-          "groups": {
-            "liberation": "Liberation Philosophy & Action",
-            "values": "Values of Compassion & Hope"
+            "ideology": "Ideology & Societal Hypocrisy"
           }
         },
         "planetary_lifestyle": {
           "label": "Planetary Crisis & Lifestyle Alignment",
           "groups": {
-            "crisis": "Planetary & Biodiversity Crisis",
             "practice": "Planetary Practice & Wellness"
           }
         }

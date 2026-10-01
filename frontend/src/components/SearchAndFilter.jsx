@@ -8,7 +8,7 @@ import ScalarFacetGroups from './ScalarFacetGroups';
 import FilterChips from './FilterChips';
 import FilterSection from './FilterSection';
 
-const DIM_KEYS = ['themes', 'targets', 'actions', 'tactics', 'moral_frames'];
+const DIM_KEYS = ['themes', 'targets', 'actions', 'moral_frames'];
 
 const DEFAULT_DIR = { title: 'asc', artist: 'asc', year: 'desc', date_added: 'desc' };
 const DIR_LABELS = {

@@ -128,11 +128,11 @@ Run before ending every working session:
   taxonomy rather than re-reading their JSON, so label rules and suppression stay owned in one place
   each. Deliberately a **different** shape from `analysis.facetTree`: the facet tree drops any code
   with a zero count and carries no definition (right for a filter sidebar), while the reference lists
-  **all 141 thematic terms including zero-count ones**, all 7 lyric-metadata components and all 6
+  **all 107 thematic terms including zero-count ones**, all 7 lyric-metadata components and all 6
   acoustic dimensions — a term nobody's song currently carries is itself information on a glossary
   page. Two small getters were added to `acousticCodebook.js` for this (`derivationSource(key)`,
   `codeThreshold(key, code)`), following the existing `componentDescription`/`codeDefinition` shape.
-  Counts are **17 count queries** — one per family member (5 thematic dimensions + 7 metadata
+  Counts are **16 count queries** — one per family member (4 thematic dimensions + 7 metadata
   components + 5 acoustic dimensions) — **plus 5 coverage queries**, all reusing the shared
   `LATEST_ANALYSIS` fragment and the `status='included' AND published=true` gate, exactly like every
   other public read — this is
@@ -168,7 +168,7 @@ Run before ending every working session:
   shell mirroring `ExplorePage`'s pattern, `NavLink` × 3 + `Outlet`, over three routes:
   `/about` → `pages/about/AboutOverview.jsx`, `/about/analysis` →
   `pages/about/AnalysisExplainer.jsx` ("How the analysis works" — the AI-disclosure explainer),
-  `/about/reference` → `pages/about/AnalysisReference.jsx` (the 141-term/7-component/6-dimension
+  `/about/reference` → `pages/about/AnalysisReference.jsx` (the 107-term/7-component/6-dimension
   glossary, one scroll with a sticky jump nav, each term's count linking through to a filtered
   browse via `termHref` on `utils/browseUrlState.js` — a zero-count term's count renders as plain
   text instead, since a link to an empty result set is a dead end). `/about` keeps working exactly

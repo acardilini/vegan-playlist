@@ -16,10 +16,10 @@ test('acousticCodebook exposes derivation source and per-code thresholds', () =>
   assert.equal(acb.codeThreshold('sonic_energy', 'NOT_A_CODE'), '');
 });
 
-test('catalogue lists all five thematic dimensions with descriptions', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, () => {
+test('catalogue lists all four thematic dimensions with descriptions', () => {
   const c = ref.catalogue();
   assert.deepEqual(c.thematic.map(d => d.key),
-    ['themes', 'targets', 'actions', 'tactics', 'moral_frames']);
+    ['themes', 'targets', 'actions', 'moral_frames']);
   for (const d of c.thematic) {
     assert.ok(d.label, `${d.key} has a label`);
     assert.ok(d.description.length > 20, `${d.key} has a description`);
@@ -27,9 +27,9 @@ test('catalogue lists all five thematic dimensions with descriptions', { todo: '
   }
 });
 
-test('catalogue keeps every taxonomy term, including ones no song carries', { todo: 'taxonomy.json hierarchy incomplete - see docs/ANALYSIS_PROJECT_REQUESTS.md' }, () => {
+test('catalogue keeps every taxonomy term, including ones no song carries', () => {
   const c = ref.catalogue();
-  // A term ID is unique within its dimension, not globally: the five dimensions are five
+  // A term ID is unique within its dimension, not globally: the four dimensions are four
   // independent columns, and the curator deliberately uses e.g. `boycott` as both an Action
   // and a Tactic. So count per dimension.
   for (const d of c.thematic) {
@@ -191,7 +191,7 @@ test('GET /api/analysis/codebook serves the whole reference payload', async () =
     const res = await fetch(`${base}/api/analysis/codebook`);
     assert.equal(res.status, 200);
     const body = await res.json();
-    assert.equal(body.thematic.length, 5);
+    assert.equal(body.thematic.length, 4);
     assert.equal(body.metadata.length, 7);
     assert.equal(body.acoustic.length, 6);
     assert.ok(body.coverage.live_songs > 1000);

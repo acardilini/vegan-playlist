@@ -22,9 +22,6 @@ const SUBDIM_HUE = {
   // actions
   direct_intervention: CHIP_HUES[0], public_advocacy: CHIP_HUES[1],
   personal_practice: CHIP_HUES[2],
-  // tactics
-  confrontational_tactics: CHIP_HUES[0], public_outreach: CHIP_HUES[1],
-  cultural_consumer: CHIP_HUES[2],
   // moral_frames
   rights_justice: CHIP_HUES[0], care_duties: CHIP_HUES[1],
   political_critiques: CHIP_HUES[2], justice_stewardship: CHIP_HUES[3],
