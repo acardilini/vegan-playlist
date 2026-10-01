@@ -7,7 +7,21 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-01): Sub-project C — Submissions Inbox — DONE, curator-smoke-confirmed (4/4) and
+- **Current session (2026-10-01): Sub-project D — YouTube assist — BUILT, HELD FOR THE CURATOR'S SMOKE,
+  NOT merged.** Branch `session-D-youtube-assist` (from `main` at `ce2fb8c`). The workbench Video panel gains
+  **Find videos**: real candidates from the official YouTube Data API (thumbnail, title, channel, duration, an
+  "won't embed on the site" warning, "Already added"), tick several, edit each row's type (pre-guessed from the
+  title/channel), **Add N selected** in one transaction. Add-by-URL stays. New `services/youtubeSearch.js`,
+  `videos.addVideos`, two authed routes (`GET /workbench/:id/video-search`, `POST /workbench/:id/videos/bulk`);
+  the dead mock `POST /api/youtube/search` is deleted. Needs `YOUTUBE_API_KEY` in `backend/.env` (the curator
+  added it; a 1-unit check confirmed it works). No migration. **Verified:** backend **222/222**; lint 0 errors
+  (6 pre-existing warnings); build clean (735.25 kB); Puppeteer smoke **19/19** with one real search, real
+  titles, two videos added with exactly one primary, then removed (902 -> 902 videos), plus a stub-only rerun
+  **13/13** after the review fixes. A fresh opus whole-branch review found **0 Critical / 1 Important / 8 Minor**;
+  the Important and one promoted Minor are fixed. **Quota spent building this: ~3 real searches (~300 of 10,000
+  daily units).** Spec/plan: `docs/superpowers/specs/2026-10-01-D-youtube-assist-design.md`,
+  `docs/superpowers/plans/2026-10-01-D-youtube-assist.md`.
+- **Previous session (2026-10-01): Sub-project C — Submissions Inbox — DONE, curator-smoke-confirmed (4/4) and
   MERGED to `main` (merge `4cc0284`, no-ff).** Merged `main` re-verified: backend 200/200, build clean. Branch
   `session-C-submissions-inbox` (from `main` at `153919f`) deleted local + remote. The admin Songs area gains an
   **Inbox** queue (oldest first) over `song_submissions`: **Add to To be processed** (bridges via
@@ -397,9 +411,18 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
 > (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
-> **⏭ NEXT SESSION: sub-project C is MERGED (2026-10-01, `4cc0284`). D (YouTube assist), E (lyrics-search
-> assist) and F (Spotify push) remain** — pick one and brainstorm it. The two real submissions ("Peacemeal",
-> "Waste not want not", from July) are waiting in the Inbox for a real decision.
+> **⏭ NEXT: the curator smokes sub-project D (Find videos), then it merges; after that E and F remain.** What to
+> try: Admin → Songs → *Needs video* → open a song → **Find videos**; tick two, change one's type, **Add 2
+> selected**; confirm one is primary and the public song page plays it. Each click spends ~101 of the 10,000
+> daily quota units, so ~99 searches a day. Sub-project C is MERGED (`4cc0284`); the two real July submissions
+> ("Peacemeal", "Waste not want not") are still waiting in the Inbox for a real decision.
+>
+> **Deferred minors from the D review** (none blocking): no unique `(song_id, youtube_id)` constraint, so two
+> tabs racing a bulk add could double-insert or 500 (fix: `SELECT … FOR UPDATE` on the song row); a `null` item
+> in a bulk batch gives 500 not 400; `skipped` ids are not surfaced in the UI; a 200 response with an unreadable
+> body shows "No results"; the search message has no `role=status`. **Pre-existing, not from D:** the paste-URL
+> add, set-primary and delete handlers in `VideoPanel.jsx` lack the stale-song guard that Find/Add selected have
+> (Add, then Next before the response, then the old song's `reload` runs).
 >
 > **Deferred minors from the C review** (none blocking): the failed-action error flash is cleared by the reload;
 > non-numeric ids on the inbox routes return 500 not 400; `/submit` maps only the CHECK-violation code to 400
@@ -575,6 +598,30 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-10-01 (sub-project D) - the official YouTube Data API with a curator-owned key.** Chosen over scraping
+  (ToS-fragile, breaks without warning) and a link-only improvement. Free quota is 10,000 units/day and a
+  search here costs ~101, so ~99 searches a day — enough to work the 442-song no-video backlog in ~5 days.
+  Real searches are never made by automated tests (`fetch` is injected).
+- **2026-10-01 (sub-project D) - multi-select with a guessed-but-editable type; bulk add is all-or-nothing.**
+  Type is guessed lyric → live → official (incl. "- Topic"/VEVO channels) → other; `fan-made` is never
+  guessed. 1–10 items in one transaction through `addVideo` (so the one-primary invariant holds); a video
+  the song already has, or repeated in the batch, is skipped, not an error; any invalid item rolls the batch
+  back. Curator's call: option 3 (several at once).
+- **2026-10-01 (sub-project D) - the key never leaves the server and is never logged.** The request URL
+  contains it, so errors/logs carry only the HTTP status and Google's `reason`; the fetch error, its message
+  and its `.cause` are dropped. Pinned by tests that fail if a leak is introduced (checked by mutation).
+- **2026-10-01 (sub-project D) - search by the FIRST-listed artist, not every artist joined (deviates from the
+  spec's `<artists> <title>`).** Found in the live smoke: a two-artist collaboration returned **zero** results
+  for the joined query. The first artist is the lowest `song_artists.id` (the import keeps Spotify's
+  primary-artist-first order). Only 80 of 1,333 live songs have more than one artist. Cost if wrong: lower
+  recall where the second artist is what disambiguates. The workbench lists artists alphabetically, so the
+  fallback "Search YouTube" link reuses the API's own query after a search rather than re-deriving it.
+- **2026-10-01 (sub-project D) - a rejected/disabled key is its own error (`CONFIG`).** Without it a mistyped
+  key or an un-enabled API read as "unavailable right now, try later" — the most likely first-run failure,
+  and permanent until fixed. It now says to check `YOUTUBE_API_KEY` and that YouTube Data API v3 is enabled.
+- **2026-10-01 (sub-project D) - the dead mock `POST /api/youtube/search` is deleted.** It returned
+  placeholder results and nothing called it.
 
 - **2026-10-01 (sub-project C) - catalogue matches stay IN the Inbox, badged, and Accept stays available on
   them.** The old count excluded matches, which made a submission nobody could see. I first hid Accept on
@@ -1748,6 +1795,18 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-01 (sub-project D — YouTube assist, BUILT, held for the curator's smoke)** - branch
+  `session-D-youtube-assist`, executed inline from the plan. `services/youtubeSearch.js` + test (17), `videos.addVideos`
+  + 5 tests, two authed routes, the Find-videos picker, the mock route deleted, `.env.example` gains
+  `YOUTUBE_API_KEY`. Backend **222/222**, lint 0 errors, build clean, smoke **19/19** (+ stub-only **13/13**
+  after the review fixes). **The live smoke found a real defect the unit tests could not:** a two-artist
+  song's joined query returned zero results, so the query became first-artist + title. The review then found
+  the likely first-run failure (a bad key read as "try later") and that the zero-hit message never said what
+  was searched; both fixed. Honest accounting: my first smoke draft contained a stray "Find videos" click
+  that would have spent a real search before the stubs were installed — caught before running and removed;
+  I also made one direct route call to diagnose the empty result, so ~3 real searches were spent in total.
+  The final 19/19 predates the message-path review fixes, which were re-verified only with stubs (no third
+  real search for unchanged code).
 - **2026-10-01 (sub-project C — Submissions Inbox, MERGED `4cc0284` after the curator's smoke passed 4/4)** - branch
   `session-C-submissions-inbox`, executed inline from the plan. Earlier the same day: the **Year range**
   control fixed to match Tempo (bare-year placeholders, `From X`/`Up to Y` chips) and `.search-page` given

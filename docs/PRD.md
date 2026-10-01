@@ -394,7 +394,7 @@ keep/rebuild/drop/defer decisions are recorded in
 ### 11.4 Backend API Surface (mounted routers)
 Seven routers: `/api/spotify` (songs, artists, search, filter-options, browse-facets, db-stats) ·
 `/api/admin` (song/artist/playlist management, categorisation, sync, cleanup) ·
-`/api/playlists` (user playlist CRUD) · `/api/youtube` (video CRUD, search, extract-id) ·
+`/api/playlists` (user playlist CRUD) · `/api/youtube` (video CRUD, extract-id; YouTube *search* is the admin workbench's `video-search`) ·
 `/api/submissions` (public submit only; moderation is `/api/admin/curation/inbox*`) · `/api/analytics` (dataset visualisation data) ·
 **`/api/analysis`** (facets, per-song analysis, **`explore/points`** = the whole map in one response,
 **`songs/:id/similar`** = both similarity tabs + the genre fallback).
