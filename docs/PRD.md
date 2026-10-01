@@ -385,7 +385,7 @@ keep/rebuild/drop/defer decisions are recorded in
 
 ### 11.3 Admin / CMS Features (`/admin`)
 - Song editing & full update ✅ · Bulk categorisation workflow ✅ · Bulk CSV upload ✅ ·
-  Duplicate detection & management ✅ · Submissions review queue ✅ · YouTube video manager
+  Duplicate detection & management ✅ · Submissions Inbox (accept → To be processed / dismiss) ✅ · YouTube video manager
   ✅ · Lyrics lookup manager ✅ · Data-completion dashboard ✅ · Artists manager ✅ ·
   Manual (non-Spotify) song add/edit ✅ · Featured toggle ✅.
 - **Spotify playlist sync & validation:** sync playlist, detect mismatches/discrepancies,
@@ -395,7 +395,7 @@ keep/rebuild/drop/defer decisions are recorded in
 Seven routers: `/api/spotify` (songs, artists, search, filter-options, browse-facets, db-stats) ·
 `/api/admin` (song/artist/playlist management, categorisation, sync, cleanup) ·
 `/api/playlists` (user playlist CRUD) · `/api/youtube` (video CRUD, search, extract-id) ·
-`/api/submissions` (submit, admin queue, stats) · `/api/analytics` (dataset visualisation data) ·
+`/api/submissions` (public submit only; moderation is `/api/admin/curation/inbox*`) · `/api/analytics` (dataset visualisation data) ·
 **`/api/analysis`** (facets, per-song analysis, **`explore/points`** = the whole map in one response,
 **`songs/:id/similar`** = both similarity tabs + the genre fallback).
 

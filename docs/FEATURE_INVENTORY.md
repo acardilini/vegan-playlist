@@ -44,7 +44,7 @@ Dead code found in `App.jsx`:
 | Manage Songs | inline + BulkEditModal | List/search all songs (`all-songs`), edit song + featured flag (`update-song/:id`), manual song CRUD (`manual-songs*`), per-song categorisation (`songs/:id/categorize`), CSV bulk upload (`bulk-upload`) | **keep** — this is the curation tooling |
 | Manage Playlists | inline | Create/delete curated playlists (uses public `/api/playlists` + `/api/spotify/playlist/:id`) | **keep** |
 | Manage Artists | ArtistsManager.jsx | Artist list/stats/edit (`all-artists`, `artists-stats`, `artists/:id`); "setup discography tracking" button runs DDL | **keep**, except the DDL button — **drop** (becomes a migration) |
-| Song Submissions | SubmissionsManager.jsx | Review queue: approve/reject/delete (`submissions/admin*`) | **keep** |
+| Song Submissions | ~~SubmissionsManager.jsx~~ → `admin/InboxList.jsx` | Review queue: accept (→ To be processed) / dismiss (`/api/admin/curation/inbox*`). **Replaced in sub-project C; the old unauthenticated `submissions/admin*` routes and `SubmissionsManager` are deleted** | **rebuilt** |
 | Dashboard | DataCompletionDashboard.jsx | Data-completion stats (`completion-stats`) | **keep** — useful for Phase 1 |
 | YouTube Videos | YouTubeVideoManager.jsx | Songs missing videos, YouTube search, save video (`youtube/*`, `save-youtube-video`) | **keep** |
 | Lyrics Manager | LyricsLookupManager.jsx | Songs missing lyrics links, save lyric links (`songs-missing-lyrics`, `save-lyrics-link`); "setup lyrics" DDL button | **keep**, **drop** the DDL button |

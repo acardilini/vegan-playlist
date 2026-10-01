@@ -673,6 +673,13 @@ git commit -F <msgfile>   # "feat(inbox): Inbox queue UI; public form shows live
 
 ---
 
+> **Post-review amendments (2026-10-01, from the final whole-branch review).** (1) `acceptSubmission` is **claim-first**:
+> it flips the row to `approved` and clears `existing_song_id` before bridging, and reverts to `pending` (restoring the
+> match) if the bridge throws or yields no song (`NO_SONG`). (2) **Accept is shown on matched rows** — Task 3's "hide
+> Accept on matches" was wrong: the submit-time match is a fuzzy prefix match. (3) The banner distinguishes
+> added from already-in-catalogue. (4) `/submit` rejects whitespace-only titles and escapes LIKE wildcards.
+> (5) `.stat-label` in `App.css` regained the uppercase/letter-spacing the deleted block used to merge in.
+
 ### Task 4: Live smoke, docs, push
 
 **Files:**

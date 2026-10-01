@@ -2,7 +2,8 @@
 
 > **Status: fully executed.** §1 + §4 backend items shipped in Session 2.2 (2026-07-08) —
 > deletions, catch-up migrations, six-domain grouping, and the submissions→pending bridge
-> (`POST /api/admin/submissions/:id/add-to-pending`). §3's UI work shipped in Session 2.2b
+> (`POST /api/admin/submissions/:id/add-to-pending` — superseded and removed in sub-project C by
+> `POST /api/admin/curation/inbox/:id/accept`). §3's UI work shipped in Session 2.2b
 > (2026-07-09) — sync + mismatch live in Staging → Add candidates, one shared
 > `CategorizationFields` form, Submissions "Approve & add to pending", `AdminInterface`
 > decomposed with the shared `adminFetch` helper (relative `/api` + password header).

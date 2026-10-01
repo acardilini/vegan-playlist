@@ -7,10 +7,25 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
+- **Current session (2026-10-01): Sub-project C — Submissions Inbox — BUILT, HELD FOR THE CURATOR'S SMOKE,
+  NOT merged.** Branch `session-C-submissions-inbox` (from `main` at `153919f`). The admin Songs area gains an
+  **Inbox** queue (oldest first) over `song_submissions`: **Add to To be processed** (bridges via
+  `staging.addSubmissionAsPending`) or **Dismiss** (optional note). Catalogue matches stay in the Inbox with an
+  "Already in catalogue (live / not live)" badge and a link. The public form now tells a submitter when the
+  song is already **live** (it never did before: it read `result.already_exists` but the API nests it under
+  `result.submission`). New `services/inbox.js` + 3 authed routes; the unauthenticated
+  `/api/submissions/admin*` routes, the superseded `add-to-pending` route and the unmounted
+  `SubmissionsManager.jsx` (+ ~380 lines of its CSS) are deleted — the auth gap is closed by removal. No
+  migration. **Verified:** backend **200/200**; lint 0 errors (6 pre-existing warnings); build clean (731.73 kB);
+  Puppeteer smoke **21/21** (FIFO order, accept/dismiss, live badge, exact-duplicate accept, 390px layout, and
+  cleanup that left the two real submissions 13 and 14 untouched). A fresh opus whole-branch review found
+  **0 Critical / 4 Important / 7 Minor**; all four Important are fixed (see the Decision Log). Spec/plan:
+  `docs/superpowers/specs/2026-10-01-C-submissions-inbox-design.md`,
+  `docs/superpowers/plans/2026-10-01-C-submissions-inbox.md`.
 - **Phase:** **Phase 4 — Admin Rebuild (in progress).** Phases 0–3 complete (Phase 3 —
   Brand & UI Rebuild merged 2026-07-12, merge `48a4529`). Deployment Hardening moved to
   **Phase 5**.
-- **Current session:** _**Triage 6 — About: analysis explainer, AI disclosure, and editable page
+- **Previous session:** _**Triage 6 — About: analysis explainer, AI disclosure, and editable page
   copy — BUILT (2026-08-04), branch `session-triage-6-about-analysis` (from `main` at `84e0841`).
   HELD FOR THE CURATOR'S SMOKE — NOT merged.** `/about` becomes a three-tab section (About · "How
   the analysis works" · Reference) over a shell mirroring `ExplorePage`. Two new backend reads:
@@ -381,7 +396,18 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
 > (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
-> **⏭ NEXT SESSION: triage 6 is MERGED (2026-10-01, merge `0990d05`, with the analysis-pipeline
+> **⏭ NEXT: the curator smokes sub-project C (the Inbox), then it merges; after that D, E, F remain.** What to
+> try: submit two songs at `/submit` (one already live), open Admin → Songs → Inbox, accept one, dismiss one, and
+> confirm the order is oldest first. Clean up your test rows afterwards. The two real submissions ("Peacemeal",
+> "Waste not want not", from July) are waiting in the Inbox for a real decision.
+>
+> **Deferred minors from the C review** (none blocking): the failed-action error flash is cleared by the reload;
+> non-numeric ids on the inbox routes return 500 not 400; `/submit` maps only the CHECK-violation code to 400
+> (a non-numeric year string or an over-long title still 500, though the form blocks the common cases);
+> `InboxList` renders the public `youtube_url` as an `href` without an http(s) allow-list; the removed
+> `.btn-primary:hover` rule shifts a hover border colour.
+>
+> _(Older note, superseded:)_ **triage 6 is MERGED (2026-10-01, merge `0990d05`, with the analysis-pipeline
 > sync on top of it); move to the next sub-project — C, D, E, F remain** (see the numbered list
 > below). Branch `session-triage-6-about-analysis` was not deleted. Housekeeping: the earlier open
 > question about `analysis.md`'s "where the rest of the information comes from" claims was not
@@ -419,7 +445,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 4. **Phase 5 — Deployment Hardening** (was Phase 4): externalise config/secrets, input
    validation, admin access control. Known items in Watch-outs: public pages hardcode
    `http://localhost:5000` (deployment breaks them until proxied/env-based),
-   submissions-admin auth, real admin auth.
+   real admin auth (the submissions-admin auth gap was closed in C by deleting the routes).
 **Curator-triage backlog** (detailed, with root causes): see
 [`CURATOR_TRIAGE_BACKLOG.md`](./CURATOR_TRIAGE_BACKLOG.md) — the 2026-07-20 batch (Fixes Round 1 +
 the sort-overlap fix resolved 5). **Reprioritised 2026-07-20 — items 1–5 run before B4:**
@@ -499,7 +525,9 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
   `admin_simple.js`, `lyrics.js`, 17 dead admin routes, 2 DDL-over-HTTP routes and ~14 other
   dead endpoints deleted; `admin.js` reads as six named domains. The ~40 one-off scripts
   remain — Session 2.3 target.
-- **`/api/submissions/admin*` endpoints have no auth** (found in 2.2): the whole submissions
+- ~~**`/api/submissions/admin*` endpoints have no auth**~~ **Fixed in sub-project C (2026-10-01) by
+  deleting them** — moderation now lives behind the admin middleware at `/api/admin/curation/inbox*`.
+  _(Original finding from 2.2:)_ the whole submissions
   router is mounted without the admin password middleware. Since 2.2b the frontend sends
   `X-Admin-Password` on every admin call (including submissions, via the shared
   `adminFetch` helper), so the backend can start enforcing it without frontend changes —
@@ -547,6 +575,33 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-10-01 (sub-project C) - catalogue matches stay IN the Inbox, badged, and Accept stays available on
+  them.** The old count excluded matches, which made a submission nobody could see. I first hid Accept on
+  matched rows (accepting an exact duplicate creates nothing), then reversed it after the final review: the
+  submit-time match is a fuzzy **prefix** match, so "Free" links to a live "Freedom", and hiding Accept would
+  have made a genuinely new song impossible to add. Accept now clears the match and bridges; staging's
+  title|artist dedupe still resolves a true duplicate to the existing song, and the banner says so.
+- **2026-10-01 (sub-project C) - accept is claim-first.** The row is flipped to `approved` BEFORE the song is
+  bridged and reverted if the bridge fails or yields no song. The first version bridged then updated, so two
+  tabs (or accept racing dismiss) could each create a pending song and only one would be linked.
+- **2026-10-01 (sub-project C) - the submitter is told "already on the site" only for a LIVE match.** The
+  existing-song check ignored `status`/`published`, so a match against a pending/rejected/unpublished song
+  would have said "in our playlist" falsely. The match is still stored (`existing_song_id`) so the Inbox can
+  flag it; when several songs match, the live one is preferred. Whitespace-only titles are now rejected and
+  LIKE wildcards escaped (a `%` title used to match every song by the artist).
+- **2026-10-01 (sub-project C) - spam: dismiss only.** No honeypot, no rate limit (YAGNI; 2 submissions in
+  three months). Nothing is auto-classified, so a genuine submission can never be auto-dropped.
+- **2026-10-01 (sub-project C) - the submissions-admin auth gap is closed by deletion, not by middleware.**
+  Keeping `/api/submissions/admin*` and bolting auth on would have left two parallel moderation APIs.
+- **2026-10-01 (sub-project C) - a plain `/submit` 400 for bad email/year.** The form already blocks both
+  client-side (the browser's `type=email` check, a matching regex and a year range), so a real user doesn't
+  reach the server with one; the 400 matters for API callers and for any gap between the form's rules and the
+  table's CHECK constraints, which previously surfaced as an opaque 500.
+- **2026-10-01 (sub-project C) - known gap, deliberately not fixed:** `staging.addSubmissionAsPending` can
+  return `song_id: null` when a Spotify hit collides by title|artist with a catalogue song that has no
+  `spotify_id`. `acceptSubmission` now reverts and errors (`NO_SONG`) instead of silently approving, so such a
+  submission can only be dismissed. The root fix touches the Session-2.2 bridge and can't be tested offline.
 
 - **2026-10-01 (analysis sync) - the Explore palette grew from 4 validated colours to 7, by search.**
   Vocals has 5 live codes (7 in the codebook) and the curator rejected collapsing its coding. The
@@ -1693,6 +1748,21 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-01 (sub-project C — Submissions Inbox, BUILT, held for the curator's smoke)** - branch
+  `session-C-submissions-inbox`, executed inline from the plan. Earlier the same day: the **Year range**
+  control fixed to match Tempo (bare-year placeholders, `From X`/`Up to Y` chips) and `.search-page` given
+  `width: 100%`, closing the `margin: 0 auto` sweep (every other live page root already had it) — on
+  `main` as `e0611ac`. Inbox: new `services/inbox.js` + `test/inbox.test.js` (12) + `test/submissions.test.js`
+  (9); three authed routes; `queueCounts.inbox` counts `status='pending'`; `InboxList.jsx`; Inbox rail slot and
+  Dashboard tile enabled; `relTime` extracted; legacy `SubmissionsManager` + its CSS deleted. Backend
+  **200/200**, lint 0 errors, build clean, smoke **21/21**. The final review's four Important findings were all
+  real and all fixed (claim-first accept; revert + `NO_SONG` guard; Accept on fuzzy matches; honest banner)
+  plus a regression I had caused (the deleted CSS block had been merging `text-transform: uppercase` into
+  `.stat-label`, which the Artists manager relies on). Two of my own smoke steps were wrong, not the app: I
+  tried to push a bad email through the form to see the server's 400 (the browser's `type=email` check blocks
+  it first), and read the rail count before it had loaded. A RED-phase test run also left a blank-title row in
+  the dev DB, now cleaned and the test's cleanup widened. One commit accidentally staged the untracked
+  `backend/docs/` file via `git add backend`; caught and amended out before any push.
 - **2026-10-01 (merge)** - `session-triage-6-about-analysis` merged to `main` (`0990d05`, no-ff):
   triage 6 plus the analysis-pipeline sync, the Tactics -> "Actions & Advocacy" merge, the validated
   7-colour Explore palette, and the `analysis.md` sound-provenance rewording. Backend 179/179,
