@@ -84,18 +84,20 @@ async function searchVideos(query, { fetchImpl = fetch, apiKey = process.env.YOU
   return { configured: true, candidates };
 }
 
-// The workbench entry point: query = "<artists> <title>", and each candidate is flagged when the
-// song already has that video.
+// The workbench entry point: query = "<first artist> <title>", and each candidate is flagged when
+// the song already has that video. Only the FIRST-listed artist (lowest song_artists.id — the import
+// keeps Spotify's primary-artist-first order) is used: joining every artist of a collaboration into
+// one query made YouTube return nothing at all (found in the live smoke, 2026-10-01).
 async function findCandidatesForSong(db, songId, opts = {}) {
   const song = (await db.query(`
-    SELECT s.title, COALESCE(string_agg(DISTINCT a.name, ' '), '') AS artists
+    SELECT s.title, (array_agg(a.name ORDER BY sa.id))[1] AS artist
     FROM songs s
     LEFT JOIN song_artists sa ON sa.song_id = s.id
     LEFT JOIN artists a ON a.id = sa.artist_id
     WHERE s.id = $1
     GROUP BY s.id`, [songId])).rows[0];
   if (!song) throw coded('NOT_FOUND', 'song not found');
-  const query = `${song.artists} ${song.title}`.trim();
+  const query = `${song.artist || ''} ${song.title}`.trim();
   const result = await searchVideos(query, opts);
   const have = new Set((await db.query('SELECT youtube_id FROM youtube_videos WHERE song_id=$1', [songId]))
     .rows.map(r => r.youtube_id));

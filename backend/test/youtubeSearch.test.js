@@ -164,3 +164,22 @@ test('findCandidatesForSong with no key reports configured:false (and still no n
   assert.deepEqual(r.candidates, []);
   assert.equal(f.calls.length, 0);
 });
+
+test('findCandidatesForSong uses the FIRST-listed artist only: a collaboration joined into one query finds nothing', async () => {
+  // insert order, not alphabetical order, decides who is first ("ZZZYT Zed" before "ZZZYT Alpha")
+  const s = (await pool.query(`INSERT INTO songs (title, status, data_source) VALUES ('ZZZYT Multi Song','pending','manual') RETURNING id`)).rows[0];
+  for (const name of ['ZZZYT Zed Artist', 'ZZZYT Alpha Artist']) {
+    const a = (await pool.query(`INSERT INTO artists (name, data_source) VALUES ($1,'manual') RETURNING id`, [name])).rows[0];
+    await pool.query(`INSERT INTO song_artists (song_id, artist_id) VALUES ($1,$2)`, [s.id, a.id]);
+  }
+  const f = fakeFetch({ search: { items: [] }, videos: { items: [] } });
+  const r = await yt.findCandidatesForSong(pool, s.id, { fetchImpl: f, apiKey: KEY });
+  assert.equal(r.query, 'ZZZYT Zed Artist ZZZYT Multi Song');
+});
+
+test('findCandidatesForSong for a song with no artist searches by title alone', async () => {
+  const s = (await pool.query(`INSERT INTO songs (title, status, data_source) VALUES ('ZZZYT Orphan Song','pending','manual') RETURNING id`)).rows[0];
+  const f = fakeFetch({ search: { items: [] }, videos: { items: [] } });
+  const r = await yt.findCandidatesForSong(pool, s.id, { fetchImpl: f, apiKey: KEY });
+  assert.equal(r.query, 'ZZZYT Orphan Song');
+});
