@@ -139,8 +139,8 @@ async function queueCounts(db) {
       WHERE (${queueWhere(queue)})`);
     out[queue] = r.rows[0].n;
   }
-  // inbox = community submissions not yet bridged to a song (list/moderation is sub-project C)
-  out.inbox = (await db.query(`SELECT COUNT(*)::int AS n FROM song_submissions WHERE existing_song_id IS NULL`)).rows[0].n;
+  // inbox = pending community submissions (sub-project C; catalogue matches are included, badged in the UI)
+  out.inbox = (await db.query(`SELECT COUNT(*)::int AS n FROM song_submissions WHERE status='pending'`)).rows[0].n;
   return out;
 }
 
