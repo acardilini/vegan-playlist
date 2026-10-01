@@ -145,3 +145,20 @@
 .inbox-excerpt { white-space: pre-wrap; color: var(--text-muted); border-left: 2px solid var(--border-hairline); padding-left: var(--space-3); }
 .inbox-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .inbox-actions .input { flex: 1; min-width: 160px; max-width: 320px; }
+
+/* Find videos (sub-project D) */
+.wb-vsearch { border: 1px solid var(--border-hairline); border-radius: var(--radius-md); margin-bottom: var(--space-3); background: var(--bg-surface); }
+.wb-vsearch-list { list-style: none; margin: 0; padding: 0; }
+.wb-vsearch-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border-hairline); }
+.wb-vsearch-row.is-added { opacity: 0.55; }
+.wb-vsearch-thumb { width: 96px; height: 54px; object-fit: cover; border-radius: var(--radius-sm); flex-shrink: 0; background: var(--bg-surface-raised); }
+.wb-vsearch-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; }
+.wb-vsearch-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.wb-vsearch-sub { color: var(--text-muted); font-size: 0.78rem; }
+.wb-vsearch-note { font-size: 0.72rem; color: var(--text-muted); }
+.wb-vsearch-note.warn { color: var(--accent-ember-60); }
+.wb-vsearch-footer { display: flex; gap: var(--space-2); padding: var(--space-2) var(--space-3); }
+@media (max-width: 600px) {
+  .wb-vsearch-row { flex-wrap: wrap; }
+  .wb-vsearch-thumb { width: 72px; height: 40px; }
+}

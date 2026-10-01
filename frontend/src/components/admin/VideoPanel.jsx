@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { adminFetch } from '../../api/adminApi';
 import { SaveTag } from './SavedField';
 
@@ -16,6 +16,70 @@ function VideoPanel({ wb, id, reload }) {
   const [type, setType] = useState('official');
   const [msg, setMsg] = useState('');
   const [status, setStatus] = useState('idle');
+
+  // "Find videos": candidates from the YouTube API. Cleared whenever the song changes, and a response
+  // for a song the curator has already navigated away from is ignored.
+  const [results, setResults] = useState(null);     // null | candidate[]
+  const [searching, setSearching] = useState(false);
+  const [searchMsg, setSearchMsg] = useState('');
+  const [ticked, setTicked] = useState({});         // { [youtube_id]: true }
+  const [types, setTypes] = useState({});           // { [youtube_id]: chosen type }
+  const [adding, setAdding] = useState(false);
+  const idRef = useRef(id);
+  useEffect(() => {
+    idRef.current = id;
+    setResults(null); setSearching(false); setSearchMsg(''); setTicked({}); setTypes({}); setAdding(false);
+  }, [id]);
+
+  const find = async () => {
+    const forId = id;
+    setSearching(true); setSearchMsg(''); setResults(null); setTicked({}); setTypes({});
+    try {
+      const r = await adminFetch(`/api/admin/workbench/${forId}/video-search`);
+      const d = await r.json().catch(() => ({}));
+      if (idRef.current !== forId) return;
+      if (r.status === 429) setSearchMsg("Today's YouTube search quota is used up — try again tomorrow, or paste a URL below.");
+      else if (!r.ok) setSearchMsg(d.message || d.error || 'Search failed');
+      else if (!d.configured) setSearchMsg("YouTube search isn't configured — add YOUTUBE_API_KEY to backend/.env. You can still paste a URL below.");
+      else if (!d.candidates || d.candidates.length === 0) setSearchMsg('No results — try Search YouTube.');
+      else setResults(d.candidates);
+    } catch {
+      if (idRef.current === forId) setSearchMsg('Request failed');
+    } finally {
+      if (idRef.current === forId) setSearching(false);
+    }
+  };
+
+  const toggle = (yid) => setTicked((t) => {
+    const next = { ...t };
+    if (next[yid]) delete next[yid]; else next[yid] = true;
+    return next;
+  });
+
+  const tickedCount = (results || []).filter((c) => ticked[c.youtube_id] && !c.already_added).length;
+
+  const addSelected = async () => {
+    const forId = id;
+    const picks = (results || [])
+      .filter((c) => ticked[c.youtube_id] && !c.already_added)
+      .map((c) => ({ youtube_id: c.youtube_id, video_title: c.title, video_type: types[c.youtube_id] || c.suggested_type }));
+    if (picks.length === 0) return;
+    setAdding(true); setSearchMsg(''); setStatus('saving');
+    try {
+      const r = await adminFetch(`/api/admin/workbench/${forId}/videos/bulk`, { method: 'POST', body: { videos: picks } });
+      if (idRef.current !== forId) return;
+      if (r.ok) { setResults(null); setTicked({}); setTypes({}); setStatus('saved'); reload(); }
+      else {
+        const d = await r.json().catch(() => ({}));
+        setSearchMsg(d.error || 'Add failed');
+        setStatus('error');
+      }
+    } catch {
+      if (idRef.current === forId) { setSearchMsg('Request failed'); setStatus('error'); }
+    } finally {
+      if (idRef.current === forId) setAdding(false);
+    }
+  };
 
   const add = async () => {
     const yt = parseYouTubeId(url);
@@ -66,8 +130,47 @@ function VideoPanel({ wb, id, reload }) {
 
       <div className="wb-quicklinks">
         <span className="wb-field-label">Find a video:</span>
+        <button type="button" className="btn btn-primary btn-sm" onClick={find} disabled={searching}>
+          {searching ? 'Searching…' : 'Find videos'}
+        </button>
         <a className="btn btn-secondary btn-sm" href={ytSearch} target="_blank" rel="noreferrer">Search YouTube</a>
       </div>
+
+      {searchMsg && <div className="modal-result">{searchMsg}</div>}
+      {results && (
+        <div className="wb-vsearch">
+          <ul className="wb-vsearch-list">
+            {results.map((c) => (
+              <li key={c.youtube_id} className={`wb-vsearch-row${c.already_added ? ' is-added' : ''}`}>
+                <input type="checkbox" aria-label={`Select ${c.title}`}
+                  checked={!!ticked[c.youtube_id] && !c.already_added}
+                  disabled={c.already_added} onChange={() => toggle(c.youtube_id)} />
+                <img className="wb-vsearch-thumb" src={c.thumbnail} alt="" loading="lazy" />
+                <span className="wb-vsearch-meta">
+                  <span className="wb-vsearch-title">{c.title}</span>
+                  <span className="wb-vsearch-sub">
+                    {c.channel}{c.duration ? ` · ${c.duration}` : ''}
+                    {' · '}<a href={`https://www.youtube.com/watch?v=${c.youtube_id}`} target="_blank" rel="noreferrer">Preview</a>
+                  </span>
+                  {c.already_added && <span className="wb-vsearch-note">Already added</span>}
+                  {c.embeddable === false && <span className="wb-vsearch-note warn">Won’t embed on the site</span>}
+                </span>
+                <select className="select" aria-label={`Type for ${c.title}`} disabled={c.already_added}
+                  value={types[c.youtube_id] || c.suggested_type}
+                  onChange={(e) => setTypes((t) => ({ ...t, [c.youtube_id]: e.target.value }))}>
+                  {VIDEO_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </li>
+            ))}
+          </ul>
+          <div className="wb-vsearch-footer">
+            <button type="button" className="btn btn-primary btn-sm" disabled={tickedCount === 0 || adding} onClick={addSelected}>
+              {adding ? 'Adding…' : `Add ${tickedCount} selected`}
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setResults(null); setTicked({}); setTypes({}); }}>Close</button>
+          </div>
+        </div>
+      )}
 
       {videos.length === 0 ? <p className="admin-stub">No videos yet.</p> : (
         <ul className="wb-videos">
