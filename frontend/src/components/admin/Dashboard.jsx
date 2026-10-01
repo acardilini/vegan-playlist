@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import AddSongPanel from './AddSongPanel';
+import { relTime } from './relTime';
 
-// Action tiles: [queueKey, label, disabled]. Inbox is disabled until sub-project C.
+// Action tiles: [queueKey, label, disabled].
 const TILES = [
   ['to-process', 'To be processed', false],
   ['needs-lyrics', 'Needs lyrics', false],
@@ -11,19 +12,8 @@ const TILES = [
   ['needs-video', 'Needs video', false],
   ['to-finalise', 'To finalise', false],
   ['featured', 'Featured', false],
-  ['inbox', 'Inbox', true],
+  ['inbox', 'Inbox', false],
 ];
-
-function relTime(ts) {
-  if (!ts) return '';
-  const secs = Math.max(0, Math.round((Date.now() - new Date(ts).getTime()) / 1000));
-  if (secs < 60) return 'just now';
-  const mins = Math.round(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.round(hrs / 24)}d ago`;
-}
 
 // Status pill text reuses the existing .queue-status.{pending,live,included,rejected} classes.
 function statusLabel(s) {

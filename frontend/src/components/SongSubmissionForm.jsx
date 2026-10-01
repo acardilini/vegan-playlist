@@ -86,8 +86,8 @@ function SongSubmissionForm() {
       if (response.ok) {
         setMessage({
           type: 'success',
-          text: result.already_exists 
-            ? `Thank you for your suggestion! We found "${result.submission.song_title}" by ${result.submission.artist_name} is already in our playlist. Your submission has been noted for admin review.`
+          text: result.submission.already_exists
+            ? `Thank you for your suggestion! "${result.submission.song_title}" by ${result.submission.artist_name} is already on the site, so no need to send it again. Your suggestion has been noted for review.`
             : `Thank you for suggesting "${result.submission.song_title}" by ${result.submission.artist_name}! Our team will review your submission.`
         });
         
