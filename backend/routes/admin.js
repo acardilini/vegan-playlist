@@ -6,6 +6,7 @@ const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/genreMapping');
 const staging = require('../services/staging');
 const curation = require('../services/curation');
+const inbox = require('../services/inbox');
 const videos = require('../services/videos');
 const { findDuplicateGroups } = require('../services/duplicates');
 const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDismissals');
@@ -1821,17 +1822,35 @@ router.post('/staging/candidates', async (req, res) => {
   }
 });
 
-// Submissions → pending bridge (Session 2.2, curator-approved): adds an approved
-// community submission to the pending queue via the staging candidate intake.
-router.post('/submissions/:id/add-to-pending', async (req, res) => {
+// ==================== Submissions Inbox (Sub-project C) ====================
+// Community suggestions awaiting a decision, oldest first. Accept bridges into the
+// pending queue (staging dedupes); dismiss rejects. Both 409 unless still pending.
+
+function inboxError(res, e, label) {
+  if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Submission not found' });
+  if (e.code === 'NOT_PENDING') return res.status(409).json({ error: e.message });
+  console.error(`inbox ${label} error:`, e);
+  return res.status(500).json({ error: `Failed to ${label}`, details: e.message });
+}
+
+router.get('/curation/inbox', async (req, res) => {
   try {
-    const result = await staging.addSubmissionAsPending(pool, parseInt(req.params.id));
-    res.json({ success: true, ...result });
-  } catch (e) {
-    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Submission not found' });
-    console.error('add-to-pending error:', e);
-    res.status(500).json({ error: 'Failed to add submission to pending queue', details: e.message });
-  }
+    res.json({ rows: await inbox.listInbox(pool) });
+  } catch (e) { inboxError(res, e, 'load the inbox'); }
+});
+
+router.post('/curation/inbox/:id/accept', async (req, res) => {
+  try {
+    const out = await inbox.acceptSubmission(pool, parseInt(req.params.id));
+    res.json({ success: true, ...out });
+  } catch (e) { inboxError(res, e, 'accept the submission'); }
+});
+
+router.post('/curation/inbox/:id/dismiss', async (req, res) => {
+  try {
+    await inbox.dismissSubmission(pool, parseInt(req.params.id), (req.body || {}).note);
+    res.json({ success: true });
+  } catch (e) { inboxError(res, e, 'dismiss the submission'); }
 });
 
 // ==================== Curation workbench (Sub-project A) ====================
