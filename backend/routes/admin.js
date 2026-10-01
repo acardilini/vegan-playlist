@@ -7,6 +7,7 @@ const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/g
 const staging = require('../services/staging');
 const curation = require('../services/curation');
 const inbox = require('../services/inbox');
+const youtubeSearch = require('../services/youtubeSearch');
 const videos = require('../services/videos');
 const { findDuplicateGroups } = require('../services/duplicates');
 const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDismissals');
@@ -1969,6 +1970,29 @@ router.post('/workbench/:id/videos', async (req, res) => {
     if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
     console.error('add video error:', e);
     res.status(500).json({ error: 'Failed to add video', details: e.message });
+  }
+});
+// YouTube assist (sub-project D): search real candidates, then add several at once.
+router.get('/workbench/:id/video-search', async (req, res) => {
+  try {
+    res.json({ success: true, ...(await youtubeSearch.findCandidatesForSong(pool, parseInt(req.params.id))) });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    if (e.code === 'QUOTA') return res.status(429).json({ error: 'quota', message: "Today's YouTube search quota is used up" });
+    if (e.code === 'UPSTREAM') return res.status(502).json({ error: 'upstream', message: 'YouTube search is unavailable right now' });
+    console.error('video search error:', e.message); // message only: never the request URL (it holds the key)
+    res.status(500).json({ error: 'Failed to search YouTube' });
+  }
+});
+router.post('/workbench/:id/videos/bulk', async (req, res) => {
+  try {
+    const out = await videos.addVideos(pool, parseInt(req.params.id), (req.body || {}).videos);
+    res.json({ success: true, ...out });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    console.error('bulk add videos error:', e);
+    res.status(500).json({ error: 'Failed to add videos', details: e.message });
   }
 });
 router.put('/workbench/videos/:videoId', async (req, res) => {

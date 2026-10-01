@@ -52,4 +52,37 @@ async function deleteVideo(db, videoId) {
   return { deleted: true, song_id: v.song_id };
 }
 
-module.exports = { VIDEO_TYPES, addVideo, updateVideo, setPrimaryVideo, deleteVideo };
+// Bulk add for the workbench "Find videos" picker. One transaction through addVideo (so the
+// one-primary invariant and the first-video-is-primary rule hold). A youtube_id the song already
+// has — or repeated inside the batch — is skipped, not an error; any invalid item rolls the
+// whole batch back.
+async function addVideos(pool, songId, items) {
+  if (!Array.isArray(items) || items.length < 1 || items.length > 10) {
+    const e = new Error('videos must be an array of 1-10 items'); e.code = 'BAD_INPUT'; throw e;
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    if ((await client.query('SELECT 1 FROM songs WHERE id=$1', [songId])).rows.length === 0) {
+      const e = new Error('song not found'); e.code = 'NOT_FOUND'; throw e;
+    }
+    const have = new Set((await client.query('SELECT youtube_id FROM youtube_videos WHERE song_id=$1', [songId]))
+      .rows.map(r => r.youtube_id));
+    const added = [], skipped = [];
+    for (const item of items) {
+      const id = item && item.youtube_id;
+      if (have.has(id)) { skipped.push(id); continue; }
+      added.push(await addVideo(client, songId, item));
+      have.add(id);
+    }
+    await client.query('COMMIT');
+    return { added, skipped };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { VIDEO_TYPES, addVideo, addVideos, updateVideo, setPrimaryVideo, deleteVideo };
