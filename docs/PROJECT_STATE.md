@@ -381,15 +381,12 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
 > (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
-> **⏭ FIRST TASK NEXT SESSION: the curator's own smoke of triage 6 — the About analysis-explainer +
-> AI-disclosure page**, using [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md). Branch
-> `session-triage-6-about-analysis` is **built, every gate green, held for that smoke — NOT
-> merged.** See the Current State bullet above and the Changelog for what shipped (a three-tab
-> `/about`, two new backend reads, `react-markdown`-rendered curator-editable copy). The smoke
-> checklist carries one **open question the curator must answer before merge**: whether
-> `analysis.md`'s claim that genre/album data comes from Spotify and moods/languages/highlights are
-> curator-entered is actually correct. Once the smoke passes (and any fixes it produces land),
-> merge and move to the next sub-project — **C, D, E, F** remain (see the numbered list below).
+> **⏭ NEXT SESSION: triage 6 is MERGED (2026-10-01, merge `0990d05`, with the analysis-pipeline
+> sync on top of it); move to the next sub-project — C, D, E, F remain** (see the numbered list
+> below). Branch `session-triage-6-about-analysis` was not deleted. Housekeeping: the earlier open
+> question about `analysis.md`'s "where the rest of the information comes from" claims was not
+> re-confirmed in writing this session - the merge was at the curator's instruction after their
+> review. `backend/docs/` and `docs/examples/` are still untracked.
 >
 > **Two carried follow-ups, both cheap, neither urgent.** (1) The **Year range** control still has
 > both bugs the tempo range fixed in the acoustic session — clipping `From 1970` placeholders and an
@@ -1699,6 +1696,10 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-01 (merge)** - `session-triage-6-about-analysis` merged to `main` (`0990d05`, no-ff):
+  triage 6 plus the analysis-pipeline sync, the Tactics -> "Actions & Advocacy" merge, the validated
+  7-colour Explore palette, and the `analysis.md` sound-provenance rewording. Backend 179/179,
+  frontend 36/36, build clean.
 - **2026-10-01 (Analysis-pipeline sync - codebooks, tests; taxonomy hierarchy BLOCKED on the analysis
   project)** - The analysis project re-coded 715 songs with `gemini-3.5-flash-lite` (4 specialists + a
   summary editor), re-derived audio features over full tracks, and rebuilt the UMAP spaces. The
