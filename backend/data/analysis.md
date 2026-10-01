@@ -58,8 +58,9 @@ Plainly, so there is no guessing:
 
 - **The codebooks — human.** Designed and revised by a person over multiple rounds.
 - **The per-song lyric coding — AI.** A language model applies the codebook to each song.
-- **The sound dimensions — measured.** Signal analysis of the audio; no model judgement. The
-  same measurements place a song on the Explore map's Sound space and drive the "Similar
+- **The sound dimensions — measured.** Signal analysis of the full audio, read alongside
+  Spotify's audio measures and each song's genre, and turned into codes by fixed rules; no AI
+  model judgement. The same measurements place a song on the Explore map's Sound space and drive the "Similar
   sound" tab on a song page.
 - **The song positions and similarity everywhere else — AI.** An embedding model reading the
   lyrics; it drives the "Similar message" tab and the Explore map's Thematic space. The

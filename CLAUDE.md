@@ -111,8 +111,12 @@ Run before ending every working session:
   the top 3**: a song carries its *raw* parent genre, while the legend gives slots 1–3 to the top three by
   count and lists every remaining genre as a named `child` of an "Other genres" group that **shares slot 4**
   — so a 1-song genre is visible and individually spotlightable without a colour of its own. That split
-  exists because **four simultaneous categorical colours is a measured hard ceiling** on a scatter (5 colours
-  score 9.8 on the `dataviz` all-pairs normal-vision gate against a floor of 15; 8 score 7.1). The top-N set
+  was designed when **four simultaneous categorical colours was the measured ceiling** (the `dataviz` skill's
+  documented 8 hues score 9.8 for 5 colours on the all-pairs normal-vision gate against a floor of 15). On
+  2026-10-01 the palette was replaced by a **searched 7-colour set that passes every gate in both modes** (worst
+  CVD 9.5, normal 18.3; `components.css` holds the values and validator command) so the Vocals dimension (5 live
+  codes, 7 in the codebook) keeps all its codes; genre keeps the top-3 + Other split, now a choice and not a
+  limit. The top-N set
   is computed **once** and shared by the legend builder and the colour assignment, so a point can never carry
   a bucket its own legend doesn't explain. Spotlight state holds raw codes, and a group toggle is tri-state
   (`aria-pressed="mixed"` when only some members are lit). **Similarity is a REGISTRY, not discovery** (`SIMILARITY`) — coordinates are

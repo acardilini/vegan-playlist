@@ -99,7 +99,7 @@ const NOT_CODED = 'NOT_CODED';
 const NOT_CODED_LABEL = 'Not coded';
 
 // Genre carries more parent values than the palette has colour slots — 11 on the live map
-// against 4 validated categorical slots. GENRE_TOP_N sets how many genres get their OWN
+// against the validated categorical slots (7). GENRE_TOP_N sets how many genres get their OWN
 // colour; the rest share slot 4 as one "Other genres" group but are still listed and still
 // individually spotlightable. It does not control how many genres the reader can see.
 const GENRE_TOP_N = 3;
@@ -146,8 +146,8 @@ function labelFor(dim, code) {
 // and the literal 'other' parent (which already means "unclassified", so it never competes
 // for a named slot). Every OTHER genre still appears in the legend by name — as a child of
 // the "Other genres" group — because the palette caps how many colours can coexist, not how
-// many genres a reader may see. Four simultaneous categorical colours is a measured hard
-// ceiling at scatter rigor; see the 2026-08-02 spec.
+// many genres a reader may see. (Genre predates the 7-colour palette - 2026-10-01 - and keeps
+// its top-3 + Other split; raising GENRE_TOP_N is now possible but is a design change.)
 function genreTopSet(rows) {
   const counts = new Map();
   for (const r of rows) {

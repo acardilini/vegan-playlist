@@ -1,26 +1,23 @@
 // Categorical colours for the map. Values live in CSS (components.css, --explore-cat-*)
 // so light/dark theming stays in the token layer; JS only reads them.
 //
-// Chosen via the `dataviz` skill's validated default categorical palette
-// (blue/orange/aqua/yellow/magenta/green/violet/red) — NOT the literal first-N
-// slots in that order. Validated at scatter-plot rigor (`--pairs all`, since any
-// two categories' dots can be spatially adjacent on the map): blue+yellow+magenta+green
-// is one of only two 4-hue subsets of the eight documented hues that clear every
-// hard gate in both light and dark. See components.css for the exact values and
-// docs/PROJECT_STATE.md / task-5-report.md for the full validator output.
+// Seven colours, all validated with the `dataviz` skill at scatter-plot rigor (`--pairs all`,
+// since any two categories' dots can be spatially adjacent on the map), in both light and
+// dark, and every prefix of the list validates too. They are searched, not the skill's
+// documented 8 hues (no 5-hue subset of those clears the gates). See components.css for
+// the values, the rationale and the validator command.
 export const NOT_CODED = 'NOT_CODED';
 
 const CAT_VARS = [
   '--explore-cat-1', '--explore-cat-2', '--explore-cat-3',
-  '--explore-cat-4', '--explore-cat-5',
+  '--explore-cat-4', '--explore-cat-5', '--explore-cat-6', '--explore-cat-7',
 ];
 
-// Only the first 4 slots are validated (dataviz's --pairs all, both modes — see
-// components.css). --explore-cat-5 is a documented-but-unvalidated fallback: no 5-hue
-// subset of the palette's 8 documented hues clears every hard gate in both light and
-// dark (checked all four candidates for the 5th slot; see task-5-report.md). Rather than
-// let it ship silently, colourScale warns the moment a legend actually reaches it.
-const VALIDATED_CATS = 4;
+// All seven slots are validated (dataviz's --pairs all, both modes — see components.css).
+// A legend needing an 8th must group its surplus server-side under one `children` entry;
+// colourScale warns the moment one reaches past the validated slots rather than recycling
+// a colour silently.
+const VALIDATED_CATS = 7;
 
 function cssVar(name, fallback) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -29,7 +26,7 @@ function cssVar(name, fallback) {
 
 // Colour lookup for one legend. Entries arrive in legend order; NOT_CODED always takes the
 // neutral, never a categorical slot. A group's `children` share the group's colour — that is
-// what lets the legend name every genre while the palette stays at its 4 validated slots, and
+// what lets the legend name every genre while the palette stays within its validated slots, and
 // it keeps the invariant that every dot's colour is explained by a legend entry on screen.
 // `dimensionLabel` is optional and used only to name the dimension in the overflow warning.
 export function colourScale(entries, dimensionLabel) {

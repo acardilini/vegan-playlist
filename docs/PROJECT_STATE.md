@@ -378,12 +378,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **Open from the 2026-10-01 analysis sync (not blocking):** (1) decide how the Explore legend handles
-> **Vocals** - 5 codes are live (7 in the codebook) against the 4-colour validated ceiling, so it reaches
-> the unvalidated 5th slot; (2) ask the analysis project to relabel `hierarchy.actions` as
-> "Advocacy & Tactics" (the app's merged dimension still shows their label "Actions & Advocacy" in the
-> browse sidebar and Reference page; the song page already says "Advocacy & tactics"); (3) browser
-> smoke of Explore, Browse filters, a song page and About > Reference after the sync.
+> **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
+> (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
 > **⏭ FIRST TASK NEXT SESSION: the curator's own smoke of triage 6 — the About analysis-explainer +
 > AI-disclosure page**, using [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md). Branch
@@ -558,7 +554,19 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 
 Newest first. Each entry: date · decision · why.
 
-- **2026-10-01 (analysis sync) - Tactics and Actions are ONE dimension ("Advocacy & Tactics").** The
+- **2026-10-01 (analysis sync) - the Explore palette grew from 4 validated colours to 7, by search.**
+  Vocals has 5 live codes (7 in the codebook) and the curator rejected collapsing its coding. The
+  documented 8-hue palette cannot clear the `--pairs all` gates past 4 colours, so OKLCH was searched
+  for well-separated sets; the chosen 7 pass every `validate_palette.js` gate in light and dark (worst
+  CVD 9.5 vs target 8, worst normal-vision 18.3 vs floor 15, >= 3:1 contrast incl. the site canvas),
+  and so does every prefix. Cost: the map's colours changed everywhere (they are not the skill's
+  documented hues). Genre keeps its top-3 + Other split. Values and validator command are in
+  `components.css`.
+- **2026-10-01 (analysis sync) - `analysis.md` sound-dimension wording** now says the codes come from
+  the full audio read alongside Spotify's audio measures and genre by fixed rules (the codebook
+  thresholds use both), still "no AI model judgement".
+- **2026-10-01 (analysis sync) - Tactics and Actions are ONE dimension, named "Actions & Advocacy"
+  (definitive curator decision; the first draft of this entry said "Advocacy & Tactics").** The
   V2 taxonomy consolidated them; `taxonomy.json` keeps `tactics` as an exact mirror of `actions` only
   so legacy code that reads it does not break. The app no longer reads `tactics` anywhere (DB column,
   taxonomy list or hierarchy) and a stale `?tactics=` URL param is simply ignored. (Curator, via the

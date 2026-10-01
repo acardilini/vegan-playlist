@@ -6,7 +6,7 @@ import InfoTip from './InfoTip';
 const DIMENSIONS = [
   ['themes', 'Themes'],
   ['targets', 'Subjects'],
-  ['actions', 'Advocacy & tactics'],
+  ['actions', 'Actions & advocacy'],
   ['moral_frames', 'Moral frames'],
 ];
 

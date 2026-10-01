@@ -14,7 +14,7 @@ The app builds its facet tree and the Reference glossary from `taxonomy.json`: e
 | `hierarchy.<dim>.description` is **missing for all five** dimensions | The Reference page requires a description (> 20 chars) per dimension. The previous file had one each. |
 | `hierarchy.themes` / `hierarchy.moral_frames` still describe the **old** sub-dimensions | Old ids (`cruelty_suffering`, `rights_justice`, ...) name groups for terms that no longer exist. Needs a hierarchy for the new 15 / 19 terms. |
 | `actions` terms use group `rescue` | `hierarchy.actions` defines `defiance`, `disruption`, `rescue_action`, `awareness`, `discourse`, `lifestyle`, `stewardship` — **no `rescue`** (probably should be `rescue_action`). |
-| `tactics` is an exact copy of `actions`, wired to `actions`' sub-dimensions | `hierarchy.tactics` defines different sub-dimensions (`confrontational_tactics`, ...), so none of the 13 tactic terms resolve. Curator decision: Advocacy & Tactics is **one** dimension, so this is expected. The app will treat `tactics` as an alias of `actions` and show a single "Advocacy & Tactics" list. |
+| `tactics` is an exact copy of `actions`, wired to `actions`' sub-dimensions | `hierarchy.tactics` defines different sub-dimensions (`confrontational_tactics`, ...), so none of the 13 tactic terms resolve. Curator decision: Advocacy & Tactics is **one** dimension, so this is expected. The app will treat `tactics` as an alias of `actions` and show a single list (definitive name: "Actions & Advocacy" - see the follow-up below). |
 
 Please supply: a complete `taxonomy.json` where every term in `themes`, `targets`, `actions` and
 `moral_frames` has a valid `sub_dimension` and `group` that exist in `hierarchy`, and each hierarchy
@@ -90,6 +90,9 @@ All requests above have been addressed and verified:
 ## Follow-up request (2026-10-01, after the resolutions above)
 
 Verified on the app side (all terms resolve, descriptions present, 179/179 tests). The app now treats
-`tactics` as an alias and shows one dimension, so please relabel `hierarchy.actions.label` (currently
-"Actions & Advocacy") to **"Advocacy & Tactics"** and fold the `tactics` description's wording into
-`hierarchy.actions.description`. Note that song 5266 now has no analysis at all (no lyrics).
+`tactics` as an alias and shows a single dimension.
+
+**Definitive curator decision: the merged dimension is called "Actions & Advocacy"** (not "Advocacy &
+Tactics"). `hierarchy.actions.label` is already "Actions & Advocacy", so no change is needed there; the
+app reads that label. `tactics` stays a mirror of `actions` for legacy code only and is never shown.
+No further request on this point. Note that song 5266 now has no analysis at all (no lyrics).
