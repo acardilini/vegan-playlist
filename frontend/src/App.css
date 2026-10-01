@@ -306,6 +306,7 @@ main {
 
 /* Search and Filter Styles */
 .search-page {
+  width: 100%; /* flex item + margin:auto doesn't stretch (see Explore decision) */
   max-width: var(--max-width);
   margin: 0 auto;
   padding: var(--spacing-lg);

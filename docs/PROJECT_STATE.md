@@ -388,14 +388,11 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > re-confirmed in writing this session - the merge was at the curator's instruction after their
 > review. `backend/docs/` and `docs/examples/` are still untracked.
 >
-> **Two carried follow-ups, both cheap, neither urgent.** (1) The **Year range** control still has
-> both bugs the tempo range fixed in the acoustic session — clipping `From 1970` placeholders and an
-> ellipsis chip for a single-ended range; a two-line change whenever wanted. (2) The container
-> `margin: 0 auto` no-stretch sweep is **narrowed, not closed**: triage 6 checked
-> `.page-container` and `.about-container` (opening `/about`) and **both already carry
-> `width: 100%`**, so neither carries the bug Batch B found on `.explore-page`. The *other* page
-> components still share the old `max-width` + `margin: 0 auto` pattern and remain unchecked — worth
-> a sweep next time one of them is touched — see the Watch-outs.
+> **Both carried follow-ups are DONE (2026-10-01).** (1) The **Year range** control now matches
+> Tempo: bare-year placeholders with `aria-label`s, and `From 1990` / `Up to 2000` chips instead of
+> `1990–…` (curator-confirmed). (2) The `margin: 0 auto` no-stretch sweep is **closed**: every live
+> page root already carried `width: 100%` except `.search-page` (the `/search` redirect flash),
+> which now does; the remaining matches are legacy admin classes inside block containers.
 
 1. **~~A1~~ + ~~A2~~ + ~~A3~~ + ~~A4~~ — DONE. Sub-project A (Curation Workbench & lifecycle) is
    complete.** A1 merged (`145efbb`); A2 (`b5ec26f`, 2026-07-14); A3 (`8579b4e`, 2026-07-16). **A4

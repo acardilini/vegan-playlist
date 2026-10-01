@@ -245,7 +245,12 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       .forEach(p => p.subgenres.forEach(s => parentSubs.add(s.value)));
     filters.genres.filter(g => !parentSubs.has(g)).forEach(g => list.push({ key: `genre:${g}`, label: g }));
     if (filters.year_from || filters.year_to) {
-      list.push({ key: 'year:', label: `${filters.year_from || '…'}–${filters.year_to || '…'}` });
+      const label = filters.year_from && filters.year_to
+        ? `${filters.year_from}–${filters.year_to}`
+        : filters.year_from
+          ? `From ${filters.year_from}`
+          : `Up to ${filters.year_to}`;
+      list.push({ key: 'year:', label });
     }
     filters.lengths.forEach(l => list.push({ key: `length:${l}`, label: lengthLabelMap[l] || l }));
     if (filters.has_youtube) list.push({ key: 'has_youtube:', label: 'Has YouTube' });
@@ -378,11 +383,14 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
 
       <FilterSection title="Year range" count={(filters.year_from || filters.year_to) ? 1 : 0}>
         <div className="range-inputs">
-          <input type="number" placeholder={yr.min_year ? `From ${yr.min_year}` : 'From'}
+          {/* Bare years, like Tempo: "From 1970" clips in these boxes. */}
+          <input type="number" placeholder={yr.min_year ? String(yr.min_year) : 'From'}
+            aria-label="Year from"
             value={filters.year_from} onChange={(e) => setScalar('year_from', e.target.value)}
             min={yr.min_year} max={yr.max_year} />
           <span>to</span>
-          <input type="number" placeholder={yr.max_year ? `To ${yr.max_year}` : 'To'}
+          <input type="number" placeholder={yr.max_year ? String(yr.max_year) : 'To'}
+            aria-label="Year to"
             value={filters.year_to} onChange={(e) => setScalar('year_to', e.target.value)}
             min={yr.min_year} max={yr.max_year} />
         </div>
