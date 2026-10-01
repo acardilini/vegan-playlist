@@ -64,7 +64,7 @@ test('joinSql emits only the needed joins', () => {
 });
 
 test('buildWhere scalar components set the scalar join and one clause each', () => {
-  const r = b.buildWhere({ perspective: ['MORAL_ACCUSER_JUDGE'], emotions: ['MORAL_OUTRAGE'] });
+  const r = b.buildWhere({ perspective: ['MORAL_JUDGEMENT'], emotions: ['OUTRAGE'] });
   assert.ok(r.joins.scalarAnalysis);
   assert.ok(!r.joins.analysis, 'code-tier join not needed for scalar filters');
   assert.ok(r.where.includes('sca.perspective = ANY($1::text[])'));
@@ -74,7 +74,7 @@ test('buildWhere scalar components set the scalar join and one clause each', () 
 
 test('buildWhere excludes one scalar component but keeps its siblings', () => {
   const r = b.buildWhere(
-    { perspective: ['MORAL_ACCUSER_JUDGE'], clarity: ['SYSTEMIC_COMMODIFICATION_CRITIQUE'] },
+    { perspective: ['MORAL_JUDGEMENT'], clarity: ['CONTEXTUAL'] },
     { exclude: 'scalar:perspective' });
   assert.ok(!r.where.some(c => c.includes('sca.perspective')), 'own group excluded');
   assert.ok(r.where.some(c => c.includes('sca.clarity')), 'sibling kept');
@@ -82,7 +82,7 @@ test('buildWhere excludes one scalar component but keeps its siblings', () => {
 });
 
 test('buildWhere scalar params continue the shared index sequence', () => {
-  const r = b.buildWhere({ q: 'x', perspective: ['MORAL_ACCUSER_JUDGE'] });
+  const r = b.buildWhere({ q: 'x', perspective: ['MORAL_JUDGEMENT'] });
   assert.ok(r.where[0].includes('$1'), 'q takes $1');
   assert.ok(r.where.some(c => c.includes('sca.perspective = ANY($2::text[])')));
   assert.equal(r.nextIndex, 3);
@@ -95,7 +95,7 @@ test('joinSql emits the scalar-tier join under a distinct alias', () => {
 });
 
 test('buildWhere scalar clauses respect a non-1 startIndex', () => {
-  const r = b.buildWhere({ themes: ['killing'], perspective: ['MORAL_ACCUSER_JUDGE'] },
+  const r = b.buildWhere({ themes: ['killing'], perspective: ['MORAL_JUDGEMENT'] },
                          { exclude: 'analysis', startIndex: 2 });
   assert.ok(r.where.some(c => c.includes('sca.perspective = ANY($2::text[])')));
   assert.equal(r.nextIndex, 3);
@@ -130,15 +130,15 @@ test('joinSql routes analysis joins through the latest-pass subquery, not a mode
 
 test('buildWhere acoustic components reuse the sca join, OR within a component', () => {
   const r = b.buildWhere({
-    sonic_energy: ['EXPLOSIVE_HIGH_INTENSITY', 'DRIVING_ENERGETIC'],
-    vocal_delivery: 'SPOKEN_WORD_RAP',
+    sonic_energy: ['EXPLOSIVE', 'ENERGETIC'],
+    vocal_delivery: 'SPOKEN',
   });
   assert.ok(r.joins.scalarAnalysis, 'acoustic filters ride the existing scalar join');
   assert.ok(!r.joins.analysis, 'no second analysis join is added');
   assert.ok(r.where.includes('sca.sonic_energy = ANY($1::text[])'));
   assert.ok(r.where.includes('sca.vocal_delivery = ANY($2::text[])'));
-  assert.deepEqual(r.params[0], ['EXPLOSIVE_HIGH_INTENSITY', 'DRIVING_ENERGETIC']);
-  assert.deepEqual(r.params[1], ['SPOKEN_WORD_RAP']);
+  assert.deepEqual(r.params[0], ['EXPLOSIVE', 'ENERGETIC']);
+  assert.deepEqual(r.params[1], ['SPOKEN']);
 });
 
 test('buildWhere drops invented acoustic codes rather than querying for them', () => {
@@ -158,7 +158,7 @@ test('buildWhere tempo bounds are integers on the sca row and always applied', (
 
 test('buildWhere exclude omits one acoustic component but keeps its siblings', () => {
   const r = b.buildWhere(
-    { sonic_energy: ['DRIVING_ENERGETIC'], vocal_delivery: ['SPOKEN_WORD_RAP'] },
+    { sonic_energy: ['ENERGETIC'], vocal_delivery: ['SPOKEN'] },
     { exclude: 'acoustic:sonic_energy' });
   assert.ok(!r.where.some(c => c.includes('sonic_energy')), 'own group excluded');
   assert.ok(r.where.some(c => c.includes('vocal_delivery')), 'sibling kept');
@@ -177,8 +177,8 @@ test('buildWhere ignores a non-numeric tempo bound instead of binding NaN', () =
 
 test('buildWhere numbers acoustic params after the scalar ones', () => {
   const r = b.buildWhere({
-    perspective: ['MORAL_ACCUSER_JUDGE'],
-    sonic_energy: ['DRIVING_ENERGETIC'],
+    perspective: ['MORAL_JUDGEMENT'],
+    sonic_energy: ['ENERGETIC'],
   });
   assert.ok(r.where.includes('sca.perspective = ANY($1::text[])'));
   assert.ok(r.where.includes('sca.sonic_energy = ANY($2::text[])'));

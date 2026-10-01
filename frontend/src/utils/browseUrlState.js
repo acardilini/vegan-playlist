@@ -20,7 +20,7 @@ export const EMPTY_FILTERS = {
   lengths: [],
   has_youtube: false, has_analysis: false, on_spotify: false,
   languages: [],
-  themes: [], targets: [], actions: [], tactics: [], moral_frames: [],
+  themes: [], targets: [], actions: [], moral_frames: [],
   facet_groups: [], facet_subdims: [],
   perspective: [], lyrical_tone: [], intensity: [], clarity: [],
   focus_amount: [], target_audience: [], emotions: [],
@@ -31,7 +31,7 @@ export const EMPTY_FILTERS = {
 
 const ARRAY_KEYS = [
   'genres', 'parent_genres', 'lengths', 'languages',
-  'themes', 'targets', 'actions', 'tactics', 'moral_frames',
+  'themes', 'targets', 'actions', 'moral_frames',
   'facet_groups', 'facet_subdims',
   ...SCALAR_KEYS,
   ...ACOUSTIC_KEYS,
@@ -122,4 +122,11 @@ export function readBrowseState(searchParams) {
     return { searchQuery, filters, page: parseInt(searchParams.get('page'), 10) || 1 };
   }
   return readStoredBrowseState();
+}
+
+// Link from a Reference-page term to a browse filtered to it. This module already owns the
+// browse param vocabulary, so the link format lives here rather than being reinvented on the
+// About page — readFilterState below parses exactly these keys back.
+export function termHref(key, code) {
+  return `/?${new URLSearchParams([[key, code]]).toString()}`;
 }

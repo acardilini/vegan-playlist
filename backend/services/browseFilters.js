@@ -49,7 +49,7 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
     const sel = {
       codes: {
         themes: filters.themes, targets: filters.targets, actions: filters.actions,
-        tactics: filters.tactics, moral_frames: filters.moral_frames,
+        moral_frames: filters.moral_frames,
       },
       groups: filters.facet_groups,
       subdims: filters.facet_subdims,

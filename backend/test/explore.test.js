@@ -77,7 +77,7 @@ test('mapRows returns live mapped songs only', async () => {
 
   const live = await mkSong('ZZZEXP Live');
   await addCoords(live);
-  await addAnalysis(live, { sonic_energy: 'EXPLOSIVE_HIGH_INTENSITY' });
+  await addAnalysis(live, { sonic_energy: 'EXPLOSIVE' });
 
   const unpublished = await mkSong('ZZZEXP Unpublished', { published: false });
   await addCoords(unpublished);
@@ -98,17 +98,17 @@ test('mapRows returns live mapped songs only', async () => {
   const row = rows.find(r => r.id === live);
   assert.deepEqual(row.thematic_2d, [3, 4], 'coordinates come through as numbers');
   assert.ok(!('semantic_2d' in row), 'a hidden space is not even selected');
-  assert.equal(row.sonic_energy, 'EXPLOSIVE_HIGH_INTENSITY', 'latest-pass codes come through');
+  assert.equal(row.sonic_energy, 'EXPLOSIVE', 'latest-pass codes come through');
   assert.equal(row.title, 'ZZZEXP Live');
 });
 
 test('codeFor collapses absent, suppressed and missing values into NOT_CODED', () => {
-  assert.equal(explore.codeFor('sonic_energy', { sonic_energy: 'EXPLOSIVE_HIGH_INTENSITY' }),
-    'EXPLOSIVE_HIGH_INTENSITY');
+  assert.equal(explore.codeFor('sonic_energy', { sonic_energy: 'EXPLOSIVE' }),
+    'EXPLOSIVE');
   assert.equal(explore.codeFor('sonic_energy', { sonic_energy: null }), explore.NOT_CODED);
-  // ABSENCE_OF_FOCUS is a suppressed absence code, not a finding
-  assert.equal(explore.codeFor('focus_amount', { focus_amount: 'ABSENCE_OF_FOCUS' }), explore.NOT_CODED);
-  assert.equal(explore.codeFor('focus_amount', { focus_amount: 'CENTRAL_THESIS' }), 'CENTRAL_THESIS');
+  // ABSENT is a suppressed absence code, not a finding
+  assert.equal(explore.codeFor('focus_amount', { focus_amount: 'ABSENT' }), explore.NOT_CODED);
+  assert.equal(explore.codeFor('focus_amount', { focus_amount: 'PRIMARY' }), 'PRIMARY');
   // genre buckets to its parent
   assert.equal(explore.codeFor('genre', { genre: 'metalcore' }), 'metal');
   assert.equal(explore.codeFor('genre', { genre: null }), explore.NOT_CODED);
@@ -117,7 +117,7 @@ test('codeFor collapses absent, suppressed and missing values into NOT_CODED', (
 test('mapPayload assembles spaces, legends, coverage and songs', async () => {
   const id = await mkSong('ZZZEXP Payload');
   await addCoords(id);
-  await addAnalysis(id, { sonic_energy: 'EXPLOSIVE_HIGH_INTENSITY', focus_amount: 'ABSENCE_OF_FOCUS' });
+  await addAnalysis(id, { sonic_energy: 'EXPLOSIVE', focus_amount: 'ABSENT' });
 
   const p = await explore.mapPayload(pool);
 
@@ -129,9 +129,9 @@ test('mapPayload assembles spaces, legends, coverage and songs', async () => {
   const energy = p.colourBy.find(c => c.key === 'sonic_energy');
   assert.equal(energy.label, 'Energy');
   assert.ok(energy.codes.every(c => c.count > 0), 'legend lists only codes actually present');
-  assert.ok(energy.codes.some(c => c.code === 'EXPLOSIVE_HIGH_INTENSITY'));
+  assert.ok(energy.codes.some(c => c.code === 'EXPLOSIVE'));
 
-  // The fixture's focus_amount is ABSENCE_OF_FOCUS, so this bucket is guaranteed present —
+  // The fixture's focus_amount is the suppressed ABSENT, so this bucket is guaranteed present —
   // assert on it unconditionally rather than skipping when it happens to be absent.
   const focus = p.colourBy.find(c => c.key === 'focus_amount');
   const notCoded = focus.codes.find(c => c.code === explore.NOT_CODED);
@@ -143,7 +143,7 @@ test('mapPayload assembles spaces, legends, coverage and songs', async () => {
   const song = p.songs.find(s => s.id === id);
   assert.deepEqual(song.coords.thematic, [3, 4]);
   assert.ok(!('semantic' in song.coords), 'no coordinates are served for a hidden space');
-  assert.equal(song.codes.sonic_energy, 'EXPLOSIVE_HIGH_INTENSITY');
+  assert.equal(song.codes.sonic_energy, 'EXPLOSIVE');
   assert.equal(song.codes.focus_amount, explore.NOT_CODED, 'suppressed code is bucketed');
   assert.equal(song.artist, '', 'a song with no artist rows serves an empty artist string');
 });
@@ -272,11 +272,11 @@ test('genre colour-by via mapPayload: no-genre stays NOT_CODED, legend fits the 
 test('a non-genre dimension is completely unaffected by the genre fold', async () => {
   const a = await mkSong('ZZZEXP NonGenre A');
   await addCoords(a);
-  await addAnalysis(a, { sonic_energy: 'EXPLOSIVE_HIGH_INTENSITY' });
+  await addAnalysis(a, { sonic_energy: 'EXPLOSIVE' });
 
   const b = await mkSong('ZZZEXP NonGenre B');
   await addCoords(b);
-  await addAnalysis(b, { sonic_energy: 'SOFT_CALM_ACOUSTIC' });
+  await addAnalysis(b, { sonic_energy: 'SUBDUED' });
 
   const c = await mkSong('ZZZEXP NonGenre C');
   await addCoords(c);
@@ -286,15 +286,15 @@ test('a non-genre dimension is completely unaffected by the genre fold', async (
   const energy = p.colourBy.find(c => c.key === 'sonic_energy');
   const codes = energy.codes.map(x => x.code);
 
-  assert.ok(codes.includes('EXPLOSIVE_HIGH_INTENSITY'), 'fixture code A is in the legend');
-  assert.ok(codes.includes('SOFT_CALM_ACOUSTIC'), 'fixture code B is in the legend');
+  assert.ok(codes.includes('EXPLOSIVE'), 'fixture code A is in the legend');
+  assert.ok(codes.includes('SUBDUED'), 'fixture code B is in the legend');
   assert.ok(!codes.includes('OTHER_GENRES'), 'the genre-only fold bucket never leaks in here');
 
   const songA = p.songs.find(s => s.id === a);
   const songB = p.songs.find(s => s.id === b);
   const songC = p.songs.find(s => s.id === c);
-  assert.equal(songA.codes.sonic_energy, 'EXPLOSIVE_HIGH_INTENSITY');
-  assert.equal(songB.codes.sonic_energy, 'SOFT_CALM_ACOUSTIC');
+  assert.equal(songA.codes.sonic_energy, 'EXPLOSIVE');
+  assert.equal(songB.codes.sonic_energy, 'SUBDUED');
   assert.equal(songC.codes.sonic_energy, explore.NOT_CODED);
 });
 

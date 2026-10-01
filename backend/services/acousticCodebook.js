@@ -53,6 +53,18 @@ function codeDefinition(key, code) {
   return (e && e.definition) || '';
 }
 
+// The Librosa measurement a dimension is derived from. Shown on the About Reference page,
+// which is the only surface that discloses how the sound dimensions are produced.
+function derivationSource(key) {
+  return (codebook[key] && codebook[key].derivation_source) || '';
+}
+
+// The numeric cut-off that puts a song in this code (e.g. "Librosa RMS > 0.12").
+function codeThreshold(key, code) {
+  const e = CODES[key] && CODES[key].get(code);
+  return (e && e.threshold) || '';
+}
+
 // Filterable options for one component, in codebook order. No suppressed codes exist here.
 function optionsFor(key) {
   return (((codebook[key] || {}).codes) || []).map(i => ({ code: i.code, label: i.label }));
@@ -87,4 +99,5 @@ module.exports = {
   COMPONENTS, COMPONENT_KEYS, TEMPO,
   componentName, componentDescription, codeLabel, codeDefinition,
   optionsFor, cleanSelection, acousticSelectionClauses,
+  derivationSource, codeThreshold,
 };

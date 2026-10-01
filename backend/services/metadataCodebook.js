@@ -6,9 +6,7 @@ const codebook = require('../data/master_metadata_codebook.json');
 // Absence codes: coding artifacts meaning "nothing found", not findings.
 // Hidden from display AND from filters (spec 2026-07-22, curator decision 6).
 const SUPPRESSED = new Set([
-  'THEMATIC_ABSENCE',   // clarity
-  'ABSENCE_OF_FOCUS',   // focus_amount
-  'INSUFFICIENT_DATA',  // focus_amount
+  'ABSENT',             // clarity
   'UNSPECIFIED',        // target_audience
 ]);
 

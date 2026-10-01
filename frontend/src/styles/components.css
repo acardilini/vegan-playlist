@@ -2185,42 +2185,6 @@
   gap: var(--space-6);
 }
 
-.about-subtitle {
-  font-style: italic;
-}
-
-.about-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.about-section h2 {
-  font: var(--text-display-md);
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.about-section p,
-.about-section li {
-  font: var(--text-body-md);
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin: 0;
-}
-
-.about-section ul {
-  margin: 0;
-  padding-left: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.about-section li strong {
-  color: var(--text-primary);
-}
-
 .about-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2459,33 +2423,29 @@
   color: var(--text-primary);
 }
 
-/* Explore map — categorical palette. Values are the `dataviz` skill's documented
-   default 8-hue palette (blue/orange/aqua/yellow/magenta/green/violet/red), NOT
-   hand-picked hex. This is a scatter plot, so any two categories' dots can sit next
-   to each other on screen — that means the skill's stricter "all pairs" CVD check
-   applies (not just adjacent pairs), which the default 8 hues cannot clear past 3
-   slots in any order. blue+yellow+magenta+green is one of only two 4-hue subsets
-   of the eight that clear every hard gate (lightness, chroma, CVD, normal-vision
-   floor) in BOTH light and dark at all-pairs rigor — validated with
-   scripts/validate_palette.js "<hex,hex,hex,hex>" --mode <light|dark> --pairs all.
-   Every live colour-by legend needs at most 4 categorical codes + "Not coded"
-   (verified against the live database, not assumed), so 4 validated slots covers
-   every dimension today. Slot 5 (violet) is a defensive fallback only — no 5-hue
-   subset of the eight clears all-pairs in both modes (checked all four remaining
-   hues against the validated four: aqua and violet each pass light but fail dark's
-   normal-vision floor; orange and red fail outright). A live dimension ever needing
-   a 5th categorical colour must fold server-side (as genre already does), not add a
-   hue here — palette.js's colourScale enforces this in code, not just in this
-   comment: it console.warns by name the moment a legend actually reaches slot 5, so
-   the fallback shipping silently is not the only thing standing in the way. See
-   docs/superpowers/sdd/task-5-report.md for the full validator output in both
-   modes. */
+/* Explore map — categorical palette. Seven colours, validated at scatter-plot rigor
+   (`dataviz` skill, scripts/validate_palette.js `--pairs all`, since any two categories'
+   dots can sit next to each other): PASS on every gate in BOTH modes — lightness band,
+   chroma, CVD (worst pair 9.5, above the 8 target), normal-vision floor (worst pair 18.3,
+   above the 15 floor) and 3:1 contrast against the light surface, #1a1a19 and the site's
+   dark canvas. They are NOT the skill's documented 8 hues: no 5-hue subset of those clears
+   the gates, so these were found by searching OKLCH for the best-separated sets (2026-10-01,
+   curator decision — the Vocals dimension has 5 live codes and 7 in the codebook, and
+   collapsing its codes was rejected). Slot ORDER matters: the first four were chosen to be
+   the most distinct (they clear CVD 9.9 / normal 19.0 on their own), and every prefix of
+   the list also validates, so a 4-code legend is never penalised by the extra slots. To add
+   an 8th, re-run the validator on the whole set — do not just append a hue.
+   Validation commands (all PASS):
+     validate_palette.js "#464ffc,#859b26,#fc2a97,#c52f15,#708ecd,#057558,#a82cc2"
+       --mode light --pairs all      (and --mode dark --pairs all) */
 :root {
-  --explore-cat-1: #3987e5; /* blue */
-  --explore-cat-2: #c98500; /* yellow */
-  --explore-cat-3: #d55181; /* magenta */
-  --explore-cat-4: #008300; /* green */
-  --explore-cat-5: #9085e9; /* violet — unvalidated past 4; colourScale warns on use */
+  --explore-cat-1: #464ffc; /* blue */
+  --explore-cat-2: #859b26; /* olive */
+  --explore-cat-3: #fc2a97; /* pink */
+  --explore-cat-4: #c52f15; /* red */
+  --explore-cat-5: #708ecd; /* steel blue */
+  --explore-cat-6: #057558; /* teal green */
+  --explore-cat-7: #a82cc2; /* purple */
   /* Neutral "not coded" grey — deliberately NOT a categorical slot: it means
      "nothing found", not a finding. Pulled from the dataviz skill's mode-invariant
      muted/axis ink role (#898781), which already clears 3:1 against both a light
@@ -2758,4 +2718,137 @@
     float: left;
     margin-right: var(--space-3);
   }
+}
+
+/* --- About: tab shell ------------------------------------------------------------- */
+/* Mirrors .explore-head / .explore-tabs. .page-container already carries width: 100%,
+   so this needs no no-stretch guard of its own (see the 2026-08-04 Watch-outs). */
+.about-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+.about-tabs {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.about-tab {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font: var(--text-label);
+}
+
+.about-tab:hover { color: var(--text-primary); }
+
+.about-tab.active {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+/* --- Rendered Markdown ------------------------------------------------------------ */
+/* Curator-authored prose. Element selectors are scoped to .markdown-body because the
+   author writes plain Markdown and cannot add classes. */
+.markdown-body h2 {
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-3);
+}
+
+.markdown-body h2:first-child { margin-top: 0; }
+
+.markdown-body p,
+.markdown-body ul,
+.markdown-body ol {
+  margin-bottom: var(--space-4);
+  color: var(--text-secondary);
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: var(--space-5);
+}
+
+.markdown-body li { margin-bottom: var(--space-2); }
+
+.markdown-body strong { color: var(--text-primary); }
+
+.markdown-body a { color: var(--accent-ember-60); }
+
+/* --- About: reference glossary ---------------------------------------------------- */
+.reference-intro,
+.reference-dimension-desc,
+.reference-term-def {
+  color: var(--text-secondary);
+}
+
+.reference-jump {
+  display: flex;
+  gap: var(--space-4);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--space-3) 0;
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.reference-jump a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font: var(--text-label);
+}
+
+.reference-jump a:hover { color: var(--text-primary); }
+
+.reference-family { margin-top: var(--space-6); }
+
+.reference-family > h2 { margin-bottom: var(--space-3); }
+
+.reference-group { margin-bottom: var(--space-4); }
+
+.reference-group-title {
+  font: var(--text-label);
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.reference-terms {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.reference-term {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.reference-term-label {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-right: var(--space-2);
+}
+
+.reference-term-count {
+  color: var(--accent-ember-60);
+  font: var(--text-label);
+  text-decoration: none;
+}
+
+.reference-term-count.is-empty { color: var(--text-muted); }
+
+.reference-term-def { margin: var(--space-1) 0 0; }
+
+.reference-derivation,
+.reference-threshold {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--text-muted);
+  margin: var(--space-1) 0 0;
 }

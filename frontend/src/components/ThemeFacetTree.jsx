@@ -1,7 +1,7 @@
 import { subDimensionColor } from '../styles/subDimensionPalette';
 import FilterSection from './FilterSection';
 
-const DIM_ORDER = ['themes', 'targets', 'actions', 'tactics', 'moral_frames'];
+const DIM_ORDER = ['themes', 'targets', 'actions', 'moral_frames'];
 const keyOf = (dimKey, id) => `${dimKey}:${id}`;
 
 // Hierarchical analysis facet tree. Every level below the dimension is a checkbox row,

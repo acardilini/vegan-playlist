@@ -19,9 +19,9 @@ test('COMPONENTS lists the five enum dimensions in order with short headings', (
 });
 
 test('codeLabel, codeDefinition and component text resolve from the acoustic codebook', () => {
-  assert.equal(acb.codeLabel('sonic_energy', 'MODERATE_BALANCED'), 'Moderate & Balanced');
-  assert.equal(acb.codeLabel('vocal_delivery', 'SPOKEN_WORD_RAP'), 'Spoken Word & Rap');
-  assert.ok(acb.codeDefinition('rhythmic_style', 'DRIVING_STEADY_PULSE').length > 0);
+  assert.equal(acb.codeLabel('sonic_energy', 'MODERATE'), 'Moderate');
+  assert.equal(acb.codeLabel('vocal_delivery', 'SPOKEN'), 'Spoken Word');
+  assert.ok(acb.codeDefinition('rhythmic_style', 'DRIVING').length > 0);
   assert.equal(acb.componentName('sonic_energy'), 'Sonic Energy & Intensity');
   assert.ok(acb.componentDescription('emotional_mood').length > 20);
   assert.ok(acb.componentDescription('tempo_bpm').length > 20, 'tempo has component text too');
@@ -44,29 +44,29 @@ test('labels never carry the codebook emoji short_tag', () => {
 
 test('optionsFor returns every code in codebook order', () => {
   assert.deepEqual(acb.optionsFor('acoustic_type').map(o => o.code),
-    ['UNPLUGGED_ACOUSTIC', 'HYBRID_SEMI_ACOUSTIC', 'ELECTRIC_AMPLIFIED']);
-  assert.equal(acb.optionsFor('acoustic_type')[0].label, 'Unplugged Acoustic');
+    ['ACOUSTIC', 'HYBRID', 'ELECTRIC']);
+  assert.equal(acb.optionsFor('acoustic_type')[0].label, 'Acoustic');
 });
 
 test('cleanSelection keeps known codes and drops invented ones (filters ARE gated)', () => {
-  assert.deepEqual(acb.cleanSelection('vocal_delivery', ['SPOKEN_WORD_RAP', 'NOT_A_CODE']),
-    ['SPOKEN_WORD_RAP']);
-  assert.deepEqual(acb.cleanSelection('vocal_delivery', 'SPOKEN_WORD_RAP'), ['SPOKEN_WORD_RAP']);
+  assert.deepEqual(acb.cleanSelection('vocal_delivery', ['SPOKEN', 'NOT_A_CODE']),
+    ['SPOKEN']);
+  assert.deepEqual(acb.cleanSelection('vocal_delivery', 'SPOKEN'), ['SPOKEN']);
   assert.deepEqual(acb.cleanSelection('vocal_delivery', null), []);
   assert.deepEqual(acb.cleanSelection('no_such_component', ['X']), []);
 });
 
 test('acousticSelectionClauses: OR within a component, one param array per component', () => {
   const r = acb.acousticSelectionClauses({
-    sonic_energy: ['MODERATE_BALANCED', 'DRIVING_ENERGETIC'],
-    vocal_delivery: ['SPOKEN_WORD_RAP'],
+    sonic_energy: ['MODERATE', 'ENERGETIC'],
+    vocal_delivery: ['SPOKEN'],
   }, 3);
   assert.equal(r.needsJoin, true);
   assert.deepEqual(r.clauses, [
     'sca.sonic_energy = ANY($3::text[])',
     'sca.vocal_delivery = ANY($4::text[])',
   ]);
-  assert.deepEqual(r.params, [['MODERATE_BALANCED', 'DRIVING_ENERGETIC'], ['SPOKEN_WORD_RAP']]);
+  assert.deepEqual(r.params, [['MODERATE', 'ENERGETIC'], ['SPOKEN']]);
   assert.equal(r.nextIndex, 5);
 });
 

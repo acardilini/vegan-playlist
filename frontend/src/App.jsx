@@ -7,6 +7,9 @@ import SongDetailPage from './pages/SongDetailPage';
 import PlaylistsPage from './pages/PlaylistsPage';
 import PlaylistDetailPage from './pages/PlaylistDetailPage';
 import AboutPage from './pages/AboutPage';
+import AboutOverview from './pages/about/AboutOverview';
+import AnalysisExplainer from './pages/about/AnalysisExplainer';
+import AnalysisReference from './pages/about/AnalysisReference';
 import SearchResults from './components/SearchResults';
 import ArtistSearchResults from './components/ArtistSearchResults';
 import ArtistDetailPage from './components/ArtistDetailPage';
@@ -48,7 +51,11 @@ function App() {
             <Route path="data" element={<DataDashboard />} />
           </Route>
           <Route path="/dashboard" element={<Navigate to="/explore/data" replace />} />
-          <Route path="/about" element={<AboutPage />} />
+          <Route path="/about" element={<AboutPage />}>
+            <Route index element={<AboutOverview />} />
+            <Route path="analysis" element={<AnalysisExplainer />} />
+            <Route path="reference" element={<AnalysisReference />} />
+          </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="songs" element={<SongsArea />} />
