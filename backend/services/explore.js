@@ -93,7 +93,7 @@ async function mapRows(db, spaces) {
 }
 
 // One bucket for every "we have no finding here" case: a null, a missing analysis row, or
-// one of the four absence codes. Drawn as neutral grey and always listed last, consistent
+// one of the suppressed absence codes. Drawn as neutral grey and always listed last, consistent
 // with the 2026-07-22 decision to hide absence codes rather than give them a colour.
 const NOT_CODED = 'NOT_CODED';
 const NOT_CODED_LABEL = 'Not coded';

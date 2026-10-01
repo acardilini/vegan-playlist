@@ -44,12 +44,12 @@ test('getWorkbench includes the full analysis object when coded', async () => {
   await pool.query(
     `INSERT INTO song_lyric_analysis
        (song_id, model_used, themes, topics, advocacy, tactics, moral_frames, perspective, emotions)
-     VALUES ($1, $3, $2::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 'human_observer', ARRAY['hope'])`,
-    [id, JSON.stringify([{ code: 'compassion', evidence: 'be kind' }]), MODEL]);
+     VALUES ($1, $3, $2::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 'MORAL_JUDGEMENT', ARRAY['HOPE'])`,
+    [id, JSON.stringify([{ code: 'captivity', evidence: 'be kind' }]), MODEL]);
   const wb = await curation.getWorkbench(pool, id);
   assert.equal(wb.analysed, true);
-  assert.equal(wb.analysis.perspective, 'human_observer');
-  assert.equal(wb.analysis.themes[0].label, 'Compassion');
+  assert.equal(wb.analysis.perspective, 'MORAL_JUDGEMENT');
+  assert.equal(wb.analysis.themes[0].label, 'Captivity');
 });
 
 test('hasAnalysis is true from a scalar-only row (either tier counts)', async () => {
@@ -59,7 +59,7 @@ test('hasAnalysis is true from a scalar-only row (either tier counts)', async ()
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, perspective,
        themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, $2, 'MORAL_ACCUSER_JUDGE', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
+     VALUES ($1, $2, 'MORAL_JUDGEMENT', '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
     [s.id, MODEL]);
   const wb = await curation.getWorkbench(pool, s.id);
   assert.ok(wb.analysis, 'workbench shows the scalar-only analysis');

@@ -68,7 +68,7 @@ function catalogue() {
       heading: c.heading,
       name: componentName(c.key),
       description: metadata.componentDescription(c.key),
-      // optionsFor() already drops the four suppressed absence codes.
+      // optionsFor() already drops the suppressed absence codes.
       codes: metadata.optionsFor(c.key).map(o => ({
         code: o.code,
         label: o.label,

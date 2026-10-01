@@ -378,6 +378,15 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **⏭ BLOCKED ITEM (2026-10-01): the taxonomy hierarchy.** When the analysis project returns a
+> complete `taxonomy.json` (see [`ANALYSIS_PROJECT_REQUESTS.md`](./ANALYSIS_PROJECT_REQUESTS.md)):
+> drop the 14 `todo` markers in `test/analysis.test.js` and `test/referenceCodebook.test.js`
+> (grep `ANALYSIS_PROJECT_REQUESTS`), and collapse `tactics` into `actions` as one **Advocacy & Tactics**
+> dimension (touchpoints: `analysis.js` x6, `browseFilters.js`, `referenceCodebook.js`, and in the
+> frontend `LyricalAnalysis`, `SearchAndFilter`, `ThemeFacetTree`, `browseUrlState`,
+> `subDimensionPalette`). Also decide how the Explore legend handles **Vocals**: 5 codes are live
+> (7 in the codebook) against the 4-colour validated ceiling - it reaches the unvalidated 5th slot.
+>
 > **⏭ FIRST TASK NEXT SESSION: the curator's own smoke of triage 6 — the About analysis-explainer +
 > AI-disclosure page**, using [`TRIAGE_6_CURATOR_SMOKE.md`](./TRIAGE_6_CURATOR_SMOKE.md). Branch
 > `session-triage-6-about-analysis` is **built, every gate green, held for that smoke — NOT
@@ -550,6 +559,18 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-10-01 (analysis sync) - Tactics and Actions are ONE dimension ("Advocacy & Tactics").** The
+  V2 taxonomy consolidated them; `taxonomy.json` keeps `tactics` as an exact mirror of `actions` only
+  so legacy code that reads it does not break. Treat `tactics` as an alias, never a distinct
+  vocabulary. (Curator, via the analysis project.)
+- **2026-10-01 (analysis sync) - `ABSENT` (clarity) is suppressed like the old absence codes.** The
+  2026-07-22 decision to hide "nothing found" codes is carried over to the new codebook's
+  `ABSENT` ("Absent / Incidental"); `focus_amount` no longer has any. Un-hiding is deleting a word
+  from `metadataCodebook.SUPPRESSED`.
+- **2026-10-01 (analysis sync) - taxonomy hierarchy is owned by the analysis project.** The app does
+  not invent sub-dimensions/groups for the new themes and moral frames; they are requested at source
+  (curator decision), and the dependent tests are `todo` until they arrive.
 
 - **2026-08-04 (triage 6) — a new endpoint rather than bending `/facets`.** `analysis.facetTree`
   keeps only codes whose count is > 0 and carries no per-term definition — right for a filter
@@ -1671,6 +1692,22 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-01 (Analysis-pipeline sync - codebooks, tests; taxonomy hierarchy BLOCKED on the analysis
+  project)** - The analysis project re-coded 715 songs with `gemini-3.5-flash-lite` (4 specialists + a
+  summary editor), re-derived audio features over full tracks, and rebuilt the UMAP spaces. The
+  database was already updated; this session brought the app in line. **Committed:** the new
+  `acoustic_codebook.json` (single-word enums `EXPLOSIVE`, `DRIVING`, `MELODIC` ...),
+  `master_metadata_codebook.json` (every scalar code renamed) and `taxonomy.json` (`7c2e4c3`).
+  **Code:** `metadataCodebook.SUPPRESSED` is now `ABSENT` (clarity) + `UNSPECIFIED` (the focus-amount
+  absence codes no longer exist). **Tests:** 179 tests, 45 failing at start; fixtures and expectations
+  moved to the new codes -> 165 pass, 14 marked `todo` (all hierarchy-dependent, see below). Removed
+  the untracked `frontend/public/vector_space.json` re-export (it is the unpublished-songs leak
+  recorded under B4 - do not commit it). **Open, waiting on the analysis project** (written up in
+  [`ANALYSIS_PROJECT_REQUESTS.md`](./ANALYSIS_PROJECT_REQUESTS.md)): `taxonomy.json` has no
+  `sub_dimension`/`group` for `themes` (15) and `moral_frames` (19), the `rescue` group is undefined,
+  `tactics` is a mirror of `actions`, and all five `hierarchy.*.description` strings are gone - so the
+  browse theme tree and the About > Reference thematic section are currently empty/descriptionless.
+  One live song (5266) and eight pending ones still carry old-pipeline values.
 - **2026-08-04 (Triage 6 — About analysis explainer BUILT, held for smoke, branch not yet
   pushed)** — Ten
   tasks, subagent-driven, on `session-triage-6-about-analysis` (from `main` at `84e0841`) per plan
