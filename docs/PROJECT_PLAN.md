@@ -353,8 +353,13 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
     1200px max-width because **a flex item with `margin: 0 auto` does not stretch**. Desktop map
     800px → **920px**. Merged `main` re-verified: backend **165/165**, 27 frontend module tests,
     lint 0 errors, build clean, plus a 10/10 layout regression pass.
-- ☐ **C — Community submissions + moderation.** Public "Submit a song" → Inbox → accept into
-  To-be-processed / spam. Reuses `staging.addSubmissionAsPending`.
+- ◐ **C — Community submissions + moderation — BUILT 2026-10-01, held for the curator's smoke.**
+  Branch `session-C-submissions-inbox`. Public "Submit a song" → **Inbox** (oldest first) → accept into
+  To-be-processed / dismiss. Reuses `staging.addSubmissionAsPending` via the new `services/inbox.js`;
+  catalogue matches stay visible with an "Already in catalogue" badge; the submitter is told when the
+  song is already live. The unauthenticated `/api/submissions/admin*` routes and `SubmissionsManager`
+  are deleted. Spec/plan: `specs/2026-10-01-C-submissions-inbox-design.md`,
+  `plans/2026-10-01-C-submissions-inbox.md`.
 - ☐ **D — YouTube assist.** Search YouTube from the workbench, present candidates, pick best.
 - ☐ **E — Lyrics-search assist.** Multi-site search + capture (realistic MVP: quick-launch
   search links + paste box; full auto-fetch scoped carefully — ToS/fragility).

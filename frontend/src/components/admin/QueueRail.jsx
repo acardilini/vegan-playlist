@@ -1,7 +1,7 @@
-// Presentational queue rail. Groups + labels the derived queues; disabled slots
-// (Inbox, Needs analysis) are reserved for sub-projects C and B.
+// Presentational queue rail. Groups + labels the derived queues; the disabled
+// slot (Needs analysis) is reserved for sub-project B.
 const GROUPS = [
-  ['Capture', [['inbox', 'Inbox', true], ['to-process', 'To be processed', false]]],
+  ['Capture', [['inbox', 'Inbox', false], ['to-process', 'To be processed', false]]],
   ['Needs work', [
     ['needs-lyrics', 'Needs lyrics', false],
     ['needs-cover', 'Needs cover', false],

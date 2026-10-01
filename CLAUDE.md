@@ -62,8 +62,8 @@ Run before ending every working session:
   `/api/playlists`, `/api/youtube`, `/api/submissions`, `/api/analytics`, `/api/analysis`,
   `/api/content`
 - **routes/**: `spotify.js` (public site API), `admin.js` (~2,200 lines, password-protected
-  curation API — 29 routes in six banner-named domains: Songs/curation · Enrichment ·
-  Data quality · Sync (import-only) · Artists · Staging/lifecycle; see
+  curation API in six banner-named domains: Songs/curation (incl. the Submissions Inbox) ·
+  Enrichment · Data quality · Sync (import-only) · Artists · Staging/lifecycle; see
   `docs/ADMIN_AUDIT.md`), `playlists.js`, `youtube.js`, `submissions.js`, `analytics.js`,
   `content.js` (triage 6 — the two-route `GET /api/content/:slug` read behind the About
   section's Markdown pages; the `slug` is looked up in a hard-coded `Map` of `{about, analysis}`
@@ -71,9 +71,16 @@ Run before ending every working session:
   returns a truthy inherited function that would then be used as a filename — 404 for anything
   else, so path traversal is impossible by construction rather than by sanitising).
   Dead code pruned in Session 2.2 (`admin_simple.js`, `lyrics.js`, ~33 endpoints).
-  Note: `/api/submissions/admin*` is currently unauthenticated (Phase 4 item)
+  `submissions.js` is now **public-only** (`POST /submit`); submissions moderation lives in `admin.js`
+  (`/curation/inbox*`, authed) — the old unauthenticated `/api/submissions/admin*` routes were deleted in C
 - **services/staging.js**: staging-queue service (queues, include/reject/publish, candidate
   intake, submissions→pending bridge); tests in `test/staging.test.js` (node:test)
+- **services/inbox.js**: the Submissions Inbox (sub-project C) — `listInbox` (pending, **oldest first**,
+  catalogue match flagged with `live`), `acceptSubmission`, `dismissSubmission`. **Accept claims the row
+  first** (`approved`, match cleared) and only then bridges via staging, reverting to `pending` if the bridge
+  throws or yields no song — so a concurrent accept/dismiss gets `NOT_PENDING` and can't orphan a song.
+  The submit-time match is a fuzzy prefix match, so Accept stays available on matched rows; staging's
+  title|artist dedupe makes an exact duplicate resolve to the existing song. Tests in `test/inbox.test.js`
 - **services/analysis.js + services/metadataCodebook.js**: the lyric-analysis read. Every consumer
   (song page, browse facets, `/search` filters, `themeCounts`, the admin `needs-analysis` queue) reads
   each song's **latest coding pass** — the single newest `song_lyric_analysis` row by `MAX(analyzed_at)`,
