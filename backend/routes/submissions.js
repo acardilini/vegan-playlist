@@ -18,7 +18,7 @@ router.post('/submit', async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!song_title || !artist_name) {
+    if (typeof song_title !== 'string' || typeof artist_name !== 'string' || !song_title.trim() || !artist_name.trim()) {
       return res.status(400).json({ 
         error: 'Song title and artist name are required' 
       });
@@ -35,7 +35,7 @@ router.post('/submit', async (req, res) => {
       WHERE LOWER(a.name) = LOWER($2)
       AND (
         LOWER(s.title) = LOWER($1) OR
-        LOWER(s.title) LIKE LOWER($1) || '%' OR
+        LOWER(s.title) LIKE LOWER($3) || '%' OR
         LOWER(REGEXP_REPLACE(s.title, ' - \\d+ Remaster$', '', 'i')) = LOWER($1) OR
         LOWER(REGEXP_REPLACE(s.title, ' \\(.*\\)$', '', 'i')) = LOWER($1)
       )
@@ -43,7 +43,7 @@ router.post('/submit', async (req, res) => {
       LIMIT 1
     `;
 
-    const existingSong = await pool.query(existingSongQuery, [song_title.trim(), artist_name.trim()]);
+    const existingSong = await pool.query(existingSongQuery, [song_title.trim(), artist_name.trim(), song_title.trim().replace(/[\\%_]/g, '\\$&')]);
     const existing_song_id = existingSong.rows.length > 0 ? existingSong.rows[0].id : null;
     // Only a LIVE match is reported to the submitter; any match is still stored for the Inbox.
     const matchIsLive = existingSong.rows.length > 0 && existingSong.rows[0].is_live === true;

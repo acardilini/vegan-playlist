@@ -4072,6 +4072,11 @@ main {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-top: var(--spacing-xs);
+  /* Restored: the (deleted) Submissions Manager block's `.stat-label` used to merge these in, and the
+     mounted Artists manager's stat labels rely on them. */
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .admin-filters {

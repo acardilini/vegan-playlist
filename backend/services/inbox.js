@@ -28,16 +28,33 @@ async function assertPending(db, id) {
   if (cur.status !== 'pending') throw coded('NOT_PENDING', `submission is already ${cur.status}`);
 }
 
-// Bridges the submission into the pending songs queue (staging dedupes against the
-// catalogue, so a matched submission creates nothing), then marks it approved. The
-// final UPDATE is guarded on status='pending' so a concurrent second accept loses cleanly.
+// Claim first, then bridge: the row is flipped to 'approved' (and its catalogue match cleared, so the
+// bridge treats it as a fresh suggestion) BEFORE anything is created, so a concurrent accept or
+// dismiss gets NOT_PENDING without creating a song. If the bridge fails or yields no song, the claim
+// is reverted and the row is back in the Inbox. The bridge still dedupes by title|artist, so an exact
+// catalogue duplicate resolves to the existing song (added: 0) instead of a second copy; a false-positive
+// prefix match ("Free" vs "Freedom") becomes a genuinely new song.
 async function acceptSubmission(db, id) {
-  await assertPending(db, id);
-  const bridged = await staging.addSubmissionAsPending(db, id);
-  const u = await db.query(
-    `UPDATE song_submissions SET status='approved', resolved_at=CURRENT_TIMESTAMP, resolved_by='admin'
-     WHERE id=$1 AND status='pending'`, [id]);
-  if (!u.rowCount) throw coded('NOT_PENDING', 'submission was already resolved');
+  const claim = await db.query(
+    `WITH old AS (
+       SELECT id, existing_song_id FROM song_submissions WHERE id=$1 AND status='pending' FOR UPDATE)
+     UPDATE song_submissions ss
+     SET status='approved', resolved_at=CURRENT_TIMESTAMP, resolved_by='admin', existing_song_id=NULL
+     FROM old WHERE ss.id = old.id
+     RETURNING old.existing_song_id AS prior_match`, [id]);
+  if (!claim.rowCount) { await assertPending(db, id); throw coded('NOT_PENDING', 'submission was already resolved'); }
+  const priorMatch = claim.rows[0].prior_match;
+  const revert = () => db.query(
+    `UPDATE song_submissions SET status='pending', resolved_at=NULL, resolved_by=NULL, existing_song_id=$2 WHERE id=$1`,
+    [id, priorMatch]);
+  let bridged;
+  try {
+    bridged = await staging.addSubmissionAsPending(db, id);
+  } catch (e) { await revert(); throw e; }
+  if (!bridged.song_id) {
+    await revert();
+    throw coded('NO_SONG', 'could not add or find a song for this submission');
+  }
   return { song_id: bridged.song_id, added: bridged.added };
 }
 

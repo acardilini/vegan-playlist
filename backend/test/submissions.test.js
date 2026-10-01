@@ -16,7 +16,8 @@ before(async () => {
 });
 after(async () => {
   await new Promise(r => server.close(r));
-  await pool.query(`DELETE FROM song_submissions WHERE song_title LIKE 'ZZZSUB%'`);
+  // match the artist too: a rejected-title test row must not be able to outlive the run
+  await pool.query(`DELETE FROM song_submissions WHERE song_title LIKE 'ZZZSUB%' OR artist_name LIKE 'ZZZSUB%'`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZSUB%'`);
   await pool.query(`DELETE FROM artists WHERE name LIKE 'ZZZSUB%'`);
   await pool.end();
@@ -86,4 +87,17 @@ test('missing title or artist still returns 400', async () => {
 test('the unauthenticated /admin routes are gone', async () => {
   assert.equal((await fetch(`${base}/admin`)).status, 404);
   assert.equal((await fetch(`${base}/admin/1`, { method: 'DELETE' })).status, 404);
+});
+
+test('a whitespace-only title is rejected, not stored (it would prefix-match every song by the artist)', async () => {
+  await mkSong('ZZZSUB Anything', 'included', true, 'ZZZSUB BlankArtist');
+  const res = await post({ song_title: '   ', artist_name: 'ZZZSUB BlankArtist' });
+  assert.equal(res.status, 400);
+});
+
+test('LIKE wildcards in a submitted title do not match unrelated live songs', async () => {
+  await mkSong('ZZZSUB Wildcard Target', 'included', true, 'ZZZSUB WildArtist');
+  const res = await post({ song_title: 'ZZZSUB %', artist_name: 'ZZZSUB WildArtist' });
+  assert.equal(res.status, 201);
+  assert.equal((await res.json()).submission.already_exists, false);
 });

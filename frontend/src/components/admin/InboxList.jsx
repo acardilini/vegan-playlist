@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import { relTime } from './relTime';
 
-// The Inbox: pending community submissions, oldest first. A catalogue match shows a badge
-// and a link instead of an Accept button (nothing to add) — Dismiss clears it.
+// The Inbox: pending community submissions, oldest first. A catalogue match shows a badge linking to
+// the song. Accept stays available on those rows: the submit-time match is a fuzzy prefix match, so it
+// can be wrong ("Free" vs "Freedom"); an exact duplicate resolves to the existing song, not a copy.
 function InboxList({ refreshKey, onChanged }) {
   const [rows, setRows] = useState(null);       // null = loading
   const [error, setError] = useState('');
-  const [flash, setFlash] = useState(null);     // { title, songId } after an accept
+  const [flash, setFlash] = useState(null);     // { title, songId, added } after an accept
   const [busyId, setBusyId] = useState(null);
   const [dismissingId, setDismissingId] = useState(null);
   const [note, setNote] = useState('');
@@ -30,7 +31,7 @@ function InboxList({ refreshKey, onChanged }) {
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'Request failed');
-      setFlash(kind === 'accept' && d.song_id ? { title: row.song_title, songId: d.song_id } : null);
+      setFlash(kind === 'accept' && d.song_id ? { title: row.song_title, songId: d.song_id, added: d.added > 0 } : null);
       setDismissingId(null); setNote('');
       onChanged();
     } catch (e) {
@@ -45,7 +46,10 @@ function InboxList({ refreshKey, onChanged }) {
       {error && <div className="admin-message error">{error}</div>}
       {flash && (
         <div className="admin-message success">
-          Added “{flash.title}” to To be processed — <Link to={`/admin/song/${flash.songId}`}>open in workbench</Link>
+          {flash.added
+            ? <>Added “{flash.title}” to To be processed</>
+            : <>“{flash.title}” is already in the catalogue — nothing new was added</>}
+          {' — '}<Link to={`/admin/song/${flash.songId}`}>open in workbench</Link>
         </div>
       )}
       {rows === null ? (
@@ -75,10 +79,8 @@ function InboxList({ refreshKey, onChanged }) {
             {row.lyrics_excerpt && <div className="inbox-excerpt">{row.lyrics_excerpt}</div>}
           </div>
           <div className="inbox-actions">
-            {!row.match && (
-              <button className="btn btn-primary btn-sm" disabled={busyId === row.id}
-                onClick={() => act(row, 'accept')}>Add to To be processed</button>
-            )}
+            <button className="btn btn-primary btn-sm" disabled={busyId === row.id}
+              onClick={() => act(row, 'accept')}>Add to To be processed</button>
             {dismissingId === row.id ? (
               <>
                 <input className="input" placeholder="Note (optional)" value={note}
