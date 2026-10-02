@@ -412,8 +412,16 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
 > **⏭ NEXT: sub-project E (lyrics-search assist) — brainstorm first (`song_lyrics` is local-only/copyright; ToS). F remains after.**
-> **New task (curator, 2026-10-02): add a "See song page" / "See artist page" quick link at the top of the admin workbench
-> (song edit view), so the curator can check how a song looks publicly while adding details. Small; do alongside or before E.**
+> **DONE 2026-10-02: workbench "See song page" / "See artist page" links** (top bar, new tab, muted + tooltip when the
+> song is not live). **Curator requests logged 2026-10-02, each needing its own brainstorm (E first):**
+> 1. **E - lyrics-search assist** is the most labourious step and many songs are obscure. Needs: a way to mark
+>    **"lyrics not found"**, and **"could transcribe by ear"** (not possible for heavy music); if set, transcription
+>    becomes a **new song-processing step/queue**. Think hard about how the assistant works.
+> 2. **"No video available" option** on the Video panel, plus a decision on what the song page shows in the video slot
+>    (nothing, or the album cover).
+> 3. **Band/album catalogue checker:** for a band already on the list, pull its albums + songs (Spotify) for review and
+>    add the chosen ones as To Be Processed (e.g. Bloodmouth has unadded songs).
+>
 > _(D smoke, done:)_ What to
 > try: Admin → Songs → *Needs video* → open a song → **Find videos**; tick two, change one's type, **Add 2
 > selected**; confirm one is primary and the public song page plays it. Each click spends ~101 of the 10,000
