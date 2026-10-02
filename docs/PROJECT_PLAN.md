@@ -359,7 +359,7 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
   song is already live. The unauthenticated `/api/submissions/admin*` routes and `SubmissionsManager`
   are deleted. Spec/plan: `specs/2026-10-01-C-submissions-inbox-design.md`,
   `plans/2026-10-01-C-submissions-inbox.md`.
-- ◐ **D — YouTube assist — BUILT 2026-10-01, held for the curator's smoke.** Branch
+- ☑ **D — YouTube assist — DONE, curator-smoked and MERGED 2026-10-02 (`f995358`).** Branch
   `session-D-youtube-assist`. "Find videos" in the workbench Video panel: real candidates from the official
   YouTube Data API (first artist + title), multi-select with a guessed-but-editable type per row, one bulk
   add. Needs `YOUTUBE_API_KEY` in `backend/.env`. Spec/plan:

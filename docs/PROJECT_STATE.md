@@ -7,8 +7,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-01): Sub-project D — YouTube assist — BUILT, HELD FOR THE CURATOR'S SMOKE,
-  NOT merged.** Branch `session-D-youtube-assist` (from `main` at `ce2fb8c`). The workbench Video panel gains
+- **Current session (2026-10-02): Sub-project D — YouTube assist — curator-smoked (all working) and MERGED to
+  `main` (merge `f995358`, no-ff); merged `main` re-verified backend 222/222, build clean. NEXT: sub-project E.** Branch `session-D-youtube-assist` (from `main` at `ce2fb8c`). The workbench Video panel gains
   **Find videos**: real candidates from the official YouTube Data API (thumbnail, title, channel, duration, an
   "won't embed on the site" warning, "Already added"), tick several, edit each row's type (pre-guessed from the
   title/channel), **Add N selected** in one transaction. Add-by-URL stays. New `services/youtubeSearch.js`,
@@ -411,7 +411,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
 > (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
-> **⏭ NEXT: the curator smokes sub-project D (Find videos), then it merges; after that E and F remain.** What to
+> **⏭ NEXT: sub-project E (lyrics-search assist) — brainstorm first (`song_lyrics` is local-only/copyright; ToS). F remains after.**
+> **New task (curator, 2026-10-02): add a "See song page" / "See artist page" quick link at the top of the admin workbench
+> (song edit view), so the curator can check how a song looks publicly while adding details. Small; do alongside or before E.**
+> _(D smoke, done:)_ What to
 > try: Admin → Songs → *Needs video* → open a song → **Find videos**; tick two, change one's type, **Add 2
 > selected**; confirm one is primary and the public song page plays it. Each click spends ~101 of the 10,000
 > daily quota units, so ~99 searches a day. Sub-project C is MERGED (`4cc0284`); the two real July submissions
@@ -1795,6 +1798,9 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-02 (sub-project D MERGED)** - curator smoke: all working. Merged `session-D-youtube-assist` no-ff to
+  `main` (`f995358`); backend 222/222, build clean (735.25 kB). Logged a new task: workbench "See song page" /
+  "See artist page" quick links. Next: E.
 - **2026-10-01 (sub-project D — YouTube assist, BUILT, held for the curator's smoke)** - branch
   `session-D-youtube-assist`, executed inline from the plan. `services/youtubeSearch.js` + test (17), `videos.addVideos`
   + 5 tests, two authed routes, the Find-videos picker, the mock route deleted, `.env.example` gains
