@@ -75,6 +75,16 @@ Run before ending every working session:
   (`/curation/inbox*`, authed) — the old unauthenticated `/api/submissions/admin*` routes were deleted in C
 - **services/staging.js**: staging-queue service (queues, include/reject/publish, candidate
   intake, submissions→pending bridge); tests in `test/staging.test.js` (node:test)
+- **services/youtubeSearch.js**: the workbench's "Find videos" (sub-project D) over the **official YouTube
+  Data API v3** — `searchVideos` (`search.list` ~100 quota units + `videos.list` 1 unit; 10,000/day, so ~99
+  searches), `findCandidatesForSong` (query = **first-listed artist** + title, i.e. the lowest
+  `song_artists.id`, because joining a collaboration's artists made YouTube return nothing; flags
+  `already_added`), and the pure `guessType` (lyric → live → official → other; `fan-made` is never guessed).
+  `fetch` is injected so the tests never touch the network. **The key is in the request URL, so nothing may
+  log or rethrow a URL, a fetch error's message or its `.cause`** — errors carry only the HTTP status and
+  Google's `reason`, mapped to `QUOTA` (429) / `CONFIG` (bad or disabled key, 502 with a fix-the-key message)
+  / `UPSTREAM` (502). `videos.addVideos` is the transactional bulk add (1–10 items, duplicates skipped, any
+  invalid item rolls back the batch). The dead mock `POST /api/youtube/search` was deleted
 - **services/inbox.js**: the Submissions Inbox (sub-project C) — `listInbox` (pending, **oldest first**,
   catalogue match flagged with `live`), `acceptSubmission`, `dismissSubmission`. **Accept claims the row
   first** (`approved`, match cleared) and only then bridges via staging, reverting to `pending` if the bridge
@@ -310,6 +320,7 @@ DB_USER=your_pg_user
 DB_PASSWORD=your_pg_password
 ADMIN_PASSWORD=shared_admin_password
 PORT=5000
+YOUTUBE_API_KEY=optional_youtube_data_api_v3_key   # workbench "Find videos"; search is disabled when unset
 ```
 
 **Note:** `database/db.js` reads the five discrete `DB_*` vars above — there is **no `DATABASE_URL`**

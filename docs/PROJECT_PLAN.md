@@ -359,7 +359,11 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
   song is already live. The unauthenticated `/api/submissions/admin*` routes and `SubmissionsManager`
   are deleted. Spec/plan: `specs/2026-10-01-C-submissions-inbox-design.md`,
   `plans/2026-10-01-C-submissions-inbox.md`.
-- ☐ **D — YouTube assist.** Search YouTube from the workbench, present candidates, pick best.
+- ◐ **D — YouTube assist — BUILT 2026-10-01, held for the curator's smoke.** Branch
+  `session-D-youtube-assist`. "Find videos" in the workbench Video panel: real candidates from the official
+  YouTube Data API (first artist + title), multi-select with a guessed-but-editable type per row, one bulk
+  add. Needs `YOUTUBE_API_KEY` in `backend/.env`. Spec/plan:
+  `specs/2026-10-01-D-youtube-assist-design.md`, `plans/2026-10-01-D-youtube-assist.md`.
 - ☐ **E — Lyrics-search assist.** Multi-site search + capture (realistic MVP: quick-launch
   search links + paste box; full auto-fetch scoped carefully — ToS/fragility).
 - ☐ **F — Spotify push.** Website→Spotify: paste Spotify URL → one button adds to the playlist

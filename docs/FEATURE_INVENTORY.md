@@ -46,7 +46,7 @@ Dead code found in `App.jsx`:
 | Manage Artists | ArtistsManager.jsx | Artist list/stats/edit (`all-artists`, `artists-stats`, `artists/:id`); "setup discography tracking" button runs DDL | **keep**, except the DDL button — **drop** (becomes a migration) |
 | Song Submissions | ~~SubmissionsManager.jsx~~ → `admin/InboxList.jsx` | Review queue: accept (→ To be processed) / dismiss (`/api/admin/curation/inbox*`). **Replaced in sub-project C; the old unauthenticated `submissions/admin*` routes and `SubmissionsManager` are deleted** | **rebuilt** |
 | Dashboard | DataCompletionDashboard.jsx | Data-completion stats (`completion-stats`) | **keep** — useful for Phase 1 |
-| YouTube Videos | YouTubeVideoManager.jsx | Songs missing videos, YouTube search, save video (`youtube/*`, `save-youtube-video`) | **keep** |
+| YouTube Videos | YouTubeVideoManager.jsx | Songs missing videos, YouTube search, save video (`youtube/*`, `save-youtube-video`) | **keep** (search is now real: sub-project D's "Find videos" in the workbench, `workbench/:id/video-search`) |
 | Lyrics Manager | LyricsLookupManager.jsx | Songs missing lyrics links, save lyric links (`songs-missing-lyrics`, `save-lyrics-link`); "setup lyrics" DDL button | **keep**, **drop** the DDL button |
 | Bulk Categorization | BulkCategorizationWorkflow.jsx | One-song-at-a-time categorisation flow | **keep** |
 | Duplicate Manager | DuplicateManager.jsx | Duplicate detection (`duplicate-songs`), Spotify validation (`spotify-validation`), playlist sync (`sync-spotify-playlist`), song delete | **keep** UI; sync itself is **rebuilt in Phase 1** to fit the truth-source model |
@@ -100,7 +100,7 @@ public write access is the same **⚑ confirm** deferral as the Playlists screen
 
 | Endpoint | Decision |
 |---|---|
-| `GET/POST songs/:songId/videos`, `GET …/video/primary`, `GET songs/missing-videos`, `POST /search` (YouTube Data API) | **keep** |
+| `GET/POST songs/:songId/videos`, `GET …/video/primary`, `GET songs/missing-videos` | **keep**. The mock `POST /search` was **deleted** in D; real search is `GET /api/admin/workbench/:id/video-search` |
 | `PUT/DELETE /videos/:videoId`, `POST /extract-id` | unused — **drop** (Phase 2.2) |
 
 ### `routes/lyrics.js` → `/api/lyrics`
