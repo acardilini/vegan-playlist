@@ -8,7 +8,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 ## Current State
 
 - **Current session (2026-10-02): Sub-project D — YouTube assist — curator-smoked (all working) and MERGED to
-  `main` (merge `f995358`, no-ff); merged `main` re-verified backend 222/222, build clean. NEXT: sub-project E.** Branch `session-D-youtube-assist` (from `main` at `ce2fb8c`). The workbench Video panel gains
+  `main` (merge `f995358`, no-ff); merged `main` re-verified backend 222/222, build clean. NEXT: sub-project E (spec written, see below).** Branch `session-D-youtube-assist` (from `main` at `ce2fb8c`). The workbench Video panel gains
   **Find videos**: real candidates from the official YouTube Data API (thumbnail, title, channel, duration, an
   "won't embed on the site" warning, "Already added"), tick several, edit each row's type (pre-guessed from the
   title/channel), **Add N selected** in one transaction. Add-by-URL stays. New `services/youtubeSearch.js`,
@@ -411,7 +411,11 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
 > (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
-> **⏭ NEXT: sub-project E (lyrics-search assist) — brainstorm first (`song_lyrics` is local-only/copyright; ToS). F remains after.**
+> **⏭ NEXT: sub-project E — SPEC WRITTEN, awaiting the curator's review** (branch `session-E-lyrics-assist`, spec
+> `specs/2026-10-02-E-lyrics-assist-design.md`, then write the plan). **Open decision for the curator:** is a Brave Search
+> API sign-up acceptable (account, probably a card for overage, attribution line)? Brave has no free tier for new users
+> (~$5/month credit = ~1,000 searches); Google Custom Search is closed to new customers and ends 2027 (from web search,
+> re-check at sign-up). If no, E ships only the To-transcribe queue + Lyrics-on-hold shelf (spec parts 2). F remains after.
 > **DONE 2026-10-02: workbench "See song page" / "See artist page" links** (top bar, new tab, muted + tooltip when the
 > song is not live). **Curator requests logged 2026-10-02, each needing its own brainstorm (E first):**
 > 1. **E - lyrics-search assist** is the most labourious step and many songs are obscure. Needs: a way to mark
@@ -1806,6 +1810,9 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-02 (session end)** - merged D (`f995358`); built and merged the workbench "See song page / See artist page"
+  links (`2a7d324`, browser-checked on a live and a pending song); logged three curator requests (E, no-video option,
+  band catalogue checker); brainstormed E and wrote its spec on `session-E-lyrics-assist` (`513462a`). No E code yet.
 - **2026-10-02 (sub-project D MERGED)** - curator smoke: all working. Merged `session-D-youtube-assist` no-ff to
   `main` (`f995358`); backend 222/222, build clean (735.25 kB). Logged a new task: workbench "See song page" /
   "See artist page" quick links. Next: E.

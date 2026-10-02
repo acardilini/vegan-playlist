@@ -364,8 +364,9 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
   YouTube Data API (first artist + title), multi-select with a guessed-but-editable type per row, one bulk
   add. Needs `YOUTUBE_API_KEY` in `backend/.env`. Spec/plan:
   `specs/2026-10-01-D-youtube-assist-design.md`, `plans/2026-10-01-D-youtube-assist.md`.
-- ☐ **E — Lyrics-search assist.** Multi-site search + capture (realistic MVP: quick-launch
-  search links + paste box; full auto-fetch scoped carefully — ToS/fragility).
+- ◐ **E — Lyrics-search assist — SPEC WRITTEN 2026-10-02**, awaiting curator review (branch
+  `session-E-lyrics-assist`; `specs/2026-10-02-E-lyrics-assist-design.md`): lyric-site search preview, To-transcribe queue,
+  Lyrics-on-hold shelf. Also queued: no-video-available option; band/album catalogue checker.
 - ☐ **F — Spotify push.** Website→Spotify: paste Spotify URL → one button adds to the playlist
   (needs a one-time write-auth Spotify OAuth connection).
 
