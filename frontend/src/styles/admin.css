@@ -84,6 +84,9 @@
 .wb-complete-item { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); border: 1px solid var(--border-hairline); }
 .wb-complete-item.done { color: var(--accent-moss-60); border-color: var(--accent-moss-60); }
 .wb-complete-item.todo { color: var(--text-muted); }
+.wb-public-links { display: inline-flex; flex-wrap: wrap; gap: var(--space-3); font-size: 0.8rem; }
+.wb-public-link { color: var(--accent-moss-60, var(--text-secondary)); text-decoration: underline; }
+.wb-public-link.not-live { color: var(--text-muted); }
 .wb-nav { margin-left: auto; display: inline-flex; gap: var(--space-2); }
 
 .wb-cover { margin-top: var(--space-3); }

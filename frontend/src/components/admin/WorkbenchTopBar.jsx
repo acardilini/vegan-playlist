@@ -21,6 +21,23 @@ function StatusBadges({ wb }) {
   );
 }
 
+function PublicLinks({ wb }) {
+  const live = wb.status === 'included' && wb.published;
+  const cls = `wb-public-link${live ? '' : ' not-live'}`;
+  const title = live ? undefined : "Not live yet — the public page won't show it until it's included and published";
+  const artists = wb.artists || [];
+  return (
+    <span className="wb-public-links">
+      <a className={cls} href={`/song/${wb.id}`} target="_blank" rel="noreferrer" title={title}>See song page &#8599;</a>
+      {artists.map((a) => (
+        <a key={a.id} className={cls} href={`/artist/${a.id}`} target="_blank" rel="noreferrer" title={title}>
+          See {artists.length > 1 ? a.name : 'artist'} page &#8599;
+        </a>
+      ))}
+    </span>
+  );
+}
+
 function Completeness({ c }) {
   return (
     <span className="wb-complete">
@@ -52,6 +69,7 @@ function WorkbenchTopBar({ wb, onAction, onPark, nav }) {
     <div className="wb-decisions">
       <div className="wb-decisions-row">
         <StatusBadges wb={wb} />
+        <PublicLinks wb={wb} />
         <Completeness c={wb.completeness} />
         {nav && (
           <span className="wb-nav">
