@@ -632,6 +632,7 @@ Newest first. Each entry: date · decision · why.
   results, no result preview. Opening a site link marks its avenue in `lyrics_tried` **add-only** (unticking stays
   with the Avenues checkboxes) rather than the spec's tick-per-site. The artist used is `wb.artists[0]` (the
   workbench orders by name), not the lowest `song_artists.id` the spec named.
+- **2026-10-12 (sub-project E, curator smoke) - the first "search all lyric sites" returned nothing for an obscure song.** The query required the quoted title AND quoted artist on one of nine named sites; for "No Torture" by Decontrol Google found no documents. Fix: the primary button is now **Search the web for lyrics** (unrestricted `"title" artist lyrics`; artist no longer quoted), **Listed lyric sites only** is the secondary, per-site buttons stay, and a YouTube link joined them. The old Google/Genius/Bandcamp/YouTube quick-link row was removed as duplicate (curator prefers less UI). The restricted search can still legitimately return nothing; that is why it is secondary.
 - **2026-10-12 (sub-project E) - the lyric shelves.** The `awaiting-community` queue key is **retired** (it now throws
   `BAD_QUEUE`; a stale `?queue=awaiting-community` link falls back to the default queue). `to-transcribe`
   (`needs_transcription`) and `lyrics-on-hold` (`awaiting_community` + `listened_unclear`) both require status

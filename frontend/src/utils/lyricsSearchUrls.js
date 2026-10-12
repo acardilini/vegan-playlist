@@ -17,14 +17,28 @@ export const LYRIC_SITES = [
 const clean = (s) => String(s ?? '').replace(/"/g, ' ').replace(/\s+/g, ' ').trim();
 const google = (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
 
+// The title is quoted (it is the distinctive part); the artist is NOT, because a quoted artist
+// that doesn't appear verbatim on the page (punctuation, "feat.", spelling) returns zero results
+// for obscure songs.
 export function buildQuery({ title, artist } = {}) {
   const t = clean(title), a = clean(artist);
-  return [t && `"${t}"`, a && `"${a}"`, 'lyrics'].filter(Boolean).join(' ');
+  return [t && `"${t}"`, a, 'lyrics'].filter(Boolean).join(' ');
 }
 
+// Unrestricted web search: the primary action, because obscure songs are often only on sites we
+// haven't listed (band pages, small forums, booklets scans).
+export function anywhereUrl(song) {
+  return google(buildQuery(song));
+}
+
+// Narrower: only the listed lyric sites. Can legitimately return nothing for an obscure song.
 export function allSitesUrl(song) {
   const sites = LYRIC_SITES.map((s) => `site:${s.host}`).join(' OR ');
   return google(`${buildQuery(song)} (${sites})`);
+}
+
+export function youtubeSearchUrl(song) {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${clean(song?.title)} ${clean(song?.artist)}`.trim())}`;
 }
 
 export function siteUrl(site, song) {

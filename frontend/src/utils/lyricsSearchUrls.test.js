@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LYRIC_SITES, buildQuery, allSitesUrl, siteUrl, sourceNameFromUrl } from './lyricsSearchUrls.js';
+import { LYRIC_SITES, buildQuery, anywhereUrl, allSitesUrl, youtubeSearchUrl, siteUrl, sourceNameFromUrl } from './lyricsSearchUrls.js';
 
 test('buildQuery quotes title and first artist and adds the word lyrics', () => {
-  assert.equal(buildQuery({ title: 'Meat Is Murder', artist: 'The Smiths' }), '"Meat Is Murder" "The Smiths" lyrics');
+  assert.equal(buildQuery({ title: 'Meat Is Murder', artist: 'The Smiths' }), '"Meat Is Murder" The Smiths lyrics');
 });
 
 test('buildQuery drops a missing artist rather than emitting empty quotes', () => {
@@ -12,16 +12,22 @@ test('buildQuery drops a missing artist rather than emitting empty quotes', () =
 });
 
 test('buildQuery strips double quotes and collapses whitespace', () => {
-  assert.equal(buildQuery({ title: '  Say  "No"  ', artist: 'A' }), '"Say No" "A" lyrics');
+  assert.equal(buildQuery({ title: '  Say  "No"  ', artist: 'A' }), '"Say No" A lyrics');
 });
 
 test('allSitesUrl is one Google URL with every site OR-ed and the query encoded', () => {
   const u = new URL(allSitesUrl({ title: 'Rock & Roll #1', artist: 'Sigur Rós' }));
   assert.equal(u.origin + u.pathname, 'https://www.google.com/search');
   const q = u.searchParams.get('q');
-  assert.ok(q.startsWith('"Rock & Roll #1" "Sigur Rós" lyrics ('));
+  assert.ok(q.startsWith('"Rock & Roll #1" Sigur Rós lyrics ('));
   for (const s of LYRIC_SITES) assert.ok(q.includes(`site:${s.host}`), s.host);
   assert.equal((q.match(/ OR /g) || []).length, LYRIC_SITES.length - 1);
+});
+
+test('anywhereUrl is an unrestricted Google search: quoted title, plain artist, no site: terms', () => {
+  const u = new URL(anywhereUrl({ title: 'No Torture', artist: 'Decontrol' }));
+  assert.equal(u.origin + u.pathname, 'https://www.google.com/search');
+  assert.equal(u.searchParams.get('q'), '"No Torture" Decontrol lyrics');
 });
 
 test('siteUrl uses a site search URL when it has one, else a single-site Google query', () => {
@@ -65,8 +71,14 @@ test('sourceNameFromUrl does not treat a look-alike host as a known site', () =>
 
 test('URLs with no artist contain no empty quoted pair', () => {
   const song = { title: 'Solo' };
-  const urls = [allSitesUrl(song), ...LYRIC_SITES.map((s) => siteUrl(s, song))];
+  const urls = [anywhereUrl(song), allSitesUrl(song), ...LYRIC_SITES.map((s) => siteUrl(s, song))];
   for (const u of urls) {
     assert.ok(!u.includes('%22%22') && !decodeURIComponent(u.replace(/\+/g, ' ')).includes('""'), u);
   }
+});
+
+test('youtubeSearchUrl encodes title and artist into a YouTube results URL', () => {
+  const u = new URL(youtubeSearchUrl({ title: 'A&B #1', artist: 'Sigur Rós' }));
+  assert.equal(u.origin + u.pathname, 'https://www.youtube.com/results');
+  assert.equal(u.searchParams.get('search_query'), 'A&B #1 Sigur Rós');
 });

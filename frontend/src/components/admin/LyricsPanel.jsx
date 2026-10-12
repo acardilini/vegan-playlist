@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AutoText, SaveTag } from './SavedField';
-import { LYRIC_SITES, allSitesUrl, siteUrl, sourceNameFromUrl } from '../../utils/lyricsSearchUrls';
+import { LYRIC_SITES, anywhereUrl, allSitesUrl, siteUrl, youtubeSearchUrl, sourceNameFromUrl } from '../../utils/lyricsSearchUrls';
 
 // songs.lyrics_source defaults to 'other' in the DB, so that counts as unset.
 const sourceIsUnset = (s) => !s || String(s).trim().toLowerCase() === 'other';
@@ -9,18 +9,7 @@ const LYRIC_PARKS = ['needs_transcription', 'awaiting_community', 'listened_uncl
 const LYRICS_STATUSES = ['found', 'not_found', 'not_searched'];
 const AVENUES = [['google', 'Google'], ['genius', 'Genius'], ['bandcamp', 'Bandcamp'], ['youtube', 'YouTube'], ['genre_site', 'Genre sites']];
 
-function searchLinks(title, artist) {
-  const q = encodeURIComponent(`${title || ''} ${artist || ''}`.trim());
-  return [
-    ['Google', `https://www.google.com/search?q=${q}%20lyrics`],
-    ['Genius', `https://genius.com/search?q=${q}`],
-    ['Bandcamp', `https://bandcamp.com/search?q=${q}`],
-    ['YouTube', `https://www.youtube.com/results?search_query=${q}`],
-  ];
-}
-
 function LyricsPanel({ wb, savePanel, saveProcessing }) {
-  const artist = (wb.artists || []).map((a) => a.name).join(' ');
   const [statusSave, setStatusSave] = useState('idle');
   const [avenuesSave, setAvenuesSave] = useState('idle');
   const [highlightsSave, setHighlightsSave] = useState('idle');
@@ -101,21 +90,19 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
     <section className="wb-panel">
       <h2>Lyrics</h2>
 
-      <div className="wb-quicklinks">
-        <span className="wb-field-label">Search for lyrics:</span>
-        {searchLinks(wb.title, artist).map(([label, href]) => (
-          <a key={label} className="btn btn-secondary btn-sm" href={href} target="_blank" rel="noreferrer">{label}</a>
-        ))}
-      </div>
-
       <div className="wb-lyric-search">
-        <a className="btn btn-primary btn-sm" href={allSitesUrl(song)} target="_blank" rel="noreferrer"
-          onClick={() => markTried('google')}>Search all lyric sites <span aria-hidden="true">&#8599;</span></a>
+        <a className="btn btn-primary btn-sm" href={anywhereUrl(song)} target="_blank" rel="noreferrer"
+          onClick={() => markTried('google')}>Search the web for lyrics <span aria-hidden="true">&#8599;</span></a>
+        <a className="btn btn-secondary btn-sm" href={allSitesUrl(song)} target="_blank" rel="noreferrer"
+          title="Only the sites named on this row; may find nothing for an obscure song"
+          onClick={() => markTried('google')}>Listed lyric sites only</a>
         <span className="wb-field-label">or one site:</span>
         {LYRIC_SITES.map((s) => (
           <a key={s.key} className="btn btn-ghost btn-sm" href={siteUrl(s, song)} target="_blank" rel="noreferrer"
             onClick={() => markTried(s.avenue)}>{s.name}</a>
         ))}
+        <a className="btn btn-ghost btn-sm" href={youtubeSearchUrl(song)} target="_blank" rel="noreferrer"
+          onClick={() => markTried('youtube')}>YouTube</a>
       </div>
 
       <AutoText label="Full lyrics (local-only)" initial={wb.lyrics} multiline rows={12} monospace
