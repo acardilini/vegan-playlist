@@ -1,23 +1,22 @@
 # Sub-project E — Lyrics-search assist, transcription queue, lyrics shelf
 
-_Date: 2026-10-02 · Status: spec, awaiting curator review · Branch: `session-E-lyrics-assist`_
+_Date: 2026-10-02 · Status: spec, revised 2026-10-12 (Brave rejected; Part 1 is link-building only) · Branch: `session-E-lyrics-assist`_
 
 ## 1. Purpose and success
 
 Finding lyrics is the slowest step in processing a song, and many songs are obscure. E should:
 
-1. **Cut the time spent hunting.** One action searches many lyric sites and shows the hits inline, so the
-   curator opens only the likely ones (curator: the time goes on *opening many sites* and *judging results*).
+1. **Cut the time spent hunting.** One click opens a single search covering many lyric sites, plus per-site
+   links and tried-ticks (curator: the time goes on *opening many sites*).
 2. **Give a failed hunt a clear outcome** instead of a vague pending song: a **To transcribe** queue for songs
    the curator could transcribe by ear, and a **Lyrics on hold** shelf for songs whose lyrics can't be found or
    heard, kept out of the processing queues but open to lyrics arriving later (an album booklet, the community).
 
-Success: from a song's Lyrics panel the curator can search lyric sites in one click, take a hit as the source in
-one click, and send a song to *To transcribe* or *Lyrics on hold* in one step, and neither queue clutters
+Success: from a song's Lyrics panel the curator can search all listed lyric sites in one click, and send a song to *To transcribe* or *Lyrics on hold* in one step, and neither queue clutters
 *To be processed* or *Needs lyrics*.
 
-**Curator decisions this spec encodes** (2026-10-02): search-links-plus-results-preview, **no scraping or fetching
-of lyric text**; the search source is a web-search API restricted to lyric sites; *To transcribe* is its own
+**Curator decisions this spec encodes** (2026-10-02): search links only (revised 2026-10-12: no paid API, no results preview), **no scraping or fetching
+of lyric text**; *To transcribe* is its own
 queue; a song with no obtainable lyrics is decided case by case (some are clearly in, some need lyrics to decide)
 and sits on a shelf that doesn't clog processing.
 
@@ -28,54 +27,26 @@ and sits on a shelf that doesn't clog processing.
 constraint already allows all three), the Lyrics panel's four quick-search links, the Notes panel, and the
 `awaiting-community` queue. **No migration is needed.**
 
-## 3. Part 1 — Lyric-site search
+## 3. Part 1 - Lyric-site search (no API, no cost)
 
-### 3.1 Backend: `services/lyricsSearch.js` (new, mirrors `youtubeSearch.js`)
+**Curator decision 2026-10-12: no paid search provider (Brave is rejected).** Part 1 is therefore link-building
+only: no backend, no key, no fetched results, nothing stored. Inline hit previews are dropped.
 
-- `searchLyricSites({ title, artists, apiKey, fetch })` → `{ query, hits: [{ url, title, snippet, site, match }] }`.
-- Query: the title and first-listed artist in quotes plus `lyrics`, ORed with `site:` terms for a **named
-  constant list** `LYRIC_SITES` (genius.com, azlyrics.com, lyrics.com, musixmatch.com, letras.com,
-  lyricstranslate.com, darklyrics.com, lyricsfreak.com, bandcamp.com, plus further genre sites the curator
-  names). Editing the list is a one-line change.
-- `match` is `both` / `title` / `none`, set when the hit's title+snippet contain the song title and the first
-  artist (case-insensitive, punctuation-insensitive). It is a **hint to speed judging**, not a filter: `none`
-  hits are shown, sorted last.
-- `site` is the hit's hostname with `www.` stripped, mapped to a display name.
-- **Provider: Brave Search API** (`GET https://api.search.brave.com/res/v1/web/search`, key in the
-  `X-Subscription-Token` **header**, so unlike YouTube the key is never in a URL). The provider call is one small
-  function in this file, so swapping providers touches nothing else. `fetch` is injected; tests never touch the
-  network.
-- **Errors carry only an HTTP status and a code, never a URL, request header or error `.cause`:** `QUOTA`
-  (429), `CONFIG` (401/403, 502 with a fix-the-key message), `UPSTREAM` (502); an unset key is `CONFIG`
-  and disables the button.
-
-### 3.2 Route
-
-`GET /api/admin/workbench/:id/lyrics-search` (behind the admin middleware). Reads the song's title and
-first-listed artist (lowest `song_artists.id`, exactly as `findCandidatesForSong` does) and returns the hits.
-**Never reads `song_lyrics`.**
-
-### 3.3 Frontend: `LyricsPanel.jsx`
-
-- A **Search lyric sites** button (the four existing quick links stay beside it as the offline fallback).
-- Results list: site, title, snippet, **Open ↗** (new tab), and **Use as source**, which saves the hit's URL to
-  `lyrics_url` and its display name to `lyrics_source` via the existing `savePanel('lyrics', …)`, and ticks the
-  matching avenue in `lyrics_tried` (`genius`, `bandcamp`, otherwise `genre_site`). The curator still pastes the
-  lyrics themselves.
-- Empty result: "No hits on the lyric sites for *query*" plus a link that runs the same search unrestricted on
-  Google. `CONFIG`/`QUOTA` show a plain message and leave the quick links usable.
-- A stale-song guard (results for song A never render on song B), as in the D picker.
-
-### 3.4 Cost and a provider caveat (verified 2026-10-02, from public sources, **re-check at sign-up**)
-
-- Brave removed its free tier for new users in February 2026; new accounts get **$5 of monthly credit, about
-  1,000 searches**, and the credit is reported to depend on publicly attributing Brave. One curator working one
-  song at a time is far under that.
-- Google's Programmable Search JSON API is **closed to new customers and discontinued 1 January 2027**, so it is
-  not a viable alternative.
-- **Decision needed from the curator before the plan starts:** is the Brave sign-up (account, probably a card on
-  file for overage, and an attribution line on the About page) acceptable? **If not, E ships parts 2 and 3 only**
-  and the existing quick links remain the search; nothing else in this spec depends on part 1.
+- A shared constant `LYRIC_SITES` (frontend, one array of `{ key, name, host, searchUrl(q) | null }`) names the
+  sites: genius.com, azlyrics.com, lyrics.com, musixmatch.com, letras.com, lyricstranslate.com, darklyrics.com,
+  lyricsfreak.com, bandcamp.com, plus genre sites the curator names. Editing the list is a one-line change.
+- **Search all lyric sites** button in `LyricsPanel.jsx`: opens ONE new tab on a Google query of the form
+  `"title" "first artist" lyrics (site:a OR site:b ...)`. One tab covers every listed site, which is the time
+  saving (no opening many sites to look). The existing four quick links stay.
+- A **per-site row** beneath it: each site name links to that site's own search (or to the same Google query
+  restricted to that single `site:` where the site has no usable search URL), with a tick that sets the matching
+  `lyrics_tried` avenue. Ticking is manual and the existing avenue ticks stay as they are.
+- **Use as source:** the curator pastes the lyrics page URL into the existing `lyrics_url` field; E adds nothing
+  beyond a small "source site" suggestion derived from that URL's hostname into `lyrics_source` if it is empty.
+- First-listed artist only, as `findCandidatesForSong` does (collaboration names defeated the search there).
+- Tests: a pure `lyricsSearchUrls` module (query building, quoting/escaping, site OR-list, hostname to source
+  name) under `node --test`. Nothing hits the network.
+- Not built (YAGNI): result preview, match scoring, quota handling, provider abstraction.
 
 ## 4. Part 2 — Not found, transcription, and the shelf
 
@@ -134,7 +105,7 @@ Fetching or scraping lyric text; lyrics-API integrations; a quota dashboard; any
   message or log contains a URL or key.
 - `test/curation.test.js`: the four queue definitions above including the `to-process`/`needs-lyrics`
   exclusions; counts equal list lengths; `saveLyrics` clearing and the transcription source label.
-- Browser smoke (Chrome tools, with the curator logged in): search with the real key (one real search),
-  Use-as-source, mark to-transcribe then save lyrics and watch the song leave the queue, shelve a song, and a
+- Browser smoke (Chrome tools, with the curator logged in): the search-all link and a per-site link open the
+  right URLs, mark to-transcribe then save lyrics and watch the song leave the queue, shelve a song, and a
   390px layout check. Smoke edits must restore any song they touch.
 - Gates as always: backend tests, lint 0 errors, clean build; a fresh whole-branch review before merge.

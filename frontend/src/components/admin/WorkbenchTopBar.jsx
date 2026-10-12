@@ -68,8 +68,10 @@ function WorkbenchTopBar({ wb, onAction, onPark, nav }) {
   return (
     <div className="wb-decisions">
       <div className="wb-decisions-row">
-        <StatusBadges wb={wb} />
         <PublicLinks wb={wb} />
+      </div>
+      <div className="wb-decisions-row">
+        <StatusBadges wb={wb} />
         <Completeness c={wb.completeness} />
         {nav && (
           <span className="wb-nav">
