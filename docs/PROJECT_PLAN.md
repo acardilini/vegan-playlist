@@ -364,7 +364,7 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
   YouTube Data API (first artist + title), multi-select with a guessed-but-editable type per row, one bulk
   add. Needs `YOUTUBE_API_KEY` in `backend/.env`. Spec/plan:
   `specs/2026-10-01-D-youtube-assist-design.md`, `plans/2026-10-01-D-youtube-assist.md`.
-- ◐ **E — Lyrics-search assist — BUILT 2026-10-12, held for the curator's smoke** (branch
+- ☑ **E — Lyrics-search assist — DONE, curator-smoked and MERGED 2026-10-12 (`086cdf8`)** (branch
   `session-E-lyrics-assist`; `specs/2026-10-02-E-lyrics-assist-design.md`, `plans/2026-10-12-E-lyrics-assist.md`):
   one-click multi-site lyric search links (no paid API), To-transcribe queue, Lyrics-on-hold shelf, lyrics-found exit.
   Also queued: no-video-available option; band/album catalogue checker.

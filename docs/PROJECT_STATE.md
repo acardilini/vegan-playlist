@@ -7,7 +7,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-12): Sub-project E - lyrics assist - BUILT and HELD FOR THE CURATOR'S SMOKE, NOT merged.**
+- **Current session (2026-10-12): Sub-project E - lyrics assist - curator-smoked (all good) and MERGED to `main` (merge `086cdf8`, no-ff); merged `main` re-verified backend 230/230, utils 22/22, build clean.**
   Branch `session-E-lyrics-assist`. Lyrics panel: **Search all lyric sites** (one Google tab ORing `site:` over an
   editable list) plus per-site links that mark the avenue tried; **Could transcribe by ear / Put on hold / Clear**
   actions. Admin Songs rail gains **To transcribe** and **Lyrics on hold** (replacing *Awaiting community*);
@@ -427,7 +427,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 > not the right home). Needs its own brainstorm.
 >
 > **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
-> (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
+> on the Vocals colour-by in particular. _(2026-10-12: the site is dark-only - `base.css` sets `color-scheme: dark` and there is no light mode or toggle; the "both modes" in the colour decision refers to the validator's light and dark checks, so only the dark rendering needs eyeballing.)_
 >
 > **⏭ NEXT: sub-project E — SPEC WRITTEN, awaiting the curator's review** (branch `session-E-lyrics-assist`, spec
 > `specs/2026-10-02-E-lyrics-assist-design.md`, then write the plan). **Open decision for the curator:** is a Brave Search
