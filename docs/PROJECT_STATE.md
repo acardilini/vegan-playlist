@@ -419,6 +419,13 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **Logged 2026-10-12 (curator, NOT built):** some songs' stored lyrics are junk (a YouTube description or an error message) and 
+> a few of those already have analysis, so that analysis is unreliable. They need flagging for fixing. Curator: "maybe I'll sort this 
+> out with the analysis process" - so no flag is built yet. **If/when built:** the curator wants a song's lyric analysis **hidden 
+> publicly while it is flagged** (touches the public read path: song page, browse facets, `LATEST_ANALYSIS` consumers) until the flag 
+> clears. Open design questions: manual flag vs detect-and-confirm, and where the flag lives (new column; `park_reason` CHECK is 
+> not the right home). Needs its own brainstorm.
+>
 > **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
 > (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
