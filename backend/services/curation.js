@@ -38,22 +38,33 @@ async function setProcessing(db, songId, { snooze_until, park_reason, lyrics_tri
 }
 
 const ARTWORK_SQL = `(al.images IS NOT NULL AND al.images::text NOT IN ('null','[]',''))`;
-const QUEUE_NAMES = ['to-process','awaiting-community','remind-later','needs-lyrics',
+const LYRIC_PARK_REASONS_SQL = `('awaiting_community','needs_transcription','listened_unclear')`;
+const HAS_LYRICS_SQL = `EXISTS (SELECT 1 FROM song_lyrics sl
+              WHERE sl.song_id=s.id AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '')`;
+// A song is "shelved" while it carries a lyric park reason AND still has no lyrics. Once lyrics
+// exist it re-enters normal processing even if the reason was never cleared.
+// COALESCE: a song with no song_processing row has park_reason NULL, and NOT(NULL) would drop it.
+const SHELVED_SQL = `(COALESCE(sp.park_reason IN ${LYRIC_PARK_REASONS_SQL}, false) AND NOT ${HAS_LYRICS_SQL})`;
+const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics',
   'needs-cover','needs-video','needs-analysis','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
     case 'to-process':
       return `s.status='pending'
-              AND sp.park_reason IS DISTINCT FROM 'awaiting_community'
+              AND NOT ${SHELVED_SQL}
               AND (sp.snooze_until IS NULL OR sp.snooze_until <= CURRENT_DATE)`;
-    case 'awaiting-community':
-      return `s.status='pending' AND sp.park_reason='awaiting_community'`;
+    case 'to-transcribe':
+      return `s.status IN ('pending','included') AND sp.park_reason='needs_transcription'
+              AND NOT ${HAS_LYRICS_SQL}`;
+    case 'lyrics-on-hold':
+      return `s.status IN ('pending','included')
+              AND sp.park_reason IN ('awaiting_community','listened_unclear')
+              AND NOT ${HAS_LYRICS_SQL}`;
     case 'remind-later':
       return `sp.snooze_until IS NOT NULL AND sp.snooze_until > CURRENT_DATE`;
     case 'needs-lyrics':
-      return `s.status='included' AND NOT EXISTS (SELECT 1 FROM song_lyrics sl
-              WHERE sl.song_id=s.id AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '')`;
+      return `s.status='included' AND NOT ${HAS_LYRICS_SQL} AND sp.park_reason IS NULL`;
     case 'needs-cover':
       return `s.status='included' AND NOT ${ARTWORK_SQL}`;
     case 'needs-video':
@@ -128,8 +139,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
 }
 
 async function queueCounts(db) {
-  const keys = ['to-process','awaiting-community','remind-later','needs-lyrics',
-    'needs-cover','needs-video','needs-analysis','to-finalise','live','all','featured'];
+  const keys = QUEUE_NAMES;
   const out = {};
   for (const queue of keys) {
     const r = await db.query(`
