@@ -8,7 +8,7 @@ const GROUPS = [
     ['needs-video', 'Needs video', false],
     ['needs-analysis', 'Needs analysis', true],
   ]],
-  ['Parked', [['awaiting-community', 'Awaiting community', false], ['remind-later', 'Remind me later', false]]],
+  ['Parked', [['to-transcribe', 'To transcribe', false], ['lyrics-on-hold', 'Lyrics on hold', false], ['remind-later', 'Remind me later', false]]],
   ['Publish', [['to-finalise', 'To finalise', false], ['live', 'Live', false], ['featured', 'Featured', false]]],
   ['Everything', [['all', 'All songs', false]]],
 ];
