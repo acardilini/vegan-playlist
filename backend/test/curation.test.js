@@ -393,3 +393,42 @@ test('listLanguages returns distinct languages across all statuses, most-used fi
   assert.equal(two.count, 1);
   assert.ok(rows.indexOf(one) < rows.indexOf(two), 'ordered by count desc');
 });
+
+test('saving lyrics takes a song off the transcription shelf and labels the source', async () => {
+  const id = await mkSong({ title: 'ZZZCUR E Transcribed', status: 'pending' });
+  await curation.setProcessing(pool, id, { park_reason: 'needs_transcription' });
+  const wb = await curation.saveLyrics(pool, id, { lyrics: 'by ear words' });
+  assert.equal(wb.processing.park_reason, null);
+  assert.equal(wb.lyrics_status, 'found');
+  assert.equal(wb.lyrics_source, 'Transcribed by curator');
+  assert.ok(!(await curation.listCurationQueue(pool, { queue: 'to-transcribe' })).rows.some(r => r.id === id));
+  assert.ok((await curation.listCurationQueue(pool, { queue: 'to-process' })).rows.some(r => r.id === id));
+});
+
+test('saving lyrics keeps an explicit source and status, and clears a hold reason without labelling', async () => {
+  const a = await mkSong({ title: 'ZZZCUR E ExplicitSrc', status: 'pending' });
+  await curation.setProcessing(pool, a, { park_reason: 'needs_transcription' });
+  const wa = await curation.saveLyrics(pool, a, { lyrics: 'x', lyrics_source: 'Booklet', lyrics_status: 'not_searched' });
+  assert.equal(wa.lyrics_source, 'Booklet');
+  assert.equal(wa.lyrics_status, 'not_searched');
+  const b = await mkSong({ title: 'ZZZCUR E HoldCleared', status: 'included' });
+  await curation.setProcessing(pool, b, { park_reason: 'awaiting_community' });
+  const wb = await curation.saveLyrics(pool, b, { lyrics: 'from the community' });
+  assert.equal(wb.processing.park_reason, null);
+  assert.equal(wb.lyrics_source, 'other'); // column default, left untouched
+});
+
+test('saving empty or translation-only lyrics does not clear the park reason', async () => {
+  const id = await mkSong({ title: 'ZZZCUR E KeepParked', status: 'pending' });
+  await curation.setProcessing(pool, id, { park_reason: 'needs_transcription' });
+  await curation.saveLyrics(pool, id, { lyrics: '' });
+  await curation.saveLyrics(pool, id, { lyrics_url: 'https://example.com/x' });
+  assert.equal((await curation.getProcessing(pool, id)).park_reason, 'needs_transcription');
+});
+
+test('saving lyrics on a song with no processing row works and sets found', async () => {
+  const id = await mkSong({ title: 'ZZZCUR E NoProcRow', status: 'pending' });
+  const wb = await curation.saveLyrics(pool, id, { lyrics: 'words' });
+  assert.equal(wb.lyrics_status, 'found');
+  assert.equal(wb.lyrics_source, 'other'); // column default, left untouched
+});

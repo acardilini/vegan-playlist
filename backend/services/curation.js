@@ -316,10 +316,24 @@ async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_stat
       WHERE song_id=$1`,
       [id, transParam, srcParam]);
   }
+  const hasNewLyrics = typeof lyrics === 'string' && lyrics.trim() !== '';
+  let priorPark = null;
+  if (hasNewLyrics) {
+    priorPark = (await db.query(`SELECT park_reason FROM song_processing WHERE song_id=$1`, [id])).rows[0]?.park_reason || null;
+  }
   const sets = [], params = [id];
   const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
-  add('lyrics_status', lyrics_status); add('lyrics_url', lyrics_url); add('lyrics_source', lyrics_source);
+  // Adding real lyrics means they were found; an explicit status from the caller wins.
+  add('lyrics_status', hasNewLyrics && lyrics_status === undefined ? 'found' : lyrics_status);
+  add('lyrics_url', lyrics_url);
+  // Transcribed-by-ear songs get a plain label, but only when the caller named no source.
+  const autoSource = hasNewLyrics && priorPark === 'needs_transcription' && lyrics_source === undefined
+    ? 'Transcribed by curator' : lyrics_source;
+  add('lyrics_source', autoSource);
   if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
+  if (hasNewLyrics && priorPark) {
+    await db.query(`UPDATE song_processing SET park_reason=NULL, updated_at=CURRENT_TIMESTAMP WHERE song_id=$1`, [id]);
+  }
   return getWorkbench(db, id);
 }
 
