@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AutoText, SaveTag } from './SavedField';
 import { LYRIC_SITES, allSitesUrl, siteUrl, sourceNameFromUrl } from '../../utils/lyricsSearchUrls';
 
@@ -26,11 +26,17 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   const [highlightsSave, setHighlightsSave] = useState('idle');
   const [holdSave, setHoldSave] = useState('idle');
   const tried = Array.isArray(wb.processing?.lyrics_tried) ? wb.processing.lyrics_tried : [];
+  // Synchronous mirror of the tried list so quick successive clicks never save from a stale array.
+  const triedRef = useRef(tried);
+  const triedKey = tried.join(',');
+  useEffect(() => { triedRef.current = tried; }, [triedKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const park = wb.processing?.park_reason || null;
   const song = { title: wb.title, artist: (wb.artists || [])[0]?.name || '' };
   // Opening a site marks its avenue tried. Add-only: unticking stays with the Avenues checkboxes.
   const markTried = (avenue) => {
-    if (!tried.includes(avenue)) saveProcessing({ lyrics_tried: [...tried, avenue] });
+    if (triedRef.current.includes(avenue)) return;
+    triedRef.current = [...triedRef.current, avenue];
+    saveProcessing({ lyrics_tried: triedRef.current });
   };
   // Backend no-ops translation/source_url updates until a song_lyrics row exists
   // (created only when full lyrics are first saved). Gate the UI so that trap
@@ -46,6 +52,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
 
   const canShelve = (wb.status === 'pending' || wb.status === 'included') && !hasLyrics;
   const setHold = async (reason) => {
+    if (reason && hasLyrics) return; // never mark not_found on a song that has lyrics
     setHoldSave('saving');
     // "not found" is implied by every shelving action; Clear leaves the status alone.
     // Serialised: savePanel replaces the whole workbench, so overlapping calls could clobber each other.
@@ -63,7 +70,9 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
     setStatusSave(res.ok ? 'saved' : 'error');
   };
   const toggleAvenue = async (key) => {
-    const next = tried.includes(key) ? tried.filter((k) => k !== key) : [...tried, key];
+    const cur = triedRef.current;
+    const next = cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key];
+    triedRef.current = next;
     setAvenuesSave('saving');
     const res = await saveProcessing({ lyrics_tried: next });
     setAvenuesSave(res.ok ? 'saved' : 'error');
@@ -101,7 +110,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
 
       <div className="wb-lyric-search">
         <a className="btn btn-primary btn-sm" href={allSitesUrl(song)} target="_blank" rel="noreferrer"
-          onClick={() => markTried('google')}>Search all lyric sites &#8599;</a>
+          onClick={() => markTried('google')}>Search all lyric sites <span aria-hidden="true">&#8599;</span></a>
         <span className="wb-field-label">or one site:</span>
         {LYRIC_SITES.map((s) => (
           <a key={s.key} className="btn btn-ghost btn-sm" href={siteUrl(s, song)} target="_blank" rel="noreferrer"
@@ -116,7 +125,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
         onSave={(v) => {
           const body = { source_url: v };
           const name = sourceNameFromUrl(v);
-          if (name && sourceIsUnset(wb.lyrics_source)) body.lyrics_source = name;
+          if (name && sourceIsUnset(wb.lyrics_source)) body.lyrics_source = name.slice(0, 50); // VARCHAR(50)
           return savePanel('lyrics', body);
         }} />
       {!hasLyrics && <p className="admin-stub">Add full lyrics first</p>}
@@ -143,12 +152,14 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
         <div className="wb-field">
           <span className="wb-field-label">Can&rsquo;t find them? <SaveTag status={holdSave} /></span>
           <div className="wb-hold-actions">
+            {canShelve && (<>
             <button type="button" className={`btn btn-sm ${park === 'needs_transcription' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setHold('needs_transcription')}>Could transcribe by ear</button>
+              aria-pressed={park === 'needs_transcription'} onClick={() => setHold('needs_transcription')}>Could transcribe by ear</button>
             <button type="button" className={`btn btn-sm ${park === 'awaiting_community' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setHold('awaiting_community')}>Put on hold &mdash; crowd-source</button>
+              aria-pressed={park === 'awaiting_community'} onClick={() => setHold('awaiting_community')}>Put on hold &mdash; crowd-source</button>
             <button type="button" className={`btn btn-sm ${park === 'listened_unclear' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setHold('listened_unclear')}>Put on hold &mdash; can&rsquo;t make them out</button>
+              aria-pressed={park === 'listened_unclear'} onClick={() => setHold('listened_unclear')}>Put on hold &mdash; can&rsquo;t make them out</button>
+            </>)}
             {LYRIC_PARKS.includes(park) && <button type="button" className="btn btn-ghost btn-sm" onClick={() => setHold(null)}>Clear</button>}
           </div>
         </div>
