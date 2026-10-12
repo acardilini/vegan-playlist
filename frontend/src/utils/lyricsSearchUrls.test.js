@@ -50,3 +50,23 @@ test('sourceNameFromUrl returns empty for blank, garbage and non-http input', ()
     assert.equal(sourceNameFromUrl(v), '', String(v));
   }
 });
+
+test('siteUrl percent-encodes reserved characters in title and artist', () => {
+  const genius = LYRIC_SITES.find((s) => s.key === 'genius');
+  const u = siteUrl(genius, { title: 'A&B #1', artist: 'Sigur Rós' });
+  assert.ok(u.includes('A%26B%20%231'), u);
+  assert.ok(u.includes('Sigur%20R%C3%B3s'), u);
+  assert.ok(!u.includes('#'), u);
+});
+
+test('sourceNameFromUrl does not treat a look-alike host as a known site', () => {
+  assert.equal(sourceNameFromUrl('https://notgenius.com/x'), 'notgenius.com');
+});
+
+test('URLs with no artist contain no empty quoted pair', () => {
+  const song = { title: 'Solo' };
+  const urls = [allSitesUrl(song), ...LYRIC_SITES.map((s) => siteUrl(s, song))];
+  for (const u of urls) {
+    assert.ok(!u.includes('%22%22') && !decodeURIComponent(u.replace(/\+/g, ' ')).includes('""'), u);
+  }
+});
