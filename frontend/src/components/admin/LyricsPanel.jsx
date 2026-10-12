@@ -1,25 +1,32 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AutoText, SaveTag } from './SavedField';
+import { LYRIC_SITES, anywhereUrl, allSitesUrl, siteUrl, youtubeSearchUrl, sourceNameFromUrl } from '../../utils/lyricsSearchUrls';
+
+// songs.lyrics_source defaults to 'other' in the DB, so that counts as unset.
+const sourceIsUnset = (s) => !s || String(s).trim().toLowerCase() === 'other';
+const LYRIC_PARKS = ['needs_transcription', 'awaiting_community', 'listened_unclear'];
 
 const LYRICS_STATUSES = ['found', 'not_found', 'not_searched'];
 const AVENUES = [['google', 'Google'], ['genius', 'Genius'], ['bandcamp', 'Bandcamp'], ['youtube', 'YouTube'], ['genre_site', 'Genre sites']];
 
-function searchLinks(title, artist) {
-  const q = encodeURIComponent(`${title || ''} ${artist || ''}`.trim());
-  return [
-    ['Google', `https://www.google.com/search?q=${q}%20lyrics`],
-    ['Genius', `https://genius.com/search?q=${q}`],
-    ['Bandcamp', `https://bandcamp.com/search?q=${q}`],
-    ['YouTube', `https://www.youtube.com/results?search_query=${q}`],
-  ];
-}
-
 function LyricsPanel({ wb, savePanel, saveProcessing }) {
-  const artist = (wb.artists || []).map((a) => a.name).join(' ');
   const [statusSave, setStatusSave] = useState('idle');
   const [avenuesSave, setAvenuesSave] = useState('idle');
   const [highlightsSave, setHighlightsSave] = useState('idle');
+  const [holdSave, setHoldSave] = useState('idle');
   const tried = Array.isArray(wb.processing?.lyrics_tried) ? wb.processing.lyrics_tried : [];
+  // Synchronous mirror of the tried list so quick successive clicks never save from a stale array.
+  const triedRef = useRef(tried);
+  const triedKey = tried.join(',');
+  useEffect(() => { triedRef.current = tried; }, [triedKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const park = wb.processing?.park_reason || null;
+  const song = { title: wb.title, artist: (wb.artists || [])[0]?.name || '' };
+  // Opening a site marks its avenue tried. Add-only: unticking stays with the Avenues checkboxes.
+  const markTried = (avenue) => {
+    if (triedRef.current.includes(avenue)) return;
+    triedRef.current = [...triedRef.current, avenue];
+    saveProcessing({ lyrics_tried: triedRef.current });
+  };
   // Backend no-ops translation/source_url updates until a song_lyrics row exists
   // (created only when full lyrics are first saved). Gate the UI so that trap
   // is unreachable: no false "Saved" on a value that was silently dropped.
@@ -32,13 +39,29 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   // whitespace only.
   const highlights = (wb.lyrics_highlights || '').split(/\n{2,}/).map((h) => h.trim()).filter(Boolean);
 
+  const canShelve = (wb.status === 'pending' || wb.status === 'included') && !hasLyrics;
+  const setHold = async (reason) => {
+    if (reason && hasLyrics) return; // never mark not_found on a song that has lyrics
+    setHoldSave('saving');
+    // "not found" is implied by every shelving action; Clear leaves the status alone.
+    // Serialised: savePanel replaces the whole workbench, so overlapping calls could clobber each other.
+    if (reason) {
+      const first = await savePanel('lyrics', { lyrics_status: 'not_found' });
+      if (!first.ok) { setHoldSave('error'); return; }
+    }
+    const res = await saveProcessing({ park_reason: reason || '' });
+    setHoldSave(res.ok ? 'saved' : 'error');
+  };
+
   const onStatus = async (e) => {
     setStatusSave('saving');
     const res = await savePanel('lyrics', { lyrics_status: e.target.value });
     setStatusSave(res.ok ? 'saved' : 'error');
   };
   const toggleAvenue = async (key) => {
-    const next = tried.includes(key) ? tried.filter((k) => k !== key) : [...tried, key];
+    const cur = triedRef.current;
+    const next = cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key];
+    triedRef.current = next;
     setAvenuesSave('saving');
     const res = await saveProcessing({ lyrics_tried: next });
     setAvenuesSave(res.ok ? 'saved' : 'error');
@@ -67,18 +90,31 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
     <section className="wb-panel">
       <h2>Lyrics</h2>
 
-      <div className="wb-quicklinks">
-        <span className="wb-field-label">Search for lyrics:</span>
-        {searchLinks(wb.title, artist).map(([label, href]) => (
-          <a key={label} className="btn btn-secondary btn-sm" href={href} target="_blank" rel="noreferrer">{label}</a>
+      <div className="wb-lyric-search">
+        <a className="btn btn-primary btn-sm" href={anywhereUrl(song)} target="_blank" rel="noreferrer"
+          onClick={() => markTried('google')}>Search the web for lyrics <span aria-hidden="true">&#8599;</span></a>
+        <a className="btn btn-secondary btn-sm" href={allSitesUrl(song)} target="_blank" rel="noreferrer"
+          title="Only the sites named on this row; may find nothing for an obscure song"
+          onClick={() => markTried('google')}>Listed lyric sites only</a>
+        <span className="wb-field-label">or one site:</span>
+        {LYRIC_SITES.map((s) => (
+          <a key={s.key} className="btn btn-ghost btn-sm" href={siteUrl(s, song)} target="_blank" rel="noreferrer"
+            onClick={() => markTried(s.avenue)}>{s.name}</a>
         ))}
+        <a className="btn btn-ghost btn-sm" href={youtubeSearchUrl(song)} target="_blank" rel="noreferrer"
+          onClick={() => markTried('youtube')}>YouTube</a>
       </div>
 
       <AutoText label="Full lyrics (local-only)" initial={wb.lyrics} multiline rows={12} monospace
         inputRef={lyricsRef} onSave={(v) => savePanel('lyrics', { lyrics: v })} />
       <AutoText label="Lyrics source URL" initial={wb.lyrics_source_url} placeholder="https://…"
         disabled={!hasLyrics}
-        onSave={(v) => savePanel('lyrics', { source_url: v })} />
+        onSave={(v) => {
+          const body = { source_url: v };
+          const name = sourceNameFromUrl(v);
+          if (name && sourceIsUnset(wb.lyrics_source)) body.lyrics_source = name.slice(0, 50); // VARCHAR(50)
+          return savePanel('lyrics', body);
+        }} />
       {!hasLyrics && <p className="admin-stub">Add full lyrics first</p>}
 
       <label className="wb-field">
@@ -98,6 +134,23 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
           ))}
         </div>
       </div>
+
+      {(canShelve || LYRIC_PARKS.includes(park)) && (
+        <div className="wb-field">
+          <span className="wb-field-label">Can&rsquo;t find them? <SaveTag status={holdSave} /></span>
+          <div className="wb-hold-actions">
+            {canShelve && (<>
+            <button type="button" className={`btn btn-sm ${park === 'needs_transcription' ? 'btn-primary' : 'btn-secondary'}`}
+              aria-pressed={park === 'needs_transcription'} onClick={() => setHold('needs_transcription')}>Could transcribe by ear</button>
+            <button type="button" className={`btn btn-sm ${park === 'awaiting_community' ? 'btn-primary' : 'btn-secondary'}`}
+              aria-pressed={park === 'awaiting_community'} onClick={() => setHold('awaiting_community')}>Put on hold &mdash; crowd-source</button>
+            <button type="button" className={`btn btn-sm ${park === 'listened_unclear' ? 'btn-primary' : 'btn-secondary'}`}
+              aria-pressed={park === 'listened_unclear'} onClick={() => setHold('listened_unclear')}>Put on hold &mdash; can&rsquo;t make them out</button>
+            </>)}
+            {LYRIC_PARKS.includes(park) && <button type="button" className="btn btn-ghost btn-sm" onClick={() => setHold(null)}>Clear</button>}
+          </div>
+        </div>
+      )}
 
       <AutoText label="Translation (local-only)" initial={wb.translation} multiline rows={6}
         disabled={!hasLyrics}

@@ -146,7 +146,7 @@ test('setProcessing throws NOT_FOUND for missing song', async () => {
   await assert.rejects(curation.setProcessing(pool, -12345, { processing_note: 'x' }), e => e.code === 'NOT_FOUND');
 });
 
-test('listCurationQueue to-process excludes awaiting-community and future snoozed', async () => {
+test('listCurationQueue to-process excludes lyric-parked and future snoozed', async () => {
   const active = await mkSong({ title: 'ZZZCUR Q Active', status: 'pending' });
   const waiting = await mkSong({ title: 'ZZZCUR Q Waiting', status: 'pending' });
   const snoozed = await mkSong({ title: 'ZZZCUR Q Snoozed', status: 'pending' });
@@ -155,13 +155,59 @@ test('listCurationQueue to-process excludes awaiting-community and future snooze
 
   const ids = (await curation.listCurationQueue(pool, { queue: 'to-process' })).rows.map(r => r.id);
   assert.ok(ids.includes(active));
-  assert.ok(!ids.includes(waiting), 'awaiting-community excluded from to-process');
+  assert.ok(!ids.includes(waiting), 'lyrics-on-hold excluded from to-process');
   assert.ok(!ids.includes(snoozed), 'future-snoozed excluded from to-process');
 
-  const wIds = (await curation.listCurationQueue(pool, { queue: 'awaiting-community' })).rows.map(r => r.id);
+  const wIds = (await curation.listCurationQueue(pool, { queue: 'lyrics-on-hold' })).rows.map(r => r.id);
   assert.ok(wIds.includes(waiting));
   const rIds = (await curation.listCurationQueue(pool, { queue: 'remind-later' })).rows.map(r => r.id);
   assert.ok(rIds.includes(snoozed));
+});
+
+test('to-transcribe and lyrics-on-hold hold the right park reasons, pending or included', async () => {
+  const tr = await mkSong({ title: 'ZZZCUR E Transcribe', status: 'pending' });
+  const trInc = await mkSong({ title: 'ZZZCUR E TranscribeInc', status: 'included', published: true });
+  const hold = await mkSong({ title: 'ZZZCUR E HoldCommunity', status: 'pending' });
+  const holdUnclear = await mkSong({ title: 'ZZZCUR E HoldUnclear', status: 'included' });
+  await curation.setProcessing(pool, tr, { park_reason: 'needs_transcription' });
+  await curation.setProcessing(pool, trInc, { park_reason: 'needs_transcription' });
+  await curation.setProcessing(pool, hold, { park_reason: 'awaiting_community' });
+  await curation.setProcessing(pool, holdUnclear, { park_reason: 'listened_unclear' });
+
+  const ids = async (queue) => (await curation.listCurationQueue(pool, { queue })).rows.map(r => r.id);
+  const t = await ids('to-transcribe'), h = await ids('lyrics-on-hold');
+  assert.ok(t.includes(tr) && t.includes(trInc));
+  assert.ok(!t.includes(hold) && !t.includes(holdUnclear));
+  assert.ok(h.includes(hold) && h.includes(holdUnclear));
+  assert.ok(!h.includes(tr) && !h.includes(trInc));
+  // shelved songs stop clogging the processing queues
+  assert.ok(!(await ids('to-process')).includes(tr));
+  assert.ok(!(await ids('needs-lyrics')).includes(trInc), 'included + parked is not in needs-lyrics');
+  assert.ok(!(await ids('needs-lyrics')).includes(holdUnclear));
+});
+
+test('lyric-parked queues skip rejected songs and songs that already have lyrics', async () => {
+  const rej = await mkSong({ title: 'ZZZCUR E RejectedParked', status: 'rejected' });
+  const has = await mkSong({ title: 'ZZZCUR E ParkedHasLyrics', status: 'pending' });
+  await curation.setProcessing(pool, rej, { park_reason: 'needs_transcription' });
+  await curation.setProcessing(pool, has, { park_reason: 'needs_transcription' });
+  await pool.query(`INSERT INTO song_lyrics (song_id, lyrics) VALUES ($1, 'la la')`, [has]);
+  const ids = async (queue) => (await curation.listCurationQueue(pool, { queue })).rows.map(r => r.id);
+  assert.ok(!(await ids('to-transcribe')).includes(rej));
+  assert.ok(!(await ids('lyrics-on-hold')).includes(rej));
+  assert.ok(!(await ids('to-transcribe')).includes(has), 'has lyrics, so not waiting on a transcription');
+  assert.ok((await ids('to-process')).includes(has), 'a parked song that has lyrics is not lost from to-process');
+});
+
+test('queue counts equal list lengths for the new queues', async () => {
+  const c = await curation.queueCounts(pool);
+  for (const k of ['to-transcribe', 'lyrics-on-hold', 'to-process', 'needs-lyrics']) {
+    assert.equal(c[k], (await curation.listCurationQueue(pool, { queue: k })).rows.length, k);
+  }
+});
+
+test('the retired awaiting-community queue key is rejected', async () => {
+  await assert.rejects(curation.listCurationQueue(pool, { queue: 'awaiting-community' }), e => e.code === 'BAD_QUEUE');
 });
 
 test('listCurationQueue needs-lyrics = included songs with no lyrics row', async () => {
@@ -179,7 +225,7 @@ test('listCurationQueue unknown queue throws BAD_QUEUE', async () => {
 
 test('queueCounts returns a number for every queue key', async () => {
   const c = await curation.queueCounts(pool);
-  for (const k of ['to-process','awaiting-community','remind-later','needs-lyrics','needs-cover','needs-video','needs-analysis','to-finalise','inbox','live']) {
+  for (const k of ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics','needs-cover','needs-video','needs-analysis','to-finalise','inbox','live']) {
     assert.equal(typeof c[k], 'number', `count for ${k}`);
   }
 });
@@ -346,4 +392,43 @@ test('listLanguages returns distinct languages across all statuses, most-used fi
   assert.equal(one.count, 2, 'counts every song carrying the language');
   assert.equal(two.count, 1);
   assert.ok(rows.indexOf(one) < rows.indexOf(two), 'ordered by count desc');
+});
+
+test('saving lyrics takes a song off the transcription shelf and labels the source', async () => {
+  const id = await mkSong({ title: 'ZZZCUR E Transcribed', status: 'pending' });
+  await curation.setProcessing(pool, id, { park_reason: 'needs_transcription' });
+  const wb = await curation.saveLyrics(pool, id, { lyrics: 'by ear words' });
+  assert.equal(wb.processing.park_reason, null);
+  assert.equal(wb.lyrics_status, 'found');
+  assert.equal(wb.lyrics_source, 'Transcribed by curator');
+  assert.ok(!(await curation.listCurationQueue(pool, { queue: 'to-transcribe' })).rows.some(r => r.id === id));
+  assert.ok((await curation.listCurationQueue(pool, { queue: 'to-process' })).rows.some(r => r.id === id));
+});
+
+test('saving lyrics keeps an explicit source and status, and clears a hold reason without labelling', async () => {
+  const a = await mkSong({ title: 'ZZZCUR E ExplicitSrc', status: 'pending' });
+  await curation.setProcessing(pool, a, { park_reason: 'needs_transcription' });
+  const wa = await curation.saveLyrics(pool, a, { lyrics: 'x', lyrics_source: 'Booklet', lyrics_status: 'not_searched' });
+  assert.equal(wa.lyrics_source, 'Booklet');
+  assert.equal(wa.lyrics_status, 'not_searched');
+  const b = await mkSong({ title: 'ZZZCUR E HoldCleared', status: 'included' });
+  await curation.setProcessing(pool, b, { park_reason: 'awaiting_community' });
+  const wb = await curation.saveLyrics(pool, b, { lyrics: 'from the community' });
+  assert.equal(wb.processing.park_reason, null);
+  assert.equal(wb.lyrics_source, 'other'); // column default, left untouched
+});
+
+test('saving empty or translation-only lyrics does not clear the park reason', async () => {
+  const id = await mkSong({ title: 'ZZZCUR E KeepParked', status: 'pending' });
+  await curation.setProcessing(pool, id, { park_reason: 'needs_transcription' });
+  await curation.saveLyrics(pool, id, { lyrics: '' });
+  await curation.saveLyrics(pool, id, { lyrics_url: 'https://example.com/x' });
+  assert.equal((await curation.getProcessing(pool, id)).park_reason, 'needs_transcription');
+});
+
+test('saving lyrics on a song with no processing row works and sets found', async () => {
+  const id = await mkSong({ title: 'ZZZCUR E NoProcRow', status: 'pending' });
+  const wb = await curation.saveLyrics(pool, id, { lyrics: 'words' });
+  assert.equal(wb.lyrics_status, 'found');
+  assert.equal(wb.lyrics_source, 'other'); // column default, left untouched
 });

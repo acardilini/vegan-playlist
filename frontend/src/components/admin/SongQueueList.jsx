@@ -6,7 +6,7 @@ const PAGE_SIZE = 50;
 
 const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
-  'needs-video': 'Needs video', 'awaiting-community': 'Awaiting community',
+  'needs-video': 'Needs video', 'to-transcribe': 'To transcribe', 'lyrics-on-hold': 'Lyrics on hold',
   'remind-later': 'Remind me later', 'to-finalise': 'To finalise',
   'live': 'Live', 'all': 'All songs', 'featured': 'Featured',
 };

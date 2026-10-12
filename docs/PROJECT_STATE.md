@@ -7,8 +7,19 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-02): Sub-project D — YouTube assist — curator-smoked (all working) and MERGED to
-  `main` (merge `f995358`, no-ff); merged `main` re-verified backend 222/222, build clean. NEXT: sub-project E.** Branch `session-D-youtube-assist` (from `main` at `ce2fb8c`). The workbench Video panel gains
+- **Current session (2026-10-12): Sub-project E - lyrics assist - BUILT and HELD FOR THE CURATOR'S SMOKE, NOT merged.**
+  Branch `session-E-lyrics-assist`. Lyrics panel: **Search all lyric sites** (one Google tab ORing `site:` over an
+  editable list) plus per-site links that mark the avenue tried; **Could transcribe by ear / Put on hold / Clear**
+  actions. Admin Songs rail gains **To transcribe** and **Lyrics on hold** (replacing *Awaiting community*);
+  shelved songs leave *To be processed* and *Needs lyrics*; saving real lyrics takes a song off the shelf. Brave was
+  rejected, so there are no inline results. Also: public-page links on their own row, Analysis panel moved under
+  Lyrics. Backend 230/230, utils 20/20, lint 0, build clean, live smoke (a)-(h) PASS, opus review 0C/0I.
+  **Curator smoke to try:** open a pending song with no lyrics -> Search all lyric sites; mark *Could transcribe by
+  ear* -> it shows under Songs -> Parked -> To transcribe and leaves To be processed; paste lyrics -> it leaves the
+  queue and its source reads "Transcribed by curator". **NEXT: F (Spotify push)**, then the logged requests (no-video
+  option, band/album catalogue checker).
+- **Previous session (2026-10-02): Sub-project D — YouTube assist — curator-smoked (all working) and MERGED to
+  `main` (merge `f995358`, no-ff); merged `main` re-verified backend 222/222, build clean. NEXT: sub-project E (spec written, see below).** Branch `session-D-youtube-assist` (from `main` at `ce2fb8c`). The workbench Video panel gains
   **Find videos**: real candidates from the official YouTube Data API (thumbnail, title, channel, duration, an
   "won't embed on the site" warning, "Already added"), tick several, edit each row's type (pre-guessed from the
   title/channel), **Add N selected** in one transaction. Add-by-URL stays. New `services/youtubeSearch.js`,
@@ -408,10 +419,21 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **Logged 2026-10-12 (curator, NOT built):** some songs' stored lyrics are junk (a YouTube description or an error message) and 
+> a few of those already have analysis, so that analysis is unreliable. They need flagging for fixing. Curator: "maybe I'll sort this 
+> out with the analysis process" - so no flag is built yet. **If/when built:** the curator wants a song's lyric analysis **hidden 
+> publicly while it is flagged** (touches the public read path: song page, browse facets, `LATEST_ANALYSIS` consumers) until the flag 
+> clears. Open design questions: manual flag vs detect-and-confirm, and where the flag lives (new column; `park_reason` CHECK is 
+> not the right home). Needs its own brainstorm.
+>
 > **Open from the 2026-10-01 analysis sync (not blocking):** curator browser smoke of the new 7-colour Explore palette
 > (see the 2026-10-01 colour decision) in light and dark, on the Vocals colour-by in particular.
 >
-> **⏭ NEXT: sub-project E (lyrics-search assist) — brainstorm first (`song_lyrics` is local-only/copyright; ToS). F remains after.**
+> **⏭ NEXT: sub-project E — SPEC WRITTEN, awaiting the curator's review** (branch `session-E-lyrics-assist`, spec
+> `specs/2026-10-02-E-lyrics-assist-design.md`, then write the plan). **Open decision for the curator:** is a Brave Search
+> API sign-up acceptable (account, probably a card for overage, attribution line)? Brave has no free tier for new users
+> (~$5/month credit = ~1,000 searches); Google Custom Search is closed to new customers and ends 2027 (from web search,
+> re-check at sign-up). If no, E ships only the To-transcribe queue + Lyrics-on-hold shelf (spec parts 2). F remains after.
 > **DONE 2026-10-02: workbench "See song page" / "See artist page" links** (top bar, new tab, muted + tooltip when the
 > song is not live). **Curator requests logged 2026-10-02, each needing its own brainstorm (E first):**
 > 1. **E - lyrics-search assist** is the most labourious step and many songs are obscure. Needs: a way to mark
@@ -609,6 +631,32 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-10-12 (sub-project E) - no paid search provider; lyric search is link-building only.** The curator rejected a
+  Brave Search API subscription (no free tier for new accounts; Google Programmable Search is closed to new
+  customers). Part 1 is therefore a pure frontend module (`utils/lyricsSearchUrls.js`): one Google query ORing
+  `site:` terms over the editable `LYRIC_SITES` list, plus per-site links. No key, no backend route, no fetched
+  results, no result preview. Opening a site link marks its avenue in `lyrics_tried` **add-only** (unticking stays
+  with the Avenues checkboxes) rather than the spec's tick-per-site. The artist used is `wb.artists[0]` (the
+  workbench orders by name), not the lowest `song_artists.id` the spec named.
+- **2026-10-12 (sub-project E, curator smoke) - the first "search all lyric sites" returned nothing for an obscure song.** The query required the quoted title AND quoted artist on one of nine named sites; for "No Torture" by Decontrol Google found no documents. Fix: the primary button is now **Search the web for lyrics** (unrestricted `"title" artist lyrics`; artist no longer quoted), **Listed lyric sites only** is the secondary, per-site buttons stay, and a YouTube link joined them. The old Google/Genius/Bandcamp/YouTube quick-link row was removed as duplicate (curator prefers less UI). The restricted search can still legitimately return nothing; that is why it is secondary.
+- **2026-10-12 (sub-project E) - the lyric shelves.** The `awaiting-community` queue key is **retired** (it now throws
+  `BAD_QUEUE`; a stale `?queue=awaiting-community` link falls back to the default queue). `to-transcribe`
+  (`needs_transcription`) and `lyrics-on-hold` (`awaiting_community` + `listened_unclear`) both require status
+  pending/included **and no lyrics**; `to-process` and `needs-lyrics` exclude shelved songs. A song is "shelved"
+  only while it has a lyric park reason AND no lyrics (`SHELVED_SQL`, NULL-safe via `COALESCE` for songs with no
+  `song_processing` row - the plan's first draft dropped every unparked pending song, caught by the implementer's
+  tests). `saveLyrics` with non-empty lyrics sets `lyrics_status='found'` (unless passed), clears the park reason, and
+  labels a prior `needs_transcription` song's `lyrics_source` "Transcribed by curator" unless a source was passed.
+  These are sequential statements, not one transaction (single-curator admin, each idempotent) - a deliberate
+  deviation from the spec's "same transaction".
+- **2026-10-12 (sub-project E) - `songs.lyrics_source` vocabulary.** The column defaults to `'other'` (not NULL), so the
+  panel treats null/''/'other' as unset when suggesting a source from a pasted URL's hostname (truncated to the
+  VARCHAR(50) limit). E now writes display names ("AZLyrics", hostnames, "Transcribed by curator") where
+  `SongDetailPage` checks lowercase `'genius'`/`'bandcamp'`. No visible effect today: the page only uses the field
+  when `lyrics_url` is set and nothing in the workbench sets it. Worth knowing before anyone wires `lyrics_url`.
+- **2026-10-12 - workbench layout.** Public-page links sit on their own row under the title/artist; the Analysis
+  panel moved from the right column to the left, under Lyrics (curator requests).
 
 - **2026-10-01 (sub-project D) - the official YouTube Data API with a curator-owned key.** Chosen over scraping
   (ToS-fragile, breaks without warning) and a link-only improvement. Free quota is 10,000 units/day and a
@@ -1806,6 +1854,17 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-12 (sub-project E BUILT, held for the curator's smoke)** - branch `session-E-lyrics-assist`. Curator moved the
+  workbench "See song/artist page" links to their own row under the title and rejected Brave, so E's Part 1 became
+  link-building only (spec revised, plan `plans/2026-10-12-E-lyrics-assist.md`). Built subagent-driven in six tasks:
+  `To transcribe` + `Lyrics on hold` queues, `saveLyrics` leaving the shelf, rail/label rename, the pure
+  `lyricsSearchUrls` module, and the Lyrics-panel search block + "Can't find them?" actions. Also moved the Analysis
+  panel under Lyrics. Backend **230/230**; frontend utils **20/20**; lint 0 errors; build clean. Live browser smoke
+  (a)-(h) all PASS on throwaway songs (cleaned up). Fresh opus whole-branch review: 0 Critical / 0 Important; its four
+  Minors fixed in one wave. No migration, no new dependency, no public-page change.
+- **2026-10-02 (session end)** - merged D (`f995358`); built and merged the workbench "See song page / See artist page"
+  links (`2a7d324`, browser-checked on a live and a pending song); logged three curator requests (E, no-video option,
+  band catalogue checker); brainstormed E and wrote its spec on `session-E-lyrics-assist` (`513462a`). No E code yet.
 - **2026-10-02 (sub-project D MERGED)** - curator smoke: all working. Merged `session-D-youtube-assist` no-ff to
   `main` (`f995358`); backend 222/222, build clean (735.25 kB). Logged a new task: workbench "See song page" /
   "See artist page" quick links. Next: E.

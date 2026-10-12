@@ -12,7 +12,7 @@ const DEFAULT_QUEUE = 'to-process';
 // render. 'inbox' renders InboxList; the rest render SongQueueList.
 const SELECTABLE_QUEUES = [
   'inbox', 'to-process', 'needs-lyrics', 'needs-cover', 'needs-video',
-  'awaiting-community', 'remind-later', 'to-finalise', 'live', 'all', 'featured',
+  'to-transcribe', 'lyrics-on-hold', 'remind-later', 'to-finalise', 'live', 'all', 'featured',
 ];
 
 function SongsArea() {
