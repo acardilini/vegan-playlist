@@ -59,6 +59,14 @@ async function addCoords(songId) {
         audio_2d, audio_3d, holistic_2d, holistic_3d)
      VALUES ($1, '{1,2}', '{1,2,3}', '{3,4}', '{1,2,3}',
              '{5,6}', '{1,2,3}', '{7,8}', '{1,2,3}')`, [songId]);
+  // The map only plots songs with real lyrics AND an analysis (sub-project G), so a mapped fixture gets both by
+  // default; addAnalysis() below overrides the analysis fields where a test cares.
+  await pool.query(`INSERT INTO song_lyrics (song_id, lyrics) VALUES ($1, 'real words for the map fixture')
+                    ON CONFLICT (song_id) DO NOTHING`, [songId]);
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, analyzed_at, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1,'zzzexp-model','2026-07-27 10:00:00','[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb)
+     ON CONFLICT DO NOTHING`, [songId]);
 }
 
 async function addAnalysis(songId, fields = {}) {
@@ -68,7 +76,8 @@ async function addAnalysis(songId, fields = {}) {
        (song_id, model_used, analyzed_at, themes, topics, advocacy, tactics, moral_frames,
         sonic_energy, focus_amount)
      VALUES ($1,'zzzexp-model','2026-07-27 10:00:00',
-             '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,$2,$3)`,
+             '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,$2,$3)
+     ON CONFLICT (song_id, model_used) DO UPDATE SET sonic_energy = EXCLUDED.sonic_energy, focus_amount = EXCLUDED.focus_amount`,
     [songId, f.sonic_energy, f.focus_amount]);
 }
 
@@ -394,6 +403,7 @@ test('similarFor omits a tab with no embedding and falls back to genre when both
 after(async () => {
   if (made.songs.length) {
     await pool.query('DELETE FROM song_coordinates WHERE song_id = ANY($1::int[])', [made.songs]);
+    await pool.query('DELETE FROM song_lyrics WHERE song_id = ANY($1::int[])', [made.songs]);
     await pool.query('DELETE FROM song_lyric_analysis WHERE song_id = ANY($1::int[])', [made.songs]);
     await pool.query('DELETE FROM song_embeddings WHERE song_id = ANY($1::int[])', [made.songs]);
     await pool.query('DELETE FROM songs WHERE id = ANY($1::int[])', [made.songs]);

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { adminFetch } from '../../api/adminApi';
+import { CLEAR_LYRICS_BODY } from './junkLyricsActions';
 import { AutoText, SaveTag } from './SavedField';
 import { LYRIC_SITES, anywhereUrl, allSitesUrl, siteUrl, youtubeSearchUrl, sourceNameFromUrl } from '../../utils/lyricsSearchUrls';
 
@@ -9,11 +11,13 @@ const LYRIC_PARKS = ['needs_transcription', 'awaiting_community', 'listened_uncl
 const LYRICS_STATUSES = ['found', 'not_found', 'not_searched'];
 const AVENUES = [['google', 'Google'], ['genius', 'Genius'], ['bandcamp', 'Bandcamp'], ['youtube', 'YouTube'], ['genre_site', 'Genre sites']];
 
-function LyricsPanel({ wb, savePanel, saveProcessing }) {
+function LyricsPanel({ wb, savePanel, saveProcessing, reload }) {
   const [statusSave, setStatusSave] = useState('idle');
   const [avenuesSave, setAvenuesSave] = useState('idle');
   const [highlightsSave, setHighlightsSave] = useState('idle');
   const [holdSave, setHoldSave] = useState('idle');
+  const [junkBusy, setJunkBusy] = useState(false);
+  const [junkMsg, setJunkMsg] = useState('');
   const tried = Array.isArray(wb.processing?.lyrics_tried) ? wb.processing.lyrics_tried : [];
   // Synchronous mirror of the tried list so quick successive clicks never save from a stale array.
   const triedRef = useRef(tried);
@@ -89,6 +93,33 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   return (
     <section className="wb-panel">
       <h2>Lyrics</h2>
+
+      {wb.junk_kind && wb.lyrics && (
+        <div className="wb-junk">
+          <span className="miss-chip warn">
+            These lyrics look like {wb.junk_kind === 'error' ? 'a scraper error message' : 'a YouTube description'}
+            {wb.analysed ? ' — the analysis is hidden on the public site' : ''}.
+          </span>
+          <button type="button" className="btn btn-secondary btn-sm" disabled={junkBusy} onClick={async () => {
+            setJunkBusy(true); setJunkMsg('');
+            try {
+              const r = await adminFetch(`/api/admin/workbench/${wb.id}/junk-dismiss`, { method: 'POST', body: {} });
+              if (r.ok) reload(); else setJunkMsg('Could not mark as not junk.');
+            } catch { setJunkMsg('Request failed.'); } finally { setJunkBusy(false); }
+          }}>Not junk</button>
+          <button type="button" className="btn btn-secondary btn-sm" disabled={junkBusy} onClick={async () => {
+            if (!window.confirm('Clear the stored lyrics for this song?')) return;
+            setJunkBusy(true); setJunkMsg('');
+            const res = await savePanel('lyrics', CLEAR_LYRICS_BODY);
+            if (!res.ok) setJunkMsg(res.error || 'Could not clear the lyrics.');
+            setJunkBusy(false);
+          }}>Clear lyrics</button>
+          {junkMsg && <span className="modal-result">{junkMsg}</span>}
+        </div>
+      )}
+      {wb.junk_kind && !wb.lyrics && wb.analysed && (
+        <div className="wb-junk"><span className="miss-chip warn">The junk lyrics were cleared. The old analysis stays hidden until real lyrics are added and the song is re-analysed.</span></div>
+      )}
 
       <div className="wb-lyric-search">
         <a className="btn btn-primary btn-sm" href={anywhereUrl(song)} target="_blank" rel="noreferrer"

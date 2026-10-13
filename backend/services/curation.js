@@ -1,6 +1,7 @@
 // Curation-workbench service. Functions take `db` (pool or client) first for testability.
 // Mirrors services/staging.js conventions.
 const { hasAnalysisExists, getSongAnalysis } = require('./analysis');
+const junkLyrics = require('./junkLyrics');
 const PARK_REASONS = ['awaiting_community', 'needs_transcription', 'listened_unclear'];
 
 async function getProcessing(db, songId) {
@@ -40,13 +41,13 @@ async function setProcessing(db, songId, { snooze_until, park_reason, lyrics_tri
 const ARTWORK_SQL = `(al.images IS NOT NULL AND al.images::text NOT IN ('null','[]',''))`;
 const LYRIC_PARK_REASONS_SQL = `('awaiting_community','needs_transcription','listened_unclear')`;
 const HAS_LYRICS_SQL = `EXISTS (SELECT 1 FROM song_lyrics sl
-              WHERE sl.song_id=s.id AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '')`;
+              WHERE sl.song_id=s.id AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '' AND sl.junk_kind IS NULL)`;
 // A song is "shelved" while it carries a lyric park reason AND still has no lyrics. Once lyrics
 // exist it re-enters normal processing even if the reason was never cleared.
 // COALESCE: a song with no song_processing row has park_reason NULL, and NOT(NULL) would drop it.
 const SHELVED_SQL = `(COALESCE(sp.park_reason IN ${LYRIC_PARK_REASONS_SQL}, false) AND NOT ${HAS_LYRICS_SQL})`;
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics',
-  'needs-cover','needs-video','no-video','needs-analysis','to-finalise','live','all','featured'];
+  'needs-cover','needs-video','no-video','junk-lyrics','needs-analysis','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
@@ -73,10 +74,11 @@ function queueWhere(queue) {
     case 'no-video':
       return `s.status='included' AND s.no_video_display IS NOT NULL
               AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
+    case 'junk-lyrics':
+      return `EXISTS (SELECT 1 FROM song_lyrics jl WHERE jl.song_id=s.id AND jl.junk_kind IS NOT NULL AND btrim(jl.lyrics) <> '')`;
     case 'needs-analysis':
       return `s.status='included'
-              AND EXISTS (SELECT 1 FROM song_lyrics sl
-                          WHERE sl.song_id=s.id AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '')
+              AND ${HAS_LYRICS_SQL}
               AND NOT ${hasAnalysisExists('s')}`;
     case 'to-finalise':
       return `s.status='included' AND s.published=false`;
@@ -127,8 +129,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
            EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id) AS has_youtube,
-           EXISTS (SELECT 1 FROM song_lyrics sl WHERE sl.song_id=s.id
-                   AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '') AS has_lyrics,
+           ${HAS_LYRICS_SQL} AS has_lyrics,
            sp.snooze_until, sp.park_reason,
            -- Where the row came from, for a tag in the list. A submission is recognised by its note (no-Spotify-match
            -- path) or by an APPROVED submission pointing at the song (Spotify-matched path); a pull by the note the
@@ -224,7 +225,7 @@ async function getWorkbench(db, id) {
     `SELECT id, youtube_id, video_title, video_type, is_primary FROM youtube_videos
      WHERE song_id=$1 ORDER BY is_primary DESC, id`, [id])).rows;
   const lyricsRow = (await db.query(
-    `SELECT lyrics, source_url, translation FROM song_lyrics WHERE song_id=$1`, [id])).rows[0] || null;
+    `SELECT lyrics, source_url, translation, junk_kind FROM song_lyrics WHERE song_id=$1`, [id])).rows[0] || null;
   const processing = await getProcessing(db, id);
   const analysed = (await db.query(
     `SELECT 1 FROM song_lyric_analysis WHERE song_id=$1`,
@@ -244,8 +245,9 @@ async function getWorkbench(db, id) {
     lyrics: (lyricsRow && lyricsRow.lyrics) ? lyricsRow.lyrics : null,
     lyrics_source_url: lyricsRow ? lyricsRow.source_url : null,
     translation: lyricsRow ? lyricsRow.translation : null,
+    junk_kind: lyricsRow ? lyricsRow.junk_kind : null,
     processing, analysed, analysis: analysisObj,
-    completeness: { lyrics: !!(lyricsRow && lyricsRow.lyrics && lyricsRow.lyrics.trim()), cover, video: videos.length > 0, play_link, analysis: analysed },
+    completeness: { lyrics: !!(lyricsRow && lyricsRow.lyrics && lyricsRow.lyrics.trim() && !lyricsRow.junk_kind), cover, video: videos.length > 0, play_link, analysis: analysed },
   };
 }
 
@@ -346,6 +348,7 @@ async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_stat
       WHERE song_id=$1`,
       [id, transParam, srcParam]);
   }
+  if (lyrics !== undefined) await junkLyrics.recheck(db, id);
   const hasNewLyrics = typeof lyrics === 'string' && lyrics.trim() !== '';
   let priorPark = null;
   if (hasNewLyrics) {

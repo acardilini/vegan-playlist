@@ -103,6 +103,15 @@ Run before ending every working session:
   Google's `reason`, mapped to `QUOTA` (429) / `CONFIG` (bad or disabled key, 502 with a fix-the-key message)
   / `UPSTREAM` (502). `videos.addVideos` is the transactional bulk add (1–10 items, duplicates skipped, any
   invalid item rolls back the batch). The dead mock `POST /api/youtube/search` was deleted
+- **services/lyricsQuality.js + services/junkLyrics.js** (sub-project G): `lyricsQuality.classify` is the pure detector
+  (`error` stubs from failed scrapers; `youtube_description` boilerplate — strong patterns alone, two weak markers together, a `[Verse`
+  header vetoes). `junkLyrics` maintains `song_lyrics.junk_kind` / `junk_dismissed` (scan / listJunk / dismiss / recheck; `saveLyrics`
+  re-checks on every text change). **Invariants:** a flagged song's analysis is excluded by `NOT_JUNK` inside the shared `LATEST_ANALYSIS` and
+  `hasAnalysisExists` (so every public read hides it, no per-query edits), and `curation.HAS_LYRICS_SQL` requires `junk_kind IS NULL` so it reads
+  (Public hiding is also **row-level stale**: real lyrics replacing flagged junk stamp `analysis_stale_since`, hiding older passes until a newer one exists; the
+  Explore map additionally requires `hasRealLyricsExists` + `hasAnalysisExists`.) (A **blank** flagged row keeps its flag - Clear lyrics must not resurrect the junk-derived analysis - and is excluded from the Junk queue; real
+  lyrics saved later let `recheck` decide.)   as having no lyrics. `scan(db, {songIds})` — tests must always pass `songIds`. `listJunk` is the only admin read of lyric text and truncates
+  to 120 chars server-side
 - **services/inbox.js**: the Submissions Inbox (sub-project C) — `listInbox` (pending, **oldest first**,
   catalogue match flagged with `live`), `acceptSubmission`, `dismissSubmission`. **Accept claims the row
   first** (`approved`, match cleared) and only then bridges via staging, reverting to `pending` if the bridge

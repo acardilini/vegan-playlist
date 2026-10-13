@@ -88,6 +88,8 @@ async function mapRows(db, spaces) {
        ${genres.EFFECTIVE_GENRE_JOIN}
        LEFT JOIN ${analysis.LATEST_ANALYSIS} sla ON sla.song_id = s.id
       WHERE s.status = 'included' AND s.published = true
+        AND ${analysis.hasRealLyricsExists('s')}
+        AND ${analysis.hasAnalysisExists('s')}
       ORDER BY s.id`);
   return r.rows;
 }

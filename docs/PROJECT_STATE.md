@@ -7,6 +7,19 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
+- **Current session (2026-10-13, newest): Sub-project G - Junk-lyrics checker - curator-smoked ("all works well"), follow-ups done, MERGED to `main`.**
+  Spec `63c0439`, plan `b437bcb` (`docs/superpowers/{specs/2026-10-13-G-junk-lyrics-design,plans/2026-10-13-G-junk-lyrics}.md`). Pure detector
+  `services/lyricsQuality.js` (`classify` -> `error` | `youtube_description` | null; strong patterns alone, two weak markers together, a `[Verse`
+  header vetoes); migration **012** (`song_lyrics.junk_kind`, `junk_dismissed`, applied to the dev DB); `services/junkLyrics.js` (scan / listJunk /
+  dismiss / recheck; `saveLyrics` re-checks on every text change). **A flagged song's analysis is hidden on every public read** via one
+  `NOT EXISTS` in the shared `LATEST_ANALYSIS` + `hasAnalysisExists` (`NOT_JUNK` in `analysis.js`), and a flagged song counts as having **no
+  lyrics** (`HAS_LYRICS_SQL`), so it lands in **Needs lyrics** and never **Needs analysis**. Admin: **Songs > Junk lyrics** queue (Scan for junk
+  lyrics, per-row **Not junk** / **Clear lyrics**, kind chip + snippet) and a banner in the workbench Lyrics panel. **Nothing is flagged yet** -
+  the curator must press **Scan** once. A dry run over the real catalogue: 177 error stubs + 26 YouTube descriptions would flag, **30 live
+  songs with an analysis would have it hidden**; ids 43 (real Genius page), 2584 and 4897 (blurbs containing real lyrics) are deliberately
+  NOT flagged. **Verified:** backend **294/294** serial; lint 0 errors; build clean; live: flagging song 2592 made the public analysis endpoint
+  answer "No analysis" and restoring brought it back (row left as found); shared-query timings tens of ms. **Not browser-checked:** the admin
+  queue/banner (login gate). Review: see Changelog.
 - **Current session (2026-10-13, latest): Dormant Spotify link + surfaced own-site links - curator-smoked ("working") and MERGED to `main` (`da01c94`); "No video available" likewise curator-confirmed working.** ("No video available" below was merged to `main` as `eec6e55` and pushed.)
   New `songs.spotify_dormant` (migration **011**, applied to the dev DB). Admin Links panel: checkbox **"Spotify link no longer plays (hide it
   on the song page)"**. Song page hero: the artist's **Bandcamp / website** link now shows **first** (primary button; "Listen on Bandcamp" for
@@ -455,6 +468,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **⏭ NEXT (2026-10-13, newest): sub-project G (junk lyrics) is BUILT on `session-junk-lyrics`, awaiting the curator's smoke, then merge.** Smoke:
+> Admin -> Songs -> **Junk lyrics** -> **Scan for junk lyrics** (flags ~203 songs; 30 live ones lose their public analysis), skim the
+> list, try **Not junk** on a real one and **Clear lyrics** on a junk one (it moves to Needs lyrics), then open a flagged song's workbench
+> (banner) and a public page. Apply migration 012 on any other DB first. Deferred: your analysis project may also fix these upstream.
 > **⏭ NEXT (2026-10-13, latest): dormant-Spotify and No-video-available are MERGED and curator-confirmed. Remaining logged requests: the band/album catalogue checker and junk-lyrics flagging (each needs a brainstorm).** _(Old smoke notes, done:)_
 > Admin -> a song with a Spotify URL -> Links panel -> tick the dormant box and add a Bandcamp/website URL -> public page shows only the
 > own-site link (first), no Spotify chip; untick -> both, own site first. Apply migration 011 on any other DB first. _(The "No video
@@ -693,6 +710,31 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-10-13 (G junk lyrics, curator follow-ups) - the Explore map shows only songs with real lyrics AND a sound analysis; flawed analysis stays hidden until re-analysed.**
+  `explore.mapRows` now requires `analysis.hasRealLyricsExists('s')` (non-blank, unflagged lyrics) AND `hasAnalysisExists('s')`: 608 of 1,331 live songs
+  are plotted (was ~640). **Stricter than "hidden while flagged":** when REAL lyrics replace flagged junk, `song_lyrics.analysis_stale_since` is stamped and
+  every analysis pass older than it stays hidden (public site AND map) until the analysis project writes a newer pass (`NOT_JUNK` is row-level, so a new pass
+  is picked up automatically). **Not junk** (a false positive) lifts the hiding immediately - no stamp. Migration **013** adds `analysis_stale_since` and
+  `junk_dismissed_md5` (a dismissal now covers the exact text confirmed; if the text changes out-of-band, `scan` re-checks it). Deferred minors fixed:
+  Analysis panel explains a hidden analysis; workbench banner has busy/error state and a **Clear lyrics** button; Clear also resets `lyrics_status`/`lyrics_url`
+  (shared `junkLyricsActions.js`); `listJunk` pages (`limit`/`offset`, UI Prev/Next). **Still open:** lyric *embeddings* ("Similar message" tab) built from
+  junk text are not hidden (the curator asked about the map only). Backend **300/300** serial; lint 0 errors; build clean; `/explore` loads clean in a browser.
+- **2026-10-13 (G junk lyrics, review fix) - a cleared row KEEPS its flag.** The whole-branch review found that **Clear lyrics** (blank text ->
+  `classify('')` = null) un-flagged the row and so brought the junk-derived analysis straight back on the public site. Now a blank row keeps
+  `junk_kind`: `recheck` leaves it alone, `scan` skips blank rows, and the Junk queue / `listJunk` list only non-blank flagged rows - so a cleared
+  song leaves the queue, sits in Needs lyrics, and its analysis stays hidden until **real lyrics are saved** (recheck then decides). Also fixed:
+  the About page's `analysed_songs` bypassed the shared fragment (now `hasAnalysisExists`). **Deferred minors (not fixed):** workbench Analysis panel
+  says "Not yet analysed" for a flagged-but-analysed song; workbench "Not junk" has no busy/error state; the workbench banner has no Clear button
+  (use the textarea); a dismissed row overwritten outside `saveLyrics` is never re-checked (scan skips dismissed); Clear leaves `lyrics_status`/`lyrics_url`/
+  `lyrics_source` pointing at the scraped page; `listJunk` has no paging (~217 rows). **Open for the curator:** lyric *embeddings* and map coordinates
+  built from junk text ("Similar message" tab, Explore thematic/holistic spaces) are NOT hidden - out of scope as specced; hiding the whole analysis row
+  also hides the audio-derived Sound dimensions.
+- **2026-10-13 (G junk lyrics) - flag on `song_lyrics`, conservative detector, hide-while-flagged, detect-and-confirm.** The flag lives on the lyrics
+  row (not `songs`) because it describes that text and resets when the text changes; a dismissal also resets on any new text. The curator chose
+  to **hide a flagged song's analysis publicly** (not just list it): done once in `LATEST_ANALYSIS`/`hasAnalysisExists` so every consumer inherits it
+  (admin `needs-analysis` too, via `HAS_LYRICS_SQL`). Detector errs toward missing junk: a false positive hides analysis until **Not junk**.
+  `scan` takes an optional `songIds` filter and tests MUST pass it. The workbench still reports `analysed: true` for a flagged song while its
+  `analysis` object is null (hidden). Description-type junk is never auto-deleted; **Clear lyrics** is a per-row curator click.
 - **2026-10-13 (dormant Spotify) - flag, not delete; own site leads.** The Spotify URL/`spotify_id` stay stored when a link goes dormant
   (the Spotify tools key on them; the curator may re-enable). The curator chose the artist's own site to be **first and primary** on the
   song page ("preferencing their own sites rather than spotify") and to show Bandcamp/SoundCloud links **even when Spotify is fine**.
@@ -1959,6 +2001,9 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-13 (G junk-lyrics BUILT, unmerged)** - branch `session-junk-lyrics`; brainstorm, spec, plan, native inline execution (4 task commits).
+  Migration 012; detector; service; shared-fragment hiding; Junk lyrics queue + banner. Backend 294/294 serial; lint 0; build clean; live
+  reversible check on song 2592. One plan test defect ruled (fixture artist name prefix).
 - **2026-10-13 (dormant Spotify link BUILT, unmerged)** - branch `session-spotify-dormant`. Bounded brainstorm in chat. Migration 011,
   `saveLinks` takes `spotify_dormant` (boolean only), workbench + public song reads expose it, `spotifyPush` skips dormant songs, LinksPanel
   checkbox, song-page link order. Backend 277/277 serial; lint 0; build clean; live-checked on song 237 then restored.

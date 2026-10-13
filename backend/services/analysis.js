@@ -1,5 +1,6 @@
 // Analysis-service reads over the shared song_lyric_analysis / taxonomy data.
-// Display-only: this service never writes analysis and never touches song_lyrics.
+// Display-only: this service never writes analysis and never reads lyric text (it only checks the
+// song_lyrics.junk_kind flag, see NOT_JUNK).
 // Functions take `db` (pool or client) first, mirroring services/curation.js.
 const taxonomy = require('../data/taxonomy.json');
 const codebook = require('./metadataCodebook');
@@ -11,13 +12,28 @@ const acoustic = require('./acousticCodebook');
 // `song_lyric_analysis` in any JOIN — join on song_id, no model filter. model_used DESC is a
 // deterministic tiebreak when two passes share an analyzed_at. This is the ONLY place model
 // selection happens; the site always shows a song's latest coding.
+// Analysis built from junk must not show anywhere publicly (sub-project G). A pass is excluded when the song's
+// lyrics are flagged junk (song_lyrics.junk_kind), OR when real lyrics later replaced flagged junk and the pass
+// is older than that fix (song_lyrics.analysis_stale_since): it stays hidden until the analysis project writes a
+// newer pass. Row-level, so a newer pass is picked automatically.
+const NOT_JUNK = (songCol, analyzedCol) =>
+  `NOT EXISTS (SELECT 1 FROM song_lyrics jl WHERE jl.song_id = ${songCol}
+     AND (jl.junk_kind IS NOT NULL
+          OR jl.analysis_stale_since > COALESCE(${analyzedCol}, '-infinity'::timestamp)))`;
+
 const LATEST_ANALYSIS = `(SELECT DISTINCT ON (song_id) *
    FROM song_lyric_analysis
+   WHERE ${NOT_JUNK('song_lyric_analysis.song_id', 'song_lyric_analysis.analyzed_at')}
    ORDER BY song_id, analyzed_at DESC NULLS LAST, model_used DESC)`;
 
-// "Has any analysis at all" — any row exists (a latest row therefore exists).
+// "Has any analysis at all" — any row exists (a latest row therefore exists). Flagged-junk songs have none.
 const hasAnalysisExists = (alias) =>
-  `EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = ${alias}.id)`;
+  `EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = ${alias}.id AND ${NOT_JUNK(`${alias}.id`, 'la.analyzed_at')})`;
+
+// "Real lyrics": a stored, non-blank text that is not flagged junk. The Explore map requires this AND a visible
+// analysis, so only songs with real lyrics and a sound analysis are plotted.
+const hasRealLyricsExists = (alias) =>
+  `EXISTS (SELECT 1 FROM song_lyrics rl WHERE rl.song_id = ${alias}.id AND btrim(rl.lyrics) <> '' AND rl.junk_kind IS NULL)`;
 
 // "The latest pass carries at least one thematic code" (for the theme-tree caption count).
 const hasCodesExists = (alias) =>
@@ -392,7 +408,7 @@ async function themeCounts(db, limit = 15) {
   return r.rows.map(row => ({ theme: row.theme, label: label('themes', row.theme), song_count: row.song_count }));
 }
 
-module.exports = { LATEST_ANALYSIS, hasAnalysisExists,
+module.exports = { LATEST_ANALYSIS, hasAnalysisExists, hasRealLyricsExists,
   hasCodesExists, EVIDENCE_DIMS, DIM_TO_TAXONOMY,
   taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree,
   scalarFacets, acousticFacets, tempoRange, facetFilterConditions, facetSelectionClauses, themeCounts };
