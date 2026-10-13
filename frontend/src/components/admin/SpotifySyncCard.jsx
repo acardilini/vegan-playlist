@@ -70,7 +70,8 @@ function SpotifySyncCard() {
       const d = await r.json().catch(() => ({}));
       if (r.ok) {
         setNeedsReconnect(false);
-        setMsg(`Added ${(d.added || []).length}, already there ${d.alreadyThere ?? 0}.`);
+        const skipped = (d.notEligible || []).length;
+        setMsg(`Added ${(d.added || []).length}, already there ${d.alreadyThere ?? 0}${skipped ? `, skipped ${skipped} (see the Spotify lists)` : ''}.`);
       } else if (r.status === 409 && d.error === 'BUSY') {
         setMsg('A push is already running — wait a moment and reload.');
       } else if (r.status === 409) {

@@ -4,7 +4,7 @@ const pool = require('../database/db');
 const push = require('../services/spotifyPush');
 
 // Unique fixture sentinel for this file: ZZZPUSH. No network: fetchTracks/fetchImpl/sleep are injected.
-let live, live2, unpub, rejected, nospot, onPlaylistRejected, dupSong, notDup;
+let live, live2, unpub, rejected, nospot, onPlaylistRejected, dupSong, notDup, voxA, voxB;
 
 async function mk(title, { sid, status = 'included', published = true, artist = null }) {
   const s = (await pool.query(
@@ -23,6 +23,11 @@ before(async () => {
   onPlaylistRejected = await mk('ZZZPUSH onpl', { sid: 'ZZZPUSH_onpl', status: 'rejected', published: false });
   dupSong = await mk('ZZZPUSH Dup Song', { sid: 'ZZZPUSH_dup', artist: 'ZZZPUSH Dupartist' });
   notDup = await mk('ZZZPUSH Dup Song', { sid: 'ZZZPUSH_notdup', artist: 'ZZZPUSH Otherartist' });
+  // The dup fixture's playlist track is a catalogue song too — but a PENDING one (like the pulled New Ethic): still a duplicate.
+  await mk('ZZZPUSH Dup Song', { sid: 'ZZZPUSH_dupother', status: 'pending', published: false, artist: 'ZZZPUSH Dupartist' });
+  // Two distinct LIVE songs whose titles normalise alike (parentheticals are stripped): not duplicates of each other.
+  voxA = await mk('ZZZPUSH Vox (2)', { sid: 'ZZZPUSH_voxA', artist: 'ZZZPUSH Voxartist' });
+  voxB = await mk('ZZZPUSH Vox (3)', { sid: 'ZZZPUSH_voxB', artist: 'ZZZPUSH Voxartist' });
 });
 after(async () => {
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZPUSH%'`);
@@ -65,7 +70,7 @@ test('compare buckets: pullable / pushable / noSpotifyId / onPlaylistNotLive', a
   });
   assert.equal(r.playlistTrackCount, 3);
   assert.deepEqual(ours(r.pullable).map((x) => x.title), ['ZZZPUSH brandnew']);
-  assert.deepEqual(ours(r.pushable).map((x) => x.id).filter((id) => [live, live2, unpub, rejected].includes(id)), [live], 'live2 is already on the playlist; unpublished/rejected are not pushable');
+  assert.deepEqual(ours(r.pushable).map((x) => x.id).sort((a, b) => a - b), [live, dupSong, notDup, voxA, voxB].sort((a, b) => a - b), 'live2 is already on the playlist; unpublished/rejected are not pushable');
   assert.deepEqual(ours(r.noSpotifyId).map((x) => x.id), [nospot]);
   assert.deepEqual(ours(r.onPlaylistNotLive).map((x) => x.id), [onPlaylistRejected]);
 });
@@ -235,5 +240,51 @@ test('push never uses the cache (it must read the live playlist) and clears it a
   assert.equal(reads, 2, 'push did its own live read');
   await push.compare(pool, { fetchTracks, useCache: true });
   assert.equal(reads, 3, 'cache was cleared by the push, so compare re-read');
+  push.clearCache();
+});
+
+const voxTrack = { spotify_id: 'ZZZPUSH_voxA', title: 'ZZZPUSH Vox (2)', artists: [{ name: 'ZZZPUSH Voxartist' }] };
+
+test('a playlist track that is itself a distinct LIVE catalogue song does not make a look-alike a duplicate (Vox 2 / Vox 3)', async () => {
+  const r = await push.compare(pool, { fetchTracks: fetchTracksOf(voxTrack) });
+  assert.ok(r.pushable.some((x) => x.id === voxB), 'Vox 3 stays pushable');
+  assert.ok(!r.possibleDuplicates.some((x) => x.id === voxB), 'and is not flagged');
+});
+
+test('allowDuplicates lets an explicit push add a flagged song; bulk push still skips it', async () => {
+  const f = fakeFetch();
+  const r = await push.pushSongs(pool, { songIds: [dupSong], allowDuplicates: true, accessToken: 'T', fetchTracks: fetchTracksOf(dupTrack), fetchImpl: f, sleep: noSleep });
+  assert.deepEqual(r.added.map((x) => x.id), [dupSong]);
+  assert.deepEqual(r.notEligible, []);
+  assert.deepEqual(f.calls.flatMap((c) => c.uris), ['spotify:track:ZZZPUSH_dup']);
+  const g = fakeFetch();
+  await push.pushSongs(pool, { allowDuplicates: true, accessToken: 'T', fetchTracks: fetchTracksOf(dupTrack), fetchImpl: g, sleep: noSleep });
+  assert.ok(!g.calls.flatMap((c) => c.uris).includes('spotify:track:ZZZPUSH_dup'), 'allowDuplicates never applies to a bulk push');
+});
+
+test('compare cache: fresh bypasses the read but WRITES the cache, so the next cached call sees the fresh data', async () => {
+  push.clearCache();
+  let reads = 0;
+  const fetchTracks = async () => { reads++; return []; };
+  await push.compare(pool, { fetchTracks, useCache: true });
+  await push.compare(pool, { fetchTracks, useCache: true, fresh: true });
+  assert.equal(reads, 2, 'fresh read live');
+  await push.compare(pool, { fetchTracks, useCache: true });
+  assert.equal(reads, 2, 'the next cached call used the fresh read');
+  push.clearCache();
+});
+
+test('a compare that started before a push cannot re-cache the pre-push playlist', async () => {
+  push.clearCache();
+  let reads = 0, release;
+  const gate = new Promise((r) => { release = r; });
+  const slow = async () => { reads++; await gate; return []; };
+  const inflight = push.compare(pool, { fetchTracks: slow, useCache: true });
+  while (reads === 0) await new Promise((r) => setImmediate(r)); // compare loads songs first; wait until the playlist read is really in flight
+  push.clearCache(); // what a finishing push does
+  release();
+  await inflight;
+  await push.compare(pool, { fetchTracks: async () => { reads++; return []; }, useCache: true });
+  assert.equal(reads, 2, 'the stale in-flight read was not cached');
   push.clearCache();
 });

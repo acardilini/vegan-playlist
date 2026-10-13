@@ -53,7 +53,7 @@ function SpotifyLists() {
 
       <div className="spotify-tabs">
         {SPOTIFY_LISTS.map(([key, label, f]) => (
-          <button key={key} type="button" className={`btn btn-sm ${list === key ? 'btn-primary' : 'btn-secondary'}`}
+          <button key={key} type="button" aria-pressed={list === key} className={`btn btn-sm ${list === key ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setParams({ queue: 'spotify', list: key })}>
             {label} {data ? `(${(data[f] || []).length})` : ''}
           </button>

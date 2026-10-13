@@ -130,7 +130,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
            -- path) or by an APPROVED submission pointing at the song (Spotify-matched path); a pull by the note the
            -- import-only playlist diff writes. Staging "Add candidates" shares playlist_added_by but not the note.
            CASE WHEN s.status_notes LIKE 'community submission #%'
-                  OR EXISTS (SELECT 1 FROM song_submissions ss WHERE ss.existing_song_id=s.id AND ss.status='approved')
+                  OR EXISTS (SELECT 1 FROM song_submissions ss WHERE ss.existing_song_id=s.id AND ss.status='approved' AND s.created_at >= ss.created_at)
                 THEN 'submission'
                 WHEN s.playlist_added_by='playlist-diff' AND s.status_notes LIKE 'on Spotify playlist%'
                 THEN 'spotify' END AS origin

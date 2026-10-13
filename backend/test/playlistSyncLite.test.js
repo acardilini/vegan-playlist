@@ -53,3 +53,10 @@ test('local files / unavailable tracks (no id) are skipped', async () => {
 test('a failing page rejects (no silent partial playlist, which would make push add everything)', async () => {
   await assert.rejects(() => fetchPlaylistTracksLite(fakeApi(250, { failAt: 100 }), 'PL'), { statusCode: 500 });
 });
+
+test('a 429 with a long Retry-After fails fast (RATE_LIMITED) instead of sleeping and holding the push lock', async () => {
+  const api = { async getPlaylistTracks() { throw Object.assign(new Error('rate'), { statusCode: 429, headers: { 'retry-after': '3600' } }); } };
+  const t = Date.now();
+  await assert.rejects(() => fetchPlaylistTracksLite(api, 'PL'), { code: 'RATE_LIMITED' });
+  assert.ok(Date.now() - t < 1000, 'must not have slept');
+});

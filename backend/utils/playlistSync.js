@@ -20,13 +20,20 @@ async function getSpotifyClient() {
 }
 
 // Retry a Spotify call once per 429, honouring Retry-After.
-async function withRetry(fn) {
-  for (;;) {
+// Default is unbounded (scripts). The compare/push read passes { maxWaitS, maxRetries } so a long Retry-After
+// fails fast with RATE_LIMITED instead of hanging an admin request (and the push lock) for the whole wait.
+async function withRetry(fn, { maxWaitS = Infinity, maxRetries = Infinity } = {}) {
+  for (let attempt = 0; ; attempt++) {
     try {
       return await fn();
     } catch (err) {
       if (err.statusCode === 429) {
         const wait = (parseInt(err.headers && err.headers['retry-after']) || 2) + 1;
+        if (wait > maxWaitS || attempt >= maxRetries) {
+          const e = new Error('Spotify is rate-limiting requests — try again in a few minutes');
+          e.code = 'RATE_LIMITED';
+          throw e;
+        }
         console.log(`  rate limited — waiting ${wait}s`);
         await new Promise(r => setTimeout(r, wait * 1000));
         continue;
@@ -86,7 +93,7 @@ async function fetchPlaylistTracks(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID)
 const LITE_FIELDS = 'total,items(track(id,name,artists(name)))';
 const LITE_CONCURRENCY = 4;
 async function fetchPlaylistTracksLite(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID) {
-  const page = (offset) => withRetry(() => spotifyApi.getPlaylistTracks(playlistId, { offset, limit: 100, fields: LITE_FIELDS }));
+  const page = (offset) => withRetry(() => spotifyApi.getPlaylistTracks(playlistId, { offset, limit: 100, fields: LITE_FIELDS }), { maxWaitS: 30, maxRetries: 3 });
   const first = await page(0);
   const total = first.body.total || 0;
   const pages = [first];
