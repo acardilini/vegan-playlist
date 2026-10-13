@@ -1,6 +1,7 @@
 // Curation-workbench service. Functions take `db` (pool or client) first for testability.
 // Mirrors services/staging.js conventions.
 const { hasAnalysisExists, getSongAnalysis } = require('./analysis');
+const junkLyrics = require('./junkLyrics');
 const PARK_REASONS = ['awaiting_community', 'needs_transcription', 'listened_unclear'];
 
 async function getProcessing(db, songId) {
@@ -346,6 +347,7 @@ async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_stat
       WHERE song_id=$1`,
       [id, transParam, srcParam]);
   }
+  if (lyrics !== undefined) await junkLyrics.recheck(db, id);
   const hasNewLyrics = typeof lyrics === 'string' && lyrics.trim() !== '';
   let priorPark = null;
   if (hasNewLyrics) {
