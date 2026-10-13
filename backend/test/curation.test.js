@@ -226,7 +226,7 @@ test('listCurationQueue unknown queue throws BAD_QUEUE', async () => {
 
 test('queueCounts returns a number for every queue key', async () => {
   const c = await curation.queueCounts(pool);
-  for (const k of ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics','needs-cover','needs-video','needs-analysis','to-finalise','inbox','live']) {
+  for (const k of ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics','needs-cover','needs-video','no-video','needs-analysis','to-finalise','inbox','live']) {
     assert.equal(typeof c[k], 'number', `count for ${k}`);
   }
 });
@@ -466,4 +466,40 @@ test('origin: an EXISTING song that a later submission merely resolved to is not
     `INSERT INTO song_submissions (song_title, artist_name, status, existing_song_id) VALUES ('ZZZCUR Origin existing','x','approved',$1)`, [id]);
   const { rows } = await curation.listCurationQueue(pool, { queue: 'to-process', q: 'ZZZCUR Origin existing' });
   assert.equal(rows.find(r => r.id === id).origin, null);
+});
+
+// ---- no-video marking (migration 010) ----
+test('setNoVideo moves a song from needs-video to no-video, and clearing returns it', async () => {
+  const id = await mkSong({ title: 'ZZZCUR NoVid', status: 'included', published: true });
+  const ids = async (queue) => (await curation.listCurationQueue(pool, { queue })).rows.map(r => r.id);
+  assert.ok((await ids('needs-video')).includes(id));
+  assert.ok(!(await ids('no-video')).includes(id));
+
+  const wb = await curation.setNoVideo(pool, id, { display: 'cover' });
+  assert.equal(wb.no_video_display, 'cover');
+  assert.ok(!(await ids('needs-video')).includes(id), 'marked song leaves needs-video');
+  assert.ok((await ids('no-video')).includes(id), 'marked song is listed in no-video');
+  const row = (await curation.listCurationQueue(pool, { queue: 'no-video' })).rows.find(r => r.id === id);
+  assert.ok(!row.missing.includes('video'), 'marked song no longer reports video as missing');
+
+  const cleared = await curation.setNoVideo(pool, id, { display: null });
+  assert.equal(cleared.no_video_display, null);
+  assert.ok((await ids('needs-video')).includes(id), 'cleared song is back in needs-video');
+});
+
+test('setNoVideo validates input and refuses a song that has a video', async () => {
+  const id = await mkSong({ title: 'ZZZCUR NoVid Bad', status: 'included', published: true });
+  await assert.rejects(curation.setNoVideo(pool, id, { display: 'banner' }), e => e.code === 'BAD_INPUT');
+  await assert.rejects(curation.setNoVideo(pool, 999999999, { display: 'hide' }), e => e.code === 'NOT_FOUND');
+  await pool.query(`INSERT INTO youtube_videos (song_id, youtube_id, video_type, is_primary) VALUES ($1,'abcdefghijk','official',true)`, [id]);
+  await assert.rejects(curation.setNoVideo(pool, id, { display: 'hide' }), e => e.code === 'BAD_INPUT');
+});
+
+test('a marked song that later gains a video is in neither video queue', async () => {
+  const id = await mkSong({ title: 'ZZZCUR NoVid Later', status: 'included', published: true });
+  await curation.setNoVideo(pool, id, { display: 'hide' });
+  await pool.query(`INSERT INTO youtube_videos (song_id, youtube_id, video_type, is_primary) VALUES ($1,'abcdefghijl','official',true)`, [id]);
+  for (const queue of ['needs-video', 'no-video']) {
+    assert.ok(!(await curation.listCurationQueue(pool, { queue })).rows.some(r => r.id === id), queue);
+  }
 });

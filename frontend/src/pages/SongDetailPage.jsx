@@ -173,14 +173,22 @@ function SongDetailPage() {
         </div>
       </div>
 
-      <section className="detail-section video-section">
-        <h2>Music video</h2>
-        <YouTubeEmbed
-          videoId={youtubeVideo?.youtube_id}
-          title={`${song.title} by ${artistNames}`}
-          fallbackMessage="No music video available for this song"
-        />
-      </section>
+      {(youtubeVideo?.youtube_id || song.no_video_display !== 'hide') && (
+        <section className="detail-section video-section">
+          <h2>Music video</h2>
+          {!youtubeVideo?.youtube_id && song.no_video_display === 'cover' && getArtwork() ? (
+            <div className="video-cover-placeholder">
+              <img src={getArtwork()} alt={`${song.title} artwork`} />
+            </div>
+          ) : (
+            <YouTubeEmbed
+              videoId={youtubeVideo?.youtube_id}
+              title={`${song.title} by ${artistNames}`}
+              fallbackMessage="No music video available for this song"
+            />
+          )}
+        </section>
+      )}
 
       {song.lyrics_highlights && (
         <section className="detail-section">

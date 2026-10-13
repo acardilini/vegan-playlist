@@ -46,7 +46,7 @@ const HAS_LYRICS_SQL = `EXISTS (SELECT 1 FROM song_lyrics sl
 // COALESCE: a song with no song_processing row has park_reason NULL, and NOT(NULL) would drop it.
 const SHELVED_SQL = `(COALESCE(sp.park_reason IN ${LYRIC_PARK_REASONS_SQL}, false) AND NOT ${HAS_LYRICS_SQL})`;
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics',
-  'needs-cover','needs-video','needs-analysis','to-finalise','live','all','featured'];
+  'needs-cover','needs-video','no-video','needs-analysis','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
@@ -68,7 +68,11 @@ function queueWhere(queue) {
     case 'needs-cover':
       return `s.status='included' AND NOT ${ARTWORK_SQL}`;
     case 'needs-video':
-      return `s.status='included' AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
+      return `s.status='included' AND s.no_video_display IS NULL
+              AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
+    case 'no-video':
+      return `s.status='included' AND s.no_video_display IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
     case 'needs-analysis':
       return `s.status='included'
               AND EXISTS (SELECT 1 FROM song_lyrics sl
@@ -96,14 +100,14 @@ function mapQueueRow(r) {
   const missing = [];
   if (!r.has_lyrics) missing.push('lyrics');
   if (!r.has_art) missing.push('cover');
-  if (!r.has_youtube) missing.push('video');
+  if (!r.has_youtube && !r.no_video_display) missing.push('video');
   if (!has_play_link) missing.push('play link');
   return {
     id: r.id, title: r.title, artists: r.artists, status: r.status, published: r.published,
     featured: r.featured,
     language: r.language, has_art: r.has_art, has_lyrics: r.has_lyrics, has_youtube: r.has_youtube,
     has_play_link, play_link_kinds: kinds, snooze_until: r.snooze_until, park_reason: r.park_reason, missing,
-    origin: r.origin,
+    origin: r.origin, no_video_display: r.no_video_display,
   };
 }
 
@@ -118,7 +122,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
       WHERE sa2.song_id=s.id AND a2.name ILIKE $${params.length}))`;
   }
   let sql = `
-    SELECT s.id, s.title, s.status, s.published, s.featured, s.language,
+    SELECT s.id, s.title, s.status, s.published, s.featured, s.language, s.no_video_display,
            s.spotify_url, s.bandcamp_url, s.soundcloud_url,
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
@@ -230,7 +234,7 @@ async function getWorkbench(db, id) {
   const cover = hasArt(s.album_images);
   const play_link = !!(s.spotify_url || s.bandcamp_url || s.soundcloud_url || videos.length > 0);
   return {
-    id: s.id, title: s.title, status: s.status, published: s.published, featured: s.featured, language: s.language,
+    id: s.id, title: s.title, status: s.status, published: s.published, featured: s.featured, language: s.language, no_video_display: s.no_video_display,
     spotify_id: s.spotify_id, spotify_url: s.spotify_url, bandcamp_url: s.bandcamp_url, soundcloud_url: s.soundcloud_url,
     lyrics_status: s.lyrics_status, lyrics_url: s.lyrics_url, lyrics_source: s.lyrics_source,
     lyrics_highlights: s.lyrics_highlights, status_notes: s.status_notes,
@@ -280,6 +284,22 @@ async function saveDetails(db, id, { title, language, status_notes } = {}) {
   const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
   add('title', title); add('language', normLanguages(language)); add('status_notes', status_notes);
   if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
+  return getWorkbench(db, id);
+}
+
+const NO_VIDEO_DISPLAYS = ['hide', 'cover'];
+
+// "No video available": the curator has looked and there is none. Only valid while the song has no
+// videos; display null clears the mark. The song page reads it (hide the section / show the cover).
+async function setNoVideo(db, id, { display } = {}) {
+  await assertSong(db, id);
+  if (display != null && !NO_VIDEO_DISPLAYS.includes(display)) {
+    const e = new Error('display must be hide, cover or null'); e.code = 'BAD_INPUT'; throw e;
+  }
+  if (display != null && (await db.query('SELECT 1 FROM youtube_videos WHERE song_id=$1 LIMIT 1', [id])).rows.length) {
+    const e = new Error('song already has a video'); e.code = 'BAD_INPUT'; throw e;
+  }
+  await db.query('UPDATE songs SET no_video_display=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1', [id, display ?? null]);
   return getWorkbench(db, id);
 }
 
@@ -408,4 +428,4 @@ async function quickCapture(db, { title, artist } = {}) {
 
 module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, quickCapture, setFeatured, listLanguages };
+  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, setNoVideo, quickCapture, setFeatured, listLanguages };

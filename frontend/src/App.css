@@ -4341,3 +4341,12 @@ main {
     flex-direction: column;
   }
 }
+
+/* Song page: album cover standing in for a missing music video (curator-chosen, songs.no_video_display='cover') */
+.video-cover-placeholder {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--border-radius-lg);
+  background: var(--color-bg-tertiary);
+}
+.video-cover-placeholder img { width: 100%; height: 100%; object-fit: cover; display: block; }

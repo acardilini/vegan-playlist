@@ -115,6 +115,7 @@
 .wb-videos li { display: flex; align-items: center; gap: var(--space-2); font-size: 0.85rem; }
 .wb-videos li a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wb-vtype { font-size: 0.7rem; color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
+.wb-novideo { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-2); }
 .wb-video-add { display: flex; gap: var(--space-2); align-items: center; }
 
 /* Dashboard landing — A4 */
