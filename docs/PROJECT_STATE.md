@@ -7,6 +7,17 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
+- **END OF SESSION 2026-10-13 - where we stopped.** `main` is at `068cafa`, pushed, clean, backend **303/303** (serial), build clean. Merged and curator-confirmed this
+  session: **No video available**, **Dormant Spotify + own-site links first**, **Junk-lyrics checker** (+ cleared-lyrics hiding, Explore map eligibility, lyric-similarity
+  eligibility, review minors) and the **video picker**. **In flight: sub-project H - Band check.** Brainstorm done, **design spec written and committed on branch
+  `session-band-check` (`f26ec1e`, pushed, NOT merged)**: `docs/superpowers/specs/2026-10-13-H-band-check-design.md`. **Awaiting the curator's review of the spec**, then
+  `writing-plans` -> plan -> execute (curator chose native inline last time). Decisions already taken: per-band on demand; the Band check view lists ALL 850 bands with a name
+  search; unlinked bands (210 of 850 have no Spotify id) are listed but not checkable in v1; tracks filtered by *credit*; versions collapsed by normalised title; held songs
+  muted with live/pending/rejected chip; add via `staging.insertCandidates` with a "From band check" tag. **Planned follow-up (spec section 8, not built):** bands without a
+  Spotify link - first check whether they are on Spotify (name search + confirm, save `artists.spotify_id`), then, if not, search other free repositories (Bandcamp etc.) for
+  their songs. Everything else still open: the **29 pulled Spotify songs** need an include-or-reject call (Songs > To be processed); junk-lyrics and band-check smoke notes below are historical.
+  **Dev note:** scratchpad Node scripts must load `.env` explicitly (`require('<abs>/backend/node_modules/dotenv').config({path})`) - without it Spotify answers `invalid_client`,
+  which looks like bad credentials but is not (the server's own reads work).
 - **Current session (2026-10-13, last): Song-page video picker - BUILT on branch `session-video-picker`, NOT yet merged.** A song with more than one video now shows
   a row of buttons above the player labelled **by type** (Official video / Live / Lyric video / Fan-made / Other; same-type videos numbered "Lyric video 1/2"), default = the
   primary video, switching swaps the player (no autoplay); full title as hover text. One video or none: unchanged. Frontend only: `SongDetailPage.jsx` now reads the existing
@@ -473,6 +484,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **⏭ NEXT (start here, 2026-10-14): review the Band check spec (`session-band-check`), then write its plan.** Backlog behind it: Spotify-less bands (check on Spotify, then other
+> repositories), the 29 pulled songs' include-or-reject, the deferred junk-lyrics/Spotify-push minors listed in the Decision Log. _(Older NEXT notes below are history.)_
 > **⏭ NEXT (2026-10-13, newest): sub-project G (junk lyrics) is BUILT on `session-junk-lyrics`, awaiting the curator's smoke, then merge.** Smoke:
 > Admin -> Songs -> **Junk lyrics** -> **Scan for junk lyrics** (flags ~203 songs; 30 live ones lose their public analysis), skim the
 > list, try **Not junk** on a real one and **Clear lyrics** on a junk one (it moves to Needs lyrics), then open a flagged song's workbench

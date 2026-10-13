@@ -368,7 +368,9 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
   `session-E-lyrics-assist`; `specs/2026-10-02-E-lyrics-assist-design.md`, `plans/2026-10-12-E-lyrics-assist.md`):
   one-click multi-site lyric search links (no paid API), To-transcribe queue, Lyrics-on-hold shelf, lyrics-found exit.
   Also queued: no-video-available option; band/album catalogue checker.
-- ◐ **G — Junk-lyrics checker — BUILT 2026-10-13 on `session-junk-lyrics`, awaiting the curator's smoke**: detector, migration 012 flag, Scan / Not junk / Clear lyrics queue, flagged analysis hidden publicly, flagged lyrics count as missing.
+- ☑ **G — Junk-lyrics checker — BUILT, curator-smoked and MERGED 2026-10-13 (`831110c`, follow-ups `83b5eb5`)**: detector, migrations 012/013, Scan / Not junk / Clear lyrics queue, flagged and cleared-lyrics analysis hidden publicly, Explore map and lyric-similarity only for real-lyrics + analysed songs.
+- ☑ **Song-page video picker — MERGED 2026-10-13 (`068cafa`)**: buttons by type when a song has several videos.
+- ◐ **H — Band check (band/album catalogue checker) — spec written 2026-10-13 on `session-band-check` (`f26ec1e`), awaiting the curator's review, then plan + build.** Per-band Spotify discography review over ALL bands (searchable); add chosen songs as To be processed (tagged *From band check*). Follow-up recorded: bands with no Spotify link (confirm on Spotify, then other repositories).
 - ☑ **Dormant Spotify link + own-site links first — BUILT, curator-confirmed and MERGED 2026-10-13 (`da01c94`)**: migration 011 `songs.spotify_dormant`, Links-panel checkbox, song page leads with Bandcamp/website then SoundCloud then Spotify (hidden when dormant), push skips dormant songs.
 - ☑ **"No video available" — BUILT, curator-confirmed and MERGED 2026-10-13 (`eec6e55`)**: migration 010 `songs.no_video_display`, Video-panel mark (cover / hide / clear), **No video available** queue, `needs-video` excludes marked songs, song-page slot honours the choice.
 - ☑ **F — Spotify sync — BUILT, curator-smoked and MERGED 2026-10-13 (`3edac04`, branch `session-F-spotify-push`)**
