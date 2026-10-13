@@ -5,9 +5,16 @@ const TYPE_RANK = { album: 0, compilation: 1, single: 2 };
 const SOURCE_RANK = { spotify: 0, bandcamp: 0, musicbrainz: 1 }; // MusicBrainz is one pseudo-release: never the representative if another source has the song
 const STATUS_RANK = { included: 0, pending: 1, rejected: 2 };
 
-// normalizeName() is '' for non-Latin / symbol-only titles; fall back to the lowercased title so they stay distinct.
+// normalizeName() drops every non-ASCII letter, so a title with any other script gets a Unicode-aware key
+// (same parenthetical / " - ..." stripping); pure-ASCII-after-folding titles keep the Spotify-push duplicate key.
 function keyOf(title) {
   const t = String(title || '').trim();
+  if (!t) return '';
+  const folded = t.toLowerCase().normalize('NFKD').replace(/\p{M}/gu, '');
+  if (/[^\x00-\x7F]/.test(folded)) {
+    const k = folded.replace(/\(.*?\)|\[.*?\]/g, '').replace(/ - .*/, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    return k || folded.trim();
+  }
   return normalizeName(t) || t.toLowerCase();
 }
 
@@ -47,7 +54,7 @@ function mergeCatalogues(catalogues) {
         s._rels.push({ ...info, title: String(t.title).trim() });
         if (cat.source === 'spotify') {
           const cur = s.sources.spotify;
-          if (!cur) s.sources.spotify = { ids: [t.id], url: t.url || null, mapped: t.mapped || null, _rel: info };
+          if (!cur) s.sources.spotify = { ids: t.id ? [t.id] : [], url: t.url || null, mapped: t.mapped || null, _rel: info };
           else {
             if (t.id && !cur.ids.includes(t.id)) cur.ids.push(t.id);
             if (preferRelease(info, cur._rel) < 0) Object.assign(cur, { url: t.url || null, mapped: t.mapped || null, _rel: info });

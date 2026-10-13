@@ -89,3 +89,12 @@ test('sourceError drops the original message and maps statuses', () => {
   assert.equal(sourceError(new Error('boom')).code, 'UPSTREAM');
   assert.equal(sourceError(Object.assign(new Error('x'), { code: 'UNREADABLE' })).code, 'UNREADABLE');
 });
+
+test('mixed-script titles keep distinct keys, and non-Latin variants collapse like Latin ones', () => {
+  const one = (titles) => m.mergeCatalogues([{ source: 'bandcamp', releases: [{ id: '/a', name: 'A', album_type: 'album', release_date: null, url: null,
+    tracks: titles.map(title => ({ title, id: null, url: null })) }] }]);
+  assert.equal(one(['Смерть 2', 'Жизнь 2']).length, 2);
+  assert.equal(one(['Смерть Part I', 'Жизнь Part I']).length, 2);
+  assert.equal(one(['Смерть (Live)', 'Смерть']).length, 1);
+  assert.equal(one(['Café', 'cafe']).length, 1);
+});
