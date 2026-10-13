@@ -11,6 +11,8 @@ const youtubeSearch = require('../services/youtubeSearch');
 const videos = require('../services/videos');
 const { findDuplicateGroups } = require('../services/duplicates');
 const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDismissals');
+const spotifyPush = require('../services/spotifyPush');
+const { defaultAuth: spotifyAuth } = require('../services/spotifyAuth');
 const multer = require('multer');
 const csv = require('csv-parser');
 const fs = require('fs');
@@ -1437,6 +1439,29 @@ router.get('/spotify-playlist-mismatch', async (req, res) => {
       error: 'Failed to detect Spotify playlist mismatches',
       details: error.message
     });
+  }
+});
+
+// Spotify sync (sub-project F): live comparison + add-only push. Pull reuses POST /sync-spotify-playlist.
+router.get('/spotify/compare', async (req, res) => {
+  try {
+    res.json({ success: true, connected: spotifyAuth.status().connected, ...(await spotifyPush.compare(pool)) });
+  } catch (e) {
+    console.error('spotify compare error:', e.code || 'error'); // never e.message
+    res.status(502).json({ error: 'Failed to read the Spotify playlist' });
+  }
+});
+router.post('/spotify/push', async (req, res) => {
+  try {
+    const songIds = spotifyPush.parseSongIds((req.body || {}).songIds);
+    const accessToken = await spotifyAuth.getAccessToken();
+    res.json({ success: true, ...(await spotifyPush.pushSongs(pool, { songIds, accessToken })) });
+  } catch (e) {
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    if (e.code === 'NOT_CONNECTED' || e.code === 'REAUTH' || e.code === 'BUSY') return res.status(409).json({ error: e.code, message: e.message });
+    if (e.code === 'FORBIDDEN' || e.code === 'UPSTREAM') return res.status(502).json({ error: e.code, message: e.message, added: e.added || [] });
+    console.error('spotify push error:', e.code || 'error'); // never the token / body / message
+    res.status(500).json({ error: 'Failed to push to Spotify' });
   }
 });
 
