@@ -14,11 +14,26 @@ function ownSiteLabel(url) {
   return 'Listen online';
 }
 
+const VIDEO_TYPE_LABELS = { official: 'Official video', live: 'Live', lyric: 'Lyric video', 'fan-made': 'Fan-made', other: 'Other' };
+
+// One label per video, by type; two videos of the same type are numbered ("Official video 1", "Official video 2").
+function videoLabels(videos) {
+  const total = {};
+  for (const v of videos) total[v.video_type] = (total[v.video_type] || 0) + 1;
+  const seen = {};
+  return videos.map((v) => {
+    const base = VIDEO_TYPE_LABELS[v.video_type] || 'Video';
+    seen[v.video_type] = (seen[v.video_type] || 0) + 1;
+    return total[v.video_type] > 1 ? `${base} ${seen[v.video_type]}` : base;
+  });
+}
+
 function SongDetailPage() {
   const { songId } = useParams();
   const navigate = useNavigate();
   const [song, setSong] = useState(null);
-  const [youtubeVideo, setYoutubeVideo] = useState(null);
+  const [youtubeVideos, setYoutubeVideos] = useState([]);
+  const [selectedVideoId, setSelectedVideoId] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,17 +44,18 @@ function SongDetailPage() {
         setLoading(true);
         const [songData, youtubeData, analysisData] = await Promise.all([
           spotifyService.getSong(songId),
-          fetch(`http://localhost:5000/api/youtube/songs/${songId}/video/primary`)
+          fetch(`http://localhost:5000/api/youtube/songs/${songId}/videos`)
             .then(res => res.json())
             .catch(err => {
               console.warn('Could not load YouTube video:', err);
-              return { success: true, video: null };
+              return { success: true, videos: [] };
             }),
           spotifyService.getAnalysis(songId),
         ]);
 
         setSong(songData);
-        setYoutubeVideo(youtubeData.success ? youtubeData.video : null);
+        setYoutubeVideos(youtubeData.success ? (youtubeData.videos || []) : []);
+        setSelectedVideoId(null);
         setAnalysis(analysisData);
       } catch (err) {
         console.error('Error fetching song:', err);
@@ -101,6 +117,9 @@ function SongDetailPage() {
     ? song.artists.map(artist => (artist && artist.name) || artist).join(', ')
     : song.artists;
   const showSpotify = !!song.spotify_url && !song.spotify_dormant;
+  // The route lists the primary video first, so it is the default; the visitor can pick another.
+  const youtubeVideo = youtubeVideos.find((v) => v.id === selectedVideoId) || youtubeVideos[0] || null;
+  const labels = videoLabels(youtubeVideos);
 
   const nonEnglish = (song.language || []).some((l) => l.trim().toLowerCase() !== 'english');
 
@@ -207,6 +226,17 @@ function SongDetailPage() {
       {(youtubeVideo?.youtube_id || song.no_video_display !== 'hide') && (
         <section className="detail-section video-section">
           <h2>Music video</h2>
+          {youtubeVideos.length > 1 && (
+            <div className="video-picker" role="group" aria-label="Choose a video">
+              {youtubeVideos.map((v, i) => (
+                <button key={v.id} type="button" title={v.video_title || undefined}
+                  className={`btn btn-sm ${v.id === youtubeVideo.id ? 'btn-primary' : 'btn-secondary'}`}
+                  aria-pressed={v.id === youtubeVideo.id} onClick={() => setSelectedVideoId(v.id)}>
+                  {labels[i]}
+                </button>
+              ))}
+            </div>
+          )}
           {!youtubeVideo?.youtube_id && song.no_video_display === 'cover' && getArtwork() ? (
             <div className="video-cover-placeholder">
               <img src={getArtwork()} alt={`${song.title} artwork`} />
