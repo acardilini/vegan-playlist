@@ -42,8 +42,9 @@ test('saveIdentity writes only the matching column, validates, clears bandcamp/m
   const a = await mkArtist('ZZZBANDSVC Ident');
   let id = await svc.saveIdentity(pool, a, 'musicbrainz', MB);
   assert.equal(id.musicbrainz, MB);
-  id = await svc.saveIdentity(pool, a, 'musicbrainz', MB.replace(/[a-f]/g, 'A').toUpperCase());
-  assert.equal(id.musicbrainz, MB);
+  id = await svc.saveIdentity(pool, a, 'musicbrainz', 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE');
+  assert.equal(id.musicbrainz, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+  assert.equal((await pool.query(`SELECT musicbrainz_id FROM artists WHERE id=$1`, [a])).rows[0].musicbrainz_id, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
   id = await svc.saveIdentity(pool, a, 'bandcamp', 'https://ZZZBANDSVC.bandcamp.com/album/x');
   assert.equal(id.bandcamp, 'https://zzzbandsvc.bandcamp.com');
   id = await svc.saveIdentity(pool, a, 'spotify', SP2);
