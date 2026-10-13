@@ -37,7 +37,7 @@ only 2–4 of the pending/reject rows are in the DB; 65 rows appear in both file
 4. Junk/search-page URLs are **discarded** on import.
 5. Rejected candidates (256) **are imported as `rejected`** so nothing re-surfaces them.
 6. Relationship to Spotify playlist: **website is master, import-only** diff reporting.
-   Push-to-Spotify (OAuth) is deferred — could be added later.
+   Push-to-Spotify (OAuth) was deferred here and **built in sub-project F (2026-10-13)** as an add-only, click-only push.
 7. Non-Spotify platforms to support: **Bandcamp, YouTube, SoundCloud**.
 8. Add/process flow must include **categorisation at add-time**, **bulk candidate intake**
    (paste artist+title lists → pending queue), and **lyrics-hunting helpers** (search links +
@@ -118,7 +118,7 @@ Expected end state: catalogue ≈ 1,208 + 192 included +
 
 ## Deferred (YAGNI, recorded)
 
-- Push-to-Spotify playlist sync (OAuth user auth).
+- ~~Push-to-Spotify playlist sync (OAuth user auth).~~ Built in sub-project F (2026-10-13).
 - Vegan-theme coding workstream (will use the local lyrics; future project phase).
 - More robust mood/genre generation (current tags are regenerable enrichment).
 

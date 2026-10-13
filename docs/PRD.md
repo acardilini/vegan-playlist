@@ -390,6 +390,9 @@ keep/rebuild/drop/defer decisions are recorded in
   Manual (non-Spotify) song add/edit ✅ · Featured toggle ✅.
 - **Spotify playlist sync & validation:** sync playlist, detect mismatches/discrepancies,
   flag removed songs. ✅ (to be re-framed under the truth-source model — see Overview).
+- **Spotify sync (sub-project F):** Dashboard card + Songs > Spotify sync lists; **Pull** playlist tracks missing from the
+  catalogue as pending (tagged "From Spotify"); **Push** live songs missing from the playlist (add-only, click-only,
+  confirm list, possible-duplicate check, per-song "Add anyway"); one-time Spotify sign-in. ✅
 
 ### 11.4 Backend API Surface (mounted routers)
 Seven routers: `/api/spotify` (songs, artists, search, filter-options, browse-facets, db-stats) ·
