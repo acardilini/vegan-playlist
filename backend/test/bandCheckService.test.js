@@ -4,7 +4,7 @@ const pool = require('../database/db');
 const svc = require('../services/bandCheck');
 
 // Fixture sentinel for this file: ZZZBANDSVC.
-const SP1 = 'ZZZBANDSVCaaaaaaaaaaaa', SP2 = 'ZZZBANDSVCbbbbbbbbbbbb'; // 22 chars each
+const SP1 = 'ZZZBANDSVCaaaaaaaaaaaa', SP2 = 'ZZZBANDSVCbbbbbbbbbbbb', SP3 = 'ZZZBANDSVCdddddddddddd'; // 22 chars each
 const MB = '11111111-2222-3333-4444-555555555555';
 async function mkArtist(name, { spotify_id = null } = {}) {
   return (await pool.query(`INSERT INTO artists (name, spotify_id, data_source) VALUES ($1,$2,$3) RETURNING id`,
@@ -48,8 +48,8 @@ test('saveIdentity writes only the matching column, validates, clears bandcamp/m
   assert.equal(id.bandcamp, 'https://zzzbandsvc.bandcamp.com');
   id = await svc.saveIdentity(pool, a, 'spotify', SP2);
   assert.equal(id.spotify, SP2);
-  id = await svc.saveIdentity(pool, a, 'spotify', SP1);
-  assert.equal((await pool.query(`SELECT spotify_url FROM artists WHERE id=$1`, [a])).rows[0].spotify_url.endsWith(SP1), true);
+  id = await svc.saveIdentity(pool, a, 'spotify', SP3);
+  assert.equal((await pool.query(`SELECT spotify_url FROM artists WHERE id=$1`, [a])).rows[0].spotify_url.endsWith(SP3), true);
   id = await svc.saveIdentity(pool, a, 'spotify', SP2);
   assert.ok((await pool.query(`SELECT spotify_url FROM artists WHERE id=$1`, [a])).rows[0].spotify_url.endsWith(SP2)); // replaced, not stale
   assert.equal((await pool.query(`SELECT data_source FROM artists WHERE id=$1`, [a])).rows[0].data_source, 'spotify');
