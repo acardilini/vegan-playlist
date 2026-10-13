@@ -8,6 +8,8 @@ const API = 'https://api.spotify.com/v1';
 const CHUNK = 100;
 const TIMEOUT_MS = 10000;
 const MAX_429_RETRIES = 3;
+const MAX_WAIT_S = 30; // longer Retry-After than this: fail fast rather than hang the admin request
+let pushing = false; // one push at a time, so overlapping requests cannot both POST the same tracks
 
 function coded(code, message) { const e = new Error(message); e.code = code; return e; }
 
@@ -83,6 +85,9 @@ async function addUris(uris, { accessToken, playlistId = DEFAULT_PLAYLIST_ID, fe
       }
       if (res.status === 429 && attempt < MAX_429_RETRIES) {
         const wait = (parseInt(res.headers && res.headers.get && res.headers.get('retry-after')) || 1) + 1;
+        if (wait > MAX_WAIT_S) {
+          const e = coded('UPSTREAM', 'Spotify is rate-limiting requests — try again in a few minutes'); e.addedCount = addedCount; throw e;
+        }
         await sleep(wait * 1000);
         continue;
       }
@@ -97,7 +102,7 @@ async function addUris(uris, { accessToken, playlistId = DEFAULT_PLAYLIST_ID, fe
   return addedCount;
 }
 
-async function pushSongs(pool, { songIds, accessToken, playlistId = DEFAULT_PLAYLIST_ID, fetchTracks = defaultFetchTracks, fetchImpl, sleep } = {}) {
+async function pushSongsUnguarded(pool, { songIds, accessToken, playlistId = DEFAULT_PLAYLIST_ID, fetchTracks = defaultFetchTracks, fetchImpl, sleep } = {}) {
   const ids = songIds === undefined ? undefined : parseSongIds(songIds);
   const songs = await loadSongs(pool);
   const tracks = await fetchTracks(playlistId);
@@ -134,6 +139,12 @@ async function pushSongs(pool, { songIds, accessToken, playlistId = DEFAULT_PLAY
     throw e;
   }
   return { added, alreadyThere, notEligible };
+}
+
+async function pushSongs(pool, opts) {
+  if (pushing) throw coded('BUSY', 'A push is already running');
+  pushing = true;
+  try { return await pushSongsUnguarded(pool, opts); } finally { pushing = false; }
 }
 
 module.exports = { parseSongIds, chunk, compare, pushSongs, _addUris: addUris };

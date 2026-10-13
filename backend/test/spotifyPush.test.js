@@ -31,12 +31,12 @@ after(async () => {
 const track = (id, title = id) => ({ spotify_id: id, title, artists: [{ name: 'Someone' }] });
 const fetchTracksOf = (...tracks) => async () => tracks;
 // Records POSTs; script = array of status codes (default 201).
-function fakeFetch(script = []) {
+function fakeFetch(script = [], retryAfter = '0') {
   const calls = [];
   const fn = async (url, init) => {
     const status = script.length ? script.shift() : 201;
     calls.push({ url: String(url), init, uris: JSON.parse(init.body).uris, status });
-    return { ok: status >= 200 && status < 300, status, headers: { get: () => '0' }, json: async () => ({}) };
+    return { ok: status >= 200 && status < 300, status, headers: { get: () => retryAfter }, json: async () => ({}) };
   };
   fn.calls = calls;
   return fn;
@@ -140,4 +140,33 @@ test('push never writes to the songs table', async () => {
   await push.pushSongs(pool, { songIds: [live], accessToken: 'T', fetchTracks: fetchTracksOf(), fetchImpl: fakeFetch(), sleep: noSleep });
   const after = (await pool.query(`SELECT count(*)::int n, max(updated_at) m FROM songs`)).rows[0];
   assert.deepEqual(after, before);
+});
+
+test('429 with a huge Retry-After fails fast (UPSTREAM), never sleeps, reports addedCount', async () => {
+  const uris = [...Array(150).keys()].map((i) => `spotify:track:R${i}`);
+  let slept = 0;
+  const f = fakeFetch([201, 429], '3600');
+  await assert.rejects(
+    () => push._addUris(uris, { accessToken: 'T', playlistId: 'P', fetchImpl: f, sleep: async () => { slept++; } }),
+    (e) => { assert.equal(e.code, 'UPSTREAM'); assert.match(e.message, /rate-limiting/); assert.equal(e.addedCount, 100); return true; });
+  assert.equal(slept, 0);
+});
+
+test('concurrent pushSongs: second call is BUSY, guard releases after success and after failure', async () => {
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const first = push.pushSongs(pool, {
+    songIds: [live], accessToken: 'T', fetchTracks: async () => { await gate; return []; }, fetchImpl: fakeFetch(), sleep: noSleep,
+  });
+  await assert.rejects(
+    () => push.pushSongs(pool, { songIds: [live], accessToken: 'T', fetchTracks: fetchTracksOf(), fetchImpl: fakeFetch(), sleep: noSleep }),
+    { code: 'BUSY' });
+  release();
+  await first;
+  // released after success
+  await push.pushSongs(pool, { songIds: [live], accessToken: 'T', fetchTracks: fetchTracksOf(track('ZZZPUSH_live')), fetchImpl: fakeFetch(), sleep: noSleep });
+  // released after a failing push (upstream error) and after early BAD_INPUT
+  await assert.rejects(() => push.pushSongs(pool, { songIds: [live], accessToken: 'T', fetchTracks: fetchTracksOf(), fetchImpl: fakeFetch([403]), sleep: noSleep }), { code: 'FORBIDDEN' });
+  await assert.rejects(() => push.pushSongs(pool, { songIds: [], accessToken: 'T', fetchTracks: fetchTracksOf() }), { code: 'BAD_INPUT' });
+  await push.pushSongs(pool, { songIds: [live], accessToken: 'T', fetchTracks: fetchTracksOf(track('ZZZPUSH_live')), fetchImpl: fakeFetch(), sleep: noSleep });
 });
