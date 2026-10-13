@@ -53,14 +53,16 @@ Run before ending every working session:
 
 ### Database
 - **Create tables**: Run `backend/database/schema.sql` against PostgreSQL database, then the migrations in `backend/database/migrations/` (psql, in order)
-- **Import/enrich data**: `backend/scripts/enrichFromSpotify.js` (dry-run by default) or the admin Staging tab's Sync — both import-only
+- **Import/enrich data**: `backend/scripts/enrichFromSpotify.js` (dry-run by default) or the admin Dashboard's **Spotify playlist** card (Pull) — both import-only
 
 ## Architecture
 
 ### Backend Structure (`backend/`)
-- **server.js**: Main Express server; mounts 8 routers: `/api/spotify`, `/api/admin`,
+- **server.js**: Main Express server; mounts 9 routers: `/api/spotify`, `/api/admin`,
   `/api/playlists`, `/api/youtube`, `/api/submissions`, `/api/analytics`, `/api/analysis`,
-  `/api/content`
+  `/api/content`, `/api/spotify-auth` (**separate from `admin.js` on purpose:** `admin.js` checks `X-Admin-Password`
+  on every route and Spotify's redirect back to us is a plain browser navigation that cannot send it —
+  `POST /start` + `GET /status` are header-authed, `GET /callback` is guarded by a single-use 10-minute `state`)
 - **routes/**: `spotify.js` (public site API), `admin.js` (~2,200 lines, password-protected
   curation API in six banner-named domains: Songs/curation (incl. the Submissions Inbox) ·
   Enrichment · Data quality · Sync (import-only) · Artists · Staging/lifecycle; see
@@ -75,6 +77,22 @@ Run before ending every working session:
   (`/curation/inbox*`, authed) — the old unauthenticated `/api/submissions/admin*` routes were deleted in C
 - **services/staging.js**: staging-queue service (queues, include/reject/publish, candidate
   intake, submissions→pending bridge); tests in `test/staging.test.js` (node:test)
+- **services/spotifyAuth.js + services/spotifyPush.js** (sub-project F, Spotify sync): `spotifyAuth` is the one-time
+  Authorization-Code sign-in (scopes `playlist-modify-public/private` only) keeping **only a refresh token in the
+  gitignored `backend/.spotify-token.json`** (no DB row, per-machine); `getAccessToken()` refreshes per use. **Nothing there
+  may log or rethrow the code, a token, a request body or a fetch error's message** (errors are fixed strings + `.code`:
+  NOT_CONNECTED / REAUTH / UPSTREAM; REAUTH only for `invalid_grant` on a *refresh*). `spotifyPush` is **add-only,
+  click-only and never writes the DB**: `compare` buckets pullable / pushable / possibleDuplicates / noSpotifyId /
+  onPlaylistNotLive; `pushSongs` re-reads the **live** playlist first (idempotent), adds in chunks of 100 via a direct
+  `POST /v1/playlists/{id}/items` (the library's `/tracks` write path is reportedly 403'd by Spotify's March-2026 dev-mode
+  change; reads work on both), one push at a time (`BUSY`), 429 with Retry-After > 30s fails fast. **Possible duplicate** =
+  same normalised title + first artist (`staging.normalizeName`, which strips parentheticals and " - …") as a playlist
+  track with a *different* id — unless that playlist track is itself a **live** catalogue song (Vox 2 / Vox 3). Duplicates
+  leave the push list and the bulk push; only an explicit per-song push with `allowDuplicates` overrides. Compare's playlist
+  read is a slim parallel read (`fetchPlaylistTracksLite`, ~3s) cached 60s (`?fresh=1` bypasses but writes; a
+  generation counter stops a pre-push read re-caching); push never uses the cache. Routes: `GET /api/admin/spotify/compare`,
+  `POST /api/admin/spotify/push`; pull is the unchanged import-only `POST /api/admin/sync-spotify-playlist` (needs a JSON
+  body — `adminFetch` must send `body: {}`).
 - **services/youtubeSearch.js**: the workbench's "Find videos" (sub-project D) over the **official YouTube
   Data API v3** — `searchVideos` (`search.list` ~100 quota units + `videos.list` 1 unit; 10,000/day, so ~99
   searches), `findCandidatesForSong` (query = **first-listed artist** + title, i.e. the lowest
@@ -196,7 +214,7 @@ Run before ending every working session:
   as before, so no existing link breaks. All three consume `pages/about/useCodebook.js`, a small
   hook fetching `GET /api/analysis/codebook` once and sharing it across the tabs. Single-consumer
   helpers stay local to their page file
-- **src/components/**: 42 components (27 public + 15 admin) — public (SearchAndFilter,
+- **src/components/**: 44 components (27 public + 17 admin; **SpotifySyncCard** on the Dashboard and **SpotifyLists**, the Songs > Spotify sync view) — public (SearchAndFilter,
   ArtistSearchResults, ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge,
   YouTubeEmbed, **SimilarSongs** (the song page's two embedding tabs + genre fallback), plus
   **`components/explore/`** — `ExploreMap` (hand-rolled canvas scatter, **no charting
@@ -217,8 +235,9 @@ Run before ending every working session:
   (AdminInterface is a
   login + tab-nav shell over ManageSongsTab, ManagePlaylistsTab and the 8 other tab
   components; `CategorizationFields` is the one categorisation form shared by Manage
-  Songs and Bulk Categorization). Song intake/sync lives in the Staging tab
-  (Add candidates + import-only Sync + mismatch report); Duplicate Manager is
+  Songs and Bulk Categorization). Song intake lives in the Staging tab
+  (Add candidates); Spotify sync (Pull / Push / Refresh, with its five lists under Songs > Spotify sync) lives in the Dashboard
+  card; queue rows carry an `origin` tag ("From Spotify" / "From submit form"); Duplicate Manager is
   data-quality only. **Two shared presentation primitives:** `FilterSection` — every
   browse-sidebar group is one, so they all collapse identically; it nests, which is how the
   five theme dimensions, seven metadata components and five acoustic dimensions read as the
@@ -286,12 +305,12 @@ Run before ending every working session:
 - **Categorization**: Flexible TEXT[] arrays for vegan focus, advocacy styles, animal categories
 - **User features**: playlists, playlist_songs for user-generated content
 - **Spotify integration**: Stores spotify_id, URLs, and metadata — enrichment only,
-  import-only sync; never overwrites curatorial fields
+  import-only sync (pull), plus an add-only user-auth push; never overwrites curatorial fields and never removes playlist tracks
 
 ## Key Features
 
 ### Spotify Integration
-- Uses `spotify-web-api-node` library with client credentials flow
+- Uses `spotify-web-api-node` library with client credentials flow for reads; playlist **writes** use the signed-in user's refresh token (see `spotifyAuth`)
 - Fetches playlist data, track metadata, artist info, and audio features
 - Backend routes: `/api/spotify/playlist/:id`, `/api/spotify/songs/featured`, `/api/spotify/search`
 
@@ -321,6 +340,8 @@ DB_PASSWORD=your_pg_password
 ADMIN_PASSWORD=shared_admin_password
 PORT=5000
 YOUTUBE_API_KEY=optional_youtube_data_api_v3_key   # workbench "Find videos"; search is disabled when unset
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:5000/api/spotify-auth/callback   # must match a Redirect URI registered in the Spotify dashboard
+ADMIN_RETURN_URL=http://localhost:5173/admin   # where the OAuth callback sends the browser afterwards
 ```
 
 **Note:** `database/db.js` reads the five discrete `DB_*` vars above — there is **no `DATABASE_URL`**

@@ -157,3 +157,4 @@ backups/
 
 # Superpowers brainstorming visual companion (local mockups)
 .superpowers/
+backend/.spotify-token.json

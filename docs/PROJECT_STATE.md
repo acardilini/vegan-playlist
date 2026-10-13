@@ -7,7 +7,25 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-12): Sub-project E - lyrics assist - curator-smoked (all good) and MERGED to `main` (merge `086cdf8`, no-ff); merged `main` re-verified backend 230/230, utils 22/22, build clean.**
+- **Current session (2026-10-13): Sub-project F — Spotify sync — BUILT; the curator smoked connect, the counts and a real push ("it worked"); NOT MERGED (the curator decides).**
+  Branch `session-F-spotify-push` (from `main` at `ddc5304`; spec `80e5c9a`, plan `8ec9bdb`, tasks `b9d9174`..`a2dfd5d`, smoke
+  follow-ups `bfa2d00` + review fixes `731818d`). The website stays master. **Pull** (the existing import-only sync, which had *no UI and
+  no schedule* — it was only reachable by script/API) is now a button on a new Dashboard **Spotify playlist** card; **Push** is new:
+  add-only, click-only, never writes the DB, per song (workbench Links panel) or bulk (card, with a confirm list of the exact ids).
+  One-time Spotify sign-in (`/api/spotify-auth`, refresh token in gitignored `backend/.spotify-token.json`). Smoke follow-ups the
+  curator asked for: a **possible-duplicate check** (New Ethic / Earth Crisis was offered for push although the playlist already
+  carried another version of it), a faster compare (slim parallel read + 60s cache: ~7.5s -> ~3s, repeat ~10ms), a **Songs > Spotify
+  sync** view (five lists), and **"From Spotify" / "From submit form"** tags on pending songs. Subagent-driven: 5 tasks each
+  reviewed; the final opus review found a Critical (Pull always 500'd: `adminFetch` sent no body and Express 5 leaves `req.body`
+  undefined) and 2 Important, all fixed; a second opus review of the follow-up found 3 Important (false-positive duplicates,
+  unbounded rate-limit wait, wrong origin tag), all fixed. **Verified:** backend **272/272**; lint 0 errors (6 pre-existing
+  warnings); build clean; live checks of the Dashboard card, the Spotify lists and the origin tags in a real browser; compare
+  against the real playlist (1,220 tracks; 0 to pull, 136 to push, 2 possible duplicates, 7 no link, 34 on the playlist but not
+  live). **Curator-confirmed:** connect, counts, one real push + the count updating. **Not yet curator-confirmed:** the second-click
+  "Already on the playlist", judging the two flagged duplicates, and the bulk push (deliberately not run — ~136 tracks; read the
+  confirm list first). A dev-server hazard bit mid-session: Vite served a stale transform of `LinksPanel.jsx` (blank workbench,
+  "useEffect is not defined") — see the Decision Log.
+- **Previous session (2026-10-12): Sub-project E - lyrics assist - curator-smoked (all good) and MERGED to `main` (merge `086cdf8`, no-ff); merged `main` re-verified backend 230/230, utils 22/22, build clean.**
   Branch `session-E-lyrics-assist`. Lyrics panel: **Search all lyric sites** (one Google tab ORing `site:` over an
   editable list) plus per-site links that mark the avenue tried; **Could transcribe by ear / Put on hold / Clear**
   actions. Admin Songs rail gains **To transcribe** and **Lyrics on hold** (replacing *Awaiting community*);
@@ -419,6 +437,23 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **⏭ NEXT (2026-10-13): merge sub-project F** (branch `session-F-spotify-push`, no-ff like C/D/E) once the curator is happy, then the logged
+> requests: the Video panel's **"no video available"** option (and what the song page shows in that slot), the **band/album
+> catalogue checker**, and **junk-lyrics flagging** (needs its own brainstorm; see the 2026-10-12 note below).
+> **The 29 songs the curator pulled (all pending, tagged "From Spotify") still need an include-or-reject call** — several look like
+> near-twins ("Liberation Not Experimentation - Dance Mix" / "(Dance Mix)"). Songs > To be processed, search the title.
+> **Known risks / deferred from F (none blocking):** (1) editing a song's Spotify URL in the workbench does **not** re-derive
+> `songs.spotify_id` (`curation.saveLinks`), and push uses `spotify_id` — a corrected URL could still push the old track (0 mismatches
+> today; 1 live song has a track URL but no id). (2) The duplicate check can miss a different version when the catalogue's first
+> artist differs from Spotify's primary artist or a collaboration is stored as one combined artist, and two live songs sharing a key
+> that are both off the playlist are both pushed. (3) Pages of the playlist read at different moments can drift if tracks are
+> removed mid-read (`snapshot_id` comparison would close it; the old reader had the same window). (4) `withRetry` is still unbounded for
+> scripts/the full read; only the compare/push read is bounded. (5) The in-memory OAuth `state` is lost on a backend restart
+> mid-flow (click Connect again); `ADMIN_RETURN_URL` assumes Vite on :5173; after the redirect the admin login gate reappears (its
+> `authed` state is in memory). (6) A pulled song's "From Spotify" tag lives in `status_notes` — editing that note removes the tag.
+> (7) Small review minors: `writeToken` is not atomic, no refresh serialisation in `getAccessToken`, the callback sets no
+> `Cache-Control: no-store`, the per-song button uses a native `title` not `InfoTip`, the Pull list has no prev/next in the workbench.
+
 > **Logged 2026-10-12 (curator, NOT built):** some songs' stored lyrics are junk (a YouTube description or an error message) and 
 > a few of those already have analysis, so that analysis is unreliable. They need flagging for fixing. Curator: "maybe I'll sort this 
 > out with the analysis process" - so no flag is built yet. **If/when built:** the curator wants a song's lyric analysis **hidden 
@@ -631,6 +666,40 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-10-13 (sub-project F follow-up) - duplicate check, cache and tag semantics.** The curator's smoke showed the push list
+  offering songs the playlist already carries as a *different Spotify track id*. **Possible duplicate** = same
+  `staging.normalizeName` title + first artist as a playlist track with another id. `normalizeName` is reused deliberately (it is what
+  the intake dedupe uses) even though it strips parentheticals and " - …" suffixes, which made 5 distinct curated pairs collide
+  (Vox 2 / Vox 3, "X" / "X - Metal Version", …) — so a playlist track that is itself a **live** catalogue song never marks a
+  look-alike as a duplicate (a pending/rejected owner still does, which is exactly the just-pulled New Ethic case). Duplicates leave
+  the push list and the bulk push; a per-song push is refused with the match and offers **Add anyway** (`allowDuplicates`, explicit
+  ids only, never bulk). **Compare** reads the playlist with a slim parallel read and caches it 60s; **push never uses the cache** (the
+  live re-read is what makes it idempotent) and clears it; `?fresh=1` bypasses the read but writes the cache; a generation counter
+  stops a read that began before a push re-caching the pre-push playlist (proven by a test that fails without it). The compare/push
+  read fails fast (`RATE_LIMITED`, >30s Retry-After or 3 retries) rather than hanging the request and the push lock. **Origin tags:**
+  "From Spotify" = `playlist_added_by='playlist-diff'` AND the pull's `status_notes` (staging "Add candidates" shares the first but not
+  the note); "From submit form" = the no-match note, or an *approved* submission pointing at a song **created after the submission**
+  (an older song a submission merely resolved to is not tagged). Cost if wrong: a rare false negative/positive on the duplicate
+  check — the curator can still push by hand or "Add anyway".
+- **2026-10-13 (sub-project F) - Spotify sync design.** Curator decisions: push is **click-only** (never automatic on publish),
+  **add-only** (rejected/unpublished songs still on the playlist are only reported), and the refresh token lives in a **gitignored
+  file**, not the DB. **Auth router is separate from `admin.js`** because `admin.js` applies `X-Admin-Password` to every route and
+  Spotify's redirect cannot send it; the callback is guarded by a single-use 10-minute `state` issued by the authed `/start`.
+  **Writes use a direct `POST /v1/playlists/{id}/items`**, not `spotify-web-api-node`'s `addTracksToPlaylist`: Spotify's February/March
+  2026 dev-mode changes reportedly 403 the old `/tracks` path (reads verified on both; the write path was verified live by the
+  curator's push). **The playlist is owned by another Spotify user**; the curator signs in as a collaborator. Controller rulings: REAUTH only
+  for `invalid_grant` on a *refresh* (the brief's code and tests contradicted); the card's Confirm sends the confirmed `songIds`, not
+  `{}`; a `BUSY` code from the one-push-at-a-time guard maps to 409; **a Critical found at the final review** — the Pull button
+  500'd because `adminFetch` sends no body for a body-less POST and Express 5 leaves `req.body` undefined while the existing route
+  destructures it — was fixed on the client (`body: {}`) with the route left unchanged; a missing Reconnect after a revoked token
+  (the card hid Connect whenever the token *file* existed) was fixed. **Deferred (ruled):** re-deriving `spotify_id` when a Spotify URL
+  is edited (outside F's scope; see Next Tasks).
+- **2026-10-13 - dev-server hazard: Vite can serve a stale transform of a subagent-edited file.** `LinksPanel.jsx` was edited to add
+  `useEffect` to its React import; the already-running dev server kept serving a version declaring only `useState` while the body
+  called `useEffect`, so opening any song in the workbench blanked the page (`ReferenceError: useEffect is not defined`). The source
+  was right and lint/build were green. `touch` the file (or restart Vite) and load the page before declaring a frontend change ready;
+  tell the curator to hard-refresh. Recorded in memory too.
 
 - **2026-10-12 (sub-project E) - no paid search provider; lyric search is link-building only.** The curator rejected a
   Brave Search API subscription (no free tier for new accounts; Google Programmable Search is closed to new
@@ -1853,6 +1922,17 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-10-13 (sub-project F BUILT; curator smoked connect + counts + a real push; NOT MERGED)** - branch `session-F-spotify-push`.
+  Brainstorm (the curator asked whether the pull was automatic: it was not, and had no UI either), spec `80e5c9a`, plan `8ec9bdb`, five
+  subagent-driven tasks (`spotifyAuth` + token store, `/api/spotify-auth` router, `spotifyPush`, admin compare/push routes, the
+  Dashboard card + per-song button), a final opus review (Critical: Pull 500'd; 2 Important; all fixed in `a2dfd5d`), then the
+  curator's smoke produced the follow-ups: duplicate check, faster compare + cache, Songs > Spotify sync view, origin tags
+  (`bfa2d00`), and a second opus review's fixes (`731818d`). The curator accidentally pulled the 29 playlist-only tracks (all pending,
+  now tagged). A stale Vite transform blanked the workbench mid-session (fixed by touching the file). Backend **272/272**; lint 0
+  errors; build clean. Real-data compare: 1,220 playlist tracks, 0 to pull, 136 to push, 2 possible duplicates, 7 with no
+  Spotify link, 34 on the playlist but not live. Docs updated: CLAUDE.md (9 routers, new services, components), PROJECT_PLAN (F ☑),
+  PRD §11.3, TRUTH_SOURCE_DESIGN (push no longer deferred).
 
 - **2026-10-12 (sub-project E BUILT, held for the curator's smoke)** - branch `session-E-lyrics-assist`. Curator moved the
   workbench "See song/artist page" links to their own row under the title and rejected Brave, so E's Part 1 became

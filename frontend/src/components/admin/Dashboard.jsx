@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import AddSongPanel from './AddSongPanel';
+import SpotifySyncCard from './SpotifySyncCard';
 import { relTime } from './relTime';
 
 // Action tiles: [queueKey, label, disabled].
@@ -80,6 +81,11 @@ function Dashboard() {
             </>
           ) : '·'}
         </p>
+      </section>
+
+      <section className="dash-section">
+        <h2 className="dash-heading">Spotify playlist</h2>
+        <SpotifySyncCard />
       </section>
 
       <section className="dash-section">

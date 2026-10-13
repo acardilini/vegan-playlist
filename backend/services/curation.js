@@ -103,6 +103,7 @@ function mapQueueRow(r) {
     featured: r.featured,
     language: r.language, has_art: r.has_art, has_lyrics: r.has_lyrics, has_youtube: r.has_youtube,
     has_play_link, play_link_kinds: kinds, snooze_until: r.snooze_until, park_reason: r.park_reason, missing,
+    origin: r.origin,
   };
 }
 
@@ -124,7 +125,15 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
            EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id) AS has_youtube,
            EXISTS (SELECT 1 FROM song_lyrics sl WHERE sl.song_id=s.id
                    AND sl.lyrics IS NOT NULL AND btrim(sl.lyrics) <> '') AS has_lyrics,
-           sp.snooze_until, sp.park_reason
+           sp.snooze_until, sp.park_reason,
+           -- Where the row came from, for a tag in the list. A submission is recognised by its note (no-Spotify-match
+           -- path) or by an APPROVED submission pointing at the song (Spotify-matched path); a pull by the note the
+           -- import-only playlist diff writes. Staging "Add candidates" shares playlist_added_by but not the note.
+           CASE WHEN s.status_notes LIKE 'community submission #%'
+                  OR EXISTS (SELECT 1 FROM song_submissions ss WHERE ss.existing_song_id=s.id AND ss.status='approved' AND s.created_at >= ss.created_at)
+                THEN 'submission'
+                WHEN s.playlist_added_by='playlist-diff' AND s.status_notes LIKE 'on Spotify playlist%'
+                THEN 'spotify' END AS origin
     FROM songs s
     LEFT JOIN albums al ON al.id=s.album_id
     LEFT JOIN song_processing sp ON sp.song_id=s.id

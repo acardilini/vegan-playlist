@@ -20,13 +20,20 @@ async function getSpotifyClient() {
 }
 
 // Retry a Spotify call once per 429, honouring Retry-After.
-async function withRetry(fn) {
-  for (;;) {
+// Default is unbounded (scripts). The compare/push read passes { maxWaitS, maxRetries } so a long Retry-After
+// fails fast with RATE_LIMITED instead of hanging an admin request (and the push lock) for the whole wait.
+async function withRetry(fn, { maxWaitS = Infinity, maxRetries = Infinity } = {}) {
+  for (let attempt = 0; ; attempt++) {
     try {
       return await fn();
     } catch (err) {
       if (err.statusCode === 429) {
         const wait = (parseInt(err.headers && err.headers['retry-after']) || 2) + 1;
+        if (wait > maxWaitS || attempt >= maxRetries) {
+          const e = new Error('Spotify is rate-limiting requests — try again in a few minutes');
+          e.code = 'RATE_LIMITED';
+          throw e;
+        }
         console.log(`  rate limited — waiting ${wait}s`);
         await new Promise(r => setTimeout(r, wait * 1000));
         continue;
@@ -75,6 +82,33 @@ async function fetchPlaylistTracks(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID)
     }
     if (!page.body.next) break;
     offset += 100;
+  }
+  return tracks;
+}
+
+// Slim read for comparison/push (sub-project F): only id, title and artist names, and the pages after
+// the first fetched in parallel (the full read above is 13 sequential pages of album objects ~7s for
+// 1,200 tracks). Order is preserved. Any failing page rejects — a silently partial playlist would make
+// push think tracks are missing and add them again.
+const LITE_FIELDS = 'total,items(track(id,name,artists(name)))';
+const LITE_CONCURRENCY = 4;
+async function fetchPlaylistTracksLite(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID) {
+  const page = (offset) => withRetry(() => spotifyApi.getPlaylistTracks(playlistId, { offset, limit: 100, fields: LITE_FIELDS }), { maxWaitS: 30, maxRetries: 3 });
+  const first = await page(0);
+  const total = first.body.total || 0;
+  const pages = [first];
+  const offsets = [];
+  for (let o = 100; o < total; o += 100) offsets.push(o);
+  for (let i = 0; i < offsets.length; i += LITE_CONCURRENCY) {
+    pages.push(...await Promise.all(offsets.slice(i, i + LITE_CONCURRENCY).map(page)));
+  }
+  const tracks = [];
+  for (const p of pages) {
+    for (const item of p.body.items) {
+      const t = item.track;
+      if (!t || !t.id) continue; // local files / unavailable tracks
+      tracks.push({ spotify_id: t.id, title: t.name, artists: (t.artists || []).map(a => ({ name: a.name })) });
+    }
   }
   return tracks;
 }
@@ -186,6 +220,7 @@ module.exports = {
   getSpotifyClient,
   withRetry,
   fetchPlaylistTracks,
+  fetchPlaylistTracksLite,
   computeDiff,
   addTracksAsPending,
   upsertAlbum,

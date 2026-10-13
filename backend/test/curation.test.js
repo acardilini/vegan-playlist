@@ -102,6 +102,7 @@ after(async () => {
   await pool.query(`DELETE FROM song_processing WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
   await pool.query(`DELETE FROM song_lyrics WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
   await pool.query(`DELETE FROM youtube_videos WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZCUR%')`);
+  await pool.query(`DELETE FROM song_submissions WHERE song_title LIKE 'ZZZCUR%'`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZCUR%'`);
   await pool.query(`DELETE FROM artists WHERE name LIKE 'ZZZCUR%'`);
   await pool.query(`DELETE FROM albums WHERE name LIKE 'ZZZCUR%'`);
@@ -431,4 +432,38 @@ test('saving lyrics on a song with no processing row works and sets found', asyn
   const wb = await curation.saveLyrics(pool, id, { lyrics: 'words' });
   assert.equal(wb.lyrics_status, 'found');
   assert.equal(wb.lyrics_source, 'other'); // column default, left untouched
+});
+
+test('queue rows carry where a pending song came from: spotify pull, submit form, or nothing', async () => {
+  const mk = async (title, notes, by) => (await pool.query(
+    `INSERT INTO songs (title, status, data_source, status_notes, playlist_added_by)
+     VALUES ($1,'pending','manual',$2,$3) RETURNING id`, [title, notes, by])).rows[0].id;
+  const pulled = await mk('ZZZCUR Origin pulled', 'on Spotify playlist, not in catalogue — added as pending by playlist diff', 'playlist-diff');
+  const manualSub = await mk('ZZZCUR Origin sub manual', 'community submission #99999 from Someone — added to pending queue', null);
+  const intake = await mk('ZZZCUR Origin intake', 'added as candidate via staging intake', 'playlist-diff'); // staging "Add candidates": NOT a pull
+  const plain = await mk('ZZZCUR Origin plain', null, null);
+  const spotSub = await mk('ZZZCUR Origin sub spotify', 'added as candidate via staging intake', 'playlist-diff'); // a submission that matched Spotify
+  await pool.query(
+    `INSERT INTO song_submissions (song_title, artist_name, status, existing_song_id, created_at) VALUES ('ZZZCUR Origin sub spotify','x','approved',$1, now() - interval '1 day')`, [spotSub]);
+  const pendingSub = await mk('ZZZCUR Origin sub pending', null, null); // a still-pending submission pointing at a song is a match, not an origin
+  await pool.query(
+    `INSERT INTO song_submissions (song_title, artist_name, status, existing_song_id) VALUES ('ZZZCUR Origin sub pending','x','pending',$1)`, [pendingSub]);
+
+  const { rows } = await curation.listCurationQueue(pool, { queue: 'to-process', q: 'ZZZCUR Origin' });
+  const origin = Object.fromEntries(rows.map(r => [r.id, r.origin]));
+  assert.equal(origin[pulled], 'spotify');
+  assert.equal(origin[manualSub], 'submission');
+  assert.equal(origin[spotSub], 'submission');
+  assert.equal(origin[intake], null);
+  assert.equal(origin[plain], null);
+  assert.equal(origin[pendingSub], null);
+});
+
+test('origin: an EXISTING song that a later submission merely resolved to is not tagged as from the submit form', async () => {
+  const id = (await pool.query(
+    `INSERT INTO songs (title, status, data_source, created_at) VALUES ('ZZZCUR Origin existing','pending','manual', now() - interval '30 days') RETURNING id`)).rows[0].id;
+  await pool.query(
+    `INSERT INTO song_submissions (song_title, artist_name, status, existing_song_id) VALUES ('ZZZCUR Origin existing','x','approved',$1)`, [id]);
+  const { rows } = await curation.listCurationQueue(pool, { queue: 'to-process', q: 'ZZZCUR Origin existing' });
+  assert.equal(rows.find(r => r.id === id).origin, null);
 });
