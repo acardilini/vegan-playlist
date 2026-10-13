@@ -4,7 +4,9 @@ const { createSpotifyAdapter } = require('./spotify');
 const { createMusicBrainzAdapter } = require('./musicbrainz');
 const { createBandcampAdapter, normalizeBandcampOrigin } = require('./bandcamp');
 const { defaultFetch } = require('./http');
-const { coded } = require('./errors');
+const { coded, sourceError } = require('./errors');
+const staging = require('../staging');
+const { mergeCatalogues, buildIndex, classify } = require('./merge');
 
 const SOURCES = ['spotify', 'bandcamp', 'musicbrainz'];
 const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
@@ -103,4 +105,123 @@ async function saveIdentity(db, artistId, source, value) {
   return identityOf(await loadArtist(db, artistId));
 }
 
-module.exports = { SOURCES, defaultAdapters, listBands, identifyCandidates, saveIdentity, loadArtist, identityOf };
+const CACHE_MS = 5 * 60 * 1000;
+const MAX_ADD = 100;
+const cache = new Map(); // `${artistId}:${source}:${value}` -> { at, catalogue }
+let adding = false;
+function _resetForTests() { cache.clear(); adding = false; }
+
+async function readSource(adapter, artistId, source, value, { fresh, now }) {
+  const key = `${artistId}:${source}:${value}`;
+  const hit = cache.get(key);
+  if (!fresh && hit && now() - hit.at < CACHE_MS) return hit.catalogue;
+  const catalogue = await adapter.fetchCatalogue(value);
+  cache.set(key, { at: now(), catalogue });
+  return catalogue;
+}
+
+// Internal: the merged + classified songs for a band (full internal shape, incl. Spotify `mapped` tracks).
+async function loadMerged(db, artist, { adapters, fresh, now }) {
+  const identity = identityOf(artist);
+  const active = SOURCES.filter(s => identity[s] && adapters[s]);
+  if (active.length === 0) {
+    // carries the band so the admin view can open its Identify step with the right name
+    throw Object.assign(coded('NO_IDENTITY', 'Identify this band on at least one source first'), { artist: { id: artist.id, name: artist.name, identity } });
+  }
+
+  const settled = await Promise.all(active.map(async (source) => {
+    try { return { source, catalogue: await readSource(adapters[source], artist.id, source, identity[source], { fresh, now }) }; }
+    catch (e) { const err = sourceError(e); return { source, error: { code: err.code, message: err.message } }; }
+  }));
+  const sources = {};
+  for (const r of settled) sources[r.source] = r.error ? { status: 'error', ...r.error } : { status: 'ok' };
+
+  const songs = mergeCatalogues(settled.filter(r => r.catalogue).map(r => r.catalogue));
+  const spotifyIds = songs.flatMap(s => (s.sources.spotify ? s.sources.spotify.ids : []));
+  const bandcampOrigin = identity.bandcamp;
+  const rows = (await db.query(`
+    SELECT s.id, s.title, s.status, s.published, s.spotify_id, s.bandcamp_url,
+           EXISTS (SELECT 1 FROM song_artists x WHERE x.song_id = s.id AND x.artist_id = $1) AS by_artist
+    FROM songs s
+    WHERE s.id IN (SELECT song_id FROM song_artists WHERE artist_id = $1)
+       OR s.spotify_id = ANY($2::text[])
+       OR ($3::text IS NOT NULL AND s.bandcamp_url ILIKE $3 || '%')`, [artist.id, spotifyIds, bandcampOrigin])).rows;
+  return { sources, songs: classify(songs, buildIndex(rows)) };
+}
+
+function toClient(s) {
+  const sources = {};
+  if (s.sources.spotify) sources.spotify = { url: s.sources.spotify.url };
+  if (s.sources.bandcamp) sources.bandcamp = { url: s.sources.bandcamp.url };
+  if (s.sources.musicbrainz) sources.musicbrainz = { count: s.sources.musicbrainz.count };
+  return { key: s.key, title: s.title, state: s.state, match: s.match, sources, also_on: s.also_on };
+}
+
+async function checkBand(db, artistId, { adapters, fresh = false, now = Date.now } = {}) {
+  const artist = await loadArtist(db, artistId);
+  adapters = adapters || defaultAdapters();
+  const { sources, songs } = await loadMerged(db, artist, { adapters, fresh, now });
+
+  const byRelease = new Map();
+  for (const s of songs) {
+    const k = `${s.release.source}:${s.release.id}`;
+    if (!byRelease.has(k)) byRelease.set(k, { name: s.release.name, album_type: s.release.album_type, release_date: s.release.release_date, source: s.release.source, songs: [] });
+    byRelease.get(k).songs.push(toClient(s));
+  }
+  const releases = [...byRelease.values()].sort((a, b) => (b.release_date || '').localeCompare(a.release_date || '') || a.name.localeCompare(b.name));
+  const counts = { new: 0, in_catalogue: 0, rejected: 0, single_source: 0 };
+  for (const s of songs) {
+    if (s.state === 'new') { counts.new++; if (Object.keys(s.sources).length === 1) counts.single_source++; }
+    else if (s.match.status === 'rejected') counts.rejected++;
+    else counts.in_catalogue++;
+  }
+  return { artist: { id: artist.id, name: artist.name, identity: identityOf(artist) }, sources, releases, counts };
+}
+
+// Adds the songs the curator ticked. Never trusts client data: only song keys come in, and the catalogue is re-read live.
+async function addSelected(db, artistId, keys, { adapters } = {}) {
+  if (!Array.isArray(keys) || keys.length === 0 || keys.length > MAX_ADD || keys.some(k => typeof k !== 'string' || !k)) {
+    throw coded('BAD_INPUT', `keys must be 1-${MAX_ADD} song keys`);
+  }
+  if (adding) throw coded('BUSY', 'Another add is in progress');
+  adding = true;
+  try {
+    const artist = await loadArtist(db, artistId);
+    adapters = adapters || defaultAdapters();
+    const { songs } = await loadMerged(db, artist, { adapters, fresh: true, now: Date.now });
+    const byKey = new Map(songs.map(s => [s.key, s]));
+    let skippedExisting = 0, notFound = 0, added = 0;
+    const picked = [];
+    for (const key of [...new Set(keys)]) {
+      const s = byKey.get(key);
+      if (!s) notFound++;
+      else if (s.state !== 'new') skippedExisting++;
+      else picked.push(s);
+    }
+    const note = `added via band check (${artist.name})`;
+    const withSpotify = picked.filter(s => s.sources.spotify && s.sources.spotify.mapped);
+    if (withSpotify.length) {
+      const r = await staging.insertCandidates(db, withSpotify.map(s => s.sources.spotify.mapped), { note });
+      added += r.added; skippedExisting += r.skippedExisting;
+      for (const s of withSpotify) {
+        if (s.sources.bandcamp && s.sources.bandcamp.url) {
+          // only a song THIS add just created (its note proves it): never touch an existing catalogue song
+          await db.query(`UPDATE songs SET bandcamp_url = COALESCE(bandcamp_url, $1) WHERE spotify_id = $2 AND status_notes = $3`,
+            [s.sources.bandcamp.url, s.sources.spotify.mapped.spotify_id, note]);
+        }
+      }
+    }
+    for (const s of picked.filter(p => !(p.sources.spotify && p.sources.spotify.mapped))) {
+      const r = await staging.insertManualCandidate(db, {
+        title: s.title, artistId: artist.id, bandcamp_url: (s.sources.bandcamp && s.sources.bandcamp.url) || null, note,
+      });
+      added += r.added; skippedExisting += r.skippedExisting;
+    }
+    return { added, skippedExisting, notFound };
+  } finally { adding = false; }
+}
+
+module.exports = {
+  SOURCES, defaultAdapters, listBands, identifyCandidates, saveIdentity, loadArtist, identityOf,
+  checkBand, addSelected, _resetForTests,
+};

@@ -91,3 +91,102 @@ test('identifyCandidates: spotify/musicbrainz delegate with the band name by def
     ['https://zzzbandsvcband.bandcamp.com', "from this band's song links"],
   ]);
 });
+
+// ---- Task 7: checkBand / addSelected ----
+const SPBAND = 'ZZZBANDSVCmmmmmmmmmmmm';
+function spTrack(id, title) { return { title, id, url: 'https://open.spotify.com/track/' + id, mapped: {
+  spotify_id: id, title, duration_ms: 1, popularity: 1, explicit: false, track_number: 1, disc_number: 1, spotify_url: 'https://open.spotify.com/track/' + id, added_at: null,
+  artists: [{ spotify_id: SPBAND, name: 'ZZZBANDSVC Merged', spotify_url: null }], album: null } }; }
+function fakeAdapters({ spotify, bandcamp, musicbrainz, counter = {} } = {}) {
+  const mk = (name, cat) => cat === undefined ? undefined : { fetchCatalogue: async () => { counter[name] = (counter[name] || 0) + 1; if (cat instanceof Error) throw cat; return cat; } };
+  return { spotify: mk('spotify', spotify), bandcamp: mk('bandcamp', bandcamp), musicbrainz: mk('musicbrainz', musicbrainz) };
+}
+const SPOT = { source: 'spotify', releases: [{ id: 'r1', name: 'Alb', album_type: 'album', release_date: '2020', url: null, tracks: [spTrack('ZZZBANDSVCt1', 'ZZZBANDSVC Held'), spTrack('ZZZBANDSVCt2', 'ZZZBANDSVC Fresh')] }] };
+const BAND = { source: 'bandcamp', releases: [{ id: '/album/a', name: 'Alb', album_type: 'album', release_date: '2020-01-01', url: null, tracks: [
+  { title: 'ZZZBANDSVC Fresh', id: null, url: 'https://zzzbandsvcm.bandcamp.com/track/fresh' },
+  { title: 'ZZZBANDSVC Bandcamp Only', id: null, url: 'https://zzzbandsvcm.bandcamp.com/track/bco' }] }] };
+
+async function mergedBand() {
+  await clean(); // artists.spotify_id is unique: start from a fresh slate every call
+  const a = await mkArtist('ZZZBANDSVC Merged', { spotify_id: SPBAND });
+  await pool.query(`UPDATE artists SET bandcamp_url='https://zzzbandsvcm.bandcamp.com' WHERE id=$1`, [a]);
+  const held = await mkSong(a, 'ZZZBANDSVC Held');
+  return { a, held };
+}
+
+test('checkBand merges sources, marks held songs, counts, and one failing source does not sink the rest', async () => {
+  svc._resetForTests();
+  const { a, held } = await mergedBand();
+  const res = await svc.checkBand(pool, a, { adapters: fakeAdapters({ spotify: SPOT, bandcamp: BAND, musicbrainz: undefined }) });
+  assert.equal(res.sources.spotify.status, 'ok');
+  const songs = res.releases.flatMap(r => r.songs);
+  const byTitle = Object.fromEntries(songs.map(s => [s.title, s]));
+  assert.equal(byTitle['ZZZBANDSVC Held'].state, 'in_catalogue');
+  assert.equal(byTitle['ZZZBANDSVC Held'].match.song_id, held);
+  assert.deepEqual(Object.keys(byTitle['ZZZBANDSVC Fresh'].sources).sort(), ['bandcamp', 'spotify']);
+  assert.equal(byTitle['ZZZBANDSVC Bandcamp Only'].state, 'new');
+  assert.equal(byTitle['ZZZBANDSVC Fresh'].sources.spotify.mapped, undefined); // internal data is not sent to the client
+  assert.deepEqual(res.counts, { new: 2, in_catalogue: 1, rejected: 0, single_source: 1 });
+
+  svc._resetForTests();
+  const partial = await svc.checkBand(pool, a, { adapters: fakeAdapters({ spotify: SPOT, bandcamp: Object.assign(new Error('x'), { code: 'UNREADABLE' }) }), fresh: true });
+  assert.deepEqual([partial.sources.bandcamp.status, partial.sources.bandcamp.code, partial.sources.spotify.status], ['error', 'UNREADABLE', 'ok']);
+  assert.equal(partial.releases.flatMap(r => r.songs).length, 2);
+});
+
+test('checkBand: rejected songs are reported, NO_IDENTITY and NOT_FOUND are coded, results are cached 5 minutes and fresh bypasses', async () => {
+  svc._resetForTests();
+  await clean();
+  const a = await mkArtist('ZZZBANDSVC Rejector', { spotify_id: 'ZZZBANDSVCrrrrrrrrrrrr' });
+  await mkSong(a, 'ZZZBANDSVC Held', { status: 'rejected', published: false });
+  const counter = {};
+  let t = 1_000_000;
+  const adapters = fakeAdapters({ spotify: SPOT, counter });
+  const r1 = await svc.checkBand(pool, a, { adapters, now: () => t });
+  assert.equal(r1.counts.rejected, 1);
+  await svc.checkBand(pool, a, { adapters, now: () => t + 60_000 });
+  assert.equal(counter.spotify, 1); // cached
+  await svc.checkBand(pool, a, { adapters, now: () => t + 6 * 60_000 });
+  assert.equal(counter.spotify, 2); // expired
+  await svc.checkBand(pool, a, { adapters, now: () => t + 6 * 60_000 + 1, fresh: true });
+  assert.equal(counter.spotify, 3);
+  const bare = await mkArtist('ZZZBANDSVC Bare');
+  await assert.rejects(svc.checkBand(pool, bare, { adapters }), (e) => e.code === 'NO_IDENTITY' && e.artist.name === 'ZZZBANDSVC Bare' && e.artist.id === bare);
+  await assert.rejects(svc.checkBand(pool, 2147483646, { adapters }), (e) => e.code === 'NOT_FOUND');
+});
+
+test('addSelected: Spotify songs via intake, bandcamp-only via manual path, bandcamp url filled on Spotify songs, idempotent, junk keys ignored, cap and BUSY', async () => {
+  svc._resetForTests();
+  const { a } = await mergedBand();
+  const adapters = fakeAdapters({ spotify: SPOT, bandcamp: BAND });
+  const res = await svc.addSelected(pool, a, ['zzzbandsvc fresh', 'zzzbandsvc bandcamp only', 'zzzbandsvc held', 'not a real key'], { adapters });
+  assert.deepEqual(res, { added: 2, skippedExisting: 1, notFound: 1 });
+  const rows = (await pool.query(
+    `SELECT title, status, data_source, spotify_id, bandcamp_url, status_notes FROM songs WHERE title IN ('ZZZBANDSVC Fresh','ZZZBANDSVC Bandcamp Only') ORDER BY title`)).rows;
+  const fresh = rows.find(r => r.title === 'ZZZBANDSVC Fresh'), only = rows.find(r => r.title === 'ZZZBANDSVC Bandcamp Only');
+  assert.deepEqual([fresh.status, fresh.spotify_id, fresh.bandcamp_url], ['pending', 'ZZZBANDSVCt2', 'https://zzzbandsvcm.bandcamp.com/track/fresh']);
+  assert.deepEqual([only.status, only.data_source, only.spotify_id, only.bandcamp_url], ['pending', 'manual', null, 'https://zzzbandsvcm.bandcamp.com/track/bco']);
+  assert.match(fresh.status_notes, /^added via band check \(ZZZBANDSVC Merged\)/);
+  assert.match(only.status_notes, /^added via band check \(ZZZBANDSVC Merged\)/);
+  // the Spotify-created song is linked to the band's existing artist row, not a duplicate
+  assert.equal((await pool.query(`SELECT count(*)::int n FROM artists WHERE name='ZZZBANDSVC Merged'`)).rows[0].n, 1);
+
+  const again = await svc.addSelected(pool, a, ['zzzbandsvc fresh', 'zzzbandsvc bandcamp only'], { adapters });
+  assert.deepEqual(again, { added: 0, skippedExisting: 2, notFound: 0 }); // double-click is harmless
+
+  for (const bad of [undefined, [], 'x', [1], Array.from({ length: 101 }, (_, i) => 'k' + i)]) {
+    await assert.rejects(svc.addSelected(pool, a, bad, { adapters }), (e) => e.code === 'BAD_INPUT');
+  }
+});
+
+test('addSelected: an overlapping add is BUSY', async () => {
+  svc._resetForTests();
+  const { a } = await mergedBand();
+  let release;
+  const gate = new Promise(r => { release = r; });
+  const slow = { spotify: { fetchCatalogue: async () => { await gate; return SPOT; } } };
+  const first = svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters: slow });
+  await assert.rejects(svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters: slow }), (e) => e.code === 'BUSY');
+  release();
+  await first;
+});
