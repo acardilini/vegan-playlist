@@ -15,10 +15,11 @@ const acoustic = require('./acousticCodebook');
 // Analysis built from junk must not show anywhere publicly (sub-project G). A pass is excluded when the song's
 // lyrics are flagged junk (song_lyrics.junk_kind), OR when real lyrics later replaced flagged junk and the pass
 // is older than that fix (song_lyrics.analysis_stale_since): it stays hidden until the analysis project writes a
-// newer pass. Row-level, so a newer pass is picked automatically.
+// newer pass. A song whose lyrics were CLEARED (a blank row) is hidden too: an analysis without lyrics is the
+// analysis of text that is gone. Row-level, so a newer pass is picked automatically.
 const NOT_JUNK = (songCol, analyzedCol) =>
   `NOT EXISTS (SELECT 1 FROM song_lyrics jl WHERE jl.song_id = ${songCol}
-     AND (jl.junk_kind IS NOT NULL
+     AND (jl.junk_kind IS NOT NULL OR btrim(jl.lyrics) = ''
           OR jl.analysis_stale_since > COALESCE(${analyzedCol}, '-infinity'::timestamp)))`;
 
 const LATEST_ANALYSIS = `(SELECT DISTINCT ON (song_id) *

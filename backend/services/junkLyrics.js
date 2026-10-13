@@ -48,15 +48,16 @@ async function dismiss(db, songId) {
 }
 
 // After the lyrics TEXT changed: new text gets a fresh look, so an earlier dismissal no longer applies. Real text
-// replacing a flagged row starts the analysis-stale clock: passes coded from the junk stay hidden until re-analysed.
-async function recheck(db, songId) {
+// replacing a flagged OR cleared (blank) row starts the analysis-stale clock: passes coded from the old text stay
+// hidden until re-analysed. `wasBlank` = the row's text was blank before this save (the caller reads it).
+async function recheck(db, songId, { wasBlank = false } = {}) {
   const r = (await db.query('SELECT lyrics, junk_kind FROM song_lyrics WHERE song_id=$1', [songId])).rows[0];
   if (!r || !r.lyrics || !r.lyrics.trim()) return;   // cleared text: keep the flag (see scan)
   const kind = classify(r.lyrics);
   await db.query(
     `UPDATE song_lyrics SET junk_dismissed=false, junk_dismissed_md5=NULL, junk_kind=$2,
             analysis_stale_since = CASE WHEN $3::boolean THEN CURRENT_TIMESTAMP ELSE analysis_stale_since END
-      WHERE song_id=$1`, [songId, kind, r.junk_kind !== null && kind === null]);
+      WHERE song_id=$1`, [songId, kind, (r.junk_kind !== null || wasBlank) && kind === null]);
 }
 
 module.exports = { scan, listJunk, dismiss, recheck };

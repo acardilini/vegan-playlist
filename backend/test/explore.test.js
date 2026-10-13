@@ -59,8 +59,12 @@ async function addCoords(songId) {
         audio_2d, audio_3d, holistic_2d, holistic_3d)
      VALUES ($1, '{1,2}', '{1,2,3}', '{3,4}', '{1,2,3}',
              '{5,6}', '{1,2,3}', '{7,8}', '{1,2,3}')`, [songId]);
-  // The map only plots songs with real lyrics AND an analysis (sub-project G), so a mapped fixture gets both by
-  // default; addAnalysis() below overrides the analysis fields where a test cares.
+  await makeEligible(songId);
+}
+
+// The map and lyric-based similarity only include songs with real lyrics AND an analysis (sub-project G), so those
+// fixtures get both by default; addAnalysis() below overrides the analysis fields where a test cares.
+async function makeEligible(songId) {
   await pool.query(`INSERT INTO song_lyrics (song_id, lyrics) VALUES ($1, 'real words for the map fixture')
                     ON CONFLICT (song_id) DO NOTHING`, [songId]);
   await pool.query(
@@ -308,6 +312,7 @@ test('a non-genre dimension is completely unaffected by the genre fold', async (
 });
 
 async function addLyricEmbedding(songId, vec) {
+  await makeEligible(songId);
   await pool.query(
     `INSERT INTO song_embeddings (song_id, lyric_embedding, updated_at)
      VALUES ($1, $2::float8[], now())

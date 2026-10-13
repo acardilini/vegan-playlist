@@ -18,6 +18,7 @@ async function mk(title, lyrics, { status = 'included', published = true } = {})
 const row = async (id) => (await pool.query('SELECT junk_kind, junk_dismissed FROM song_lyrics WHERE song_id=$1', [id])).rows[0];
 
 after(async () => {
+  await pool.query(`DELETE FROM song_embeddings WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZJUNK%')`);
   await pool.query(`DELETE FROM song_coordinates WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZJUNK%')`);
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZJUNK%')`);
   await pool.query(`DELETE FROM song_lyrics WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZJUNK%')`);
@@ -232,4 +233,44 @@ test('the About page analysed-songs figure excludes flagged songs', async () => 
   assert.equal(await n(), before - 1);
   await junk.dismiss(pool, id);
   assert.equal(await n(), before);
+});
+
+test('a song whose lyrics were cleared (blank row) but still has an analysis shows no analysis, even without a flag', async () => {
+  const id = await mk('ZZZJUNK blankhide', '   ');                  // blank row, junk_kind NULL: how the older cleared rows look
+  await addAnalysis(id);
+  assert.equal(await analysis.getSongAnalysis(pool, id), null, 'analysis of cleared lyrics is hidden');
+  assert.equal((await pool.query(`SELECT 1 FROM songs s WHERE s.id=$1 AND ${analysis.hasAnalysisExists('s')}`, [id])).rows.length, 0);
+  await curation.saveLyrics(pool, id, { lyrics: 'Real words here and more real words' });
+  assert.equal(await analysis.getSongAnalysis(pool, id), null, 'real lyrics alone do not bring back the analysis of the old text');
+  await new Promise((r) => setTimeout(r, 20));
+  await addAnalysis(id, 'zzzjunk-model-2');
+  assert.ok(await analysis.getSongAnalysis(pool, id), 'a newer pass is shown');
+});
+
+test('a song with no lyrics row at all is unaffected by the blank rule', async () => {
+  const id = await mk('ZZZJUNK norow', null);
+  await addAnalysis(id);
+  assert.ok(await analysis.getSongAnalysis(pool, id));
+});
+
+test('"Similar message" never offers junk-derived songs, and gives none for a junk-derived song; "Similar sound" is unaffected', async () => {
+  const explore = require('../services/explore');
+  const emb = async (id, lyric, audio) => pool.query(
+    `INSERT INTO song_embeddings (song_id, lyric_embedding, audio_embedding, updated_at) VALUES ($1,$2,$3,NOW())`, [id, lyric, audio]);
+  const target = await mk('ZZZJUNK sim target', 'Real words here and more real words');
+  const good = await mk('ZZZJUNK sim good', 'Real words here and more real words');
+  const bad = await mk('ZZZJUNK sim bad', 'Error: Lyrics container not found on this Bandcamp page.');
+  for (const id of [target, good, bad]) await addAnalysis(id);
+  await emb(target, [1, 0, 0], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]);
+  await emb(good, [0.9, 0.1, 0], [0.4, 0.5, 0.5, 0.5, 0.5, 0.5]);
+  await emb(bad, [0.95, 0.05, 0], [0.5, 0.5, 0.5, 0.5, 0.5, 0.6]);
+  await junk.scan(pool, { songIds: [bad] });
+  const message = explore.SIMILARITY.find((e) => e.key === 'message');
+  const sound = explore.SIMILARITY.find((e) => e.key === 'sound');
+  const ids = async (entry, id) => (await explore.similarByEmbedding(pool, id, entry, 50)).map((r) => r.id);
+  const msg = await ids(message, target);
+  assert.ok(msg.includes(good), 'a real neighbour is offered');
+  assert.ok(!msg.includes(bad), 'a junk-derived neighbour is not');
+  assert.deepEqual(await ids(message, bad), [], 'a junk-derived song gets no message neighbours');
+  assert.ok((await ids(sound, target)).includes(bad), 'the audio tab does not depend on lyrics');
 });

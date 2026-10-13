@@ -68,6 +68,10 @@ async function discoverSpaces(db) {
 // One row per live, mapped song. Artists come from a scalar subquery rather than an
 // aggregate so the statement needs no GROUP BY. Coordinate columns are spliced from the
 // discovered (catalogue-sourced, pattern-checked) list.
+// A song may appear on the map / in lyric-based similarity only with real lyrics AND a visible analysis
+// (flagged-junk, cleared-lyrics and stale-analysis songs are all excluded by these two helpers).
+const ELIGIBLE = (alias) => `${analysis.hasRealLyricsExists(alias)} AND ${analysis.hasAnalysisExists(alias)}`;
+
 async function mapRows(db, spaces) {
   const coordCols = spaces.map(s => `sc.${s.column}`).join(',\n           ');
   const r = await db.query(
@@ -88,8 +92,7 @@ async function mapRows(db, spaces) {
        ${genres.EFFECTIVE_GENRE_JOIN}
        LEFT JOIN ${analysis.LATEST_ANALYSIS} sla ON sla.song_id = s.id
       WHERE s.status = 'included' AND s.published = true
-        AND ${analysis.hasRealLyricsExists('s')}
-        AND ${analysis.hasAnalysisExists('s')}
+        AND ${ELIGIBLE('s')}
       ORDER BY s.id`);
   return r.rows;
 }
@@ -263,7 +266,7 @@ async function mapPayload(db) {
 // judgement that code must not guess. Adding a third tab is one entry plus a test.
 const SIMILARITY = [
   { key: 'message', label: 'Similar message', column: 'lyric_embedding',
-    dims: null, metric: 'cosine' },
+    dims: null, metric: 'cosine', lyricDerived: true },
   { key: 'sound', label: 'Similar sound', column: 'audio_embedding',
     dims: 6, metric: 'zeuclidean' },
 ];
@@ -294,6 +297,7 @@ function cosineSql(entry) {
         CROSS JOIN LATERAL unnest(se.${entry.column}) WITH ORDINALITY AS u(val, ord)
        WHERE se.song_id <> $1
          AND s2.status = 'included' AND s2.published = true
+         AND ${entry.lyricDerived ? ELIGIBLE('s2') : 'TRUE'}
          AND array_length(se.${entry.column}, 1)
              = (SELECT array_length(v, 1) FROM target)
     ),
@@ -357,6 +361,9 @@ function zEuclideanSql(entry) {
 
 async function similarByEmbedding(db, songId, entry, limit = 6) {
   if (!entry) return [];
+  // A lyric-derived embedding of a song with junk / cleared / stale lyrics is itself junk: offer nothing for it.
+  if (entry.lyricDerived && !(await db.query(
+    `SELECT 1 FROM songs s WHERE s.id = $1 AND ${ELIGIBLE('s')}`, [songId])).rows.length) return [];
   const sql = entry.metric === 'cosine' ? cosineSql(entry) : zEuclideanSql(entry);
   const r = await db.query(sql, [songId, limit]);
   return r.rows;

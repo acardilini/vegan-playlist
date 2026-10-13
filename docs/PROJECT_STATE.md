@@ -710,6 +710,13 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-10-13 (G junk lyrics, follow-up 2) - cleared lyrics hide the analysis; lyric-based similarity follows the map's rule.** A song whose lyrics were
+  CLEARED (a blank `song_lyrics` row) but still carries an analysis has that analysis hidden everywhere (`NOT_JUNK` now also matches `btrim(lyrics) = ''`):
+  36 live songs today. Real lyrics later saved over a blank or flagged row stamp `analysis_stale_since` (the caller passes `wasBlank` to `recheck`), so the old pass
+  stays hidden until re-analysed. A song with NO lyrics row at all is unaffected (0 such songs have analysis). **"Similar message"** (lyric embedding) now
+  requires the neighbours AND the song itself to pass the same `ELIGIBLE` test as the map (real lyrics + visible analysis); the audio-based **"Similar sound"**
+  tab is deliberately unaffected. Out-of-band real lyrics written onto a blank row by another tool do not stamp the stale clock (scan cannot see the prior blank).
+  Migrations 012/013 are already applied to the one dev DB; they only matter for a future deployed copy (Phase 5). Backend **303/303** serial.
 - **2026-10-13 (G junk lyrics, curator follow-ups) - the Explore map shows only songs with real lyrics AND a sound analysis; flawed analysis stays hidden until re-analysed.**
   `explore.mapRows` now requires `analysis.hasRealLyricsExists('s')` (non-blank, unflagged lyrics) AND `hasAnalysisExists('s')`: 608 of 1,331 live songs
   are plotted (was ~640). **Stricter than "hidden while flagged":** when REAL lyrics replace flagged junk, `song_lyrics.analysis_stale_since` is stamped and
