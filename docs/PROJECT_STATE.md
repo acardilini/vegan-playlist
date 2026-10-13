@@ -7,6 +7,11 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
+- **Current session (2026-10-13, last): Song-page video picker - BUILT on branch `session-video-picker`, NOT yet merged.** A song with more than one video now shows
+  a row of buttons above the player labelled **by type** (Official video / Live / Lyric video / Fan-made / Other; same-type videos numbered "Lyric video 1/2"), default = the
+  primary video, switching swaps the player (no autoplay); full title as hover text. One video or none: unchanged. Frontend only: `SongDetailPage.jsx` now reads the existing
+  public `GET /api/youtube/songs/:id/videos` (primary first) instead of `/video/primary`; 42 live-catalogue songs have 2-3 videos. **Verified live** on song 4855 (official +
+  2 lyric): default primary, labels, click-through changes the iframe src and pressed state; song 1 (one video) has no picker; lint 0 errors, build clean. No new tests (no frontend runner).
 - **Current session (2026-10-13, newest): Sub-project G - Junk-lyrics checker - curator-smoked ("all works well"), follow-ups done, MERGED to `main`.**
   Spec `63c0439`, plan `b437bcb` (`docs/superpowers/{specs/2026-10-13-G-junk-lyrics-design,plans/2026-10-13-G-junk-lyrics}.md`). Pure detector
   `services/lyricsQuality.js` (`classify` -> `error` | `youtube_description` | null; strong patterns alone, two weak markers together, a `[Verse`
