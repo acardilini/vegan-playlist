@@ -121,7 +121,7 @@ function Workbench() {
       </div>
       <div className="wb-grid">
         <div className="wb-col wb-col-main">
-          <LyricsPanel wb={wb} savePanel={savePanel} saveProcessing={saveProcessing} />
+          <LyricsPanel wb={wb} savePanel={savePanel} saveProcessing={saveProcessing} reload={reload} />
           <AnalysisPanel wb={wb} />
         </div>
         <div className="wb-col wb-col-side">

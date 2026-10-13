@@ -177,3 +177,5 @@
 .song-row.spotify-static:hover { background: none; }
 .song-row.spotify-row { min-width: 0; }
 .song-row .song-meta.stacked { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+.junk-snippet { display: block; color: var(--text-muted); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 52ch; }
+.wb-junk { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-2); }

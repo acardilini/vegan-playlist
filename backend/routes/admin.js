@@ -7,6 +7,7 @@ const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/g
 const staging = require('../services/staging');
 const curation = require('../services/curation');
 const inbox = require('../services/inbox');
+const junkLyrics = require('../services/junkLyrics');
 const youtubeSearch = require('../services/youtubeSearch');
 const videos = require('../services/videos');
 const { findDuplicateGroups } = require('../services/duplicates');
@@ -1903,6 +1904,35 @@ router.get('/curation/counts', async (req, res) => {
   } catch (e) {
     console.error('curation counts error:', e);
     res.status(500).json({ error: 'Failed to load queue counts', details: e.message });
+  }
+});
+
+router.get('/junk-lyrics', async (req, res) => {
+  try {
+    res.json({ rows: await junkLyrics.listJunk(pool) });
+  } catch (e) {
+    console.error('junk lyrics list error:', e);
+    res.status(500).json({ error: 'Failed to list junk lyrics', details: e.message });
+  }
+});
+
+router.post('/junk-lyrics/scan', async (req, res) => {
+  try {
+    res.json(await junkLyrics.scan(pool));
+  } catch (e) {
+    console.error('junk lyrics scan error:', e);
+    res.status(500).json({ error: 'Scan failed', details: e.message });
+  }
+});
+
+router.post('/workbench/:id/junk-dismiss', async (req, res) => {
+  try {
+    await junkLyrics.dismiss(pool, parseInt(req.params.id));
+    res.json({ success: true });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'No lyrics for that song' });
+    console.error('junk dismiss error:', e);
+    res.status(500).json({ error: 'Failed to dismiss', details: e.message });
   }
 });
 

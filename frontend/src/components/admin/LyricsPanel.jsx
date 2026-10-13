@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { adminFetch } from '../../api/adminApi';
 import { AutoText, SaveTag } from './SavedField';
 import { LYRIC_SITES, anywhereUrl, allSitesUrl, siteUrl, youtubeSearchUrl, sourceNameFromUrl } from '../../utils/lyricsSearchUrls';
 
@@ -9,7 +10,7 @@ const LYRIC_PARKS = ['needs_transcription', 'awaiting_community', 'listened_uncl
 const LYRICS_STATUSES = ['found', 'not_found', 'not_searched'];
 const AVENUES = [['google', 'Google'], ['genius', 'Genius'], ['bandcamp', 'Bandcamp'], ['youtube', 'YouTube'], ['genre_site', 'Genre sites']];
 
-function LyricsPanel({ wb, savePanel, saveProcessing }) {
+function LyricsPanel({ wb, savePanel, saveProcessing, reload }) {
   const [statusSave, setStatusSave] = useState('idle');
   const [avenuesSave, setAvenuesSave] = useState('idle');
   const [highlightsSave, setHighlightsSave] = useState('idle');
@@ -89,6 +90,19 @@ function LyricsPanel({ wb, savePanel, saveProcessing }) {
   return (
     <section className="wb-panel">
       <h2>Lyrics</h2>
+
+      {wb.junk_kind && (
+        <div className="wb-junk">
+          <span className="miss-chip warn">
+            These lyrics look like {wb.junk_kind === 'error' ? 'a scraper error message' : 'a YouTube description'}
+            {wb.analysed ? ' — the analysis is hidden on the public site' : ''}.
+          </span>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={async () => {
+            const r = await adminFetch(`/api/admin/workbench/${wb.id}/junk-dismiss`, { method: 'POST', body: {} });
+            if (r.ok) reload();
+          }}>Not junk</button>
+        </div>
+      )}
 
       <div className="wb-lyric-search">
         <a className="btn btn-primary btn-sm" href={anywhereUrl(song)} target="_blank" rel="noreferrer"

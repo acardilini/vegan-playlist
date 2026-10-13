@@ -11,6 +11,7 @@ const TILES = [
   ['needs-lyrics', 'Needs lyrics', false],
   ['needs-cover', 'Needs cover', false],
   ['needs-video', 'Needs video', false],
+  ['junk-lyrics', 'Junk lyrics', false],
   ['to-finalise', 'To finalise', false],
   ['featured', 'Featured', false],
   ['inbox', 'Inbox', false],

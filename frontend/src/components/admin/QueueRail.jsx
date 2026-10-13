@@ -7,6 +7,7 @@ const GROUPS = [
     ['needs-cover', 'Needs cover', false],
     ['needs-video', 'Needs video', false],
     ['no-video', 'No video available', false],
+    ['junk-lyrics', 'Junk lyrics', false],
     ['needs-analysis', 'Needs analysis', true],
   ]],
   ['Parked', [['to-transcribe', 'To transcribe', false], ['lyrics-on-hold', 'Lyrics on hold', false], ['remind-later', 'Remind me later', false]]],
