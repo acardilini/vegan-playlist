@@ -30,11 +30,11 @@ Bandcamp/MusicBrainz are added as **manual pending songs** with the Bandcamp lin
 ## 2. Scope
 
 In: Songs -> Band check view (band list + search + identify + merged review), source adapters + merge service, a manual-pending add path, authed routes, an origin tag,
-migration 013.
+migration 014.
 Out (YAGNI): Deezer / iTunes / Discogs / YouTube sources (the adapter interface is what lets them be added later); a Bandcamp name search (brittle — candidates come from MusicBrainz's
 link, the band's existing song links, or a pasted URL); a catalogue-wide scan; a link from the song workbench; any DB write other than identity columns and pending songs.
 
-## 3. Data — migration 013
+## 3. Data — migration 014
 
 `artists.bandcamp_url VARCHAR(500)` and `artists.musicbrainz_id UUID` (nullable; `spotify_id` already exists). Applied to the dev DB; additive only. `artists.website_url` (the public-page button) is **not**
 reused, so the curator's public link and the checker's identity stay independent.
@@ -48,7 +48,7 @@ All take injected `api`/`fetch` so tests never touch the network. **Errors carry
 
 - `spotify.js` — `identify` = `searchArtists` (name, followers, top genre); `fetchCatalogue` pages `getArtistAlbums` (`album,single,compilation,appears_on`, limit 50) then `getAlbumTracks`, keeps tracks **crediting the band**
   (`creditsArtist`), maps with `staging.mapTrack`. Reads use `withRetry(..., { maxWaitS: 30, maxRetries: 3 })`.
-- `musicbrainz.js` — `identify` = artist search (name, country, disambiguation, score, recording count); `fetchCatalogue` pages `recording?artist=<mbid>` (limit 100, paced at >=1.1s between requests, User-Agent `VeganPlaylist/0.1 (personal curation tool)` — no personal data);
+- `musicbrainz.js` — `identify` = artist search (name, country, disambiguation, score); `fetchCatalogue` pages `recording?artist=<mbid>` (limit 100, paced at >=1.1s between requests, User-Agent `VeganPlaylist/0.1 (personal curation tool)` — no personal data);
   `bandcampLink(mbid)` reads `url-rels` for a Bandcamp candidate. Recordings become tracks on one pseudo-release.
 - `bandcamp.js` — `candidates(artist)` = MusicBrainz's Bandcamp link + `https://<sub>.bandcamp.com/` derived from the band's existing songs' `bandcamp_url` (deduped); a pasted URL is validated to a `*.bandcamp.com` origin. `fetchCatalogue` fetches `/music`, then each release page sequentially (cap 40 releases;
   a single `/track/` entry is its own release), reading the JSON-LD block (`UNREADABLE` if absent or malformed — never throws raw parse errors). A track's `url` is its Bandcamp track URL.
@@ -64,13 +64,13 @@ All take injected `api`/`fetch` so tests never touch the network. **Errors carry
 
 - `listBands(db, { q, limit, offset })` -> `{ rows: [{ id, name, identity: { spotify, bandcamp, musicbrainz } (each true/false), songs, live_songs }], total }` — all artists, case-insensitive name search, `ORDER BY name`.
 - `identifyCandidates(db, artistId, source, { query })` -> candidates for one source (Spotify/MusicBrainz name search, defaulting to the band name; Bandcamp candidates per 4.1).
-- `saveIdentity(db, artistId, source, value)` -> writes only the matching identity column (`spotify_id` / `musicbrainz_id` / `bandcamp_url`), validated per source (22-char Spotify id, UUID, `*.bandcamp.com` origin); `value: null` clears it. Never touches other artist fields.
+- `saveIdentity(db, artistId, source, value)` -> writes only the matching identity column (`spotify_id` / `musicbrainz_id` / `bandcamp_url`), validated per source (22-char Spotify id, UUID, `*.bandcamp.com` origin); `value: null` clears it, except that a Spotify identity can be replaced but not cleared (`artists_source_check` ties `spotify_id` to `data_source='spotify'`). Never touches other artist fields.
   A Spotify id already used by a **different** artist row is refused (`CONFLICT`).
 - `checkBand(db, artistId, { adapters, fresh })` — 404 if missing; runs each source the band has an identity for (**at least one required**, else `NO_IDENTITY`), each cached 5 minutes per artist+source (`fresh` bypasses but re-caches), **sources run independently**: a failed source returns
   `{ status: 'error', code }` while the others still merge. Result: `{ artist, sources: { spotify: { status, releases }, … }, releases: [{ name, album_type, release_date, songs: [...] }], counts: { new, in_catalogue, rejected, single_source } }`, releases newest first, each song listed under its representative release only.
 - `addSelected(db, artistId, keys, { adapters })` — re-reads the catalogue (**never trusts client-supplied song data**; the client sends song `key`s), keeps only songs currently `new`, max 100, one add at a time per process (`BUSY`). Songs with a Spotify id go through `staging.insertCandidates(db, tracks, { note })`;
   songs found only elsewhere go through the new `staging.insertManualCandidate(db, { title, artistId, bandcamp_url, note })`: a `songs` row with `data_source='manual'`, `status='pending'`, `bandcamp_url` set, linked to the **existing** artist row — same dedupe by normalised title|artist as `insertCandidates`.
-  A song with both gets the Spotify path, then its `bandcamp_url` is saved with `COALESCE` (never overwriting). Returns `{ added, skippedExisting, notFound }`. Note text: `added via band check` + release name.
+  A song with both gets the Spotify path, then its `bandcamp_url` is saved with `COALESCE` (never overwriting). Returns `{ added, skippedExisting, notFound }`. Note text: `added via band check (<band name>)`.
 
 `staging.insertCandidates` gains an optional `{ note }` (default unchanged). `curation.listCurationQueue`'s `origin` CASE gains `WHEN s.status_notes LIKE 'added via band check%' THEN 'bandcheck'`; the admin label is **From band check**.
 
