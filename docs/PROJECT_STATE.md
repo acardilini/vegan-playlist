@@ -7,7 +7,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-13, latest): Dormant Spotify link + surfaced own-site links - BUILT on branch `session-spotify-dormant`, NOT yet merged / curator-smoked.** ("No video available" below was merged to `main` as `eec6e55` and pushed.)
+- **Current session (2026-10-13, latest): Dormant Spotify link + surfaced own-site links - curator-smoked ("working") and MERGED to `main` (`da01c94`); "No video available" likewise curator-confirmed working.** ("No video available" below was merged to `main` as `eec6e55` and pushed.)
   New `songs.spotify_dormant` (migration **011**, applied to the dev DB). Admin Links panel: checkbox **"Spotify link no longer plays (hide it
   on the song page)"**. Song page hero: the artist's **Bandcamp / website** link now shows **first** (primary button; "Listen on Bandcamp" for
   a bandcamp.com host, else "Listen online"), then **SoundCloud**, then **Spotify** (hidden when dormant), then lyrics. The public song read
@@ -455,7 +455,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ NEXT (2026-10-13, latest): dormant-Spotify is BUILT on `session-spotify-dormant`, awaiting the curator's smoke, then merge.** Smoke:
+> **⏭ NEXT (2026-10-13, latest): dormant-Spotify and No-video-available are MERGED and curator-confirmed. Remaining logged requests: the band/album catalogue checker and junk-lyrics flagging (each needs a brainstorm).** _(Old smoke notes, done:)_
 > Admin -> a song with a Spotify URL -> Links panel -> tick the dormant box and add a Bandcamp/website URL -> public page shows only the
 > own-site link (first), no Spotify chip; untick -> both, own site first. Apply migration 011 on any other DB first. _(The "No video
 > available" note below is MERGED, `eec6e55`; its smoke is still the curator's to do.)_
