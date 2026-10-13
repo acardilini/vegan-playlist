@@ -314,6 +314,9 @@ async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_stat
   // NULL param = "not provided" → COALESCE keeps the stored value; an empty
   // string is an explicit clear. Never overwrite source_url/translation just
   // because a lyrics-text save omitted them.
+  // Was the stored text blank (a cleared row) before this save? Real text over it must not revive the old analysis.
+  const priorBlank = lyrics !== undefined
+    && !!(await db.query(`SELECT 1 FROM song_lyrics WHERE song_id=$1 AND btrim(lyrics) = ''`, [id])).rows.length;
   const srcParam = source_url === undefined ? null : source_url;
   const transParam = translation === undefined ? null : translation;
   if (lyrics !== undefined) {
@@ -348,7 +351,7 @@ async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_stat
       WHERE song_id=$1`,
       [id, transParam, srcParam]);
   }
-  if (lyrics !== undefined) await junkLyrics.recheck(db, id);
+  if (lyrics !== undefined) await junkLyrics.recheck(db, id, { wasBlank: priorBlank });
   const hasNewLyrics = typeof lyrics === 'string' && lyrics.trim() !== '';
   let priorPark = null;
   if (hasNewLyrics) {
