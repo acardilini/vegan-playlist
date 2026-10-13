@@ -1,101 +1,109 @@
-# Sub-project H — Band check (band/album catalogue checker) (design)
+# Sub-project H — Band check (multi-source band catalogue checker) (design)
 
-Date: 2026-10-13 · Status: spec, awaiting curator review · Branch: `session-band-check`
+Date: 2026-10-13 (revised 2026-10-14) · Status: spec, awaiting curator review · Branch: `session-band-check`
 
 ## 1. Purpose and agreed understanding
 
-The curator wants to find songs by bands **already on the list** that are not yet in the catalogue (example: Bloodmouth). For one band
-the tool shows its Spotify discography, marks what the catalogue already has, and lets the curator tick the songs to add as
-**To be processed**. Everything stays curator-driven: nothing is added without a click.
+The curator wants to find songs by bands **already on the list** that are not yet in the catalogue (example: Bloodmouth). Spotify alone is not enough:
+some bands have only part of their catalogue there, or none. For one band the tool therefore **merges its catalogue from several free sources**
+(Spotify, Bandcamp, MusicBrainz), marks what the catalogue already has, shows which sources list each song, and lets the curator tick the songs to
+add as **To be processed**. Everything stays curator-driven: nothing is added without a click.
 
-**Success:** open Songs -> Band check, find a band in a list of all bands (with a name search), see its Spotify releases and songs with the
-ones already held marked, tick several, and add them to To be processed; they then appear in the existing queue tagged *From band check*.
+**Success:** open Songs -> Band check, find a band in a list of all bands (name search), identify it on each source once, see one merged song list
+with per-source chips and the already-held songs marked, tick several, add them to To be processed; they appear in the existing queue tagged
+*From band check* (songs not on Spotify carry their Bandcamp link as the play link).
 
-**Curator decisions (2026-10-13):** per-band, on demand (no catalogue-wide scan in v1); the Band check view **lists all bands** with a search
-by artist name; bands without a Spotify link are listed but cannot be checked in v1, and checking them is an **explicit planned follow-up**
-(see §8); the "From band check" tag is kept.
+**Curator decisions:** per-band, on demand (no catalogue-wide scan in v1); the view lists **all 850 bands** with a name search; sources for v1 are
+**Spotify + Bandcamp + MusicBrainz** (free only); band identity on each source is **searched, confirmed by the curator, and saved**; songs found only on
+Bandcamp/MusicBrainz are added as **manual pending songs** with the Bandcamp link as play link; the "From band check" tag is kept.
 
-**Probe findings that shape the design (Bloodmouth, real Spotify data, read-only):**
-- 11 releases, ~35 distinct songs, 4 held in the catalogue.
-- The same song recurs: as a single and on an album ("Rubble From Bone", "Autothysis", "Copcrocalypse 1312", "Spoiled Gaze"), on two albums
-  ("Bloodmouth Apocalypse"), and with **different Spotify track ids** for one song ("The Floor": single vs album) — so matching must be by
-  normalised title as well as id, and the list must collapse versions.
-- *Appears on* releases are mostly other artists' songs; only "Black Mass" (Baconhead/Bloodmouth) credits the band — so tracks are filtered by
-  **credit**, not by release.
-- Album-track reads return simplified tracks (no `popularity`, no `album` object); the release supplies the album.
-- `GET /artists/{id}/albums` and `GET /albums/{id}/tracks` work with the existing client-credentials client; `limit` up to 50.
+**Probe findings (Bloodmouth, real data, read-only):**
+- *Spotify:* 11 releases, ~35 distinct songs, 4 held. The same song recurs as single + album, on two albums, and with **different track ids** for one song
+  ("The Floor"), so match by normalised title as well as id and collapse versions. *Appears on* releases are mostly other artists' songs, so tracks are
+  filtered by **credit**. `GET /artists/{id}/albums` and `/albums/{id}/tracks` work with client credentials; `limit` up to 50. Album tracks are simplified
+  (no `popularity`/`album`); the release supplies the album.
+- *MusicBrainz:* keyless JSON API, 1 request/second, needs a descriptive User-Agent. A name search for "Bloodmouth" returns **two different bands** (US, and AU
+  disambiguated "Vegan"), and the top hit had only 8 recordings, none on Spotify — so the confirm step is essential. `inc=url-rels` returns the band's Bandcamp URL.
+- *Bandcamp:* no API. `https://<band>.bandcamp.com/music` lists releases (`/album/…`, `/track/…`); each release page embeds a JSON-LD block with the tracklist
+  and a per-track URL. 85 songs already carry a `bandcamp_url`, which yields candidate band pages. `artists.website_url` is empty for all 850 artists.
 
 ## 2. Scope
 
-In: a Songs -> Band check view (band list + search + per-band discography review), the read service, three authed routes, an origin tag.
-Out (YAGNI, deferred in §8): checking bands with no Spotify link; other repositories (Bandcamp etc.); a catalogue-wide scan; a link from the song
-workbench; any DB write other than through `staging.insertCandidates`.
+In: Songs -> Band check view (band list + search + identify + merged review), source adapters + merge service, a manual-pending add path, authed routes, an origin tag,
+migration 013.
+Out (YAGNI): Deezer / iTunes / Discogs / YouTube sources (the adapter interface is what lets them be added later); a Bandcamp name search (brittle — candidates come from MusicBrainz's
+link, the band's existing song links, or a pasted URL); a catalogue-wide scan; a link from the song workbench; any DB write other than identity columns and pending songs.
 
-## 3. Backend — `backend/services/bandCheck.js` (new)
+## 3. Data — migration 013
 
-Pure functions (no DB, no network; node:test):
+`artists.bandcamp_url VARCHAR(500)` and `artists.musicbrainz_id UUID` (nullable; `spotify_id` already exists). Applied to the dev DB; additive only. `artists.website_url` (the public-page button) is **not**
+reused, so the curator's public link and the checker's identity stay independent.
 
-- `creditsArtist(track, artistSpotifyId) -> boolean` — the track's `artists[]` includes that Spotify id.
-- `preferRelease(a, b)` ordering for choosing the representative version of one song: `album_type` rank album (0) < compilation (1) < single (2),
-  then earliest `release_date`, then lowest spotify id (deterministic).
-- `groupSongs(tracks) -> songs[]` — collapses tracks by `staging.normalizeName(title)` (the same key the Spotify-push duplicate check uses),
-  keeping the preferred version as the representative and listing the other releases it also appears on (`also_on: [releaseName…]`) and every
-  alternate Spotify track id (`alt_ids`), so catalogue matching considers all of them.
-- `classify(songs, catalogue) -> songs[]` — each song gets `state`: `new`, or `in_catalogue` with `{ song_id, status, published, matched_by: 'spotify_id'|'title' }`. Matched by
-  any of the song's Spotify ids against `songs.spotify_id`, or by normalised title among songs credited to **this** artist. `status`
-  `rejected` is reported as such (shown muted, never offered for ticking).
+## 4. Backend
 
-Service functions (take `db`, and an injected `api` Spotify client so tests never touch the network):
+### 4.1 Adapters (`backend/services/bandCheck/` — one file per source, each with the same shape)
 
-- `listBands(db, { q, limit, offset })` -> `{ rows: [{ id, name, spotify_id|null, songs, live_songs }], total }` — **all** artists (case-insensitive name search, `ORDER BY name`), counts from `song_artists`.
-  `has_spotify` is derived from a real `artists.spotify_id`.
-- `fetchDiscography(api, spotifyArtistId)` — pages `getArtistAlbums` (`include_groups: album,single,compilation,appears_on`, `limit: 50`), then `getAlbumTracks` per release
-  (paged), mapping each track with the shape `staging.mapTrack` produces (the release supplies `album`). Reads use `withRetry(..., { maxWaitS: 30, maxRetries: 3 })`; a 429 beyond that fails fast
-  with `RATE_LIMITED`. Errors carry fixed strings + `.code` (`NOT_FOUND`, `NO_SPOTIFY`, `RATE_LIMITED`, `UPSTREAM`); **nothing logs or rethrows a token or a raw fetch error message.**
-- `checkBand(db, artistId, { api, fresh })` — loads the artist (404 if missing, `NO_SPOTIFY` if no real spotify id), fetches the discography (cached 5 minutes per artist; `fresh` bypasses but re-caches),
-  filters to tracks crediting the band, `groupSongs`, loads the catalogue slice, `classify`, and returns
-  `{ artist: { id, name, spotify_id }, releases: [{ id, name, album_type, release_date, songs: [...] }], counts: { new, in_catalogue, rejected } }` with releases newest first. A song is listed under
-  its representative release only (so ticking it once adds it once).
-- `addSelected(db, artistId, trackIds, { api })` — re-reads the discography (**never trusts client-supplied track data**), keeps only ids that belong to a song currently `new`, and calls
-  `staging.insertCandidates(db, tracks, { note })` (note `added via band check` plus the release name). Returns `{ added, skippedExisting, notFound }`. One add at a time per process (`BUSY`),
-  at most 100 ids per call.
+Each adapter exposes `identify(query) -> candidates[]` (where it has one) and `fetchCatalogue(identity, { fetch/api injected }) -> { source, releases: [{ name, album_type, release_date, url, tracks: [{ title, ids, url, artistsCredited }] }] }`.
+All take injected `api`/`fetch` so tests never touch the network. **Errors carry fixed strings + `.code`** (`NOT_FOUND`, `RATE_LIMITED`, `UPSTREAM`, `UNREADABLE`); nothing logs or rethrows a token, a request body or a raw fetch error message.
 
-`staging.insertCandidates` gains an optional `{ note }` argument (default unchanged) passed through to `addTracksAsPending`. `curation.listCurationQueue`'s `origin` CASE gains
-`WHEN s.status_notes LIKE 'added via band check%' THEN 'bandcheck'`, and the admin list label is **From band check**.
+- `spotify.js` — `identify` = `searchArtists` (name, followers, top genre); `fetchCatalogue` pages `getArtistAlbums` (`album,single,compilation,appears_on`, limit 50) then `getAlbumTracks`, keeps tracks **crediting the band**
+  (`creditsArtist`), maps with `staging.mapTrack`. Reads use `withRetry(..., { maxWaitS: 30, maxRetries: 3 })`.
+- `musicbrainz.js` — `identify` = artist search (name, country, disambiguation, score, recording count); `fetchCatalogue` pages `recording?artist=<mbid>` (limit 100, paced at >=1.1s between requests, User-Agent `VeganPlaylist/0.1 (personal curation tool)` — no personal data);
+  `bandcampLink(mbid)` reads `url-rels` for a Bandcamp candidate. Recordings become tracks on one pseudo-release.
+- `bandcamp.js` — `candidates(artist)` = MusicBrainz's Bandcamp link + `https://<sub>.bandcamp.com/` derived from the band's existing songs' `bandcamp_url` (deduped); a pasted URL is validated to a `*.bandcamp.com` origin. `fetchCatalogue` fetches `/music`, then each release page sequentially (cap 40 releases;
+  a single `/track/` entry is its own release), reading the JSON-LD block (`UNREADABLE` if absent or malformed — never throws raw parse errors). A track's `url` is its Bandcamp track URL.
 
-## 4. Routes (authed, `admin.js`, new "Band check" banner)
+### 4.2 Pure merge (`backend/services/bandCheck/merge.js`, no DB, no network)
+
+- `creditsArtist(track, spotifyArtistId)`.
+- `preferRelease(a, b)` — representative ordering: `album_type` album(0) < compilation(1) < single(2), then earliest `release_date`, then lowest id (deterministic).
+- `mergeCatalogues(catalogues[]) -> songs[]` — collapses every source's tracks by `staging.normalizeName(title)` (the key the Spotify-push duplicate check uses). Each song: `{ title, key, sources: { spotify?: { ids[], url }, bandcamp?: { url }, musicbrainz?: { count } }, release (representative: prefers a Spotify/Bandcamp release over MusicBrainz's pseudo-release), also_on: [release names] }`.
+- `classify(songs, catalogue) -> songs[]` — `state`: `new`, or `in_catalogue` with `{ song_id, status, published, matched_by: 'spotify_id'|'bandcamp_url'|'title' }`; matches by any Spotify id vs `songs.spotify_id`, Bandcamp URL vs `songs.bandcamp_url`, or normalised title among songs credited to **this** artist. `rejected` is shown muted and never offered for ticking.
+
+### 4.3 Service (`backend/services/bandCheck/index.js`; takes `db` + injected adapters)
+
+- `listBands(db, { q, limit, offset })` -> `{ rows: [{ id, name, identity: { spotify, bandcamp, musicbrainz } (each true/false), songs, live_songs }], total }` — all artists, case-insensitive name search, `ORDER BY name`.
+- `identifyCandidates(db, artistId, source, { query })` -> candidates for one source (Spotify/MusicBrainz name search, defaulting to the band name; Bandcamp candidates per 4.1).
+- `saveIdentity(db, artistId, source, value)` -> writes only the matching identity column (`spotify_id` / `musicbrainz_id` / `bandcamp_url`), validated per source (22-char Spotify id, UUID, `*.bandcamp.com` origin); `value: null` clears it. Never touches other artist fields.
+  A Spotify id already used by a **different** artist row is refused (`CONFLICT`).
+- `checkBand(db, artistId, { adapters, fresh })` — 404 if missing; runs each source the band has an identity for (**at least one required**, else `NO_IDENTITY`), each cached 5 minutes per artist+source (`fresh` bypasses but re-caches), **sources run independently**: a failed source returns
+  `{ status: 'error', code }` while the others still merge. Result: `{ artist, sources: { spotify: { status, releases }, … }, releases: [{ name, album_type, release_date, songs: [...] }], counts: { new, in_catalogue, rejected, single_source } }`, releases newest first, each song listed under its representative release only.
+- `addSelected(db, artistId, keys, { adapters })` — re-reads the catalogue (**never trusts client-supplied song data**; the client sends song `key`s), keeps only songs currently `new`, max 100, one add at a time per process (`BUSY`). Songs with a Spotify id go through `staging.insertCandidates(db, tracks, { note })`;
+  songs found only elsewhere go through the new `staging.insertManualCandidate(db, { title, artistId, bandcamp_url, note })`: a `songs` row with `data_source='manual'`, `status='pending'`, `bandcamp_url` set, linked to the **existing** artist row — same dedupe by normalised title|artist as `insertCandidates`.
+  A song with both gets the Spotify path, then its `bandcamp_url` is saved with `COALESCE` (never overwriting). Returns `{ added, skippedExisting, notFound }`. Note text: `added via band check` + release name.
+
+`staging.insertCandidates` gains an optional `{ note }` (default unchanged). `curation.listCurationQueue`'s `origin` CASE gains `WHEN s.status_notes LIKE 'added via band check%' THEN 'bandcheck'`; the admin label is **From band check**.
+
+## 5. Routes (authed, `admin.js`, new "Band check" banner)
 
 - `GET /api/admin/band-check/bands?q=&limit=&offset=` -> `{ rows, total }`.
-- `GET /api/admin/band-check/bands/:id?fresh=1` -> the `checkBand` result (404 unknown band, 409 `{ error: 'NO_SPOTIFY' }`, 429/502 for Spotify limits/outages with a readable message).
-- `POST /api/admin/band-check/bands/:id/add` body `{ trackIds: [...] }` -> `{ added, skippedExisting, notFound }` (400 for a bad body, 409 `BUSY`).
+- `GET /api/admin/band-check/bands/:id/candidates?source=spotify|musicbrainz|bandcamp&q=` -> `{ candidates }` (502/429 with readable message).
+- `PUT /api/admin/band-check/bands/:id/identity` body `{ source, value }` -> `{ identity }` (400 bad value, 409 `CONFLICT`).
+- `GET /api/admin/band-check/bands/:id?fresh=1` -> the `checkBand` result (404 unknown band, 409 `{ error: 'NO_IDENTITY' }`).
+- `POST /api/admin/band-check/bands/:id/add` body `{ keys: [...] }` -> `{ added, skippedExisting, notFound }` (400 bad body, 409 `BUSY`).
 
-## 5. Frontend
+## 6. Frontend
 
 - `QueueRail`: **Band check** under *Capture* (no count). `SongsArea` renders `<BandCheck />` for the `band-check` view.
-- `BandCheck.jsx` (new, one file per view like `InboxList`): a searchable, paged list of **all** bands (name, "N songs · M live", a "No Spotify link — not checkable yet" note and a disabled Check button for unlinked bands).
-  Choosing a band sets `?artist=<id>` (back button works) and shows the review below; "← All bands" returns.
-- Review: header (band name, counts, **Refresh from Spotify**), releases newest first, each a section of songs with a checkbox for `new` songs, muted rows with a state chip
-  (*live / pending / rejected*, linking to the admin song) for held songs, an "also on …" hint for collapsed versions, **Select all new** (per release and overall), and a footer **Add N to To be processed**
-  with an inline result ("Added 31, 2 already held"). After adding, the review reloads so the new songs show as *pending*.
-- Uses `adminFetch`, design tokens, existing admin classes; no new dependency. Single-consumer helpers stay inside `BandCheck.jsx`.
+- `BandCheck.jsx` (one file per view like `InboxList`; single-consumer helpers stay inside): a searchable, paged list of **all** bands (name, "N songs · M live", three small source dots filled when identified). Choosing a band sets `?artist=<id>` (back button works).
+- **Identify panel** (shown when no source is identified, and via an **Identify sources** toggle thereafter): per source a candidate list (name + distinguishing facts), a Choose button, a "Not on this source" option, and for Bandcamp a paste box. Saving triggers the check.
+- **Review:** header (name, counts, **Refresh**, per-source status chips — a failed source reads e.g. "Bandcamp: couldn't read this time"), releases newest first, songs with a checkbox for `new`, muted rows with state chip (*live / pending / rejected*, linking to the admin song) for held songs, a **source chip per song** (Spotify / Bandcamp / MusicBrainz; songs on a single source are visibly flagged), an "also on …" hint for collapsed versions, **Select all new** (per release and overall), footer **Add N to To be processed** with an inline result. After adding, the review reloads so the new songs show as *pending*.
+- `adminFetch`, design tokens, existing admin classes; no new dependency.
 
-## 6. Risks
+## 7. Risks
 
-- **Spotify quota/latency:** ~1 + releases calls per band (11 for Bloodmouth, a few seconds); cached 5 minutes; rate-limit fails fast with a message. One band at a time, curator-triggered, so no bulk exposure.
-- **Whole-discography adds:** a band can add 30+ pending songs at once; the confirm is the visible count, and rows carry the *From band check* tag. Nothing touches the 650-song dataset except pending rows via the existing intake.
-- **Match gaps:** a catalogue song stored under a different title spelling will show as *new*; the existing `insertCandidates` title|artist dedupe is the second net. Conversely a different song with the same normalised title is shown as held — acceptable for v1, noted in the UI chip's tooltip ("matched by title").
-- **Secrets:** the Spotify client is created per call by the existing `getSpotifyClient`; no token or request body is logged.
+- **Wrong band on a source** (the two Bloodmouths): mitigated by the confirm step showing country/disambiguation and by saving only a curator-chosen identity; a wrong choice is fixed by re-identifying.
+- **Bandcamp is scraped:** markup can change. Reads use the embedded JSON-LD, fail as `UNREADABLE` for that source only, and the check still returns the rest. Low volume (one band at a time, curator-triggered, sequential, capped at 40 releases, cached 5 minutes); read-only; no content stored beyond the title and link the curator adds.
+- **MusicBrainz recordings are noisy** (live/alt versions, misspellings): they only ever add `musicbrainz` chips and gaps for the curator to judge; they are never the sole reason a song is silently added.
+- **Quota/latency:** Spotify ~1 + releases calls, MusicBrainz ~1 per 100 recordings at 1/s, Bandcamp 1 + releases; the three run in parallel across sources, sequential within one.
+- **Whole-discography adds:** a band can add 30+ pending songs at once; the confirm is the visible count and rows carry the tag. Nothing touches the 650-song dataset except pending rows via intake.
+- **Match gaps:** a catalogue song under a different title spelling shows as *new*; the title|artist dedupe in the insert paths is the second net. A different song with the same normalised title shows as held (chip tooltip: "matched by title").
+- **Secrets / privacy:** no token, request body or raw fetch error is logged; the MusicBrainz User-Agent carries no personal data.
 
-## 7. Testing
+## 8. Testing
 
-- Pure: `creditsArtist`; `preferRelease` ordering; `groupSongs` collapses single+album and two albums, keeps all alternate ids, normalises like the push check; `classify` (id match, title match, rejected, none).
-- Service with an injected fake `api` (fixed Bloodmouth-shaped fixtures, sentinel prefix `ZZZBAND`): `checkBand` filters by credit, collapses versions, marks held songs, `NO_SPOTIFY`/`NOT_FOUND`; caching (second call makes no API calls, `fresh` does); `addSelected` adds only `new` ids, ignores client-supplied junk ids, writes pending songs tagged `bandcheck`, is idempotent (second add -> all `skippedExisting`), caps at 100.
-- `listBands`: search, paging, counts, `has_spotify`.
-- Live check on Bloodmouth: list, open, confirm the held songs are marked, **stop before adding** (the curator adds in their smoke).
-
-## 8. Planned follow-up (recorded, not built): bands without a Spotify link
-
-210 of 850 artists have no Spotify link. The curator wants these checkable later, in two steps:
-1. **Is the band on Spotify?** Name-search Spotify, show candidates (name, followers, top album), the curator confirms one, and the id is saved to `artists.spotify_id` — after which the normal v1 check works.
-2. **If not on Spotify:** search other repositories (Bandcamp and similar) for the band's songs, with the same review-and-add flow. Needs its own brainstorm (which sources, and given the "no paid services" rule, free ones only).
-Until then the Band check list shows these bands with the note "No Spotify link — not checkable yet".
+- Pure: `creditsArtist`; `preferRelease`; `mergeCatalogues` (single+album collapse, two albums, alternate Spotify ids, Bandcamp + Spotify + MusicBrainz of one song gives one song with three source chips, Bandcamp-only song stays single-source, normalisation matches the push check); `classify` (id / Bandcamp URL / title match, rejected, none).
+- Adapters with fixture responses (Bloodmouth-shaped JSON; a saved Bandcamp `/music` + release page snippet; a MusicBrainz search with two same-name bands): Spotify credit filtering; Bandcamp parses JSON-LD, caps releases, `UNREADABLE` on a page with no block, rejects non-`*.bandcamp.com` pasted URLs; MusicBrainz paces requests (injected clock) and surfaces disambiguation.
+- Service (fake adapters, sentinel prefix `ZZZBAND`): `checkBand` merges and marks held songs; one source failing still returns the others; `NO_IDENTITY`; caching and `fresh`; `saveIdentity` validation, clear, and `CONFLICT`; `addSelected` adds only `new` keys, ignores junk keys, Spotify path vs manual path (`data_source='manual'`, `bandcamp_url` set, linked to the existing artist), `COALESCE` never overwrites, idempotent second add, cap 100, `BUSY`.
+- `listBands`: search, paging, counts, identity flags.
+- Live check on Bloodmouth (US + AU candidates both shown, choose AU "Vegan" if that is the Spotify band, open, confirm held songs marked and at least one Bandcamp-only song visible); **stop before adding** — the curator adds in their smoke. Admin UI is login-gated: curator smokes it, as in earlier sessions.
