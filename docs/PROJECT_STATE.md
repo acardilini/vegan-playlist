@@ -7,7 +7,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-13): Sub-project F — Spotify sync — BUILT; the curator smoked connect, the counts and a real push ("it worked"); NOT MERGED (the curator decides).**
+- **Current session (2026-10-13): Sub-project F — Spotify sync — BUILT, curator-smoked (connect, counts, a real push: "it worked") and MERGED to `main` (merge `3edac04`, no-ff); merged `main` re-verified backend 272/272, build clean.**
   Branch `session-F-spotify-push` (from `main` at `ddc5304`; spec `80e5c9a`, plan `8ec9bdb`, tasks `b9d9174`..`a2dfd5d`, smoke
   follow-ups `bfa2d00` + review fixes `731818d`). The website stays master. **Pull** (the existing import-only sync, which had *no UI and
   no schedule* — it was only reachable by script/API) is now a button on a new Dashboard **Spotify playlist** card; **Push** is new:
@@ -437,7 +437,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ NEXT (2026-10-13): merge sub-project F** (branch `session-F-spotify-push`, no-ff like C/D/E) once the curator is happy, then the logged
+> **⏭ NEXT (2026-10-13): sub-project F is MERGED (`3edac04`).** Next: the logged
 > requests: the Video panel's **"no video available"** option (and what the song page shows in that slot), the **band/album
 > catalogue checker**, and **junk-lyrics flagging** (needs its own brainstorm; see the 2026-10-12 note below).
 > **The 29 songs the curator pulled (all pending, tagged "From Spotify") still need an include-or-reject call** — several look like
@@ -1923,7 +1923,7 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
-- **2026-10-13 (sub-project F BUILT; curator smoked connect + counts + a real push; NOT MERGED)** - branch `session-F-spotify-push`.
+- **2026-10-13 (sub-project F BUILT, curator-smoked and MERGED, merge `3edac04`)** - branch `session-F-spotify-push` (deleted after merge).
   Brainstorm (the curator asked whether the pull was automatic: it was not, and had no UI either), spec `80e5c9a`, plan `8ec9bdb`, five
   subagent-driven tasks (`spotifyAuth` + token store, `/api/spotify-auth` router, `spotifyPush`, admin compare/push routes, the
   Dashboard card + per-song button), a final opus review (Critical: Pull 500'd; 2 Important; all fixed in `a2dfd5d`), then the

@@ -368,7 +368,7 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
   `session-E-lyrics-assist`; `specs/2026-10-02-E-lyrics-assist-design.md`, `plans/2026-10-12-E-lyrics-assist.md`):
   one-click multi-site lyric search links (no paid API), To-transcribe queue, Lyrics-on-hold shelf, lyrics-found exit.
   Also queued: no-video-available option; band/album catalogue checker.
-- ☑ **F — Spotify sync — BUILT and curator-smoked 2026-10-13 (branch `session-F-spotify-push`, merge pending the curator's call)**
+- ☑ **F — Spotify sync — BUILT, curator-smoked and MERGED 2026-10-13 (`3edac04`, branch `session-F-spotify-push`)**
   (`specs/2026-10-13-F-spotify-push-design.md`, `plans/2026-10-13-F-spotify-sync.md`): one-time Spotify sign-in (refresh token in a
   gitignored file), add-only click-only **push** (per song from the workbench; bulk from the Dashboard card, with a confirm
   list), the first UI for the existing import-only **pull**, a **possible-duplicate** check, and a **Songs > Spotify sync**
