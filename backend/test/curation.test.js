@@ -226,7 +226,7 @@ test('listCurationQueue unknown queue throws BAD_QUEUE', async () => {
 
 test('queueCounts returns a number for every queue key', async () => {
   const c = await curation.queueCounts(pool);
-  for (const k of ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics','needs-cover','needs-video','no-video','needs-analysis','to-finalise','inbox','live']) {
+  for (const k of ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics','needs-cover','needs-video','no-video','junk-lyrics','needs-analysis','to-finalise','inbox','live']) {
     assert.equal(typeof c[k], 'number', `count for ${k}`);
   }
 });

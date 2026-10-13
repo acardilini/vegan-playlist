@@ -1,5 +1,6 @@
 // Analysis-service reads over the shared song_lyric_analysis / taxonomy data.
-// Display-only: this service never writes analysis and never touches song_lyrics.
+// Display-only: this service never writes analysis and never reads lyric text (it only checks the
+// song_lyrics.junk_kind flag, see NOT_JUNK).
 // Functions take `db` (pool or client) first, mirroring services/curation.js.
 const taxonomy = require('../data/taxonomy.json');
 const codebook = require('./metadataCodebook');
@@ -11,13 +12,19 @@ const acoustic = require('./acousticCodebook');
 // `song_lyric_analysis` in any JOIN — join on song_id, no model filter. model_used DESC is a
 // deterministic tiebreak when two passes share an analyzed_at. This is the ONLY place model
 // selection happens; the site always shows a song's latest coding.
+// Songs whose stored lyrics are flagged junk (song_lyrics.junk_kind, sub-project G) are excluded: their
+// analysis was built from an error message / YouTube description and must not show anywhere publicly.
+const NOT_JUNK = (col) =>
+  `NOT EXISTS (SELECT 1 FROM song_lyrics jl WHERE jl.song_id = ${col} AND jl.junk_kind IS NOT NULL)`;
+
 const LATEST_ANALYSIS = `(SELECT DISTINCT ON (song_id) *
    FROM song_lyric_analysis
+   WHERE ${NOT_JUNK('song_lyric_analysis.song_id')}
    ORDER BY song_id, analyzed_at DESC NULLS LAST, model_used DESC)`;
 
-// "Has any analysis at all" — any row exists (a latest row therefore exists).
+// "Has any analysis at all" — any row exists (a latest row therefore exists). Flagged-junk songs have none.
 const hasAnalysisExists = (alias) =>
-  `EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = ${alias}.id)`;
+  `EXISTS (SELECT 1 FROM song_lyric_analysis la WHERE la.song_id = ${alias}.id AND ${NOT_JUNK(`${alias}.id`)})`;
 
 // "The latest pass carries at least one thematic code" (for the theme-tree caption count).
 const hasCodesExists = (alias) =>

@@ -93,3 +93,58 @@ test('saving only a source_url / translation does not touch the flag', async () 
   await curation.saveLyrics(pool, id, { source_url: 'https://example.org/x' });
   assert.equal((await row(id)).junk_kind, 'error');
 });
+
+const analysis = require('../services/analysis');
+
+async function addAnalysis(id) {
+  await pool.query(
+    `INSERT INTO song_lyric_analysis (song_id, model_used, perspective, themes, topics, advocacy, tactics, moral_frames)
+     VALUES ($1, 'zzzjunk-model', 'MORAL_JUDGEMENT', '[{"code":"captivity","evidence":"x"}]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`, [id]);
+}
+
+test('a flagged song loses its analysis in every shared read, and gets it back on dismiss', async () => {
+  const id = await mk('ZZZJUNK hidden', 'Error: Lyrics container not found on this Bandcamp page.');
+  await addAnalysis(id);
+  const visible = async () => ({
+    song: !!(await analysis.getSongAnalysis(pool, id)),
+    exists: (await pool.query(`SELECT 1 FROM songs s WHERE s.id=$1 AND ${analysis.hasAnalysisExists('s')}`, [id])).rows.length === 1,
+    latest: (await pool.query(`SELECT 1 FROM songs s JOIN ${analysis.LATEST_ANALYSIS} la ON la.song_id = s.id WHERE s.id=$1`, [id])).rows.length === 1,
+  });
+  assert.deepEqual(await visible(), { song: true, exists: true, latest: true }, 'visible before flagging');
+  await junk.scan(pool, { songIds: [id] });
+  assert.deepEqual(await visible(), { song: false, exists: false, latest: false }, 'hidden while flagged');
+  await junk.dismiss(pool, id);
+  assert.deepEqual(await visible(), { song: true, exists: true, latest: true }, 'back after Not junk');
+});
+
+test('browse facet counts exclude a flagged song and include it again after dismiss', async () => {
+  const id = await mk('ZZZJUNK facet', 'Error: Lyrics container not found on this Bandcamp page.');
+  await addAnalysis(id);
+  // The same join every browse facet / filter count uses (browseFilters.joinSql, services/analysis.js consumers).
+  const count = async () => (await pool.query(
+    `SELECT COUNT(*)::int AS n FROM songs s JOIN ${analysis.LATEST_ANALYSIS} sa ON sa.song_id = s.id
+     WHERE s.status='included' AND s.published=true AND s.title LIKE 'ZZZJUNK facet%'`)).rows[0].n;
+  await junk.scan(pool, { songIds: [id] });
+  assert.equal(await count(), 0);
+  await junk.dismiss(pool, id);
+  assert.equal(await count(), 1);
+});
+
+test('flagged songs read as having no lyrics: in needs-lyrics and junk-lyrics, never in needs-analysis', async () => {
+  const id = await mk('ZZZJUNK queues', 'Provided to YouTube by DistroKid\n\nSong · Artist\n\n℗ 2020');
+  await addAnalysis(id);
+  await junk.scan(pool, { songIds: [id] });
+  const inQ = async (q) => (await curation.listCurationQueue(pool, { queue: q })).rows.some((r) => r.id === id);
+  assert.equal(await inQ('needs-lyrics'), true);
+  assert.equal(await inQ('junk-lyrics'), true);
+  assert.equal(await inQ('needs-analysis'), false);
+  assert.ok((await curation.queueCounts(pool))['junk-lyrics'] >= 1);
+  const wb = await curation.getWorkbench(pool, id);   // must not throw although analysed=true and analysis is hidden
+  assert.equal(wb.junk_kind, 'youtube_description');
+  assert.equal(wb.completeness.lyrics, false);
+  assert.equal(wb.analysed, true);
+  await junk.dismiss(pool, id);
+  assert.equal(await inQ('junk-lyrics'), false);
+  assert.equal(await inQ('needs-lyrics'), false);
+  assert.equal((await curation.getWorkbench(pool, id)).junk_kind, null);
+});
