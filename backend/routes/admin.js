@@ -1909,7 +1909,9 @@ router.get('/curation/counts', async (req, res) => {
 
 router.get('/junk-lyrics', async (req, res) => {
   try {
-    res.json({ rows: await junkLyrics.listJunk(pool) });
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 500);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    res.json({ rows: await junkLyrics.listJunk(pool, { limit, offset }) });
   } catch (e) {
     console.error('junk lyrics list error:', e);
     res.status(500).json({ error: 'Failed to list junk lyrics', details: e.message });

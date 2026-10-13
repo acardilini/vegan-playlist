@@ -7,7 +7,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-13, newest): Sub-project G - Junk-lyrics checker - BUILT on branch `session-junk-lyrics`, NOT yet merged / curator-smoked.**
+- **Current session (2026-10-13, newest): Sub-project G - Junk-lyrics checker - curator-smoked ("all works well"), follow-ups done, MERGED to `main`.**
   Spec `63c0439`, plan `b437bcb` (`docs/superpowers/{specs/2026-10-13-G-junk-lyrics-design,plans/2026-10-13-G-junk-lyrics}.md`). Pure detector
   `services/lyricsQuality.js` (`classify` -> `error` | `youtube_description` | null; strong patterns alone, two weak markers together, a `[Verse`
   header vetoes); migration **012** (`song_lyrics.junk_kind`, `junk_dismissed`, applied to the dev DB); `services/junkLyrics.js` (scan / listJunk /
@@ -710,6 +710,15 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-10-13 (G junk lyrics, curator follow-ups) - the Explore map shows only songs with real lyrics AND a sound analysis; flawed analysis stays hidden until re-analysed.**
+  `explore.mapRows` now requires `analysis.hasRealLyricsExists('s')` (non-blank, unflagged lyrics) AND `hasAnalysisExists('s')`: 608 of 1,331 live songs
+  are plotted (was ~640). **Stricter than "hidden while flagged":** when REAL lyrics replace flagged junk, `song_lyrics.analysis_stale_since` is stamped and
+  every analysis pass older than it stays hidden (public site AND map) until the analysis project writes a newer pass (`NOT_JUNK` is row-level, so a new pass
+  is picked up automatically). **Not junk** (a false positive) lifts the hiding immediately - no stamp. Migration **013** adds `analysis_stale_since` and
+  `junk_dismissed_md5` (a dismissal now covers the exact text confirmed; if the text changes out-of-band, `scan` re-checks it). Deferred minors fixed:
+  Analysis panel explains a hidden analysis; workbench banner has busy/error state and a **Clear lyrics** button; Clear also resets `lyrics_status`/`lyrics_url`
+  (shared `junkLyricsActions.js`); `listJunk` pages (`limit`/`offset`, UI Prev/Next). **Still open:** lyric *embeddings* ("Similar message" tab) built from
+  junk text are not hidden (the curator asked about the map only). Backend **300/300** serial; lint 0 errors; build clean; `/explore` loads clean in a browser.
 - **2026-10-13 (G junk lyrics, review fix) - a cleared row KEEPS its flag.** The whole-branch review found that **Clear lyrics** (blank text ->
   `classify('')` = null) un-flagged the row and so brought the junk-derived analysis straight back on the public site. Now a blank row keeps
   `junk_kind`: `recheck` leaves it alone, `scan` skips blank rows, and the Junk queue / `listJunk` list only non-blank flagged rows - so a cleared

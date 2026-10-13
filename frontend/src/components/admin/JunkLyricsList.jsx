@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
+import { CLEAR_LYRICS_BODY } from './junkLyricsActions';
+
+const PAGE_SIZE = 50;
 
 const KIND_LABELS = { error: 'Error message', youtube_description: 'YouTube description' };
 
@@ -12,13 +15,14 @@ function JunkLyricsList({ refreshKey, onChanged }) {
   const [msg, setMsg] = useState('');
   const [busyId, setBusyId] = useState(null);
   const [scanning, setScanning] = useState(false);
+  const [page, setPage] = useState(0);
 
   const load = useCallback(() => {
-    adminFetch('/api/admin/junk-lyrics')
+    adminFetch(`/api/admin/junk-lyrics?limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`)
       .then(r => r.ok ? r.json() : Promise.reject(new Error('load failed')))
       .then(d => { setRows(d.rows || []); })
       .catch(() => { setRows([]); setMsg('Could not load the list.'); });
-  }, []);
+  }, [page]);
   useEffect(() => { load(); }, [load, refreshKey]);
 
   const scan = async () => {
@@ -37,7 +41,7 @@ function JunkLyricsList({ refreshKey, onChanged }) {
     try {
       const r = kind === 'dismiss'
         ? await adminFetch(`/api/admin/workbench/${row.id}/junk-dismiss`, { method: 'POST', body: {} })
-        : await adminFetch(`/api/admin/workbench/${row.id}/lyrics`, { method: 'PUT', body: { lyrics: '' } });
+        : await adminFetch(`/api/admin/workbench/${row.id}/lyrics`, { method: 'PUT', body: CLEAR_LYRICS_BODY });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'Request failed');
       onChanged();
@@ -73,6 +77,11 @@ function JunkLyricsList({ refreshKey, onChanged }) {
               onClick={() => { if (window.confirm(`Clear the stored lyrics for "${row.title}"?`)) act(row, 'clear'); }}>Clear lyrics</button>
           </div>
         ))}
+      <div className="queue-pager">
+        <button className="btn btn-secondary btn-sm" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>← Prev</button>
+        <span className="admin-stub">Page {page + 1}</span>
+        <button className="btn btn-secondary btn-sm" disabled={!rows || rows.length < PAGE_SIZE} onClick={() => setPage(p => p + 1)}>Next →</button>
+      </div>
     </div>
   );
 }

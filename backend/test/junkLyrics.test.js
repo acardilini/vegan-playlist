@@ -18,6 +18,7 @@ async function mk(title, lyrics, { status = 'included', published = true } = {})
 const row = async (id) => (await pool.query('SELECT junk_kind, junk_dismissed FROM song_lyrics WHERE song_id=$1', [id])).rows[0];
 
 after(async () => {
+  await pool.query(`DELETE FROM song_coordinates WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZJUNK%')`);
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZJUNK%')`);
   await pool.query(`DELETE FROM song_lyrics WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZJUNK%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZJUNK%'`);
@@ -96,10 +97,10 @@ test('saving only a source_url / translation does not touch the flag', async () 
 
 const analysis = require('../services/analysis');
 
-async function addAnalysis(id) {
+async function addAnalysis(id, model = 'zzzjunk-model') {
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, perspective, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, 'zzzjunk-model', 'MORAL_JUDGEMENT', '[{"code":"captivity","evidence":"x"}]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`, [id]);
+     VALUES ($1, $2, 'MORAL_JUDGEMENT', '[{"code":"captivity","evidence":"x"}]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`, [id, model]);
 }
 
 test('a flagged song loses its analysis in every shared read, and gets it back on dismiss', async () => {
@@ -149,8 +150,8 @@ test('flagged songs read as having no lyrics: in needs-lyrics and junk-lyrics, n
   assert.equal((await curation.getWorkbench(pool, id)).junk_kind, null);
 });
 
-test('Clear lyrics keeps the junk-derived analysis hidden and leaves the Junk queue; real lyrics then restore it', async () => {
-  const id = await mk('ZZZJUNK cleared', 'Provided to YouTube by DistroKid\n\nSong · Artist\n\n℗ 2020');
+test('Clear lyrics keeps the junk-derived analysis hidden; real lyrics alone do not restore it, a newer analysis pass does', async () => {
+  const id = await mk('ZZZJUNK cleared', 'Provided to YouTube by DistroKid ℗ 2020 Song Artist');
   await addAnalysis(id);
   await junk.scan(pool, { songIds: [id] });
   await curation.saveLyrics(pool, id, { lyrics: '' });               // what the Clear lyrics button sends
@@ -159,9 +160,66 @@ test('Clear lyrics keeps the junk-derived analysis hidden and leaves the Junk qu
   const inQ = async (q) => (await curation.listCurationQueue(pool, { queue: q })).rows.some((r) => r.id === id);
   assert.equal(await inQ('junk-lyrics'), false);
   assert.equal(await inQ('needs-lyrics'), true, 'it now needs real lyrics');
-  await curation.saveLyrics(pool, id, { lyrics: 'Real words here\nand more real words' });
+  await curation.saveLyrics(pool, id, { lyrics: 'Real words here and more real words' });
   assert.equal((await row(id)).junk_kind, null);
-  assert.ok(await analysis.getSongAnalysis(pool, id), 'real lyrics lift the hiding');
+  assert.equal(await analysis.getSongAnalysis(pool, id), null, 'the old pass was coded from junk: still hidden until re-analysed');
+  await new Promise((r) => setTimeout(r, 20));
+  await addAnalysis(id, 'zzzjunk-model-2');                          // the analysis project writes a newer pass
+  assert.ok(await analysis.getSongAnalysis(pool, id), 'a pass newer than the lyrics fix is shown');
+});
+
+test('Not junk (a false positive) shows the analysis again immediately - no re-analysis needed', async () => {
+  const id = await mk('ZZZJUNK falsepos', 'Provided to YouTube by DistroKid ℗ 2020 Song Artist');
+  await addAnalysis(id);
+  await junk.scan(pool, { songIds: [id] });
+  assert.equal(await analysis.getSongAnalysis(pool, id), null);
+  await junk.dismiss(pool, id);
+  assert.ok(await analysis.getSongAnalysis(pool, id));
+});
+
+test('a dismissed row whose text later changes out-of-band is re-checked by scan; an unchanged one is not', async () => {
+  const id = await mk('ZZZJUNK redismiss', 'Provided to YouTube by DistroKid ℗ 2020 Song Artist');
+  await junk.scan(pool, { songIds: [id] });
+  await junk.dismiss(pool, id);
+  await junk.scan(pool, { songIds: [id] });
+  assert.deepEqual(await row(id), { junk_kind: null, junk_dismissed: true }, 'unchanged text stays dismissed');
+  await pool.query(`UPDATE song_lyrics SET lyrics='Error: Lyrics container not found on this Bandcamp page.' WHERE song_id=$1`, [id]);
+  const r = await junk.scan(pool, { songIds: [id] });
+  assert.equal(r.flagged, 1);
+  assert.deepEqual(await row(id), { junk_kind: 'error', junk_dismissed: false });
+});
+
+test('listJunk pages with limit and offset', async () => {
+  const ids = [];
+  for (const n of ['a', 'b', 'c']) ids.push(await mk(`ZZZJUNK page ${n}`, 'Error: Lyrics container not found on this Bandcamp page.'));
+  await junk.scan(pool, { songIds: ids });
+  const all = (await junk.listJunk(pool, { limit: 1000 })).map((r) => r.id);
+  const first = await junk.listJunk(pool, { limit: 2, offset: 0 });
+  const next = await junk.listJunk(pool, { limit: 2, offset: 2 });
+  assert.equal(first.length, 2);
+  assert.deepEqual([...first, ...next].map((r) => r.id), all.slice(0, first.length + next.length));
+});
+
+test('the Explore map only includes live songs with real lyrics AND a visible analysis', async () => {
+  const explore = require('../services/explore');
+  const coords = async (id) => pool.query(
+    `INSERT INTO song_coordinates (song_id, semantic_2d, semantic_3d, thematic_2d, thematic_3d, audio_2d, audio_3d, holistic_2d, holistic_3d)
+     VALUES ($1,'{1,2}','{1,2,3}','{3,4}','{1,2,3}','{5,6}','{1,2,3}','{7,8}','{1,2,3}')`, [id]);
+  const good = await mk('ZZZJUNK map good', 'Real words here and more real words');
+  const junkRow = await mk('ZZZJUNK map junk', 'Error: Lyrics container not found on this Bandcamp page.');
+  const blank = await mk('ZZZJUNK map blank', '   ');
+  const noAnalysis = await mk('ZZZJUNK map noanalysis', 'Real words here and more real words');
+  for (const id of [good, junkRow, blank]) await addAnalysis(id);
+  for (const id of [good, junkRow, blank, noAnalysis]) await coords(id);
+  await junk.scan(pool, { songIds: [junkRow] });
+  const spaces = await explore.discoverSpaces(pool);
+  const onMap = new Set((await explore.mapRows(pool, spaces)).map((r) => r.id));
+  assert.equal(onMap.has(good), true, 'real lyrics + analysis is mapped');
+  assert.equal(onMap.has(junkRow), false, 'flagged junk is not mapped');
+  assert.equal(onMap.has(blank), false, 'blank lyrics are not mapped');
+  assert.equal(onMap.has(noAnalysis), false, 'no analysis is not mapped');
+  await junk.dismiss(pool, junkRow);
+  assert.equal(new Set((await explore.mapRows(pool, spaces)).map((r) => r.id)).has(junkRow), true, 'back after Not junk');
 });
 
 test('the About page analysed-songs figure excludes flagged songs', async () => {
