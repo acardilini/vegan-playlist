@@ -288,3 +288,20 @@ test('a compare that started before a push cannot re-cache the pre-push playlist
   assert.equal(reads, 2, 'the stale in-flight read was not cached');
   push.clearCache();
 });
+
+test('a song marked spotify_dormant is neither pushable nor pushed, and an explicit push says why', async () => {
+  const id = await mk('ZZZPUSH dormant', { sid: 'ZZZPUSH_dormant' });
+  await pool.query('UPDATE songs SET spotify_dormant=true WHERE id=$1', [id]);
+  try {
+    const c = await push.compare(pool, { fetchTracks: fetchTracksOf() });
+    assert.ok(!c.pushable.some((x) => x.id === id), 'not pushable');
+    const f = fakeFetch();
+    const r = await push.pushSongs(pool, { songIds: [id], accessToken: 'TOK', fetchTracks: fetchTracksOf(), fetchImpl: f, sleep: noSleep });
+    assert.deepEqual(r.notEligible, [{ id, reason: 'spotify_dormant' }]);
+    assert.equal(f.calls.length, 0);
+    const bulk = await push.pushSongs(pool, { accessToken: 'TOK', fetchTracks: fetchTracksOf(), fetchImpl: fakeFetch(), sleep: noSleep });
+    assert.ok(!bulk.added.some((x) => x.id === id), 'bulk push skips it');
+  } finally {
+    await pool.query('DELETE FROM songs WHERE id=$1', [id]);
+  }
+});

@@ -51,7 +51,7 @@ async function readTracks(fetchTracks, playlistId, { useCache = false, fresh = f
 
 async function loadSongs(pool) {
   return (await pool.query(`
-    SELECT s.id, s.title, s.spotify_id, s.status, s.published,
+    SELECT s.id, s.title, s.spotify_id, s.spotify_dormant, s.status, s.published,
            COALESCE(string_agg(a.name, ', ' ORDER BY sa.id), '') AS artists,
            (array_agg(a.name ORDER BY sa.id))[1] AS first_artist
     FROM songs s
@@ -81,7 +81,8 @@ function classify(songs, tracks) {
   }
   // Same song, different Spotify track id (album vs single, remaster...): not pushable, shown for review.
   const dupMatch = new Map(); // song id -> matching playlist track
-  const notOnPlaylist = songs.filter((s) => isLive(s) && s.spotify_id && !onPlaylist.has(s.spotify_id));
+  // A dormant link (curator-marked unplayable) is never offered for push.
+  const notOnPlaylist = songs.filter((s) => isLive(s) && s.spotify_id && !s.spotify_dormant && !onPlaylist.has(s.spotify_id));
   for (const s of notOnPlaylist) {
     const k = keyOf(s.title, s.first_artist);
     if (k && byKey.has(k)) dupMatch.set(s.id, byKey.get(k));
@@ -163,12 +164,13 @@ async function pushSongsUnguarded(pool, { songIds, allowDuplicates = false, acce
       if (!s) notEligible.push({ id, reason: 'not_found' });
       else if (!isLive(s)) notEligible.push({ id, reason: 'not_live' });
       else if (!s.spotify_id) notEligible.push({ id, reason: 'no_spotify_id' });
+      else if (s.spotify_dormant) notEligible.push({ id, reason: 'spotify_dormant' });
       else if (dupMatch.has(id) && allowDuplicates !== true) notEligible.push({ id, reason: 'possible_duplicate', match: matchOf(dupMatch.get(id)) });
       else pool_.push(s);
     }
   }
   // A bulk push skips possible duplicates too; only an explicit push may override (allowDuplicates), after screening above.
-  const eligible = pool_.filter((s) => isLive(s) && s.spotify_id && (!dupMatch.has(s.id) || (ids && allowDuplicates === true)));
+  const eligible = pool_.filter((s) => isLive(s) && s.spotify_id && !s.spotify_dormant && (!dupMatch.has(s.id) || (ids && allowDuplicates === true)));
   const alreadyThere = eligible.filter((s) => onPlaylist.has(s.spotify_id)).length;
   const bySpotify = new Map();
   for (const s of eligible) if (!onPlaylist.has(s.spotify_id) && !bySpotify.has(s.spotify_id)) bySpotify.set(s.spotify_id, s);

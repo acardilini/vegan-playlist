@@ -7,6 +7,15 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
+- **Current session (2026-10-13, latest): Dormant Spotify link + surfaced own-site links - BUILT on branch `session-spotify-dormant`, NOT yet merged / curator-smoked.** ("No video available" below was merged to `main` as `eec6e55` and pushed.)
+  New `songs.spotify_dormant` (migration **011**, applied to the dev DB). Admin Links panel: checkbox **"Spotify link no longer plays (hide it
+  on the song page)"**. Song page hero: the artist's **Bandcamp / website** link now shows **first** (primary button; "Listen on Bandcamp" for
+  a bandcamp.com host, else "Listen online"), then **SoundCloud**, then **Spotify** (hidden when dormant), then lyrics. The public song read
+  now serves `bandcamp_url`, `soundcloud_url`, `spotify_dormant` (it served neither link before - they were admin-only). A dormant Spotify
+  URL no longer counts as a play link (queue "missing: play link" chips, workbench completeness) and the Spotify push skips the song
+  (`spotify_dormant` reason; compare's pushable excludes it). **Verified:** backend **277/277** serial (2 new tests); lint 0 errors; build
+  clean; live on song 237 (set, viewed Bandcamp-first, viewed dormant + generic website, restored). **Not browser-checked:** the admin
+  checkbox (login gate). A Vite stale transform blanked the page once mid-check (touch the file + reload fixed it).
 - **Current session (2026-10-13, later): "No video available" - BUILT on branch `session-no-video`, NOT yet merged / curator-smoked.**
   Video panel gains **No video available: Show album cover / Hide video section / Clear** (shown only while the song has no videos).
   Marked songs leave **Needs video** (and its Dashboard count) and appear in a new rail queue **No video available**, so the dozens the
@@ -446,6 +455,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **⏭ NEXT (2026-10-13, latest): dormant-Spotify is BUILT on `session-spotify-dormant`, awaiting the curator's smoke, then merge.** Smoke:
+> Admin -> a song with a Spotify URL -> Links panel -> tick the dormant box and add a Bandcamp/website URL -> public page shows only the
+> own-site link (first), no Spotify chip; untick -> both, own site first. Apply migration 011 on any other DB first. _(The "No video
+> available" note below is MERGED, `eec6e55`; its smoke is still the curator's to do.)_
 > **⏭ NEXT (2026-10-13, later): "No video available" is BUILT on `session-no-video`, awaiting the curator's smoke, then merge.** Smoke:
 > Admin -> Songs -> Needs video -> open a song -> **Show album cover** (it leaves the queue, shows under **No video available**) -> open
 > its public page; try **Hide video section** and **Clear**. Apply migration 010 on any other DB first. Remaining logged requests: the
@@ -680,6 +693,11 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-10-13 (dormant Spotify) - flag, not delete; own site leads.** The Spotify URL/`spotify_id` stay stored when a link goes dormant
+  (the Spotify tools key on them; the curator may re-enable). The curator chose the artist's own site to be **first and primary** on the
+  song page ("preferencing their own sites rather than spotify") and to show Bandcamp/SoundCloud links **even when Spotify is fine**.
+  `bandcamp_url` holds a Bandcamp OR a website URL (existing admin label "Bandcamp / website URL"), so the page labels by host. A dormant
+  song is excluded from compare's pushable list and from push (explicit: `notEligible` reason `spotify_dormant`).
 - **2026-10-13 ("No video available") - the mark lives on `songs`, not `song_processing`, and is ignored once a video exists.** The song page
   must read it, and `song_processing` is curation-only state kept off the public path. A marked song that later gains a video is in
   neither video queue (both queues require no `youtube_videos` row) and the page plays the video, so nothing needs clearing. `setNoVideo`
@@ -1941,6 +1959,9 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-13 (dormant Spotify link BUILT, unmerged)** - branch `session-spotify-dormant`. Bounded brainstorm in chat. Migration 011,
+  `saveLinks` takes `spotify_dormant` (boolean only), workbench + public song reads expose it, `spotifyPush` skips dormant songs, LinksPanel
+  checkbox, song-page link order. Backend 277/277 serial; lint 0; build clean; live-checked on song 237 then restored.
 - **2026-10-13 ("No video available" BUILT, unmerged)** - branch `session-no-video`. Bounded brainstorm in chat (no spec file). Migration
   010, `curation.setNoVideo` + `PUT /workbench/:id/no-video`, queue `no-video` and the `needs-video` exclusion, VideoPanel control, song-page
   slot. Backend 275/275 serial; lint 0; build clean; public page checked live in the browser; admin panel not browser-checked (login gate).
