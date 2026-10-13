@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { adminFetch } from '../../api/adminApi';
 import { AutoText, SaveTag } from './SavedField';
 
@@ -13,6 +13,8 @@ function LinksPanel({ wb, savePanel, id, reload }) {
   const bandcampSearch = `https://bandcamp.com/search?q=${encodeURIComponent(`${wb.title || ''} ${artist}`.trim())}`;
   const [status, setStatus] = useState('idle');
   const [msg, setMsg] = useState('');
+  const [pushMsg, setPushMsg] = useState('');
+  useEffect(() => setPushMsg(''), [id]);
 
   const attachSpotify = async () => {
     setMsg('');
@@ -27,6 +29,20 @@ function LinksPanel({ wb, savePanel, id, reload }) {
     } catch { setMsg('Request failed'); setStatus('error'); }
   };
 
+  const live = wb.status === 'included' && wb.published;
+  const canPush = live && !!wb.spotify_id;
+  const pushToSpotify = async () => {
+    setPushMsg('Adding…');
+    try {
+      const r = await adminFetch('/api/admin/spotify/push', { method: 'POST', body: { songIds: [Number(id)] } });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) setPushMsg(d.added && d.added.length ? 'Added to the Spotify playlist.' : 'Already on the playlist.');
+      else if (r.status === 409 && d.error === 'BUSY') setPushMsg('A push is already running — wait a moment and retry.');
+      else if (r.status === 409) setPushMsg('Connect Spotify first (Dashboard → Spotify playlist).');
+      else setPushMsg(d.message || d.error || 'Push failed.');
+    } catch { setPushMsg('Request failed.'); }
+  };
+
   return (
     <section className="wb-panel">
       <h2>Play sources &amp; links {!wb.spotify_id && <SaveTag status={status} />}</h2>
@@ -35,8 +51,13 @@ function LinksPanel({ wb, savePanel, id, reload }) {
       <div className="wb-linkactions">
         <OpenLink url={wb.spotify_url} />
         {!wb.spotify_id && <button type="button" className="btn btn-secondary btn-sm" onClick={attachSpotify}>Attach Spotify by search</button>}
+        <button type="button" className="btn btn-secondary btn-sm" disabled={!canPush} onClick={pushToSpotify}
+          title={canPush ? undefined : (live ? 'This song has no Spotify link' : 'Only live songs can be added to the playlist')}>
+          Add to Spotify playlist
+        </button>
       </div>
       {msg && <div className="modal-result">{msg}</div>}
+      {pushMsg && <div className="modal-result">{pushMsg}</div>}
 
       <AutoText label="Bandcamp / website URL" initial={wb.bandcamp_url} placeholder="https://…"
         onSave={(v) => savePanel('links', { bandcamp_url: v })} />
