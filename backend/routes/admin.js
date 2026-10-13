@@ -1,6 +1,6 @@
 // Admin API (password-protected via x-admin-password). Routes are grouped into
 // six domains — Songs / curation · Enrichment · Data quality · Sync (import-only) ·
-// Artists · Staging / lifecycle — per docs/ADMIN_AUDIT.md (Session 2.2).
+// Artists · Staging / lifecycle (plus Band check, after Sync) — per docs/ADMIN_AUDIT.md (Session 2.2).
 const express = require('express');
 const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/genreMapping');
@@ -13,6 +13,7 @@ const videos = require('../services/videos');
 const { findDuplicateGroups } = require('../services/duplicates');
 const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDismissals');
 const spotifyPush = require('../services/spotifyPush');
+const bandCheck = require('../services/bandCheck');
 const { defaultAuth: spotifyAuth } = require('../services/spotifyAuth');
 const multer = require('multer');
 const csv = require('csv-parser');
@@ -1466,6 +1467,54 @@ router.post('/spotify/push', async (req, res) => {
     console.error('spotify push error:', e.code || 'error'); // never the token / body / message
     res.status(500).json({ error: 'Failed to push to Spotify' });
   }
+});
+
+// ==================== Band check (sub-project H) ====================
+// Merge one band's catalogue from Spotify + Bandcamp + MusicBrainz, then add the ticked songs as pending.
+// Errors are coded by the service and carry fixed strings; never log e.message (it can hold a URL/token).
+const bandAdapters = bandCheck.defaultAdapters(); // one instance: MusicBrainz pacing state is shared across requests
+
+function bandCheckError(res, e, label) {
+  const status = { NOT_FOUND: 404, BAD_INPUT: 400, CONFLICT: 409, BUSY: 409, NO_IDENTITY: 409, RATE_LIMITED: 429, UPSTREAM: 502, UNREADABLE: 502 }[e.code];
+  if (status) return res.status(status).json({ error: e.code, message: e.message, ...(e.artist ? { artist: e.artist } : {}) });
+  console.error(`band check ${label} error:`, e.code || 'error');
+  return res.status(500).json({ error: `Failed to ${label}` });
+}
+const bandId = (req) => { const n = parseInt(req.params.id, 10); return Number.isSafeInteger(n) && n > 0 ? n : -1; };
+
+router.get('/band-check/bands', async (req, res) => {
+  try { res.json(await bandCheck.listBands(pool, { q: String(req.query.q || '').slice(0, 100), limit: req.query.limit, offset: req.query.offset })); }
+  catch (e) { bandCheckError(res, e, 'list bands'); }
+});
+
+router.get('/band-check/bands/:id/candidates', async (req, res) => {
+  try {
+    const candidates = await bandCheck.identifyCandidates(pool, bandId(req), String(req.query.source || ''), { query: String(req.query.q || '').slice(0, 100), adapters: bandAdapters });
+    res.json({ candidates });
+  } catch (e) { bandCheckError(res, e, 'find candidates'); }
+});
+
+router.put('/band-check/bands/:id/identity', async (req, res) => {
+  try {
+    const { source, value } = req.body || {};
+    res.json({ identity: await bandCheck.saveIdentity(pool, bandId(req), source, value === undefined ? undefined : value) });
+  } catch (e) { bandCheckError(res, e, 'save the identity'); }
+});
+
+router.get('/band-check/bands/:id', async (req, res) => {
+  try {
+    const result = await bandCheck.checkBand(pool, bandId(req), { adapters: bandAdapters, fresh: req.query.fresh === '1' });
+    const states = Object.values(result.sources);
+    if (states.length && states.every(s => s.status === 'error')) {
+      return res.status(502).json({ error: 'UPSTREAM', message: 'No source could be read this time - try again in a minute', sources: result.sources });
+    }
+    res.json(result);
+  } catch (e) { bandCheckError(res, e, 'check the band'); }
+});
+
+router.post('/band-check/bands/:id/add', async (req, res) => {
+  try { res.json({ success: true, ...(await bandCheck.addSelected(pool, bandId(req), (req.body || {}).keys, { adapters: bandAdapters })) }); }
+  catch (e) { bandCheckError(res, e, 'add the songs'); }
 });
 
 // ==================== Artists ====================
