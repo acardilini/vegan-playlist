@@ -503,3 +503,25 @@ test('a marked song that later gains a video is in neither video queue', async (
     assert.ok(!(await curation.listCurationQueue(pool, { queue })).rows.some(r => r.id === id), queue);
   }
 });
+
+// ---- dormant Spotify link (migration 011) ----
+test('saveLinks stores spotify_dormant; getWorkbench exposes it; a dormant Spotify URL is not a play link', async () => {
+  const id = await mkSong({ title: 'ZZZCUR Dormant', status: 'included', published: true, spotify_url: 'https://open.spotify.com/track/x' });
+  const row = async () => (await curation.listCurationQueue(pool, { queue: 'all', q: 'ZZZCUR Dormant' })).rows.find(r => r.id === id);
+  assert.equal((await curation.getWorkbench(pool, id)).spotify_dormant, false);
+  assert.ok(!(await row()).missing.includes('play link'));
+
+  const wb = await curation.saveLinks(pool, id, { spotify_dormant: true });
+  assert.equal(wb.spotify_dormant, true);
+  assert.equal(wb.spotify_url, 'https://open.spotify.com/track/x', 'the URL is kept');
+  assert.equal(wb.completeness.play_link, false);
+  assert.ok((await row()).missing.includes('play link'));
+
+  const wb2 = await curation.saveLinks(pool, id, { bandcamp_url: 'https://band.bandcamp.com/track/y' });
+  assert.equal(wb2.spotify_dormant, true, 'saving another link leaves the flag alone');
+  assert.equal(wb2.completeness.play_link, true);
+  assert.ok(!(await row()).missing.includes('play link'));
+
+  assert.equal((await curation.saveLinks(pool, id, { spotify_dormant: false })).spotify_dormant, false);
+  await assert.rejects(curation.saveLinks(pool, id, { spotify_dormant: 'yes' }), e => e.code === 'BAD_INPUT');
+});

@@ -66,6 +66,10 @@ function LinksPanel({ wb, savePanel, id, reload }) {
           Add to Spotify playlist
         </button>
       </div>
+      <label className="wb-check" title="The Spotify track was removed or no longer plays. The song page hides its Spotify link and the playlist push skips it.">
+        <input type="checkbox" checked={!!wb.spotify_dormant}
+          onChange={(e) => savePanel('links', { spotify_dormant: e.target.checked })} /> Spotify link no longer plays (hide it on the song page)
+      </label>
       {msg && <div className="modal-result">{msg}</div>}
       {pushMsg && <div className="modal-result">{pushMsg}</div>}
       {offerAnyway && (

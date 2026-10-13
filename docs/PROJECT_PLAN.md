@@ -368,6 +368,7 @@ Sub-projects (each = its own spec→plan→build cycle; A is split into plans A1
   `session-E-lyrics-assist`; `specs/2026-10-02-E-lyrics-assist-design.md`, `plans/2026-10-12-E-lyrics-assist.md`):
   one-click multi-site lyric search links (no paid API), To-transcribe queue, Lyrics-on-hold shelf, lyrics-found exit.
   Also queued: no-video-available option; band/album catalogue checker.
+- ◐ **Dormant Spotify link + own-site links first — BUILT 2026-10-13 on `session-spotify-dormant`, awaiting the curator's smoke**: migration 011 `songs.spotify_dormant`, Links-panel checkbox, song page leads with Bandcamp/website then SoundCloud then Spotify (hidden when dormant), push skips dormant songs.
 - ◐ **"No video available" — BUILT 2026-10-13 on `session-no-video`, awaiting the curator's smoke**: migration 010 `songs.no_video_display`, Video-panel mark (cover / hide / clear), **No video available** queue, `needs-video` excludes marked songs, song-page slot honours the choice.
 - ☑ **F — Spotify sync — BUILT, curator-smoked and MERGED 2026-10-13 (`3edac04`, branch `session-F-spotify-push`)**
   (`specs/2026-10-13-F-spotify-push-design.md`, `plans/2026-10-13-F-spotify-sync.md`): one-time Spotify sign-in (refresh token in a

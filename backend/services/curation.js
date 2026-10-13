@@ -92,7 +92,7 @@ function queueWhere(queue) {
 
 function mapQueueRow(r) {
   const kinds = [];
-  if (r.spotify_url) kinds.push('spotify');
+  if (r.spotify_url && !r.spotify_dormant) kinds.push('spotify');
   if (r.bandcamp_url) kinds.push('bandcamp');
   if (r.soundcloud_url) kinds.push('soundcloud');
   if (r.has_youtube) kinds.push('youtube');
@@ -122,7 +122,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
       WHERE sa2.song_id=s.id AND a2.name ILIKE $${params.length}))`;
   }
   let sql = `
-    SELECT s.id, s.title, s.status, s.published, s.featured, s.language, s.no_video_display,
+    SELECT s.id, s.title, s.status, s.published, s.featured, s.language, s.no_video_display, s.spotify_dormant,
            s.spotify_url, s.bandcamp_url, s.soundcloud_url,
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
@@ -232,9 +232,10 @@ async function getWorkbench(db, id) {
   const analysisObj = analysed ? await getSongAnalysis(db, id) : null;
 
   const cover = hasArt(s.album_images);
-  const play_link = !!(s.spotify_url || s.bandcamp_url || s.soundcloud_url || videos.length > 0);
+  const play_link = !!((s.spotify_url && !s.spotify_dormant) || s.bandcamp_url || s.soundcloud_url || videos.length > 0);
   return {
     id: s.id, title: s.title, status: s.status, published: s.published, featured: s.featured, language: s.language, no_video_display: s.no_video_display,
+    spotify_dormant: s.spotify_dormant,
     spotify_id: s.spotify_id, spotify_url: s.spotify_url, bandcamp_url: s.bandcamp_url, soundcloud_url: s.soundcloud_url,
     lyrics_status: s.lyrics_status, lyrics_url: s.lyrics_url, lyrics_source: s.lyrics_source,
     lyrics_highlights: s.lyrics_highlights, status_notes: s.status_notes,
@@ -381,12 +382,16 @@ async function saveHighlights(db, id, { lyrics_highlights } = {}) {
   return getWorkbench(db, id);
 }
 
-async function saveLinks(db, id, { spotify_url, bandcamp_url, soundcloud_url } = {}) {
+async function saveLinks(db, id, { spotify_url, bandcamp_url, soundcloud_url, spotify_dormant } = {}) {
   await assertSong(db, id);
+  if (spotify_dormant !== undefined && typeof spotify_dormant !== 'boolean') {
+    const e = new Error('spotify_dormant must be true or false'); e.code = 'BAD_INPUT'; throw e;
+  }
   assertHttp(spotify_url, 'spotify_url'); assertHttp(bandcamp_url, 'bandcamp_url'); assertHttp(soundcloud_url, 'soundcloud_url');
   const sets = [], params = [id];
   const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
   add('spotify_url', spotify_url); add('bandcamp_url', bandcamp_url); add('soundcloud_url', soundcloud_url);
+  if (spotify_dormant !== undefined) { params.push(spotify_dormant); sets.push(`spotify_dormant=$${params.length}`); }
   if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
   return getWorkbench(db, id);
 }

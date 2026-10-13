@@ -5,6 +5,15 @@ import YouTubeEmbed from '../components/YouTubeEmbed';
 import LyricalAnalysis from '../components/LyricalAnalysis';
 import SimilarSongs from '../components/SimilarSongs';
 
+// Label for the artist's own link (stored in bandcamp_url, which holds a Bandcamp OR a website URL).
+function ownSiteLabel(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host === 'bandcamp.com' || host.endsWith('.bandcamp.com')) return 'Listen on Bandcamp';
+  } catch { /* fall through to the generic label */ }
+  return 'Listen online';
+}
+
 function SongDetailPage() {
   const { songId } = useParams();
   const navigate = useNavigate();
@@ -91,6 +100,7 @@ function SongDetailPage() {
   const artistNames = Array.isArray(song.artists)
     ? song.artists.map(artist => (artist && artist.name) || artist).join(', ')
     : song.artists;
+  const showSpotify = !!song.spotify_url && !song.spotify_dormant;
 
   const nonEnglish = (song.language || []).some((l) => l.trim().toLowerCase() !== 'english');
 
@@ -146,9 +156,30 @@ function SongDetailPage() {
             )}
           </div>
 
-          {(song.spotify_url || song.lyrics_url) && (
+          {(song.bandcamp_url || song.soundcloud_url || showSpotify || song.lyrics_url) && (
             <div className="song-hero-actions">
-              {song.spotify_url && (
+              {/* The artist's own site leads; Spotify follows, and drops out when the curator marks it dormant. */}
+              {song.bandcamp_url && (
+                <a
+                  href={song.bandcamp_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary"
+                >
+                  {ownSiteLabel(song.bandcamp_url)}
+                </a>
+              )}
+              {song.soundcloud_url && (
+                <a
+                  href={song.soundcloud_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                >
+                  Listen on SoundCloud
+                </a>
+              )}
+              {showSpotify && (
                 <a
                   href={song.spotify_url}
                   target="_blank"
