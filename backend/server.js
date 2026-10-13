@@ -22,6 +22,7 @@ app.use('/api/submissions', require('./routes/submissions'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/analysis', require('./routes/analysis'));
 app.use('/api/content', require('./routes/content'));
+app.use('/api/spotify-auth', require('./routes/spotifyAuth'));
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
