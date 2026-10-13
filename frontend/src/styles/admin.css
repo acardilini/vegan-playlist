@@ -179,3 +179,15 @@
 .song-row .song-meta.stacked { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .junk-snippet { display: block; color: var(--text-muted); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 52ch; }
 .wb-junk { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-2); }
+
+/* Band check (sub-project H) */
+.band-row { flex-direction: row; align-items: center; justify-content: space-between; }
+.band-held { opacity: 0.6; }
+.band-meta { color: var(--text-secondary); font-size: 0.85em; }
+.band-dot { display: inline-block; width: 1.4em; text-align: center; border-radius: 50%; border: 1px solid var(--border-hairline); margin-right: 0.2em; opacity: 0.4; }
+.band-dot.on { opacity: 1; background: var(--accent-moss-60); color: var(--text-on-accent); }
+.band-chip { display: inline-block; padding: 0 var(--space-2); margin-right: var(--space-1); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); font-size: 0.8em; }
+.band-chip.error, .band-chip.warn { border-color: var(--accent-ember-60); }
+.band-release h3 { display: flex; gap: var(--space-2); align-items: baseline; margin-top: var(--space-4); }
+.band-footer { position: sticky; bottom: 0; padding: var(--space-3) 0; background: var(--bg-canvas); }
+.band-tabs, .band-paste, .band-pager { display: flex; gap: var(--space-2); align-items: center; margin: var(--space-2) 0; }
