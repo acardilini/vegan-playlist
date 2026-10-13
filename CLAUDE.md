@@ -65,7 +65,7 @@ Run before ending every working session:
   `POST /start` + `GET /status` are header-authed, `GET /callback` is guarded by a single-use 10-minute `state`)
 - **routes/**: `spotify.js` (public site API), `admin.js` (~2,200 lines, password-protected
   curation API in six banner-named domains: Songs/curation (incl. the Submissions Inbox) ·
-  Enrichment · Data quality · Sync (import-only) · Artists · Staging/lifecycle; see
+  Enrichment · Data quality · Sync (import-only) · Artists · Staging/lifecycle, plus the Band check routes; see
   `docs/ADMIN_AUDIT.md`), `playlists.js`, `youtube.js`, `submissions.js`, `analytics.js`,
   `content.js` (triage 6 — the two-route `GET /api/content/:slug` read behind the About
   section's Markdown pages; the `slug` is looked up in a hard-coded `Map` of `{about, analysis}`
@@ -112,6 +112,14 @@ Run before ending every working session:
   Explore map additionally requires `hasRealLyricsExists` + `hasAnalysisExists`.) (A **blank** flagged row keeps its flag - Clear lyrics must not resurrect the junk-derived analysis - and is excluded from the Junk queue; real
   lyrics saved later let `recheck` decide.)   as having no lyrics. `scan(db, {songIds})` — tests must always pass `songIds`. `listJunk` is the only admin read of lyric text and truncates
   to 120 chars server-side
+- **services/bandCheck/** (sub-project H, multi-source Band check): per-band, on-demand review of a band's catalogue across **Spotify, Bandcamp and MusicBrainz**.
+  Three injected adapters (`spotify.js`, `bandcamp.js` reads the page's embedded JSON-LD, `musicbrainz.js` paced ~1.1s/request; `http.js` `defaultFetch`), the pure
+  `merge.js` (`keyOf` Unicode-aware title key, `mergeCatalogues`, `buildIndex`/`classify` vs the catalogue by spotify id / bandcamp url / title), and `index.js`
+  (`listBands`, `identifyCandidates`, `saveIdentity`, `checkBand`, `addSelected`). **Identity is curator-confirmed per source** in `artists.spotify_id` (replace, never
+  clear; `spotify_url` written with it) / `artists.bandcamp_url` / `artists.musicbrainz_id` (migration 014). Sources fail independently on read (coded errors, 5-minute
+  cache, `?fresh`), but **any failed source aborts an add**; one add at a time (`BUSY`), cap 100. **Nothing may log or rethrow a fetch error's message, URL or token.**
+  Five routes under `/api/admin/band-check/...`; adds go through `staging.insertManualCandidate` / `insertCandidates` as pending, tagged `bandcheck` ("From band check").
+  Tests: `test/bandCheck*.test.js`. Frontend: `components/admin/BandCheck.jsx` (Songs > Band check)
 - **services/inbox.js**: the Submissions Inbox (sub-project C) — `listInbox` (pending, **oldest first**,
   catalogue match flagged with `live`), `acceptSubmission`, `dismissSubmission`. **Accept claims the row
   first** (`approved`, match cleared) and only then bridges via staging, reverting to `pending` if the bridge
@@ -223,7 +231,7 @@ Run before ending every working session:
   as before, so no existing link breaks. All three consume `pages/about/useCodebook.js`, a small
   hook fetching `GET /api/analysis/codebook` once and sharing it across the tabs. Single-consumer
   helpers stay local to their page file
-- **src/components/**: 44 components (27 public + 17 admin; **SpotifySyncCard** on the Dashboard and **SpotifyLists**, the Songs > Spotify sync view) — public (SearchAndFilter,
+- **src/components/**: 45 components (27 public + 18 admin; **BandCheck**, the Songs > Band check view; **SpotifySyncCard** on the Dashboard and **SpotifyLists**, the Songs > Spotify sync view) — public (SearchAndFilter,
   ArtistSearchResults, ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge,
   YouTubeEmbed, **SimilarSongs** (the song page's two embedding tabs + genre fallback), plus
   **`components/explore/`** — `ExploreMap` (hand-rolled canvas scatter, **no charting

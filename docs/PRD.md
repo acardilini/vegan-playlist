@@ -390,6 +390,8 @@ keep/rebuild/drop/defer decisions are recorded in
   Manual (non-Spotify) song add/edit ✅ · Featured toggle ✅.
 - **Spotify playlist sync & validation:** sync playlist, detect mismatches/discrepancies,
   flag removed songs. ✅ (to be re-framed under the truth-source model — see Overview).
+- **Band check (sub-project H):** Songs > Band check; per band, confirm its identity on Spotify / Bandcamp / MusicBrainz, review the merged
+  catalogue (held songs muted), add chosen songs as pending (tagged "From band check"). Built, awaiting smoke.
 - **Spotify sync (sub-project F):** Dashboard card + Songs > Spotify sync lists; **Pull** playlist tracks missing from the
   catalogue as pending (tagged "From Spotify"); **Push** live songs missing from the playlist (add-only, click-only,
   confirm list, possible-duplicate check, per-song "Add anyway"); one-time Spotify sign-in. ✅

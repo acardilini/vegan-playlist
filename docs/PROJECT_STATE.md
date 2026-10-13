@@ -7,7 +7,18 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **END OF SESSION 2026-10-13 - where we stopped.** `main` is at `068cafa`, pushed, clean, backend **303/303** (serial), build clean. Merged and curator-confirmed this
+- **Current session (2026-10-14): Sub-project H - multi-source Band check - BUILT on branch `session-band-check`, NOT merged, awaiting the curator's smoke.**
+  Spec `docs/superpowers/specs/2026-10-13-H-band-check-design.md`, plan `docs/superpowers/plans/2026-10-14-H-band-check.md`. Backend `services/bandCheck/` (Spotify /
+  Bandcamp / MusicBrainz adapters, pure `merge.js`, orchestrator), migration **014** (`artists.bandcamp_url`, `artists.musicbrainz_id`; applied to the dev DB), five routes
+  under `/api/admin/band-check/...`, `staging.insertManualCandidate` + the `bandcheck` origin tag, and the admin view Songs > Band check. **Verified:** backend **341/341**
+  serial; frontend lint 0 errors / 6 pre-existing warnings; build clean (index 765.62 kB). **Live read-only check on Bloodmouth** (real adapters, no DB writes): Spotify 11
+  releases / 43 tracks; Bandcamp (`bloodmouth.bandcamp.com`) 9 releases / 37 tracks parsed fine; MusicBrainz identify returned both same-named bands (US `bd59cf43...`,
+  8 tracks; AU "Vegan" `6d9f3695...`, 36 tracks). Merged Spotify+Bandcamp = 73 songs: 69 new, 4 held (all live, matched by Spotify id), 0 pending/rejected; 36 Spotify-only,
+  37 Bandcamp-only, **0 on both** - because `bloodmouth.bandcamp.com` is evidently the other (US) Bloodmouth, not the vegan AU band: exactly why identity is
+  curator-confirmed. **Curator smoke to do:** Songs > Band check, search Bloodmouth, Identify sources on Spotify / Bandcamp / MusicBrainz (two Bloodmouths on MusicBrainz -
+  pick the right one; find the right Bandcamp), review the merged list, add a couple, see them under To be processed tagged *From band check*, a Bandcamp-only one carrying
+  its Bandcamp link as play link. Then merge. The "END OF SESSION 2026-10-13" bullet below is superseded where it says H's spec awaits review.
+- **END OF SESSION 2026-10-13 - where we stopped.** _(H part superseded 2026-10-14: spec approved, plan written, built.)_ `main` is at `068cafa`, pushed, clean, backend **303/303** (serial), build clean. Merged and curator-confirmed this
   session: **No video available**, **Dormant Spotify + own-site links first**, **Junk-lyrics checker** (+ cleared-lyrics hiding, Explore map eligibility, lyric-similarity
   eligibility, review minors) and the **video picker**. **In flight: sub-project H - Band check.** Brainstorm done, **design spec written and committed on branch
   `session-band-check` (`f26ec1e`, pushed, NOT merged)**: `docs/superpowers/specs/2026-10-13-H-band-check-design.md`. **Awaiting the curator's review of the spec**, then
@@ -727,6 +738,13 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-10-14 (H band check) - decisions.** (1) **Migration 014** adds `artists.bandcamp_url` and `artists.musicbrainz_id` as the curator-confirmed per-source band
+  identity (Spotify reuses `artists.spotify_id`); nothing is guessed from a name match. (2) A Spotify identity can be **replaced, never cleared**, and `spotify_url` is
+  written with the id (+ `data_source='spotify'`, which `artists_source_check` requires); a taken id is `CONFLICT`. (3) **Any failed source aborts an add** - no degraded
+  manual rows built from a partial read. (4) `staging.insertManualCandidate` dedupes with `merge.keyOf` (Unicode-aware; `normalizeName` drops non-ASCII letters), required
+  lazily to avoid a circular require. (5) **Bandcamp is read via the page's embedded JSON-LD** (scraping accepted: no free API); markup changes surface as a coded
+  `UNREADABLE` error and failures are isolated per source, so the other sources still show. MusicBrainz is paced (~1.1s/request) and its recording count was dropped.
 
 - **2026-10-13 (G junk lyrics, follow-up 2) - cleared lyrics hide the analysis; lyric-based similarity follows the map's rule.** A song whose lyrics were
   CLEARED (a blank `song_lyrics` row) but still carries an analysis has that analysis hidden everywhere (`NOT_JUNK` now also matches `btrim(lyrics) = ''`):
@@ -2025,6 +2043,9 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-10-14 (H multi-source Band check BUILT, unmerged)** - branch `session-band-check`; spec, plan, Tasks 1-9 with per-task review. Migration 014; `services/bandCheck/`;
+  five admin routes; Songs > Band check view. Backend 341/341 serial; lint 0 errors; build clean; live read-only Bloodmouth check (73 merged songs, 37 Bandcamp-only). Curator smoke pending.
 
 - **2026-10-13 (G junk-lyrics BUILT, unmerged)** - branch `session-junk-lyrics`; brainstorm, spec, plan, native inline execution (4 task commits).
   Migration 012; detector; service; shared-fragment hiding; Junk lyrics queue + banner. Backend 294/294 serial; lint 0; build clean; live
