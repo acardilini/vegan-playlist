@@ -36,7 +36,12 @@ function LinksPanel({ wb, savePanel, id, reload }) {
     try {
       const r = await adminFetch('/api/admin/spotify/push', { method: 'POST', body: { songIds: [Number(id)] } });
       const d = await r.json().catch(() => ({}));
-      if (r.ok) setPushMsg(d.added && d.added.length ? 'Added to the Spotify playlist.' : 'Already on the playlist.');
+      if (r.ok) {
+        const dup = (d.notEligible || []).find(n => n.reason === 'possible_duplicate');
+        if (d.added && d.added.length) setPushMsg('Added to the Spotify playlist.');
+        else if (dup) setPushMsg(`Not added: the playlist already has "${dup.match.title}" by ${dup.match.artists || 'the same artist'} (a different version).`);
+        else setPushMsg('Already on the playlist.');
+      }
       else if (r.status === 409 && d.error === 'BUSY') setPushMsg('A push is already running — wait a moment and retry.');
       else if (r.status === 409) setPushMsg('Connect Spotify first (Dashboard → Spotify playlist).');
       else setPushMsg(d.message || d.error || 'Push failed.');

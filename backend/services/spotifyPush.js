@@ -2,13 +2,16 @@
 // are missing from it. Add-only and idempotent; never writes the database.
 // SECURITY: errors carry fixed strings + `.code`; never the access token, a request body or a fetch
 // error's message/cause.
-const { fetchPlaylistTracks, getSpotifyClient, DEFAULT_PLAYLIST_ID } = require('../utils/playlistSync');
+const { fetchPlaylistTracksLite, getSpotifyClient, DEFAULT_PLAYLIST_ID } = require('../utils/playlistSync');
+const { normalizeName } = require('./staging'); // the same title/artist normaliser the intake dedupe uses
 
 const API = 'https://api.spotify.com/v1';
 const CHUNK = 100;
 const TIMEOUT_MS = 10000;
 const MAX_429_RETRIES = 3;
+const CACHE_MS = 60 * 1000; // compare's playlist read only; push always reads live
 const MAX_WAIT_S = 30; // longer Retry-After than this: fail fast rather than hang the admin request
+const cache = new Map(); // playlistId -> { at, tracks }
 let pushing = false; // one push at a time, so overlapping requests cannot both POST the same tracks
 
 function coded(code, message) { const e = new Error(message); e.code = code; return e; }
@@ -28,12 +31,26 @@ function chunk(arr, n) {
   return out;
 }
 
-const defaultFetchTracks = async (playlistId) => fetchPlaylistTracks(await getSpotifyClient(), playlistId);
+const defaultFetchTracks = async (playlistId) => fetchPlaylistTracksLite(await getSpotifyClient(), playlistId);
+
+function clearCache() { cache.clear(); }
+
+// Only compare may pass useCache: a push must read the live playlist (that read is what keeps it idempotent).
+async function readTracks(fetchTracks, playlistId, { useCache = false, now = Date.now } = {}) {
+  if (useCache) {
+    const hit = cache.get(playlistId);
+    if (hit && now() - hit.at < CACHE_MS) return hit.tracks;
+  }
+  const tracks = await fetchTracks(playlistId);
+  if (useCache) cache.set(playlistId, { at: now(), tracks });
+  return tracks;
+}
 
 async function loadSongs(pool) {
   return (await pool.query(`
     SELECT s.id, s.title, s.spotify_id, s.status, s.published,
-           COALESCE(string_agg(a.name, ', ' ORDER BY sa.id), '') AS artists
+           COALESCE(string_agg(a.name, ', ' ORDER BY sa.id), '') AS artists,
+           (array_agg(a.name ORDER BY sa.id))[1] AS first_artist
     FROM songs s
     LEFT JOIN song_artists sa ON sa.song_id = s.id
     LEFT JOIN artists a ON a.id = sa.artist_id
@@ -43,25 +60,46 @@ async function loadSongs(pool) {
 const isLive = (s) => s.status === 'included' && s.published === true;
 const brief = (s) => ({ id: s.id, title: s.title, artists: s.artists });
 
+const artistsOf = (t) => (t.artists || []).map((a) => a.name).join(', ');
+// title+first artist, normalised; null when the title normalises to nothing (never match on that)
+const keyOf = (title, artist) => { const t = normalizeName(title); return t ? `${t}|${normalizeName(artist)}` : null; };
+
 function classify(songs, tracks) {
   const onPlaylist = new Set(tracks.map((t) => t.spotify_id));
   const known = new Set(songs.filter((s) => s.spotify_id).map((s) => s.spotify_id));
+  const byKey = new Map();
+  for (const t of tracks) {
+    const k = keyOf(t.title, t.artists && t.artists[0] && t.artists[0].name);
+    if (k && !byKey.has(k)) byKey.set(k, t);
+  }
+  // Same song, different Spotify track id (album vs single, remaster...): not pushable, shown for review.
+  const dupMatch = new Map(); // song id -> matching playlist track
+  const notOnPlaylist = songs.filter((s) => isLive(s) && s.spotify_id && !onPlaylist.has(s.spotify_id));
+  for (const s of notOnPlaylist) {
+    const k = keyOf(s.title, s.first_artist);
+    if (k && byKey.has(k)) dupMatch.set(s.id, byKey.get(k));
+  }
   return {
     onPlaylist,
+    dupMatch,
+    possibleDuplicates: notOnPlaylist.filter((s) => dupMatch.has(s.id)),
     pullable: tracks.filter((t) => !known.has(t.spotify_id)),
-    pushable: songs.filter((s) => isLive(s) && s.spotify_id && !onPlaylist.has(s.spotify_id)),
+    pushable: notOnPlaylist.filter((s) => !dupMatch.has(s.id)),
     noSpotifyId: songs.filter((s) => isLive(s) && !s.spotify_id),
     onPlaylistNotLive: songs.filter((s) => s.spotify_id && onPlaylist.has(s.spotify_id) && !isLive(s)),
   };
 }
 
-async function compare(pool, { playlistId = DEFAULT_PLAYLIST_ID, fetchTracks = defaultFetchTracks } = {}) {
-  const [songs, tracks] = [await loadSongs(pool), await fetchTracks(playlistId)];
+const matchOf = (t) => ({ spotify_id: t.spotify_id, title: t.title, artists: artistsOf(t) });
+
+async function compare(pool, { playlistId = DEFAULT_PLAYLIST_ID, fetchTracks = defaultFetchTracks, useCache = false, now } = {}) {
+  const [songs, tracks] = [await loadSongs(pool), await readTracks(fetchTracks, playlistId, { useCache, now })];
   const c = classify(songs, tracks);
   return {
     playlistTrackCount: tracks.length,
-    pullable: c.pullable.map((t) => ({ spotify_id: t.spotify_id, title: t.title, artists: (t.artists || []).map((a) => a.name).join(', ') })),
+    pullable: c.pullable.map(matchOf),
     pushable: c.pushable.map(brief),
+    possibleDuplicates: c.possibleDuplicates.map((s) => ({ ...brief(s), match: matchOf(c.dupMatch.get(s.id)) })),
     noSpotifyId: c.noSpotifyId.map(brief),
     onPlaylistNotLive: c.onPlaylistNotLive.map((s) => ({ ...brief(s), status: s.status, published: s.published })),
   };
@@ -106,7 +144,7 @@ async function pushSongsUnguarded(pool, { songIds, accessToken, playlistId = DEF
   const ids = songIds === undefined ? undefined : parseSongIds(songIds);
   const songs = await loadSongs(pool);
   const tracks = await fetchTracks(playlistId);
-  const onPlaylist = new Set(tracks.map((t) => t.spotify_id));
+  const { onPlaylist, dupMatch } = classify(songs, tracks);
 
   let pool_ = songs;
   const notEligible = [];
@@ -118,10 +156,12 @@ async function pushSongsUnguarded(pool, { songIds, accessToken, playlistId = DEF
       if (!s) notEligible.push({ id, reason: 'not_found' });
       else if (!isLive(s)) notEligible.push({ id, reason: 'not_live' });
       else if (!s.spotify_id) notEligible.push({ id, reason: 'no_spotify_id' });
+      else if (dupMatch.has(id)) notEligible.push({ id, reason: 'possible_duplicate', match: matchOf(dupMatch.get(id)) });
       else pool_.push(s);
     }
   }
-  const eligible = pool_.filter((s) => isLive(s) && s.spotify_id);
+  // A bulk push skips possible duplicates too (explicit ids were already screened above).
+  const eligible = pool_.filter((s) => isLive(s) && s.spotify_id && !dupMatch.has(s.id));
   const alreadyThere = eligible.filter((s) => onPlaylist.has(s.spotify_id)).length;
   const bySpotify = new Map();
   for (const s of eligible) if (!onPlaylist.has(s.spotify_id) && !bySpotify.has(s.spotify_id)) bySpotify.set(s.spotify_id, s);
@@ -144,7 +184,7 @@ async function pushSongsUnguarded(pool, { songIds, accessToken, playlistId = DEF
 async function pushSongs(pool, opts) {
   if (pushing) throw coded('BUSY', 'A push is already running');
   pushing = true;
-  try { return await pushSongsUnguarded(pool, opts); } finally { pushing = false; }
+  try { return await pushSongsUnguarded(pool, opts); } finally { pushing = false; clearCache(); } // the playlist changed (or may have)
 }
 
-module.exports = { parseSongIds, chunk, compare, pushSongs, _addUris: addUris };
+module.exports = { parseSongIds, chunk, compare, pushSongs, clearCache, _addUris: addUris };

@@ -1445,7 +1445,9 @@ router.get('/spotify-playlist-mismatch', async (req, res) => {
 // Spotify sync (sub-project F): live comparison + add-only push. Pull reuses POST /sync-spotify-playlist.
 router.get('/spotify/compare', async (req, res) => {
   try {
-    res.json({ success: true, connected: spotifyAuth.status().connected, ...(await spotifyPush.compare(pool)) });
+    // The playlist read is cached for 60s (the card and the Songs > Spotify lists share it); ?fresh=1 forces a live read.
+    const useCache = req.query.fresh !== '1';
+    res.json({ success: true, connected: spotifyAuth.status().connected, ...(await spotifyPush.compare(pool, { useCache })) });
   } catch (e) {
     console.error('spotify compare error:', e.code || 'error'); // never e.message
     res.status(502).json({ error: 'Failed to read the Spotify playlist' });

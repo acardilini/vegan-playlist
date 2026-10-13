@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 
 const RETURN_MSG = {
@@ -25,8 +26,9 @@ function SpotifySyncCard() {
   const [confirming, setConfirming] = useState(false);
   const [needsReconnect, setNeedsReconnect] = useState(false);
 
-  const load = useCallback(() => (
-    adminFetch('/api/admin/spotify/compare')
+  // fresh=true skips the server's 60s playlist cache (the Refresh button)
+  const load = useCallback((fresh = false) => (
+    adminFetch(`/api/admin/spotify/compare${fresh === true ? '?fresh=1' : ''}`)
       .then(r => (r.ok ? r.json() : Promise.reject(new Error('compare failed'))))
       .then(d => { setData(d); setError(''); })
       .catch(() => { setData(null); setError("Couldn't read the Spotify playlist"); })
@@ -88,35 +90,41 @@ function SpotifySyncCard() {
   if (error) return <p className="queue-empty">{error}</p>;
   if (!data) return <p className="dash-health">·</p>;
 
-  const { pullable = [], pushable = [], noSpotifyId = [], onPlaylistNotLive = [] } = data;
+  const { pullable = [], pushable = [], possibleDuplicates = [], noSpotifyId = [], onPlaylistNotLive = [] } = data;
+  const listLink = (list) => `/admin/songs?queue=spotify&list=${list}`;
 
   return (
     <div className="spotify-sync">
       {msg && <div className="modal-result">{msg}</div>}
 
       <p className="dash-health">
-        {data.connected && !needsReconnect && 'Spotify connected'}
+        {data.connected && !needsReconnect && 'Spotify connected '}
         {(!data.connected || needsReconnect) && (
           <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={connect}>
             {data.connected ? 'Reconnect Spotify' : 'Connect Spotify'}
           </button>
-        )}
+        )}{' '}
+        <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => load(true)}>Refresh</button>
       </p>
 
       <p className="dash-health">
-        {pullable.length} on the playlist, not on the site{' '}
+        <Link to={listLink('pull')}>{pullable.length} on the playlist, not on the site</Link>{' '}
         <button type="button" className="btn btn-secondary btn-sm" disabled={busy || pullable.length === 0} onClick={pull}>
           Pull {pullable.length} as pending
         </button>
       </p>
 
       <p className="dash-health">
-        {pushable.length} live songs not on the playlist{' '}
+        <Link to={listLink('push')}>{pushable.length} live songs not on the playlist</Link>{' '}
         <button type="button" className="btn btn-secondary btn-sm"
           disabled={busy || pushable.length === 0 || !data.connected} onClick={() => setConfirming(true)}>
           Push {pushable.length} to Spotify
         </button>
       </p>
+
+      {possibleDuplicates.length > 0 && (
+        <p className="dash-health"><Link to={listLink('duplicates')}>{possibleDuplicates.length} live songs look like they&rsquo;re already on the playlist (a different version)</Link></p>
+      )}
 
       {confirming && (
         <div>
@@ -129,10 +137,10 @@ function SpotifySyncCard() {
       )}
 
       {noSpotifyId.length > 0 && (
-        <p className="dash-health">{noSpotifyId.length} live songs have no Spotify link (can&rsquo;t be pushed)</p>
+        <p className="dash-health"><Link to={listLink('no-link')}>{noSpotifyId.length} live songs have no Spotify link</Link> (can&rsquo;t be pushed)</p>
       )}
       {onPlaylistNotLive.length > 0 && (
-        <p className="dash-health">{onPlaylistNotLive.length} on the playlist but not live</p>
+        <p className="dash-health"><Link to={listLink('not-live')}>{onPlaylistNotLive.length} on the playlist but not live</Link></p>
       )}
     </div>
   );

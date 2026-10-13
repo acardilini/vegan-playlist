@@ -11,6 +11,7 @@ const GROUPS = [
   ['Parked', [['to-transcribe', 'To transcribe', false], ['lyrics-on-hold', 'Lyrics on hold', false], ['remind-later', 'Remind me later', false]]],
   ['Publish', [['to-finalise', 'To finalise', false], ['live', 'Live', false], ['featured', 'Featured', false]]],
   ['Everything', [['all', 'All songs', false]]],
+  ['Spotify', [['spotify', 'Spotify sync', false, true]]], // 4th slot: no count (it is not a queue)
 ];
 
 function QueueRail({ counts, activeQueue, onSelect }) {
@@ -19,7 +20,7 @@ function QueueRail({ counts, activeQueue, onSelect }) {
       {GROUPS.map(([group, items]) => (
         <div key={group}>
           <div className="rail-group">{group}</div>
-          {items.map(([key, label, disabled]) => (
+          {items.map(([key, label, disabled, noCount]) => (
             <button
               key={key}
               className={`queue-item ${activeQueue === key ? 'active' : ''}`}
@@ -27,7 +28,7 @@ function QueueRail({ counts, activeQueue, onSelect }) {
               onClick={() => !disabled && onSelect(key)}
             >
               <span>{label}</span>
-              <span className="queue-count">{counts ? (counts[key] ?? 0) : '·'}</span>
+              {!noCount && <span className="queue-count">{counts ? (counts[key] ?? 0) : '·'}</span>}
             </button>
           ))}
         </div>

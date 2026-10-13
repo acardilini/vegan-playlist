@@ -4,13 +4,13 @@ const pool = require('../database/db');
 const push = require('../services/spotifyPush');
 
 // Unique fixture sentinel for this file: ZZZPUSH. No network: fetchTracks/fetchImpl/sleep are injected.
-let live, live2, unpub, rejected, nospot, onPlaylistRejected;
+let live, live2, unpub, rejected, nospot, onPlaylistRejected, dupSong, notDup;
 
-async function mk(title, { sid, status = 'included', published = true }) {
+async function mk(title, { sid, status = 'included', published = true, artist = null }) {
   const s = (await pool.query(
     `INSERT INTO songs (title, spotify_id, status, published, data_source) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
     [title, sid, status, published, sid ? 'spotify' : 'manual'])).rows[0];
-  const a = (await pool.query(`INSERT INTO artists (name, data_source) VALUES ($1,'manual') RETURNING id`, [`ZZZPUSH Artist ${title}`])).rows[0];
+  const a = (await pool.query(`INSERT INTO artists (name, data_source) VALUES ($1,'manual') RETURNING id`, [artist || `ZZZPUSH Artist ${title}`])).rows[0];
   await pool.query(`INSERT INTO song_artists (song_id, artist_id) VALUES ($1,$2)`, [s.id, a.id]);
   return s.id;
 }
@@ -21,6 +21,8 @@ before(async () => {
   rejected = await mk('ZZZPUSH rejected', { sid: 'ZZZPUSH_rej', status: 'rejected', published: false });
   nospot = await mk('ZZZPUSH nospot', { sid: null });
   onPlaylistRejected = await mk('ZZZPUSH onpl', { sid: 'ZZZPUSH_onpl', status: 'rejected', published: false });
+  dupSong = await mk('ZZZPUSH Dup Song', { sid: 'ZZZPUSH_dup', artist: 'ZZZPUSH Dupartist' });
+  notDup = await mk('ZZZPUSH Dup Song', { sid: 'ZZZPUSH_notdup', artist: 'ZZZPUSH Otherartist' });
 });
 after(async () => {
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZPUSH%'`);
@@ -63,7 +65,7 @@ test('compare buckets: pullable / pushable / noSpotifyId / onPlaylistNotLive', a
   });
   assert.equal(r.playlistTrackCount, 3);
   assert.deepEqual(ours(r.pullable).map((x) => x.title), ['ZZZPUSH brandnew']);
-  assert.deepEqual(ours(r.pushable).map((x) => x.id), [live], 'live2 is already on the playlist; unpublished/rejected are not pushable');
+  assert.deepEqual(ours(r.pushable).map((x) => x.id).filter((id) => [live, live2, unpub, rejected].includes(id)), [live], 'live2 is already on the playlist; unpublished/rejected are not pushable');
   assert.deepEqual(ours(r.noSpotifyId).map((x) => x.id), [nospot]);
   assert.deepEqual(ours(r.onPlaylistNotLive).map((x) => x.id), [onPlaylistRejected]);
 });
@@ -169,4 +171,69 @@ test('concurrent pushSongs: second call is BUSY, guard releases after success an
   await assert.rejects(() => push.pushSongs(pool, { songIds: [live], accessToken: 'T', fetchTracks: fetchTracksOf(), fetchImpl: fakeFetch([403]), sleep: noSleep }), { code: 'FORBIDDEN' });
   await assert.rejects(() => push.pushSongs(pool, { songIds: [], accessToken: 'T', fetchTracks: fetchTracksOf() }), { code: 'BAD_INPUT' });
   await push.pushSongs(pool, { songIds: [live], accessToken: 'T', fetchTracks: fetchTracksOf(track('ZZZPUSH_live')), fetchImpl: fakeFetch(), sleep: noSleep });
+});
+
+// --- duplicate check (same song, different Spotify track id) and the compare cache ---
+const dupTrack = { spotify_id: 'ZZZPUSH_dupother', title: 'ZZZPUSH Dup Song - Remastered', artists: [{ name: 'ZZZPUSH Dupartist' }] };
+const dupMatch = { spotify_id: 'ZZZPUSH_dupother', title: 'ZZZPUSH Dup Song - Remastered', artists: 'ZZZPUSH Dupartist' };
+
+test('compare: a live song whose title+first artist is already on the playlist under another track id is a possible duplicate, not pushable', async () => {
+  const r = await push.compare(pool, { fetchTracks: fetchTracksOf(dupTrack) });
+  assert.ok(!r.pushable.some((x) => x.id === dupSong), 'duplicate must leave the push list');
+  const d = r.possibleDuplicates.find((x) => x.id === dupSong);
+  assert.ok(d, 'listed as a possible duplicate');
+  assert.deepEqual(d.match, dupMatch);
+  assert.ok(r.pushable.some((x) => x.id === notDup), 'same title by a different artist is NOT a duplicate');
+});
+
+test('compare: a song that is itself on the playlist (same id) is not reported as a duplicate', async () => {
+  const r = await push.compare(pool, { fetchTracks: fetchTracksOf({ ...dupTrack, spotify_id: 'ZZZPUSH_dup' }) });
+  assert.ok(!r.possibleDuplicates.some((x) => x.id === dupSong));
+  assert.ok(!r.pushable.some((x) => x.id === dupSong));
+});
+
+test('bulk push (no songIds) skips possible duplicates but still adds the rest', async () => {
+  const f = fakeFetch();
+  const r = await push.pushSongs(pool, { accessToken: 'T', fetchTracks: fetchTracksOf(dupTrack), fetchImpl: f, sleep: noSleep });
+  const uris = f.calls.flatMap((c) => c.uris);
+  assert.ok(!uris.includes('spotify:track:ZZZPUSH_dup'), 'duplicate not pushed');
+  assert.ok(uris.includes('spotify:track:ZZZPUSH_notdup'), 'non-duplicate pushed');
+  assert.ok(!r.added.some((x) => x.id === dupSong));
+});
+
+test('explicit push of a possible duplicate is refused with the match, and nothing is POSTed', async () => {
+  const f = fakeFetch();
+  const r = await push.pushSongs(pool, { songIds: [dupSong], accessToken: 'T', fetchTracks: fetchTracksOf(dupTrack), fetchImpl: f, sleep: noSleep });
+  assert.deepEqual(r.added, []);
+  assert.deepEqual(r.notEligible, [{ id: dupSong, reason: 'possible_duplicate', match: dupMatch }]);
+  assert.equal(f.calls.length, 0);
+});
+
+test('compare cache: useCache reuses the playlist read for 60s, expires after, and false bypasses', async () => {
+  push.clearCache();
+  let reads = 0;
+  const fetchTracks = async () => { reads++; return []; };
+  let t = 1000;
+  const opts = { fetchTracks, useCache: true, now: () => t };
+  await push.compare(pool, opts); await push.compare(pool, opts);
+  assert.equal(reads, 1, 'second call served from cache');
+  t += 60_001;
+  await push.compare(pool, opts);
+  assert.equal(reads, 2, 'expired after 60s');
+  await push.compare(pool, { ...opts, useCache: false });
+  assert.equal(reads, 3, 'useCache:false always reads live');
+  push.clearCache();
+});
+
+test('push never uses the cache (it must read the live playlist) and clears it afterwards', async () => {
+  push.clearCache();
+  let reads = 0;
+  const fetchTracks = async () => { reads++; return []; };
+  await push.compare(pool, { fetchTracks, useCache: true });
+  assert.equal(reads, 1);
+  await push.pushSongs(pool, { songIds: [live], accessToken: 'T', fetchTracks, fetchImpl: fakeFetch(), sleep: noSleep });
+  assert.equal(reads, 2, 'push did its own live read');
+  await push.compare(pool, { fetchTracks, useCache: true });
+  assert.equal(reads, 3, 'cache was cleared by the push, so compare re-read');
+  push.clearCache();
 });

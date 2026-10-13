@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 
 const PAGE_SIZE = 50;
+const ORIGIN_LABELS = { spotify: 'From Spotify', submission: 'From submit form' };
 
 const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
@@ -86,6 +87,7 @@ function SongQueueList({ queue, refreshKey }) {
               </span>
               <span className={`queue-status ${statusClass(row)}`}>{statusLabel(row)}</span>
               {row.featured && <span className="featured-badge">Featured</span>}
+              {ORIGIN_LABELS[row.origin] && <span className="origin-tag">{ORIGIN_LABELS[row.origin]}</span>}
               <span className="miss-chips">
                 {(row.missing || []).map(m => (
                   <span key={m} className="miss-chip warn">no {m}</span>

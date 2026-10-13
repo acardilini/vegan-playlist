@@ -79,6 +79,33 @@ async function fetchPlaylistTracks(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID)
   return tracks;
 }
 
+// Slim read for comparison/push (sub-project F): only id, title and artist names, and the pages after
+// the first fetched in parallel (the full read above is 13 sequential pages of album objects ~7s for
+// 1,200 tracks). Order is preserved. Any failing page rejects — a silently partial playlist would make
+// push think tracks are missing and add them again.
+const LITE_FIELDS = 'total,items(track(id,name,artists(name)))';
+const LITE_CONCURRENCY = 4;
+async function fetchPlaylistTracksLite(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID) {
+  const page = (offset) => withRetry(() => spotifyApi.getPlaylistTracks(playlistId, { offset, limit: 100, fields: LITE_FIELDS }));
+  const first = await page(0);
+  const total = first.body.total || 0;
+  const pages = [first];
+  const offsets = [];
+  for (let o = 100; o < total; o += 100) offsets.push(o);
+  for (let i = 0; i < offsets.length; i += LITE_CONCURRENCY) {
+    pages.push(...await Promise.all(offsets.slice(i, i + LITE_CONCURRENCY).map(page)));
+  }
+  const tracks = [];
+  for (const p of pages) {
+    for (const item of p.body.items) {
+      const t = item.track;
+      if (!t || !t.id) continue; // local files / unavailable tracks
+      tracks.push({ spotify_id: t.id, title: t.name, artists: (t.artists || []).map(a => ({ name: a.name })) });
+    }
+  }
+  return tracks;
+}
+
 // Import-only diff between the playlist and the whole catalogue (all statuses).
 async function computeDiff(pool, tracks) {
   const dbSongs = (await pool.query(`
@@ -186,6 +213,7 @@ module.exports = {
   getSpotifyClient,
   withRetry,
   fetchPlaylistTracks,
+  fetchPlaylistTracksLite,
   computeDiff,
   addTracksAsPending,
   upsertAlbum,

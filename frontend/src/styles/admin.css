@@ -168,3 +168,12 @@
 
 .wb-lyric-search { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
 .wb-hold-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* Spotify sync (sub-project F): origin tag on queue rows, and the Songs > Spotify list tabs */
+.origin-tag { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); color: var(--accent-moss-60); border: 1px solid var(--accent-moss-60); white-space: nowrap; }
+.spotify-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.song-row.spotify-static { cursor: default; }
+.song-row.spotify-static:hover { background: none; }
+.song-row .song-meta.stacked { display: flex; flex-direction: column; }
+.song-row.spotify-row { min-width: 0; }
+.song-row .song-meta.stacked { align-items: flex-start; text-align: left; }
