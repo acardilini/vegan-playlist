@@ -95,7 +95,7 @@ async function setPlayLink(db, id, { bandcamp_url, soundcloud_url } = {}) {
   return r.rows[0];
 }
 
-async function insertCandidates(db, tracks) {
+async function insertCandidates(db, tracks, { note } = {}) {
   const existing = (await db.query(`
     SELECT s.spotify_id, s.title, COALESCE(string_agg(a.name, ', '), '') AS artists
     FROM songs s
@@ -117,8 +117,34 @@ async function insertCandidates(db, tracks) {
     seenTA.add(ta);
     toAdd.push(t);
   }
-  const added = await addTracksAsPending(db, toAdd, 'added as candidate via staging intake');
+  const added = await addTracksAsPending(db, toAdd, note || 'added as candidate via staging intake');
   return { added, skippedExisting };
+}
+
+// Band check: a song found on Bandcamp / MusicBrainz but not on Spotify. A minimal manual pending song linked to the
+// band's EXISTING artist row (same shape the submissions bridge creates). Dedupes against the band's own songs by
+// Unicode-aware title key (or identical bandcamp_url), like insertCandidates' title|artist net.
+async function insertManualCandidate(db, { title, artistId, bandcamp_url = null, note }) {
+  const clean = String(title || '').trim();
+  if (!clean || !Number.isInteger(artistId)) { const e = new Error('title and artistId required'); e.code = 'BAD_INPUT'; throw e; }
+  // Lazy require: bandCheck/merge.js requires this module, so a top-level require would be circular.
+  const { keyOf } = require('./bandCheck/merge');
+  const nt = keyOf(clean);
+  const existing = (await db.query(
+    `SELECT s.title, s.bandcamp_url FROM songs s JOIN song_artists sa ON sa.song_id=s.id WHERE sa.artist_id=$1`, [artistId])).rows;
+  if (existing.some(e => keyOf(e.title) === nt || (bandcamp_url && e.bandcamp_url === bandcamp_url))) {
+    return { added: 0, skippedExisting: 1, song_id: null };
+  }
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const song = await client.query(
+      `INSERT INTO songs (title, bandcamp_url, data_source, status, status_notes) VALUES ($1,$2,'manual','pending',$3) RETURNING id`,
+      [clean, bandcamp_url, note || 'added via band check']);
+    await client.query(`INSERT INTO song_artists (song_id, artist_id) VALUES ($1,$2)`, [song.rows[0].id, artistId]);
+    await client.query('COMMIT');
+    return { added: 1, skippedExisting: 0, song_id: song.rows[0].id };
+  } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
 }
 
 // 'https://open.spotify.com/track/ID', 'spotify:playlist:ID', or a bare 22-char id (assumed track)
@@ -271,7 +297,7 @@ async function addSubmissionAsPending(db, submissionId) {
 }
 
 module.exports = {
-  normalizeName, listQueue, includeSong, rejectSong, setPlayLink, insertCandidates,
+  normalizeName, listQueue, includeSong, rejectSong, setPlayLink, insertCandidates, insertManualCandidate,
   resolveSpotifyUrls, attachSpotifyToSong, parseSpotifyRef, addSubmissionAsPending,
   mapTrack,
 };
