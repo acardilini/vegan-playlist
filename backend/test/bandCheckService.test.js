@@ -16,12 +16,13 @@ async function mkSong(artistId, title, { status = 'included', published = true, 
   await pool.query(`INSERT INTO song_artists (song_id, artist_id) VALUES ($1,$2)`, [id, artistId]);
   return id;
 }
-after(async () => {
+async function clean() {
   await pool.query(`DELETE FROM song_artists WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZBANDSVC%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZBANDSVC%'`);
   await pool.query(`DELETE FROM artists WHERE name LIKE 'ZZZBANDSVC%'`);
-  await pool.end();
-});
+}
+test('pre-clean leftovers from a crashed run', clean);
+after(async () => { await clean(); await pool.end(); });
 
 test('listBands: searches by name, counts songs and live songs, reports identity flags, pages', async () => {
   const a = await mkArtist('ZZZBANDSVC Alpha');
@@ -41,10 +42,16 @@ test('saveIdentity writes only the matching column, validates, clears bandcamp/m
   const a = await mkArtist('ZZZBANDSVC Ident');
   let id = await svc.saveIdentity(pool, a, 'musicbrainz', MB);
   assert.equal(id.musicbrainz, MB);
+  id = await svc.saveIdentity(pool, a, 'musicbrainz', MB.replace(/[a-f]/g, 'A').toUpperCase());
+  assert.equal(id.musicbrainz, MB);
   id = await svc.saveIdentity(pool, a, 'bandcamp', 'https://ZZZBANDSVC.bandcamp.com/album/x');
   assert.equal(id.bandcamp, 'https://zzzbandsvc.bandcamp.com');
   id = await svc.saveIdentity(pool, a, 'spotify', SP2);
   assert.equal(id.spotify, SP2);
+  id = await svc.saveIdentity(pool, a, 'spotify', SP1);
+  assert.equal((await pool.query(`SELECT spotify_url FROM artists WHERE id=$1`, [a])).rows[0].spotify_url.endsWith(SP1), true);
+  id = await svc.saveIdentity(pool, a, 'spotify', SP2);
+  assert.ok((await pool.query(`SELECT spotify_url FROM artists WHERE id=$1`, [a])).rows[0].spotify_url.endsWith(SP2)); // replaced, not stale
   assert.equal((await pool.query(`SELECT data_source FROM artists WHERE id=$1`, [a])).rows[0].data_source, 'spotify');
   id = await svc.saveIdentity(pool, a, 'musicbrainz', null);
   assert.equal(id.musicbrainz, null);
@@ -60,7 +67,7 @@ test('saveIdentity refuses a Spotify id that belongs to a different artist row',
   const mine = await mkArtist('ZZZBANDSVC Claimer');
   await assert.rejects(svc.saveIdentity(pool, mine, 'spotify', 'ZZZBANDSVCcccccccccccc'), (e) => e.code === 'CONFLICT');
   assert.equal((await pool.query(`SELECT spotify_id FROM artists WHERE id=$1`, [mine])).rows[0].spotify_id, null);
-  assert.ok(other);
+  assert.equal((await pool.query(`SELECT spotify_id FROM artists WHERE id=$1`, [other])).rows[0].spotify_id, 'ZZZBANDSVCcccccccccccc');
 });
 
 test('identifyCandidates: spotify/musicbrainz delegate with the band name by default; bandcamp merges song links and the MusicBrainz link', async () => {

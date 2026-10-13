@@ -53,9 +53,10 @@ async function loadArtist(db, artistId) {
 
 function identityOf(a) { return { spotify: a.spotify_id || null, bandcamp: a.bandcamp_url || null, musicbrainz: a.musicbrainz_id || null }; }
 
-async function identifyCandidates(db, artistId, source, { query, adapters = defaultAdapters() } = {}) {
+async function identifyCandidates(db, artistId, source, { query, adapters } = {}) {
   if (!SOURCES.includes(source)) throw coded('BAD_INPUT', 'Unknown source');
   const artist = await loadArtist(db, artistId);
+  adapters = adapters || defaultAdapters();
   const q = (query && String(query).trim()) || artist.name;
   if (source !== 'bandcamp') return adapters[source].identify(q);
 
@@ -84,11 +85,16 @@ async function saveIdentity(db, artistId, source, value) {
     const taken = (await db.query(`SELECT id FROM artists WHERE spotify_id=$1 AND id<>$2`, [value, artistId])).rows[0];
     if (taken) throw coded('CONFLICT', 'Another artist in the catalogue already has that Spotify id');
     // artists_source_check ties spotify_id to data_source='spotify'
-    await db.query(`UPDATE artists SET spotify_id=$2, spotify_url=COALESCE(spotify_url, $3), data_source='spotify', updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
-      [artistId, value, `https://open.spotify.com/artist/${value}`]);
+    try {
+      await db.query(`UPDATE artists SET spotify_id=$2, spotify_url=$3, data_source='spotify', updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+        [artistId, value, `https://open.spotify.com/artist/${value}`]);
+    } catch (e) {
+      if (e && e.code === '23505') throw coded('CONFLICT', 'Another artist in the catalogue already has that Spotify id');
+      throw e;
+    }
   } else if (source === 'musicbrainz') {
     if (value !== null && !(typeof value === 'string' && UUID.test(value))) throw coded('BAD_INPUT', 'That is not a MusicBrainz id');
-    await db.query(`UPDATE artists SET musicbrainz_id=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, [artistId, value]);
+    await db.query(`UPDATE artists SET musicbrainz_id=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, [artistId, value === null ? null : value.toLowerCase()]);
   } else {
     const origin = value === null ? null : normalizeBandcampOrigin(value);
     if (value !== null && !origin) throw coded('BAD_INPUT', 'Paste a https://<name>.bandcamp.com address');
