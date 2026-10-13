@@ -186,7 +186,20 @@ test('addSelected: an overlapping add is BUSY', async () => {
   const gate = new Promise(r => { release = r; });
   const slow = { spotify: { fetchCatalogue: async () => { await gate; return SPOT; } } };
   const first = svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters: slow });
-  await assert.rejects(svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters: slow }), (e) => e.code === 'BUSY');
-  release();
-  await first;
+  try {
+    await assert.rejects(svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters: slow }), (e) => e.code === 'BUSY');
+  } finally { release(); }
+  const r = await first;
+  assert.equal(typeof r.added, 'number');
+});
+
+test('addSelected: a failing source aborts before any write, with its code, and releases the lock', async () => {
+  svc._resetForTests();
+  const { a } = await mergedBand();
+  const bad = fakeAdapters({ spotify: Object.assign(new Error('x'), { code: 'RATE_LIMITED' }), bandcamp: BAND });
+  await assert.rejects(svc.addSelected(pool, a, ['zzzbandsvc fresh', 'zzzbandsvc bandcamp only'], { adapters: bad }), (e) => e.code === 'RATE_LIMITED');
+  const n = (await pool.query(`SELECT count(*)::int n FROM songs WHERE title IN ('ZZZBANDSVC Fresh','ZZZBANDSVC Bandcamp Only')`)).rows[0].n;
+  assert.equal(n, 0);
+  const ok = await svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters: fakeAdapters({ spotify: SPOT, bandcamp: BAND }) });
+  assert.equal(ok.added, 1);
 });

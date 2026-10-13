@@ -115,6 +115,7 @@ async function readSource(adapter, artistId, source, value, { fresh, now }) {
   const key = `${artistId}:${source}:${value}`;
   const hit = cache.get(key);
   if (!fresh && hit && now() - hit.at < CACHE_MS) return hit.catalogue;
+  if (hit) cache.delete(key);
   const catalogue = await adapter.fetchCatalogue(value);
   cache.set(key, { at: now(), catalogue });
   return catalogue;
@@ -188,7 +189,10 @@ async function addSelected(db, artistId, keys, { adapters } = {}) {
   try {
     const artist = await loadArtist(db, artistId);
     adapters = adapters || defaultAdapters();
-    const { songs } = await loadMerged(db, artist, { adapters, fresh: true, now: Date.now });
+    const { sources, songs } = await loadMerged(db, artist, { adapters, fresh: true, now: Date.now });
+    // a half-read catalogue would send Spotify songs down the manual path: fail before writing anything, so the curator can retry
+    const failed = Object.values(sources).find(s => s.status === 'error');
+    if (failed) throw coded(failed.code, failed.message);
     const byKey = new Map(songs.map(s => [s.key, s]));
     let skippedExisting = 0, notFound = 0, added = 0;
     const picked = [];
