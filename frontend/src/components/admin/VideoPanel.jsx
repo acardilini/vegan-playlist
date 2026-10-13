@@ -123,6 +123,20 @@ function VideoPanel({ wb, id, reload }) {
     } catch { setMsg('Request failed'); setStatus('error'); }
   };
 
+  const markNoVideo = async (display) => {
+    const forId = id;
+    setMsg(''); setStatus('saving');
+    try {
+      const r = await adminFetch(`/api/admin/workbench/${forId}/no-video`, { method: 'PUT', body: { display } });
+      if (idRef.current !== forId) return;
+      if (r.ok) { setStatus('saved'); reload(); } else {
+        const d = await r.json().catch(() => ({}));
+        setMsg(d.error || 'Save failed');
+        setStatus('error');
+      }
+    } catch { if (idRef.current === forId) { setMsg('Request failed'); setStatus('error'); } }
+  };
+
   const videos = wb.videos || [];
   const artist = (wb.artists || []).map((a) => a.name).join(' ');
   // After a Find-videos search the fallback link reuses that exact query, so the two never disagree.
@@ -175,7 +189,18 @@ function VideoPanel({ wb, id, reload }) {
         </div>
       )}
 
-      {videos.length === 0 ? <p className="admin-stub">No videos yet.</p> : (
+      {videos.length === 0 && (
+        <div className="wb-novideo">
+          <span className="wb-field-label">No video available:</span>
+          <button type="button" className={`btn btn-sm ${wb.no_video_display === 'cover' ? 'btn-primary' : 'btn-secondary'}`}
+            aria-pressed={wb.no_video_display === 'cover'} onClick={() => markNoVideo('cover')}>Show album cover</button>
+          <button type="button" className={`btn btn-sm ${wb.no_video_display === 'hide' ? 'btn-primary' : 'btn-secondary'}`}
+            aria-pressed={wb.no_video_display === 'hide'} onClick={() => markNoVideo('hide')}>Hide video section</button>
+          {wb.no_video_display && <button type="button" className="btn btn-ghost btn-sm" onClick={() => markNoVideo(null)}>Clear</button>}
+        </div>
+      )}
+
+      {videos.length === 0 ? <p className="admin-stub">{wb.no_video_display ? 'Marked as having no video — it is out of the Needs video queue.' : 'No videos yet.'}</p> : (
         <ul className="wb-videos">
           {videos.map((v) => (
             <li key={v.id}>

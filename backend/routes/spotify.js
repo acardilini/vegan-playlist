@@ -235,6 +235,7 @@ router.get('/songs/:id', async (req, res) => {
         s.lyrics_source,
         s.lyrics_highlights,
         s.language,
+        s.no_video_display,
         al.name as album_name,
         al.release_date,
         al.images as album_images,

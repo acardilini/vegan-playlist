@@ -7,6 +7,15 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
+- **Current session (2026-10-13, later): "No video available" - BUILT on branch `session-no-video`, NOT yet merged / curator-smoked.**
+  Video panel gains **No video available: Show album cover / Hide video section / Clear** (shown only while the song has no videos).
+  Marked songs leave **Needs video** (and its Dashboard count) and appear in a new rail queue **No video available**, so the dozens the
+  curator had ruled out stop clogging the top. New column `songs.no_video_display` (`hide`|`cover`|NULL; migration **010**, applied to the
+  dev DB), exposed by the public song read. Song page: video plays if one exists; else `cover` shows the album art in a 16:9 slot, `hide`
+  omits the section, unmarked keeps the old message. **Verified:** backend **275/275** run serially (3 new tests; a plain parallel
+  `node --test` shows flaky count races between files, e.g. queue counts vs list lengths); lint 0 errors; build clean; live API check on
+  a real song (counts moved, public API served the value) and the song page rendered in the browser for both `cover` and `hide`, then
+  restored. **Not checked:** the admin Video panel buttons in a browser (admin login is password-gated; curator to smoke).
 - **Current session (2026-10-13): Sub-project F — Spotify sync — BUILT, curator-smoked (connect, counts, a real push: "it worked") and MERGED to `main` (merge `3edac04`, no-ff); merged `main` re-verified backend 272/272, build clean.**
   Branch `session-F-spotify-push` (from `main` at `ddc5304`; spec `80e5c9a`, plan `8ec9bdb`, tasks `b9d9174`..`a2dfd5d`, smoke
   follow-ups `bfa2d00` + review fixes `731818d`). The website stays master. **Pull** (the existing import-only sync, which had *no UI and
@@ -437,6 +446,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **⏭ NEXT (2026-10-13, later): "No video available" is BUILT on `session-no-video`, awaiting the curator's smoke, then merge.** Smoke:
+> Admin -> Songs -> Needs video -> open a song -> **Show album cover** (it leaves the queue, shows under **No video available**) -> open
+> its public page; try **Hide video section** and **Clear**. Apply migration 010 on any other DB first. Remaining logged requests: the
+> **band/album catalogue checker** and **junk-lyrics flagging**.
 > **⏭ NEXT (2026-10-13): sub-project F is MERGED (`3edac04`).** Next: the logged
 > requests: the Video panel's **"no video available"** option (and what the song page shows in that slot), the **band/album
 > catalogue checker**, and **junk-lyrics flagging** (needs its own brainstorm; see the 2026-10-12 note below).
@@ -667,6 +680,11 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-10-13 ("No video available") - the mark lives on `songs`, not `song_processing`, and is ignored once a video exists.** The song page
+  must read it, and `song_processing` is curation-only state kept off the public path. A marked song that later gains a video is in
+  neither video queue (both queues require no `youtube_videos` row) and the page plays the video, so nothing needs clearing. `setNoVideo`
+  refuses to mark a song that already has a video. The `cover` option repeats the hero art further down the page; the curator chose to
+  keep both options (`cover` / `hide`) knowingly.
 - **2026-10-13 (sub-project F follow-up) - duplicate check, cache and tag semantics.** The curator's smoke showed the push list
   offering songs the playlist already carries as a *different Spotify track id*. **Possible duplicate** = same
   `staging.normalizeName` title + first artist as a playlist track with another id. `normalizeName` is reused deliberately (it is what
@@ -1923,6 +1941,9 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-10-13 ("No video available" BUILT, unmerged)** - branch `session-no-video`. Bounded brainstorm in chat (no spec file). Migration
+  010, `curation.setNoVideo` + `PUT /workbench/:id/no-video`, queue `no-video` and the `needs-video` exclusion, VideoPanel control, song-page
+  slot. Backend 275/275 serial; lint 0; build clean; public page checked live in the browser; admin panel not browser-checked (login gate).
 - **2026-10-13 (sub-project F BUILT, curator-smoked and MERGED, merge `3edac04`)** - branch `session-F-spotify-push` (deleted after merge).
   Brainstorm (the curator asked whether the pull was automatic: it was not, and had no UI either), spec `80e5c9a`, plan `8ec9bdb`, five
   subagent-driven tasks (`spotifyAuth` + token store, `/api/spotify-auth` router, `spotifyPush`, admin compare/push routes, the

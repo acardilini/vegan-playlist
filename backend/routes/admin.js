@@ -1987,6 +1987,7 @@ router.put('/workbench/:id/lyrics',     panelSave(curation.saveLyrics));
 router.put('/workbench/:id/highlights', panelSave(curation.saveHighlights));
 router.put('/workbench/:id/links',      panelSave(curation.saveLinks));
 router.put('/workbench/:id/cover',      panelSave(curation.setCover));
+router.put('/workbench/:id/no-video',   panelSave(curation.setNoVideo));
 
 router.post('/workbench/:id/videos', async (req, res) => {
   try {
