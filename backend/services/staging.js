@@ -273,4 +273,5 @@ async function addSubmissionAsPending(db, submissionId) {
 module.exports = {
   normalizeName, listQueue, includeSong, rejectSong, setPlayLink, insertCandidates,
   resolveSpotifyUrls, attachSpotifyToSong, parseSpotifyRef, addSubmissionAsPending,
+  mapTrack,
 };
