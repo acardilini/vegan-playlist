@@ -13,7 +13,7 @@ function takeReturnMessage() {
   if (!key) return '';
   params.delete('spotify');
   const qs = params.toString();
-  window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
+  window.history.replaceState(window.history.state, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
   return RETURN_MSG[key] || '';
 }
 
@@ -23,6 +23,7 @@ function SpotifySyncCard() {
   const [msg, setMsg] = useState(takeReturnMessage);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [needsReconnect, setNeedsReconnect] = useState(false);
 
   const load = useCallback(() => (
     adminFetch('/api/admin/spotify/compare')
@@ -49,7 +50,7 @@ function SpotifySyncCard() {
     setBusy(true);
     setMsg('');
     try {
-      const r = await adminFetch('/api/admin/sync-spotify-playlist', { method: 'POST' });
+      const r = await adminFetch('/api/admin/sync-spotify-playlist', { method: 'POST', body: {} }); // empty JSON body required: the route destructures req.body, which is undefined without one
       const d = await r.json().catch(() => ({}));
       if (r.ok) setMsg(`Added ${d.summary?.addedAsPending ?? 0} to To be processed.`);
       else setMsg(d.error || 'Pull failed.');
@@ -66,10 +67,12 @@ function SpotifySyncCard() {
       const r = await adminFetch('/api/admin/spotify/push', { method: 'POST', body: { songIds } });
       const d = await r.json().catch(() => ({}));
       if (r.ok) {
+        setNeedsReconnect(false);
         setMsg(`Added ${(d.added || []).length}, already there ${d.alreadyThere ?? 0}.`);
       } else if (r.status === 409 && d.error === 'BUSY') {
         setMsg('A push is already running — wait a moment and reload.');
       } else if (r.status === 409) {
+        if (d.error === 'NOT_CONNECTED' || d.error === 'REAUTH') setNeedsReconnect(true);
         setMsg('Connect Spotify first.');
       } else if (r.status === 502 && d.message) {
         setMsg(`${d.message} Added so far: ${(d.added || []).length}`);
@@ -92,9 +95,12 @@ function SpotifySyncCard() {
       {msg && <div className="modal-result">{msg}</div>}
 
       <p className="dash-health">
-        {data.connected
-          ? 'Spotify connected'
-          : <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={connect}>Connect Spotify</button>}
+        {data.connected && !needsReconnect && 'Spotify connected'}
+        {(!data.connected || needsReconnect) && (
+          <button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={connect}>
+            {data.connected ? 'Reconnect Spotify' : 'Connect Spotify'}
+          </button>
+        )}
       </p>
 
       <p className="dash-health">
