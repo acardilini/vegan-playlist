@@ -39,15 +39,15 @@ test('scan flags error stubs and descriptions, leaves real lyrics alone, and is 
   assert.deepEqual({ flagged: r2.flagged, cleared: r2.cleared }, { flagged: 0, cleared: 0 }, 'second scan changes nothing');
 });
 
-test('scan clears a stale flag on emptied or now-fine lyrics, but skips dismissed rows', async () => {
+test('scan clears a stale flag on now-fine lyrics, leaves blank rows alone, and skips dismissed rows', async () => {
   const emptied = await mk('ZZZJUNK emptied', 'Error: Could not find lyrics container on the page.');
   const dism = await mk('ZZZJUNK dismissed', 'Error: Could not find lyrics container on the page.');
   await junk.scan(pool, { songIds: [emptied, dism] });
   await junk.dismiss(pool, dism);
   await pool.query(`UPDATE song_lyrics SET lyrics='   ' WHERE song_id=$1`, [emptied]);
   const r = await junk.scan(pool, { songIds: [emptied, dism] });
-  assert.equal(r.cleared, 1);
-  assert.equal((await row(emptied)).junk_kind, null, 'blank text is not junk');
+  assert.equal(r.cleared, 0);
+  assert.equal((await row(emptied)).junk_kind, 'error', 'a blank row keeps its flag (analysis stays hidden until real lyrics arrive)');
   const d = await row(dism);
   assert.equal(d.junk_kind, null);
   assert.equal(d.junk_dismissed, true);
@@ -84,7 +84,7 @@ test('saveLyrics re-checks: junk flags, real text clears and resets a dismissal,
   await curation.saveLyrics(pool, id, { lyrics: 'Real words here\nand more real words' });
   assert.deepEqual(await row(id), { junk_kind: null, junk_dismissed: false });
   await curation.saveLyrics(pool, id, { lyrics: '' });
-  assert.equal((await row(id)).junk_kind, null, 'cleared lyrics are not junk');
+  assert.equal((await row(id)).junk_kind, null, 'a blank save leaves an already-clear flag alone (the Clear-over-flagged case is its own test)');
 });
 
 test('saving only a source_url / translation does not touch the flag', async () => {
@@ -147,4 +147,31 @@ test('flagged songs read as having no lyrics: in needs-lyrics and junk-lyrics, n
   assert.equal(await inQ('junk-lyrics'), false);
   assert.equal(await inQ('needs-lyrics'), false);
   assert.equal((await curation.getWorkbench(pool, id)).junk_kind, null);
+});
+
+test('Clear lyrics keeps the junk-derived analysis hidden and leaves the Junk queue; real lyrics then restore it', async () => {
+  const id = await mk('ZZZJUNK cleared', 'Provided to YouTube by DistroKid\n\nSong · Artist\n\n℗ 2020');
+  await addAnalysis(id);
+  await junk.scan(pool, { songIds: [id] });
+  await curation.saveLyrics(pool, id, { lyrics: '' });               // what the Clear lyrics button sends
+  assert.equal(await analysis.getSongAnalysis(pool, id), null, 'analysis still hidden after Clear');
+  assert.ok(!(await junk.listJunk(pool)).some((r) => r.id === id), 'cleared row is not listed');
+  const inQ = async (q) => (await curation.listCurationQueue(pool, { queue: q })).rows.some((r) => r.id === id);
+  assert.equal(await inQ('junk-lyrics'), false);
+  assert.equal(await inQ('needs-lyrics'), true, 'it now needs real lyrics');
+  await curation.saveLyrics(pool, id, { lyrics: 'Real words here\nand more real words' });
+  assert.equal((await row(id)).junk_kind, null);
+  assert.ok(await analysis.getSongAnalysis(pool, id), 'real lyrics lift the hiding');
+});
+
+test('the About page analysed-songs figure excludes flagged songs', async () => {
+  const ref = require('../services/referenceCodebook');
+  const id = await mk('ZZZJUNK refcount', 'Error: Lyrics container not found on this Bandcamp page.');
+  await addAnalysis(id);
+  const n = async () => (await ref.coverage(pool)).analysed_songs;
+  const before = await n();
+  await junk.scan(pool, { songIds: [id] });
+  assert.equal(await n(), before - 1);
+  await junk.dismiss(pool, id);
+  assert.equal(await n(), before);
 });

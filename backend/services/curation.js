@@ -75,7 +75,7 @@ function queueWhere(queue) {
       return `s.status='included' AND s.no_video_display IS NOT NULL
               AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
     case 'junk-lyrics':
-      return `EXISTS (SELECT 1 FROM song_lyrics jl WHERE jl.song_id=s.id AND jl.junk_kind IS NOT NULL)`;
+      return `EXISTS (SELECT 1 FROM song_lyrics jl WHERE jl.song_id=s.id AND jl.junk_kind IS NOT NULL AND btrim(jl.lyrics) <> '')`;
     case 'needs-analysis':
       return `s.status='included'
               AND ${HAS_LYRICS_SQL}

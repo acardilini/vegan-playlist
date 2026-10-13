@@ -108,7 +108,8 @@ Run before ending every working session:
   header vetoes). `junkLyrics` maintains `song_lyrics.junk_kind` / `junk_dismissed` (scan / listJunk / dismiss / recheck; `saveLyrics`
   re-checks on every text change). **Invariants:** a flagged song's analysis is excluded by `NOT_JUNK` inside the shared `LATEST_ANALYSIS` and
   `hasAnalysisExists` (so every public read hides it, no per-query edits), and `curation.HAS_LYRICS_SQL` requires `junk_kind IS NULL` so it reads
-  as having no lyrics. `scan(db, {songIds})` — tests must always pass `songIds`. `listJunk` is the only admin read of lyric text and truncates
+  (A **blank** flagged row keeps its flag - Clear lyrics must not resurrect the junk-derived analysis - and is excluded from the Junk queue; real
+  lyrics saved later let `recheck` decide.)   as having no lyrics. `scan(db, {songIds})` — tests must always pass `songIds`. `listJunk` is the only admin read of lyric text and truncates
   to 120 chars server-side
 - **services/inbox.js**: the Submissions Inbox (sub-project C) — `listInbox` (pending, **oldest first**,
   catalogue match flagged with `live`), `acceptSubmission`, `dismissSubmission`. **Accept claims the row

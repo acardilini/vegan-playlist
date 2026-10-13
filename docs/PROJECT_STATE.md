@@ -710,6 +710,16 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-10-13 (G junk lyrics, review fix) - a cleared row KEEPS its flag.** The whole-branch review found that **Clear lyrics** (blank text ->
+  `classify('')` = null) un-flagged the row and so brought the junk-derived analysis straight back on the public site. Now a blank row keeps
+  `junk_kind`: `recheck` leaves it alone, `scan` skips blank rows, and the Junk queue / `listJunk` list only non-blank flagged rows - so a cleared
+  song leaves the queue, sits in Needs lyrics, and its analysis stays hidden until **real lyrics are saved** (recheck then decides). Also fixed:
+  the About page's `analysed_songs` bypassed the shared fragment (now `hasAnalysisExists`). **Deferred minors (not fixed):** workbench Analysis panel
+  says "Not yet analysed" for a flagged-but-analysed song; workbench "Not junk" has no busy/error state; the workbench banner has no Clear button
+  (use the textarea); a dismissed row overwritten outside `saveLyrics` is never re-checked (scan skips dismissed); Clear leaves `lyrics_status`/`lyrics_url`/
+  `lyrics_source` pointing at the scraped page; `listJunk` has no paging (~217 rows). **Open for the curator:** lyric *embeddings* and map coordinates
+  built from junk text ("Similar message" tab, Explore thematic/holistic spaces) are NOT hidden - out of scope as specced; hiding the whole analysis row
+  also hides the audio-derived Sound dimensions.
 - **2026-10-13 (G junk lyrics) - flag on `song_lyrics`, conservative detector, hide-while-flagged, detect-and-confirm.** The flag lives on the lyrics
   row (not `songs`) because it describes that text and resets when the text changes; a dismissal also resets on any new text. The curator chose
   to **hide a flagged song's analysis publicly** (not just list it): done once in `LATEST_ANALYSIS`/`hasAnalysisExists` so every consumer inherits it

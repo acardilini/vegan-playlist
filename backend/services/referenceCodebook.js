@@ -146,9 +146,9 @@ async function coverage(db) {
        JOIN songs s ON s.id = sa.song_id
       WHERE ${PUBLISHED}`);
   const analysed_songs = await one(
-    `SELECT COUNT(DISTINCT s.id)::int AS n
-       FROM songs s JOIN song_lyric_analysis a ON a.song_id = s.id
-      WHERE ${PUBLISHED}`);
+    `SELECT COUNT(*)::int AS n
+       FROM songs s
+      WHERE ${PUBLISHED} AND ${analysis.hasAnalysisExists('s')}`);
   const mapped_songs = await one(
     `SELECT COUNT(DISTINCT s.id)::int AS n
        FROM songs s JOIN song_coordinates c ON c.song_id = s.id
