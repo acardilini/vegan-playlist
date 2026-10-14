@@ -7,6 +7,14 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
+- **Band check follow-up (2026-10-14, after the curator's first smoke: identify/review/add worked; "Identify sources" was too busy) - DONE on `session-band-check`, still NOT merged.**
+  UI: Identify is now one bordered card of three compact accordion rows (saved value or "not set", Change/Find/Close, Clear inside its row, Bandcamp paste on one inline line, Done),
+  "Select all new" moved onto the counts line, admin-standard `input`/`btn-secondary|ghost btn-sm`, source chips only when they say something (partial / error / "shares no songs"),
+  the Add result lives in the sticky footer, and the band list keeps its search text and page in the URL (`bq`/`bp`) so Back restores them. A design-review agent drove the REAL
+  component in Chrome through a throwaway mock harness (outside the repo) over three rounds and signed off. Backend: MusicBrainz requests queue through the shared adapter
+  (1.1s apart); Bandcamp follows redirects manually (<=3 hops, same `*.bandcamp.com` origin only; a `/music` that lands on one album/track page is read as the only release - untested
+  against a real single-release band); `quickCapture` and the legacy manual add match an existing artist by name regardless of `data_source`. **Verified:** backend **361/361**, lint 0 errors,
+  build clean. **Still to smoke:** the new Identify card in the real admin; a Bandcamp-only song (none exists for Bloodmouth); a band with many Bandcamp releases and one with a single release.
 - **Current session (2026-10-14): Sub-project H - multi-source Band check - BUILT on branch `session-band-check`, NOT merged, awaiting the curator's smoke.**
   Spec `docs/superpowers/specs/2026-10-13-H-band-check-design.md`, plan `docs/superpowers/plans/2026-10-14-H-band-check.md`. Backend `services/bandCheck/` (Spotify /
   Bandcamp / MusicBrainz adapters, pure `merge.js`, orchestrator), migration **014** (`artists.bandcamp_url`, `artists.musicbrainz_id`; applied to the dev DB), five routes
