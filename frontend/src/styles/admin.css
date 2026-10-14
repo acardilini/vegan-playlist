@@ -186,9 +186,9 @@
 .band-held { opacity: 0.6; }
 .band-meta { color: var(--text-secondary); font-size: 0.85em; }
 .band-muted { color: var(--text-muted); font-size: 0.85em; }
-.band-dot { display: inline-block; box-sizing: border-box; width: 1.4em; height: 1.4em; line-height: 1.4em; text-align: center; border-radius: 50%; border: 1px solid var(--border-hairline); margin-right: 0.2em; opacity: 0.4; }
+.band-dot { display: inline-block; box-sizing: border-box; width: 1.4em; height: 1.4em; line-height: 1.4em; text-align: center; border-radius: 50%; border: 1px solid var(--border-hairline); margin-right: 0.2em; opacity: 0.6; }
 .band-dot.on { opacity: 1; background: var(--accent-moss-60); color: var(--text-on-accent); }
-.band-chip { display: inline-block; padding: 0 var(--space-2); margin-right: var(--space-1); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); font-size: 0.8em; }
+.band-chip { display: inline-block; padding: 0 var(--space-2); margin-right: var(--space-1); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); font-size: 0.75rem; }
 a.band-chip { color: var(--text-secondary); text-decoration: none; }
 a.band-chip:hover { text-decoration: underline; }
 .band-chip.warn { border-color: var(--accent-ember-60); }
@@ -206,6 +206,7 @@ a.band-chip:hover { text-decoration: underline; }
 .band-release-head > div { flex: 1; min-width: 0; }
 .band-release-head h3 { display: inline; margin: 0; }
 .band-check { display: inline-block; width: 1rem; height: 1rem; margin: 0 var(--space-2) 0 0; vertical-align: middle; }
+.band-footer .admin-message { margin-bottom: var(--space-2); }
 .band-footer { position: sticky; bottom: 0; padding: var(--space-3) 0; background: var(--bg-canvas); }
 .band-pager { display: flex; gap: var(--space-2); align-items: center; margin: var(--space-2) 0; }
 .band-identify { background: var(--bg-surface); border: 1px solid var(--border-hairline); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); margin: var(--space-3) 0 var(--space-4); }
@@ -215,6 +216,7 @@ a.band-chip:hover { text-decoration: underline; }
 .band-source-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-2) 0; }
 .band-source-name { width: 6.5rem; font-weight: 600; font-size: 0.9rem; }
 .band-source-status { flex: 1; min-width: 0; font-size: 0.85rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.band-host { display: inline-block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 .band-source-status .band-muted { font-size: inherit; }
 .band-source-actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
 .band-link-btn { background: none; border: none; padding: 0 var(--space-2); min-height: 32px; color: var(--text-muted); font-size: 0.8rem; text-decoration: underline; cursor: pointer; }
@@ -226,6 +228,8 @@ a.band-chip:hover { text-decoration: underline; }
 .band-paste { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .band-paste .input { flex: 1 1 14rem; width: auto; min-width: 0; box-sizing: border-box; }
 @media (max-width: 600px) {
+  .band-source-status { order: 3; flex-basis: 100%; }
+  .band-counts .btn-ghost { margin-left: calc(-1 * var(--space-3)); }
   .band-toolbar h2 { order: -1; flex-basis: 100%; }
   .band-counts-list { flex-basis: 100%; }
 }

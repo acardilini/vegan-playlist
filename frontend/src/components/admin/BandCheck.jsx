@@ -33,11 +33,16 @@ function BandList({ q, offset, onQuery, onOffset, onPick }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
+  // committed = the last value this list wrote to (or read from) the URL; a different q is an outside change to adopt
+  const committed = useRef(q);
   useEffect(() => {
-    if (text === q) return undefined;
-    const t = setTimeout(() => onQuery(text), 250);
+    if (q !== committed.current) { committed.current = q; setText(q); }
+  }, [q]);
+  useEffect(() => {
+    if (text === committed.current) return undefined;
+    const t = setTimeout(() => { committed.current = text; onQuery(text); }, 250);
     return () => clearTimeout(t);
-  }, [text, q, onQuery]);
+  }, [text, onQuery]);
 
   useEffect(() => {
     let live = true;
@@ -54,7 +59,7 @@ function BandList({ q, offset, onQuery, onOffset, onPick }) {
     <div>
       <input className="input input-pill band-search" aria-label="Search bands" placeholder="Search bands by name" value={text} onChange={e => setText(e.target.value)} />
       {error && <div className="admin-message error">{error}</div>}
-      {data === null ? <div className="queue-empty">Loading…</div> : data.rows.length === 0 ? <div className="queue-empty">No bands match.</div> : data.rows.map(b => (
+      {data === null || (data.rows.length === 0 && offset > 0) ? <div className="queue-empty">Loading…</div> : data.rows.length === 0 ?<div className="queue-empty">No bands match.</div> : data.rows.map(b => (
         <div key={b.id} className="inbox-row band-row">
           <div>
             <strong>{b.name}</strong>
@@ -65,7 +70,7 @@ function BandList({ q, offset, onQuery, onOffset, onPick }) {
               })}
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={() => onPick(b.id)}>Check</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => onPick(b.id, text)}>Check</button>
         </div>
       ))}
       {data && data.total > PAGE && (
@@ -143,7 +148,7 @@ function IdentifyPanel({ artistId, name, identity, initialOpen, onSaved, onDone 
               <span className="band-source-status">
                 {saved
                   ? (s === 'bandcamp'
-                    ? <>✓ <a href={openLink(s, saved)} target="_blank" rel="noreferrer">{hostOf(saved)} ↗</a></>
+                    ? <>✓ <a className="band-host" href={openLink(s, saved)} target="_blank" rel="noreferrer">{hostOf(saved)} ↗</a></>
                     : <>✓ saved · <a href={openLink(s, saved)} target="_blank" rel="noreferrer">open ↗</a></>)
                   : <span className="band-muted">not set</span>}
               </span>
@@ -164,7 +169,7 @@ function IdentifyPanel({ artistId, name, identity, initialOpen, onSaved, onDone 
                   : shown.map(c => (
                     <div key={c.value} className="band-cand">
                       <div className="band-cand-text"><strong>{c.label}</strong> <span className="band-muted">{c.detail}</span>{c.url && <> <a href={c.url} target="_blank" rel="noreferrer">open</a></>}</div>
-                      <button className="btn btn-sm btn-primary" disabled={busy || saved === c.value} onClick={() => save(c.value, cands.source)}>{saved === c.value ? 'Chosen' : 'Choose'}</button>
+                      <button className="btn btn-secondary btn-sm" disabled={busy || saved === c.value} onClick={() => save(c.value, cands.source)}>{saved === c.value ? 'Chosen' : 'Choose'}</button>
                     </div>
                   ))}
                 {s === 'bandcamp' && (
@@ -226,15 +231,15 @@ function Review({ artistId, onBack, onAdded }) {
     <div className="queue-toolbar band-toolbar">
       <button className="btn btn-secondary btn-sm" onClick={onBack}>← All bands</button>
       <h2>{(data && data.artist.name) || 'Band check'}</h2>
-      {data && <button ref={identifyBtn} className="btn btn-secondary btn-sm" onClick={() => (identify ? setIdentify(null) : openIdentify(null))}>Identify sources</button>}
-      {data && <button className="btn btn-secondary btn-sm" onClick={() => load(true)}>Refresh</button>}
+      {data && <button ref={identifyBtn} className="btn btn-secondary btn-sm" aria-expanded={!!identify} onClick={() => (identify ? setIdentify(null) : openIdentify(null))}>{identify ? 'Hide sources' : 'Identify sources'}</button>}
+      {data && <button className="btn btn-secondary btn-sm" onClick={() => { setResult(''); load(true); }}>Refresh</button>}
     </div>
   );
 
   if (data === null) return <div>{toolbar}<div className="queue-empty">Reading the sources…</div></div>;
   const newSongs = data.releases.flatMap(r => r.songs).filter(s => s.state === 'new');
-  const toggle = (key) => setPicked(p => { const n = new Set(p); if (n.has(key)) n.delete(key); else n.add(key); return n; });
-  const selectAll = (songs) => setPicked(p => { const n = new Set(p); songs.filter(s => s.state === 'new').forEach(s => n.add(s.key)); return n; });
+  const toggle = (key) => { setResult(''); setPicked(p => { const n = new Set(p); if (n.has(key)) n.delete(key); else n.add(key); return n; }); };
+  const selectAll = (songs) => { setResult(''); setPicked(p => { const n = new Set(p); songs.filter(s => s.state === 'new').forEach(s => n.add(s.key)); return n; }); };
 
   const add = async () => {
     setAdding(true); setResult('');
@@ -262,7 +267,6 @@ function Review({ artistId, onBack, onAdded }) {
     <div>
       {toolbar}
       {error && <div className="admin-message error">{error}</div>}
-      {result && <div className="admin-message success">{result} <Link to="/admin/songs?queue=to-process">Open To be processed</Link></div>}
       {identify && (
         <IdentifyPanel
           key={identify.n}
@@ -313,11 +317,14 @@ function Review({ artistId, onBack, onAdded }) {
           ))}
         </section>
       ))}
-      {picked.size > 0 && (
+      {(picked.size > 0 || result) && (
         <div className="band-footer">
-          <button className="btn btn-primary" disabled={adding} onClick={add}>
-            {adding ? 'Adding…' : `Add ${picked.size} to To be processed`}
-          </button>
+          {result && <div className="admin-message success">{result} <Link to="/admin/songs?queue=to-process">Open To be processed</Link></div>}
+          {picked.size > 0 && (
+            <button className="btn btn-primary" disabled={adding} onClick={add}>
+              {adding ? 'Adding…' : `Add ${picked.size} to To be processed`}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -335,7 +342,14 @@ function BandCheck({ onAdded }) {
   const update = (fn, opts) => setParams(prev => { const n = new URLSearchParams(prev); fn(n); return n; }, opts);
   const setQuery = (v) => update(n => { if (v) n.set('bq', v); else n.delete('bq'); n.delete('bp'); }, { replace: true });
   const setOffset = (v) => update(n => { if (v > 0) n.set('bp', String(v)); else n.delete('bp'); }, { replace: true });
-  const pick = (id) => { fromList.current = true; update(n => { n.set('queue', 'band-check'); n.set('artist', String(id)); }); };
+  // the typed text (possibly not yet committed) is written in the same update, so Back restores exactly what was typed
+  const pick = (id, text) => {
+    fromList.current = true;
+    update(n => {
+      if (text !== q) { if (text) n.set('bq', text); else n.delete('bq'); n.delete('bp'); }
+      n.set('queue', 'band-check'); n.set('artist', String(id));
+    });
+  };
   // "All bands" is Back when the band was opened from the list; a deep link has nothing to go back to, so it pushes
   const back = () => {
     if (fromList.current) { fromList.current = false; navigate(-1); return; }
