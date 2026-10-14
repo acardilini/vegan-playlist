@@ -34,16 +34,18 @@ function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTime
   // send this server to an arbitrary host. Resolves to { text, url } (the final URL).
   async function getPage(startUrl) {
     let url = startUrl;
+    const startOrigin = normalizeBandcampOrigin(startUrl); // a redirect may never leave the band's own subdomain
     for (let hop = 0; ; hop++) {
       let res;
       try { res = await fetch(url, { headers: { 'User-Agent': UA }, redirect: 'manual' }); }
       catch { throw coded('UPSTREAM'); }
       if (REDIRECTS.has(res.status)) {
+        try { res.body && res.body.cancel && res.body.cancel(); } catch { /* drain best-effort */ }
         const loc = res.headers && typeof res.headers.get === 'function' ? res.headers.get('location') : null;
         let resolved = null;
         try { resolved = loc ? new URL(loc, url) : null; } catch { resolved = null; }
         const nextOrigin = resolved && normalizeBandcampOrigin(resolved.href);
-        if (hop >= MAX_HOPS || !nextOrigin) throw coded('UNREADABLE');
+        if (hop >= MAX_HOPS || !nextOrigin || nextOrigin !== startOrigin) throw coded('UNREADABLE');
         url = nextOrigin + resolved.pathname + resolved.search; // http is upgraded to https by the normaliser
         continue;
       }

@@ -743,6 +743,7 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 
 Newest first. Each entry: date · decision · why.
 
+- **2026-10-14 (H band check follow-up) - artist match ignores `data_source`.** `quickCapture` and the legacy manual add match an existing artist by name regardless of `data_source` (prefer manual, then lowest id) so a band Band check flipped to Spotify is not duplicated; a capture for a name shared by two bands attaches to the first - accepted trade-off.
 - **2026-10-14 (H band check) - decisions.** (1) **Migration 014** adds `artists.bandcamp_url` and `artists.musicbrainz_id` as the curator-confirmed per-source band
   identity (Spotify reuses `artists.spotify_id`); nothing is guessed from a name match. (2) A Spotify identity can be **replaced, never cleared**, and `spotify_url` is
   written with the id (+ `data_source='spotify'`, which `artists_source_check` requires); a taken id is `CONFLICT`. (3) **Any failed source aborts an add** - no degraded

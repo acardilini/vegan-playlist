@@ -526,6 +526,7 @@ test('saveLinks stores spotify_dormant; getWorkbench exposes it; a dormant Spoti
   await assert.rejects(curation.saveLinks(pool, id, { spotify_dormant: 'yes' }), e => e.code === 'BAD_INPUT');
 });
 
+const RUN = Math.random().toString(36).slice(2, 12).padEnd(10, '0'); // 6 + 10 + 2 = 22 chars
 async function mkArtist(name, spotifyId) {
   return (await pool.query(
     `INSERT INTO artists (name, spotify_id, data_source) VALUES ($1,$2,$3) RETURNING id`,
@@ -534,7 +535,7 @@ async function mkArtist(name, spotifyId) {
 const artistsOf = async (songId) => (await pool.query(`SELECT artist_id FROM song_artists WHERE song_id=$1`, [songId])).rows.map(r => r.artist_id);
 
 test('quickCapture reuses an existing Spotify-sourced artist instead of creating a duplicate manual one', async () => {
-  const spot = await mkArtist('ZZZCUR Spot Band', 'ZZZCURspotartist000000');
+  const spot = await mkArtist('ZZZCUR Spot Band', 'ZZZCUR' + RUN + 'sp');
   const { id } = await curation.quickCapture(pool, { title: 'ZZZCUR Capture Song', artist: 'zzzcur spot band' });
   assert.deepEqual(await artistsOf(id), [spot]);
   const n = (await pool.query(`SELECT COUNT(*)::int n FROM artists WHERE LOWER(name)='zzzcur spot band'`)).rows[0].n;
@@ -542,7 +543,7 @@ test('quickCapture reuses an existing Spotify-sourced artist instead of creating
 });
 
 test('quickCapture prefers the manual artist when a manual and a Spotify artist share a name', async () => {
-  const spot = await mkArtist('ZZZCUR Both', 'ZZZCURbothartist0000000');
+  const spot = await mkArtist('ZZZCUR Both', 'ZZZCUR' + RUN + 'bo');
   const manual = await mkArtist('ZZZCUR Both', null);
   assert.ok(spot < manual);
   const { id } = await curation.quickCapture(pool, { title: 'ZZZCUR Both Song', artist: 'ZZZCUR Both' });

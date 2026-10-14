@@ -53,7 +53,7 @@ function createMusicBrainzAdapter({
       const items = j.recordings || [];
       for (const r of items) tracks.push({ title: r.title, id: r.id, url: `https://musicbrainz.org/recording/${r.id}` });
       total = j['recording-count'] || 0;
-      if (items.length < PAGE || tracks.length >= total) { truncated = false; break; }
+      if (items.length < PAGE || (total > 0 && tracks.length >= total)) { truncated = false; break; }
     }
     return { source: 'musicbrainz', truncated, releases: [{ id: 'mb', name: 'MusicBrainz recordings', album_type: null, release_date: null, url: null, tracks }] };
   }

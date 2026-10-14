@@ -152,3 +152,27 @@ test('/music redirecting to /track/<slug> yields one single; unparseable is UNRE
   const bad = adapterFor({ [ORIGIN + '/music']: redirect(ORIGIN + '/album/solo'), [ORIGIN + '/album/solo']: page('<html>no json</html>') });
   await assert.rejects(bad.a.fetchCatalogue(ORIGIN), (e) => e.code === 'UNREADABLE');
 });
+
+test('a redirect to a different bandcamp subdomain is UNREADABLE and never fetched', async () => {
+  const { a, urls } = adapterFor({ [ORIGIN + '/music']: redirect('https://otherband.bandcamp.com/album/solo') });
+  await assert.rejects(a.fetchCatalogue(ORIGIN), (e) => e.code === 'UNREADABLE');
+  assert.ok(!urls.some(u => /otherband/.test(u)));
+});
+
+test('hostile Location headers are UNREADABLE and never fetched; a relative path stays on-origin', async () => {
+  for (const loc of ['//evil.com/x', 'https://u@evil.com/', 'https://u@x.bandcamp.com/', 'https://bandcamp.com/', 'javascript:alert(1)', '', null]) {
+    const { a, urls } = adapterFor({ [ORIGIN + '/music']: redirect(loc) });
+    await assert.rejects(a.fetchCatalogue(ORIGIN), (e) => e.code === 'UNREADABLE', String(loc));
+    assert.deepEqual(urls, [ORIGIN + '/music'], String(loc));
+  }
+  const ok = adapterFor({ [ORIGIN + '/music']: redirect('/album/solo'), [ORIGIN + '/album/solo']: page(album('Solo', ['A'])) });
+  assert.equal((await ok.a.fetchCatalogue(ORIGIN)).releases[0].name, 'Solo');
+});
+
+test('3xx response bodies are cancelled before following', async () => {
+  let cancelled = 0;
+  const r = { ...redirect(ORIGIN + '/album/solo'), body: { cancel: () => { cancelled++; } } };
+  const { a } = adapterFor({ [ORIGIN + '/music']: r, [ORIGIN + '/album/solo']: page(album('Solo', ['A'])) });
+  await a.fetchCatalogue(ORIGIN);
+  assert.equal(cancelled, 1);
+});

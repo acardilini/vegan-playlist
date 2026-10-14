@@ -108,3 +108,11 @@ test('truncated is false when exiting by a short page or by reaching recording-c
   assert.equal(cat.releases[0].tracks.length, 1000);
   assert.equal(cat.truncated, false);
 });
+
+test('a missing recording-count pages until a short page, not ending after page 1', async () => {
+  const recs = (n, off) => Array.from({ length: n }, (_, i) => ({ id: 'r' + (off + i), title: 'T' + (off + i) }));
+  const h = harness((url) => { const off = Number(/offset=(\d+)/.exec(url)[1]); return ok({ recordings: recs(off >= 200 ? 30 : 100, off) }); });
+  const cat = await h.adapter.fetchCatalogue(MBID);
+  assert.equal(cat.releases[0].tracks.length, 230);
+  assert.equal(cat.truncated, false);
+});
