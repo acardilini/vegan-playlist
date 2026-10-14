@@ -11,7 +11,10 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   Spec `docs/superpowers/specs/2026-10-13-H-band-check-design.md`, plan `docs/superpowers/plans/2026-10-14-H-band-check.md`. Backend `services/bandCheck/` (Spotify /
   Bandcamp / MusicBrainz adapters, pure `merge.js`, orchestrator), migration **014** (`artists.bandcamp_url`, `artists.musicbrainz_id`; applied to the dev DB), five routes
   under `/api/admin/band-check/...`, `staging.insertManualCandidate` + the `bandcheck` origin tag, and the admin view Songs > Band check. **Verified:** backend **341/341**
-  serial; frontend lint 0 errors / 6 pre-existing warnings; build clean (index 765.62 kB). **Live read-only check on Bloodmouth** (real adapters, no DB writes): Spotify 11
+  serial (**346/346 after the final-review fixes**); frontend lint 0 errors / 6 pre-existing warnings; build clean. **Final whole-branch review (opus) fixes, all in:** a per-source
+  *shares no songs with the other sources or the catalogue* warning plus Spotify/Bandcamp song chips that link out (the wrong-band risk below), the add-abort message names the
+  failed source, Spotify paging follows `next`, scraped Bandcamp track URLs must be https, a *partial* note when the Bandcamp 40-release / MusicBrainz 1,000-recording caps cut a list
+  short, and a confirm before replacing an existing Spotify match. **Not browser-checked:** the admin UI sits behind the password login. **Live read-only check on Bloodmouth** (real adapters, no DB writes): Spotify 11
   releases / 43 tracks; Bandcamp (`bloodmouth.bandcamp.com`) 9 releases / 37 tracks parsed fine; MusicBrainz identify returned both same-named bands (US `bd59cf43...`,
   8 tracks; AU "Vegan" `6d9f3695...`, 36 tracks). Merged Spotify+Bandcamp = 73 songs: 69 new, 4 held (all live, matched by Spotify id), 0 pending/rejected; 36 Spotify-only,
   37 Bandcamp-only, **0 on both** - because `bloodmouth.bandcamp.com` is evidently the other (US) Bloodmouth, not the vegan AU band: exactly why identity is
@@ -495,8 +498,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ NEXT (start here, 2026-10-14): review the Band check spec (`session-band-check`), then write its plan.** Backlog behind it: Spotify-less bands (check on Spotify, then other
-> repositories), the 29 pulled songs' include-or-reject, the deferred junk-lyrics/Spotify-push minors listed in the Decision Log. _(Older NEXT notes below are history.)_
+> **⏭ NEXT (start here, 2026-10-14): the curator smokes the multi-source Band check on `session-band-check` (see Current State), then merge to `main`.** Smoke also: a band with many Bandcamp
+> releases and a band with one (Bandcamp's `/music` grid may hide later items in a data attribute; a single-release `/music` may redirect). Backlog behind it: the 29 pulled songs'
+> include-or-reject, the deferred minors in the SDD ledger (MusicBrainz queue-safe pacing, fetch redirects, BandList state on Back), the deferred junk-lyrics/Spotify-push minors. _(Older NEXT notes below are history.)_
 > **⏭ NEXT (2026-10-13, newest): sub-project G (junk lyrics) is BUILT on `session-junk-lyrics`, awaiting the curator's smoke, then merge.** Smoke:
 > Admin -> Songs -> **Junk lyrics** -> **Scan for junk lyrics** (flags ~203 songs; 30 live ones lose their public analysis), skim the
 > list, try **Not junk** on a real one and **Clear lyrics** on a junk one (it moves to Needs lyrics), then open a flagged song's workbench
