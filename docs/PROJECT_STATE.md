@@ -7,6 +7,39 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
+- **Band check follow-up (2026-10-14, after the curator's first smoke: identify/review/add worked; "Identify sources" was too busy) - DONE on `session-band-check`, still NOT merged.**
+  UI: Identify is now one bordered card of three compact accordion rows (saved value or "not set", Change/Find/Close, Clear inside its row, Bandcamp paste on one inline line, Done),
+  "Select all new" moved onto the counts line, admin-standard `input`/`btn-secondary|ghost btn-sm`, source chips only when they say something (partial / error / "shares no songs"),
+  the Add result lives in the sticky footer, and the band list keeps its search text and page in the URL (`bq`/`bp`) so Back restores them. A design-review agent drove the REAL
+  component in Chrome through a throwaway mock harness (outside the repo) over three rounds and signed off. Backend: MusicBrainz requests queue through the shared adapter
+  (1.1s apart); Bandcamp follows redirects manually (<=3 hops, same `*.bandcamp.com` origin only; a `/music` that lands on one album/track page is read as the only release - untested
+  against a real single-release band); `quickCapture` and the legacy manual add match an existing artist by name regardless of `data_source`. **Verified:** backend **361/361**, lint 0 errors,
+  build clean. **Still to smoke:** the new Identify card in the real admin; a Bandcamp-only song (none exists for Bloodmouth); a band with many Bandcamp releases and one with a single release.
+- **Current session (2026-10-14): Sub-project H - multi-source Band check - BUILT on branch `session-band-check`, NOT merged, awaiting the curator's smoke.**
+  Spec `docs/superpowers/specs/2026-10-13-H-band-check-design.md`, plan `docs/superpowers/plans/2026-10-14-H-band-check.md`. Backend `services/bandCheck/` (Spotify /
+  Bandcamp / MusicBrainz adapters, pure `merge.js`, orchestrator), migration **014** (`artists.bandcamp_url`, `artists.musicbrainz_id`; applied to the dev DB), five routes
+  under `/api/admin/band-check/...`, `staging.insertManualCandidate` + the `bandcheck` origin tag, and the admin view Songs > Band check. **Verified:** backend **341/341**
+  serial (**346/346 after the final-review fixes**); frontend lint 0 errors / 6 pre-existing warnings; build clean. **Final whole-branch review (opus) fixes, all in:** a per-source
+  *shares no songs with the other sources or the catalogue* warning plus Spotify/Bandcamp song chips that link out (the wrong-band risk below), the add-abort message names the
+  failed source, Spotify paging follows `next`, scraped Bandcamp track URLs must be https, a *partial* note when the Bandcamp 40-release / MusicBrainz 1,000-recording caps cut a list
+  short, and a confirm before replacing an existing Spotify match. **Not browser-checked:** the admin UI sits behind the password login. **Live read-only check on Bloodmouth** (real adapters, no DB writes): Spotify 11
+  releases / 43 tracks; Bandcamp (`bloodmouth.bandcamp.com`) 9 releases / 37 tracks parsed fine; MusicBrainz identify returned both same-named bands (US `bd59cf43...`,
+  8 tracks; AU "Vegan" `6d9f3695...`, 36 tracks). Merged Spotify+Bandcamp = 73 songs: 69 new, 4 held (all live, matched by Spotify id), 0 pending/rejected; 36 Spotify-only,
+  37 Bandcamp-only, **0 on both** - because `bloodmouth.bandcamp.com` is evidently the other (US) Bloodmouth, not the vegan AU band: exactly why identity is
+  curator-confirmed. **Curator smoke to do:** Songs > Band check, search Bloodmouth, Identify sources on Spotify / Bandcamp / MusicBrainz (two Bloodmouths on MusicBrainz -
+  pick the right one; find the right Bandcamp), review the merged list, add a couple, see them under To be processed tagged *From band check*, a Bandcamp-only one carrying
+  its Bandcamp link as play link. Then merge. The "END OF SESSION 2026-10-13" bullet below is superseded where it says H's spec awaits review.
+- **END OF SESSION 2026-10-13 - where we stopped.** _(H part superseded 2026-10-14: spec approved, plan written, built.)_ `main` is at `068cafa`, pushed, clean, backend **303/303** (serial), build clean. Merged and curator-confirmed this
+  session: **No video available**, **Dormant Spotify + own-site links first**, **Junk-lyrics checker** (+ cleared-lyrics hiding, Explore map eligibility, lyric-similarity
+  eligibility, review minors) and the **video picker**. **In flight: sub-project H - Band check.** Brainstorm done, **design spec written and committed on branch
+  `session-band-check` (`f26ec1e`, pushed, NOT merged)**: `docs/superpowers/specs/2026-10-13-H-band-check-design.md`. **Awaiting the curator's review of the spec**, then
+  `writing-plans` -> plan -> execute (curator chose native inline last time). Decisions already taken: per-band on demand; the Band check view lists ALL 850 bands with a name
+  search; unlinked bands (210 of 850 have no Spotify id) are listed but not checkable in v1; tracks filtered by *credit*; versions collapsed by normalised title; held songs
+  muted with live/pending/rejected chip; add via `staging.insertCandidates` with a "From band check" tag. **Planned follow-up (spec section 8, not built):** bands without a
+  Spotify link - first check whether they are on Spotify (name search + confirm, save `artists.spotify_id`), then, if not, search other free repositories (Bandcamp etc.) for
+  their songs. Everything else still open: the **29 pulled Spotify songs** need an include-or-reject call (Songs > To be processed); junk-lyrics and band-check smoke notes below are historical.
+  **Dev note:** scratchpad Node scripts must load `.env` explicitly (`require('<abs>/backend/node_modules/dotenv').config({path})`) - without it Spotify answers `invalid_client`,
+  which looks like bad credentials but is not (the server's own reads work).
 - **Current session (2026-10-13, last): Song-page video picker - BUILT on branch `session-video-picker`, NOT yet merged.** A song with more than one video now shows
   a row of buttons above the player labelled **by type** (Official video / Live / Lyric video / Fan-made / Other; same-type videos numbered "Lyric video 1/2"), default = the
   primary video, switching swaps the player (no autoplay); full title as hover text. One video or none: unchanged. Frontend only: `SongDetailPage.jsx` now reads the existing
@@ -473,6 +506,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **⏭ NEXT (start here, 2026-10-14): the curator smokes the multi-source Band check on `session-band-check` (see Current State), then merge to `main`.** Smoke also: a band with many Bandcamp
+> releases and a band with one (Bandcamp's `/music` grid may hide later items in a data attribute; a single-release `/music` may redirect). Backlog behind it: the 29 pulled songs'
+> include-or-reject, the deferred minors in the SDD ledger (MusicBrainz queue-safe pacing, fetch redirects, BandList state on Back), the deferred junk-lyrics/Spotify-push minors. _(Older NEXT notes below are history.)_
 > **⏭ NEXT (2026-10-13, newest): sub-project G (junk lyrics) is BUILT on `session-junk-lyrics`, awaiting the curator's smoke, then merge.** Smoke:
 > Admin -> Songs -> **Junk lyrics** -> **Scan for junk lyrics** (flags ~203 songs; 30 live ones lose their public analysis), skim the
 > list, try **Not junk** on a real one and **Clear lyrics** on a junk one (it moves to Needs lyrics), then open a flagged song's workbench
@@ -714,6 +750,14 @@ _Then **B4** (with vector "You might also like"), then_ **6. About analysis-expl
 ## Decision Log
 
 Newest first. Each entry: date · decision · why.
+
+- **2026-10-14 (H band check follow-up) - artist match ignores `data_source`.** `quickCapture` and the legacy manual add match an existing artist by name regardless of `data_source` (prefer manual, then lowest id) so a band Band check flipped to Spotify is not duplicated; a capture for a name shared by two bands attaches to the first - accepted trade-off.
+- **2026-10-14 (H band check) - decisions.** (1) **Migration 014** adds `artists.bandcamp_url` and `artists.musicbrainz_id` as the curator-confirmed per-source band
+  identity (Spotify reuses `artists.spotify_id`); nothing is guessed from a name match. (2) A Spotify identity can be **replaced, never cleared**, and `spotify_url` is
+  written with the id (+ `data_source='spotify'`, which `artists_source_check` requires); a taken id is `CONFLICT`. (3) **Any failed source aborts an add** - no degraded
+  manual rows built from a partial read. (4) `staging.insertManualCandidate` dedupes with `merge.keyOf` (Unicode-aware; `normalizeName` drops non-ASCII letters), required
+  lazily to avoid a circular require. (5) **Bandcamp is read via the page's embedded JSON-LD** (scraping accepted: no free API); markup changes surface as a coded
+  `UNREADABLE` error and failures are isolated per source, so the other sources still show. MusicBrainz is paced (~1.1s/request) and its recording count was dropped.
 
 - **2026-10-13 (G junk lyrics, follow-up 2) - cleared lyrics hide the analysis; lyric-based similarity follows the map's rule.** A song whose lyrics were
   CLEARED (a blank `song_lyrics` row) but still carries an analysis has that analysis hidden everywhere (`NOT_JUNK` now also matches `btrim(lyrics) = ''`):
@@ -2012,6 +2056,9 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-10-14 (H multi-source Band check BUILT, unmerged)** - branch `session-band-check`; spec, plan, Tasks 1-9 with per-task review. Migration 014; `services/bandCheck/`;
+  five admin routes; Songs > Band check view. Backend 341/341 serial; lint 0 errors; build clean; live read-only Bloodmouth check (73 merged songs, 37 Bandcamp-only). Curator smoke pending.
 
 - **2026-10-13 (G junk-lyrics BUILT, unmerged)** - branch `session-junk-lyrics`; brainstorm, spec, plan, native inline execution (4 task commits).
   Migration 012; detector; service; shared-fragment hiding; Junk lyrics queue + banner. Backend 294/294 serial; lint 0; build clean; live

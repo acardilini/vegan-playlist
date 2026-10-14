@@ -133,10 +133,11 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
            sp.snooze_until, sp.park_reason,
            -- Where the row came from, for a tag in the list. A submission is recognised by its note (no-Spotify-match
            -- path) or by an APPROVED submission pointing at the song (Spotify-matched path); a pull by the note the
-           -- import-only playlist diff writes. Staging "Add candidates" shares playlist_added_by but not the note.
+           -- import-only playlist diff writes; a band-check addition by its 'added via band check' note. Staging "Add candidates" shares playlist_added_by but not the note.
            CASE WHEN s.status_notes LIKE 'community submission #%'
                   OR EXISTS (SELECT 1 FROM song_submissions ss WHERE ss.existing_song_id=s.id AND ss.status='approved' AND s.created_at >= ss.created_at)
                 THEN 'submission'
+                WHEN s.status_notes LIKE 'added via band check%' THEN 'bandcheck'
                 WHEN s.playlist_added_by='playlist-diff' AND s.status_notes LIKE 'on Spotify playlist%'
                 THEN 'spotify' END AS origin
     FROM songs s
@@ -428,7 +429,7 @@ async function quickCapture(db, { title, artist } = {}) {
     `INSERT INTO songs (title, status, published, data_source, created_at)
      VALUES ($1, 'pending', false, 'manual', CURRENT_TIMESTAMP) RETURNING id`, [t])).rows[0];
   let art = (await db.query(
-    `SELECT id FROM artists WHERE LOWER(name)=LOWER($1) AND data_source='manual'`, [a])).rows[0];
+    `SELECT id FROM artists WHERE LOWER(name)=LOWER($1) ORDER BY (data_source='manual') DESC, id LIMIT 1`, [a])).rows[0];
   if (!art) {
     art = (await db.query(
       `INSERT INTO artists (name, data_source, created_at) VALUES ($1,'manual',CURRENT_TIMESTAMP) RETURNING id`, [a])).rows[0];
