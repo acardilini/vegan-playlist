@@ -40,7 +40,9 @@ function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTime
     if (!origin) throw coded('NOT_FOUND');
     const host = new URL(origin).hostname;
     const music = await getText(origin + '/music');
-    const paths = [...new Set([...music.matchAll(/href="(\/(?:album|track)\/[^"#?]+)/g)].map(m => m[1]))].slice(0, MAX_RELEASES);
+    const allPaths = [...new Set([...music.matchAll(/href="(\/(?:album|track)\/[^"#?]+)/g)].map(m => m[1]))];
+    const truncated = allPaths.length > MAX_RELEASES;
+    const paths = allPaths.slice(0, MAX_RELEASES);
     if (paths.length === 0) throw coded('UNREADABLE');
 
     const releases = [];
@@ -49,7 +51,7 @@ function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTime
       let ldObj = null;
       try { ldObj = readLd(await getText(origin + path)); } catch (e) { if (e.code === 'UPSTREAM' || e.code === 'RATE_LIMITED') throw e; }
       if (!ldObj || !ldObj.name) continue; // this release page could not be read; keep going
-      const trackUrl = (u, fallback) => { try { return new URL(u).hostname === host ? u : fallback; } catch { return fallback; } };
+      const trackUrl = (u, fallback) => { try { const x = new URL(u); return x.protocol === 'https:' && x.hostname === host ? u : fallback; } catch { return fallback; } };
       const items = ldObj.track && ldObj.track.itemListElement;
       const tracks = Array.isArray(items)
         ? items.filter(i => i && i.item && i.item.name).map(i => ({ title: i.item.name, id: null, url: trackUrl(i.item['@id'], origin + path) }))
@@ -61,7 +63,7 @@ function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTime
       });
     }
     if (releases.length === 0) throw coded('UNREADABLE');
-    return { source: 'bandcamp', releases };
+    return { source: 'bandcamp', releases, truncated };
   }
 
   return { source: 'bandcamp', fetchCatalogue };

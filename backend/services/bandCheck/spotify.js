@@ -12,9 +12,10 @@ function createSpotifyAdapter({ getApi = getSpotifyClient, retry = withRetry } =
   async function pageAll(fetchPage) {
     const out = [];
     for (let offset = 0; ; offset += PAGE) {
-      const items = await fetchPage(PAGE, offset);
+      const { items, next } = await fetchPage(PAGE, offset);
       out.push(...items);
-      if (items.length < PAGE) return out;
+      // follow `next` even when Spotify returns a short page; stop on an empty page or a short page with no `next`
+      if (items.length === 0 || (!next && items.length < PAGE)) return out;
     }
   }
 
@@ -35,10 +36,10 @@ function createSpotifyAdapter({ getApi = getSpotifyClient, retry = withRetry } =
     try {
       const api = await getApi();
       const albums = await pageAll((limit, offset) => call(() =>
-        api.getArtistAlbums(spotifyId, { include_groups: 'album,single,compilation,appears_on', limit, offset })).then(r => r.body.items));
+        api.getArtistAlbums(spotifyId, { include_groups: 'album,single,compilation,appears_on', limit, offset })).then(r => ({ items: r.body.items, next: r.body.next })));
       const releases = [];
       for (const alb of albums) {
-        const tracks = await pageAll((limit, offset) => call(() => api.getAlbumTracks(alb.id, { limit, offset })).then(r => r.body.items));
+        const tracks = await pageAll((limit, offset) => call(() => api.getAlbumTracks(alb.id, { limit, offset })).then(r => ({ items: r.body.items, next: r.body.next })));
         const credited = tracks.filter(t => creditsArtist(t, spotifyId));
         if (credited.length === 0) continue; // an "appears on" release that does not credit the band
         releases.push({

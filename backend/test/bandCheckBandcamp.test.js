@@ -72,3 +72,22 @@ test('a 404 on /music is NOT_FOUND and a thrown fetch is UPSTREAM without its me
   const a = createBandcampAdapter({ fetch: async () => { throw new Error('ECONNRESET secret'); }, sleep: async () => {} });
   await assert.rejects(a.fetchCatalogue(ORIGIN), (e) => e.code === 'UPSTREAM' && !/secret/.test(e.message));
 });
+
+test('a scraped track @id with a non-https scheme falls back to the release url', async () => {
+  const mk = (id) => ld({ '@type': 'MusicRecording', name: 'Sneaky', '@id': id });
+  for (const id of ['javascript://bloodmouth.bandcamp.com/%0aalert(1)', 'http://bloodmouth.bandcamp.com/track/sneaky']) {
+    const { a } = adapterFor({ [ORIGIN + '/music']: page('<a href="/track/sneaky">x</a>'), [ORIGIN + '/track/sneaky']: page(mk(id)) });
+    assert.equal((await a.fetchCatalogue(ORIGIN)).releases[0].tracks[0].url, ORIGIN + '/track/sneaky', id);
+  }
+});
+
+test('truncated is true only when /music lists more than 40 releases', async () => {
+  const build = (n) => {
+    const map = { [ORIGIN + '/music']: page(Array.from({ length: n }, (_, i) => `<a href="/album/a${i}">x</a>`).join('')) };
+    for (let i = 0; i < n; i++) map[ORIGIN + '/album/a' + i] = page(album('A' + i, ['T' + i]));
+    return adapterFor(map).a;
+  };
+  assert.equal((await build(60).fetchCatalogue(ORIGIN)).truncated, true);
+  assert.equal((await build(40).fetchCatalogue(ORIGIN)).truncated, false);
+  assert.equal((await build(3).fetchCatalogue(ORIGIN)).truncated, false);
+});

@@ -92,6 +92,7 @@ function IdentifyPanel({ artistId, name, identity, onSaved }) {
   const shown = cands && cands.source === source ? cands.list : null;
 
   const save = async (value, src) => {
+    if (src === 'spotify' && identity.spotify && identity.spotify !== value && !window.confirm("Replace this band's Spotify match? The old one is not kept.")) return;
     setBusy(true); setError('');
     try { await api(`/api/admin/band-check/bands/${artistId}/identity`, { method: 'PUT', body: { source: src, value } }); await onSaved(); }
     catch (e) { setError(e.message); } finally { setBusy(false); }
@@ -181,9 +182,17 @@ function Review({ artistId, onBack, onAdded }) {
       {error && <div className="admin-message error">{error}</div>}
       {result && <div className="admin-message success">{result} <Link to="/admin/songs?queue=to-process">Open To be processed</Link></div>}
       <div className="band-meta">
-        {Object.entries(data.sources).map(([s, st]) => (
-          <span key={s} className={`band-chip ${st.status}`}>{SOURCE_LABEL[s]}: {st.status === 'ok' ? 'read' : (st.message || 'could not be read this time')}</span>
-        ))}
+        {Object.entries(data.sources).map(([s, st]) => {
+          const partial = st.truncated ? (s === 'bandcamp' ? ' (partial: first 40 releases)' : s === 'musicbrainz' ? ' (partial: first 1,000 recordings)' : '') : '';
+          const otherSongs = Object.entries(data.sources).some(([o, os]) => o !== s && os.status === 'ok' && os.songs > 0);
+          const suspect = st.status === 'ok' && st.songs > 0 && st.overlap === 0 && (otherSongs || data.artist.songs > 0);
+          return (
+            <span key={s}>
+              <span className={`band-chip ${st.status}`}>{SOURCE_LABEL[s]}: {st.status === 'ok' ? `read${partial}` : (st.message || 'could not be read this time')}</span>
+              {suspect && <span className="band-chip warn">{SOURCE_LABEL[s]} shares no songs with the other sources or the catalogue - check it is the right band</span>}
+            </span>
+          );
+        })}
         {data.counts && <span> · {data.counts.new} new · {data.counts.in_catalogue} held · {data.counts.rejected} rejected · {data.counts.single_source} on one source only</span>}
       </div>
       {showIdentify && <IdentifyPanel artistId={artistId} name={data.artist.name} identity={data.artist.identity} onSaved={() => load(true)} />}
@@ -201,7 +210,9 @@ function Review({ artistId, onBack, onAdded }) {
                 {s.also_on.length > 0 && <span className="band-meta"> · also on {s.also_on.join(', ')}</span>}
               </label>
               <div className="band-meta">
-                {Object.keys(s.sources).map(src => <span key={src} className="band-chip">{SOURCE_LABEL[src]}</span>)}
+                {Object.keys(s.sources).map(src => (s.sources[src].url
+                  ? <a key={src} className="band-chip" href={s.sources[src].url} target="_blank" rel="noreferrer">{SOURCE_LABEL[src]}</a>
+                  : <span key={src} className="band-chip">{SOURCE_LABEL[src]}</span>))}
                 {s.state === 'new' && Object.keys(s.sources).length === 1 && <span className="band-chip warn">one source only</span>}
                 {s.match && <Link className="band-chip" to={`/admin/song/${s.match.song_id}`} title={s.match.matched_by === 'title' ? 'matched by title' : undefined}>{stateChip(s.match)}</Link>}
               </div>

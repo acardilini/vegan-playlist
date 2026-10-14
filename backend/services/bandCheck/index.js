@@ -9,6 +9,7 @@ const staging = require('../staging');
 const { mergeCatalogues, buildIndex, classify } = require('./merge');
 
 const SOURCES = ['spotify', 'bandcamp', 'musicbrainz'];
+const SOURCE_LABELS = { spotify: 'Spotify', bandcamp: 'Bandcamp', musicbrainz: 'MusicBrainz' };
 const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -135,7 +136,7 @@ async function loadMerged(db, artist, { adapters, fresh, now }) {
     catch (e) { const err = sourceError(e); return { source, error: { code: err.code, message: err.message } }; }
   }));
   const sources = {};
-  for (const r of settled) sources[r.source] = r.error ? { status: 'error', ...r.error } : { status: 'ok' };
+  for (const r of settled) sources[r.source] = r.error ? { status: 'error', ...r.error } : { status: 'ok', truncated: !!r.catalogue.truncated };
 
   const songs = mergeCatalogues(settled.filter(r => r.catalogue).map(r => r.catalogue));
   const spotifyIds = songs.flatMap(s => (s.sources.spotify ? s.sources.spotify.ids : []));
@@ -147,7 +148,7 @@ async function loadMerged(db, artist, { adapters, fresh, now }) {
     WHERE s.id IN (SELECT song_id FROM song_artists WHERE artist_id = $1)
        OR s.spotify_id = ANY($2::text[])
        OR ($3::text IS NOT NULL AND s.bandcamp_url ILIKE $3 || '%')`, [artist.id, spotifyIds, bandcampOrigin])).rows;
-  return { sources, songs: classify(songs, buildIndex(rows)) };
+  return { sources, songs: classify(songs, buildIndex(rows)), artistSongs: rows.filter(r => r.by_artist).length };
 }
 
 function toClient(s) {
@@ -161,7 +162,15 @@ function toClient(s) {
 async function checkBand(db, artistId, { adapters, fresh = false, now = Date.now } = {}) {
   const artist = await loadArtist(db, artistId);
   adapters = adapters || defaultAdapters();
-  const { sources, songs } = await loadMerged(db, artist, { adapters, fresh, now });
+  const { sources, songs, artistSongs } = await loadMerged(db, artist, { adapters, fresh, now });
+
+  // per ok source: how many songs list it, and how many of those are corroborated (on another source, or already held)
+  for (const [name, info] of Object.entries(sources)) {
+    if (info.status !== 'ok') continue;
+    const mine = songs.filter(s => s.sources[name]);
+    info.songs = mine.length;
+    info.overlap = mine.filter(s => s.state === 'in_catalogue' || Object.keys(s.sources).some(k => k !== name)).length;
+  }
 
   const byRelease = new Map();
   for (const s of songs) {
@@ -176,7 +185,7 @@ async function checkBand(db, artistId, { adapters, fresh = false, now = Date.now
     else if (s.match.status === 'rejected') counts.rejected++;
     else counts.in_catalogue++;
   }
-  return { artist: { id: artist.id, name: artist.name, identity: identityOf(artist) }, sources, releases, counts };
+  return { artist: { id: artist.id, name: artist.name, identity: identityOf(artist), songs: artistSongs }, sources, releases, counts };
 }
 
 // Adds the songs the curator ticked. Never trusts client data: only song keys come in, and the catalogue is re-read live.
@@ -192,7 +201,10 @@ async function addSelected(db, artistId, keys, { adapters } = {}) {
     const { sources, songs } = await loadMerged(db, artist, { adapters, fresh: true, now: Date.now });
     // a half-read catalogue would send Spotify songs down the manual path: fail before writing anything, so the curator can retry
     const failed = Object.values(sources).find(s => s.status === 'error');
-    if (failed) throw coded(failed.code, failed.message);
+    if (failed) {
+      const label = SOURCE_LABELS[Object.keys(sources).find(k => sources[k] === failed)];
+      throw coded(failed.code, `${label} could not be read, so nothing was added - retry, or clear that source under Identify sources`);
+    }
     const byKey = new Map(songs.map(s => [s.key, s]));
     let skippedExisting = 0, notFound = 0, added = 0;
     const picked = [];

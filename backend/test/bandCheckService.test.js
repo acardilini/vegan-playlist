@@ -197,9 +197,33 @@ test('addSelected: a failing source aborts before any write, with its code, and 
   svc._resetForTests();
   const { a } = await mergedBand();
   const bad = fakeAdapters({ spotify: Object.assign(new Error('x'), { code: 'RATE_LIMITED' }), bandcamp: BAND });
-  await assert.rejects(svc.addSelected(pool, a, ['zzzbandsvc fresh', 'zzzbandsvc bandcamp only'], { adapters: bad }), (e) => e.code === 'RATE_LIMITED');
+  await assert.rejects(svc.addSelected(pool, a, ['zzzbandsvc fresh', 'zzzbandsvc bandcamp only'], { adapters: bad }),
+    (e) => e.code === 'RATE_LIMITED' && /^Spotify could not be read, so nothing was added - retry, or clear that source under Identify sources$/.test(e.message));
   const n = (await pool.query(`SELECT count(*)::int n FROM songs WHERE title IN ('ZZZBANDSVC Fresh','ZZZBANDSVC Bandcamp Only')`)).rows[0].n;
   assert.equal(n, 0);
   const ok = await svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters: fakeAdapters({ spotify: SPOT, bandcamp: BAND }) });
   assert.equal(ok.added, 1);
+});
+
+test('checkBand reports per-source songs/overlap and artist.songs so a wrong-band source is visible', async () => {
+  svc._resetForTests();
+  const { a } = await mergedBand();
+  const stranger = { source: 'bandcamp', releases: [{ id: '/album/z', name: 'Z', album_type: 'album', release_date: '2020-01-01', url: null, tracks: [
+    { title: 'ZZZBANDSVC Stranger One', id: null, url: 'https://zzzbandsvcm.bandcamp.com/track/s1' },
+    { title: 'ZZZBANDSVC Stranger Two', id: null, url: 'https://zzzbandsvcm.bandcamp.com/track/s2' }] }] };
+  const res = await svc.checkBand(pool, a, { adapters: fakeAdapters({ spotify: SPOT, bandcamp: stranger }) });
+  assert.equal(res.artist.songs, 1);
+  assert.deepEqual([res.sources.spotify.songs, res.sources.spotify.overlap], [2, 1]); // Held is in the catalogue
+  assert.deepEqual([res.sources.bandcamp.songs, res.sources.bandcamp.overlap], [2, 0]); // shares nothing
+  assert.equal(res.sources.bandcamp.truncated, false);
+
+  svc._resetForTests();
+  const shared = await svc.checkBand(pool, a, { adapters: fakeAdapters({ spotify: SPOT, bandcamp: BAND }), fresh: true });
+  assert.deepEqual([shared.sources.bandcamp.songs, shared.sources.bandcamp.overlap], [2, 1]); // Fresh is on both
+  assert.deepEqual([shared.sources.spotify.songs, shared.sources.spotify.overlap], [2, 2]);
+
+  svc._resetForTests();
+  const cut = await svc.checkBand(pool, a, { adapters: fakeAdapters({ spotify: SPOT, bandcamp: { ...BAND, truncated: true } }), fresh: true });
+  assert.equal(cut.sources.bandcamp.truncated, true);
+  assert.equal(cut.sources.spotify.truncated, false);
 });

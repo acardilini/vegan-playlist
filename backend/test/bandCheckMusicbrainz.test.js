@@ -58,3 +58,13 @@ test('503 -> RATE_LIMITED, a thrown fetch -> UPSTREAM with no message leaked', a
   const a = createMusicBrainzAdapter({ fetch: async () => { throw new Error('connect ECONNRESET https://secret'); }, sleep: async () => {}, now: () => 1 });
   await assert.rejects(a.identify('x'), (e) => e.code === 'UPSTREAM' && !/secret/.test(e.message));
 });
+
+test('truncated is true when the page cap is hit with recordings remaining, false otherwise', async () => {
+  const full = (url) => { const off = Number(/offset=(\d+)/.exec(url)[1]); return ok({ 'recording-count': 5000, recordings: Array.from({ length: 100 }, (_, i) => ({ id: 'r' + (off + i), title: 'Rec ' + (off + i) })) }); };
+  const big = harness(full);
+  const cat = await big.adapter.fetchCatalogue(MBID);
+  assert.equal(cat.truncated, true);
+  assert.equal(cat.releases[0].tracks.length, 1000);
+  const small = harness(() => ok({ 'recording-count': 2, recordings: [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }] }));
+  assert.equal((await small.adapter.fetchCatalogue(MBID)).truncated, false);
+});

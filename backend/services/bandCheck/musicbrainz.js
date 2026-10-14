@@ -38,13 +38,15 @@ function createMusicBrainzAdapter({
   async function fetchCatalogue(mbid) {
     if (!UUID.test(String(mbid))) throw coded('NOT_FOUND');
     const tracks = [];
+    let total = 0;
     for (let page = 0; page < MAX_PAGES; page++) {
       const j = await get(`/recording?artist=${mbid}&fmt=json&limit=${PAGE}&offset=${page * PAGE}`);
       const items = j.recordings || [];
       for (const r of items) tracks.push({ title: r.title, id: r.id, url: `https://musicbrainz.org/recording/${r.id}` });
-      if (items.length < PAGE || tracks.length >= (j['recording-count'] || 0)) break;
+      total = j['recording-count'] || 0;
+      if (items.length < PAGE || tracks.length >= total) break;
     }
-    return { source: 'musicbrainz', releases: [{ id: 'mb', name: 'MusicBrainz recordings', album_type: null, release_date: null, url: null, tracks }] };
+    return { source: 'musicbrainz', truncated: tracks.length < total, releases: [{ id: 'mb', name: 'MusicBrainz recordings', album_type: null, release_date: null, url: null, tracks }] };
   }
 
   // The band's Bandcamp page, if MusicBrainz knows it (a candidate for the Bandcamp identity).

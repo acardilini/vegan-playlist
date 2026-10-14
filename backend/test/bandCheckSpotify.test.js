@@ -53,3 +53,18 @@ test('a 429 surfaces as RATE_LIMITED without the original message', async () => 
   const api = { getArtistAlbums: async () => { throw Object.assign(new Error('Bearer abc123'), { statusCode: 429 }); } };
   await assert.rejects(adapterFor(api).fetchCatalogue(BAND), (e) => e.code === 'RATE_LIMITED' && !/abc123/.test(e.message));
 });
+
+test('paging follows `next` even when a page is short, and stops without it', async () => {
+  const pagesSeen = [];
+  const api = {
+    getArtistAlbums: async (id, o) => {
+      pagesSeen.push(o.offset);
+      if (o.offset === 0) return { body: { items: Array.from({ length: 20 }, (_, i) => album('p' + i, 'P' + i, 'single', '2020')), next: 'https://api.spotify.com/next' } };
+      return { body: { items: [album('q0', 'Q0', 'single', '2020')], next: null } };
+    },
+    getAlbumTracks: async (id) => ({ body: { items: [track('t' + id, 'S' + id, [BAND])] } }),
+  };
+  const cat = await adapterFor(api).fetchCatalogue(BAND);
+  assert.deepEqual(pagesSeen, [0, 50]);
+  assert.equal(cat.releases.length, 21);
+});
