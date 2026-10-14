@@ -148,7 +148,7 @@ function IdentifyPanel({ artistId, name, identity, initialOpen, onSaved, onDone 
               <span className="band-source-status">
                 {saved
                   ? (s === 'bandcamp'
-                    ? <>✓ <a className="band-host" href={openLink(s, saved)} target="_blank" rel="noreferrer">{hostOf(saved)} ↗</a></>
+                    ? <span className="band-saved"><span>✓</span><a className="band-host" href={openLink(s, saved)} target="_blank" rel="noreferrer">{hostOf(saved)} ↗</a></span>
                     : <>✓ saved · <a href={openLink(s, saved)} target="_blank" rel="noreferrer">open ↗</a></>)
                   : <span className="band-muted">not set</span>}
               </span>
@@ -198,6 +198,8 @@ function Review({ artistId, onBack, onAdded }) {
   const seq = useRef(0);
   const identifyN = useRef(0);
   const identifyBtn = useRef(null);
+  const resultRef = useRef(null);
+  const focusResult = useRef(false);
 
   const openIdentify = useCallback((src) => setIdentify({ open: src, n: ++identifyN.current }), []);
 
@@ -226,6 +228,10 @@ function Review({ artistId, onBack, onAdded }) {
     }
   }, [artistId, openIdentify]);
   useEffect(() => { load(false); }, [load]);
+  // after a successful add the focused Add button unmounts: move focus to the footer message
+  useEffect(() => {
+    if (result && focusResult.current) { focusResult.current = false; resultRef.current?.focus(); }
+  }, [result]);
 
   const toolbar = (
     <div className="queue-toolbar band-toolbar">
@@ -246,6 +252,7 @@ function Review({ artistId, onBack, onAdded }) {
     try {
       const d = await api(`/api/admin/band-check/bands/${artistId}/add`, { method: 'POST', body: { keys: [...picked] } });
       setResult(`Added ${d.added}${d.skippedExisting ? `, ${d.skippedExisting} already held` : ''}${d.notFound ? `, ${d.notFound} no longer listed` : ''}.`);
+      focusResult.current = true;
       onAdded?.();
       await load(true);
     } catch (e) { setError(e.message); } finally { setAdding(false); }
@@ -319,7 +326,7 @@ function Review({ artistId, onBack, onAdded }) {
       ))}
       {(picked.size > 0 || result) && (
         <div className="band-footer">
-          {result && <div className="admin-message success">{result} <Link to="/admin/songs?queue=to-process">Open To be processed</Link></div>}
+          {result && <div ref={resultRef} tabIndex={-1} role="status" className="admin-message success">{result} <Link to="/admin/songs?queue=to-process">Open To be processed</Link></div>}
           {picked.size > 0 && (
             <button className="btn btn-primary" disabled={adding} onClick={add}>
               {adding ? 'Adding…' : `Add ${picked.size} to To be processed`}
@@ -343,12 +350,17 @@ function BandCheck({ onAdded }) {
   const setQuery = (v) => update(n => { if (v) n.set('bq', v); else n.delete('bq'); n.delete('bp'); }, { replace: true });
   const setOffset = (v) => update(n => { if (v > 0) n.set('bp', String(v)); else n.delete('bp'); }, { replace: true });
   // the typed text (possibly not yet committed) is written in the same update, so Back restores exactly what was typed
+  // If the text is not committed yet, the list entry is replaced first so Back (which lands on it) restores the typed text.
   const pick = (id, text) => {
     fromList.current = true;
-    update(n => {
-      if (text !== q) { if (text) n.set('bq', text); else n.delete('bq'); n.delete('bp'); }
-      n.set('queue', 'band-check'); n.set('artist', String(id));
-    });
+    const list = new URLSearchParams(params);
+    const changed = text !== q;
+    if (changed) { if (text) list.set('bq', text); else list.delete('bq'); list.delete('bp'); }
+    list.set('queue', 'band-check'); list.delete('artist');
+    const band = new URLSearchParams(list);
+    band.set('artist', String(id));
+    if (changed) navigate({ search: `?${list}` }, { replace: true });
+    navigate({ search: `?${band}` });
   };
   // "All bands" is Back when the band was opened from the list; a deep link has nothing to go back to, so it pushes
   const back = () => {
