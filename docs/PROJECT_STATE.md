@@ -7,7 +7,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Band check follow-up (2026-10-14, after the curator's first smoke: identify/review/add worked; "Identify sources" was too busy) - DONE on `session-band-check`, still NOT merged.**
+- **Band check follow-up (2026-10-14, after the curator's first smoke: identify/review/add worked; "Identify sources" was too busy) - DONE and MERGED to `main` (merge `12cc1c8`, no-ff, pushed; merged `main` re-verified backend 361/361, lint 0 errors, build clean).**
   UI: Identify is now one bordered card of three compact accordion rows (saved value or "not set", Change/Find/Close, Clear inside its row, Bandcamp paste on one inline line, Done),
   "Select all new" moved onto the counts line, admin-standard `input`/`btn-secondary|ghost btn-sm`, source chips only when they say something (partial / error / "shares no songs"),
   the Add result lives in the sticky footer, and the band list keeps its search text and page in the URL (`bq`/`bp`) so Back restores them. A design-review agent drove the REAL
@@ -15,7 +15,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   (1.1s apart); Bandcamp follows redirects manually (<=3 hops, same `*.bandcamp.com` origin only; a `/music` that lands on one album/track page is read as the only release - untested
   against a real single-release band); `quickCapture` and the legacy manual add match an existing artist by name regardless of `data_source`. **Verified:** backend **361/361**, lint 0 errors,
   build clean. **Still to smoke:** the new Identify card in the real admin; a Bandcamp-only song (none exists for Bloodmouth); a band with many Bandcamp releases and one with a single release.
-- **Current session (2026-10-14): Sub-project H - multi-source Band check - BUILT on branch `session-band-check`, NOT merged, awaiting the curator's smoke.**
+- **Current session (2026-10-14): Sub-project H - multi-source Band check - BUILT on `session-band-check` and MERGED to `main` (merge `12cc1c8`) after the curator's first smoke (identify / review / add worked); remaining smoke items are listed in the follow-up entry above.**
   Spec `docs/superpowers/specs/2026-10-13-H-band-check-design.md`, plan `docs/superpowers/plans/2026-10-14-H-band-check.md`. Backend `services/bandCheck/` (Spotify /
   Bandcamp / MusicBrainz adapters, pure `merge.js`, orchestrator), migration **014** (`artists.bandcamp_url`, `artists.musicbrainz_id`; applied to the dev DB), five routes
   under `/api/admin/band-check/...`, `staging.insertManualCandidate` + the `bandcheck` origin tag, and the admin view Songs > Band check. **Verified:** backend **341/341**
@@ -506,7 +506,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ NEXT (start here, 2026-10-14): the curator smokes the multi-source Band check on `session-band-check` (see Current State), then merge to `main`.** Smoke also: a band with many Bandcamp
+> **⏭ NEXT (start here, 2026-10-14): the multi-source Band check is MERGED to `main` (`12cc1c8`); the curator finishes its remaining smoke items as bands turn up (see Current State).** Smoke also: a band with many Bandcamp
 > releases and a band with one (Bandcamp's `/music` grid may hide later items in a data attribute; a single-release `/music` may redirect). Backlog behind it: the 29 pulled songs'
 > include-or-reject, the deferred minors in the SDD ledger (MusicBrainz queue-safe pacing, fetch redirects, BandList state on Back), the deferred junk-lyrics/Spotify-push minors. _(Older NEXT notes below are history.)_
 > **⏭ NEXT (2026-10-13, newest): sub-project G (junk lyrics) is BUILT on `session-junk-lyrics`, awaiting the curator's smoke, then merge.** Smoke:
@@ -2057,7 +2057,7 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
-- **2026-10-14 (H multi-source Band check BUILT, unmerged)** - branch `session-band-check`; spec, plan, Tasks 1-9 with per-task review. Migration 014; `services/bandCheck/`;
+- **2026-10-14 (H multi-source Band check BUILT, MERGED to `main` as `12cc1c8`)** - branch `session-band-check`; spec, plan, Tasks 1-9 with per-task review. Migration 014; `services/bandCheck/`;
   five admin routes; Songs > Band check view. Backend 341/341 serial; lint 0 errors; build clean; live read-only Bloodmouth check (73 merged songs, 37 Bandcamp-only). Curator smoke pending.
 
 - **2026-10-13 (G junk-lyrics BUILT, unmerged)** - branch `session-junk-lyrics`; brainstorm, spec, plan, native inline execution (4 task commits).
