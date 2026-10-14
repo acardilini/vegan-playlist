@@ -24,9 +24,8 @@ function stateChip(match) {
   return match.published ? 'live' : 'not live';
 }
 
-function BandList({ onPick }) {
-  const [q, setQ] = useState('');
-  const [offset, setOffset] = useState(0);
+// q and offset live in the URL (bq / bp) so Back from a band restores the search and page
+function BandList({ q, offset, onQuery, onOffset, onPick }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -40,7 +39,7 @@ function BandList({ onPick }) {
   }, [q, offset]);
   return (
     <div>
-      <input className="admin-input" aria-label="Search bands" placeholder="Search bands by name" value={q} onChange={e => { setQ(e.target.value); setOffset(0); }} />
+      <input className="admin-input" aria-label="Search bands" placeholder="Search bands by name" value={q} onChange={e => onQuery(e.target.value)} />
       {error && <div className="admin-message error">{error}</div>}
       {data === null ? <div className="queue-empty">Loading…</div> : data.rows.length === 0 ? <div className="queue-empty">No bands match.</div> : data.rows.map(b => (
         <div key={b.id} className="inbox-row band-row">
@@ -55,17 +54,26 @@ function BandList({ onPick }) {
       ))}
       {data && data.total > PAGE && (
         <div className="band-pager">
-          <button className="btn" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))}>Previous</button>
+          <button className="btn" disabled={offset === 0} onClick={() => onOffset(Math.max(0, offset - PAGE))}>Previous</button>
           <span>{offset + 1}–{Math.min(offset + PAGE, data.total)} of {data.total}</span>
-          <button className="btn" disabled={offset + PAGE >= data.total} onClick={() => setOffset(offset + PAGE)}>Next</button>
+          <button className="btn" disabled={offset + PAGE >= data.total} onClick={() => onOffset(offset + PAGE)}>Next</button>
         </div>
       )}
     </div>
   );
 }
 
-function IdentifyPanel({ artistId, name, identity, onSaved }) {
-  const [source, setSource] = useState('spotify');
+const SOURCES = Object.keys(SOURCE_LABEL);
+
+function openLink(src, value) {
+  if (src === 'spotify') return `https://open.spotify.com/artist/${value}`;
+  if (src === 'musicbrainz') return `https://musicbrainz.org/artist/${value}`;
+  return value; // bandcamp: the stored origin
+}
+
+// One card, three compact rows, one expanded at a time; candidates are fetched only for the expanded row.
+function IdentifyPanel({ artistId, name, identity, onSaved, onDone }) {
+  const [open, setOpen] = useState(() => SOURCES.find(s => !identity[s]) || null);
   const [cands, setCands] = useState(null);
   const [query, setQuery] = useState('');
   const [paste, setPaste] = useState('');
@@ -85,48 +93,71 @@ function IdentifyPanel({ artistId, name, identity, onSaved }) {
     } catch (e) { if (my === seq.current) { setCands({ source: src, list: [] }); setError(e.message); } }
   }, [artistId]);
   useEffect(() => {
-    setQuery(''); setPaste(''); search(source, '');
-    return () => invalidate(); // tab change or unmount: drop any in-flight result
-  }, [source, search, invalidate]);
+    setQuery(''); setPaste('');
+    if (open) search(open, ''); else setCands(null);
+    return () => invalidate(); // row change or unmount: drop any in-flight result
+  }, [open, search, invalidate]);
 
-  const shown = cands && cands.source === source ? cands.list : null;
+  const shown = open && cands && cands.source === open ? cands.list : null;
 
   const save = async (value, src) => {
     if (src === 'spotify' && identity.spotify && identity.spotify !== value && !window.confirm("Replace this band's Spotify match? The old one is not kept.")) return;
     setBusy(true); setError('');
-    try { await api(`/api/admin/band-check/bands/${artistId}/identity`, { method: 'PUT', body: { source: src, value } }); await onSaved(); }
+    try { await api(`/api/admin/band-check/bands/${artistId}/identity`, { method: 'PUT', body: { source: src, value } }); await onSaved(); setOpen(null); }
     catch (e) { setError(e.message); } finally { setBusy(false); }
   };
 
   return (
     <div className="band-identify">
-      <div className="band-tabs">
-        {Object.keys(SOURCE_LABEL).map(s => (
-          <button key={s} className={`btn ${source === s ? 'btn-primary' : ''}`} aria-pressed={source === s} onClick={() => { setCands(null); setSource(s); }}>
-            {SOURCE_LABEL[s]}{identity[s] ? ' ✓' : ''}
-          </button>
-        ))}
+      <div className="band-identify-head">
+        <strong>Identify sources</strong>
+        <button className="btn btn-sm" onClick={onDone}>Done</button>
       </div>
-      <p className="band-meta">Pick the right {SOURCE_LABEL[source]} match for {name}. It is saved, so you only do this once.</p>
-      {source !== 'bandcamp' && (
-        <form onSubmit={e => { e.preventDefault(); search(source, query); }}>
-          <input className="admin-input" aria-label={`Search ${SOURCE_LABEL[source]}`} placeholder={`Search ${SOURCE_LABEL[source]} (default: ${name})`} value={query} onChange={e => setQuery(e.target.value)} />
-        </form>
-      )}
       {error && <div className="admin-message error">{error}</div>}
-      {shown === null ? <div className="queue-empty">Searching…</div> : shown.length === 0 ? <div className="queue-empty">No candidates{source === 'bandcamp' ? ' found - paste the band’s Bandcamp address below' : ''}.</div> : shown.map(c => (
-        <div key={c.value} className="inbox-row">
-          <div><strong>{c.label}</strong><div className="band-meta">{c.detail}{c.url && <> · <a href={c.url} target="_blank" rel="noreferrer">open</a></>}</div></div>
-          <button className="btn btn-primary" disabled={busy || identity[source] === c.value} onClick={() => save(c.value, cands.source)}>{identity[source] === c.value ? 'Chosen' : 'Choose'}</button>
-        </div>
-      ))}
-      {source === 'bandcamp' && (
-        <form className="band-paste" onSubmit={e => { e.preventDefault(); save(paste.trim(), source); }}>
-          <input className="admin-input" aria-label="Bandcamp address" placeholder="https://bandname.bandcamp.com" value={paste} onChange={e => setPaste(e.target.value)} />
-          <button className="btn" disabled={busy || !paste.trim()}>Use this address</button>
-        </form>
-      )}
-      {source !== 'spotify' && identity[source] && <button className="btn" disabled={busy} onClick={() => save(null, source)}>Clear {SOURCE_LABEL[source]}</button>}
+      {SOURCES.map(s => {
+        const saved = identity[s];
+        const isOpen = open === s;
+        return (
+          <div key={s} className="band-source">
+            <div className="band-source-row">
+              <span className="band-source-name">{SOURCE_LABEL[s]}</span>
+              <span className="band-source-status">
+                {saved
+                  ? <>✓ saved · <a href={openLink(s, saved)} target="_blank" rel="noreferrer">open ↗</a></>
+                  : <span className="band-muted">not set</span>}
+              </span>
+              <span className="band-source-actions">
+                {saved && s !== 'spotify' && <button className="band-link-btn" disabled={busy} onClick={() => save(null, s)}>Clear</button>}
+                <button className="btn btn-sm" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : s)}>{saved ? 'Change' : 'Find'}</button>
+              </span>
+            </div>
+            {isOpen && (
+              <div className="band-source-body">
+                {s !== 'bandcamp' && (
+                  <form onSubmit={e => { e.preventDefault(); search(s, query); }}>
+                    <input className="admin-input" aria-label={`Search ${SOURCE_LABEL[s]}`} placeholder={`Search ${SOURCE_LABEL[s]} (default: ${name})`} value={query} onChange={e => setQuery(e.target.value)} />
+                  </form>
+                )}
+                {shown === null ? <div className="band-muted">Searching…</div>
+                  : shown.length === 0 && s !== 'bandcamp' ? <div className="band-muted">No matches.</div>
+                  : shown.map(c => (
+                    <div key={c.value} className="band-cand">
+                      <div className="band-cand-text"><strong>{c.label}</strong> <span className="band-muted">{c.detail}</span>{c.url && <> <a href={c.url} target="_blank" rel="noreferrer">open</a></>}</div>
+                      <button className="btn btn-sm btn-primary" disabled={busy || saved === c.value} onClick={() => save(c.value, cands.source)}>{saved === c.value ? 'Chosen' : 'Choose'}</button>
+                    </div>
+                  ))}
+                {s === 'bandcamp' && (
+                  <form className="band-paste" onSubmit={e => { e.preventDefault(); save(paste.trim(), s); }}>
+                    <span className="band-muted">{shown !== null && shown.length === 0 ? 'No page found automatically. Paste its address:' : 'Or paste an address:'}</span>
+                    <input className="admin-input" aria-label="Bandcamp address" placeholder="https://name.bandcamp.com" value={paste} onChange={e => setPaste(e.target.value)} />
+                    <button className="btn btn-sm" disabled={busy || !paste.trim()}>Use</button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -181,6 +212,8 @@ function Review({ artistId, onBack, onAdded }) {
       </div>
       {error && <div className="admin-message error">{error}</div>}
       {result && <div className="admin-message success">{result} <Link to="/admin/songs?queue=to-process">Open To be processed</Link></div>}
+      {showIdentify && <IdentifyPanel artistId={artistId} name={data.artist.name} identity={data.artist.identity} onSaved={() => load(true)} onDone={() => setShowIdentify(false)} />}
+      <div className="band-status">
       <div className="band-meta">
         {Object.entries(data.sources).map(([s, st]) => {
           const partial = st.truncated ? (s === 'bandcamp' ? ' (partial: first 40 releases)' : s === 'musicbrainz' ? ' (partial: first 1,000 recordings)' : '') : '';
@@ -195,8 +228,8 @@ function Review({ artistId, onBack, onAdded }) {
         })}
         {data.counts && <span> · {data.counts.new} new · {data.counts.in_catalogue} held · {data.counts.rejected} rejected · {data.counts.single_source} on one source only</span>}
       </div>
-      {showIdentify && <IdentifyPanel artistId={artistId} name={data.artist.name} identity={data.artist.identity} onSaved={() => load(true)} />}
-      {newSongs.length > 0 && <button className="btn" onClick={() => selectAll(newSongs)}>Select all new ({newSongs.length})</button>}
+      {newSongs.length > 0 && <button className="btn btn-sm" onClick={() => selectAll(newSongs)}>Select all new ({newSongs.length})</button>}
+      </div>
       {data.releases.map((rel, i) => (
         <section key={`${rel.source}:${rel.name}:${rel.release_date}:${i}`} className="band-release">
           <h3>{rel.name} <span className="band-meta">{rel.album_type || ''} {rel.release_date ? `· ${rel.release_date.slice(0, 4)}` : ''}</span>
@@ -232,12 +265,19 @@ function Review({ artistId, onBack, onAdded }) {
 function BandCheck({ onAdded }) {
   const [params, setParams] = useSearchParams();
   const artist = parseInt(params.get('artist'), 10);
-  const pick = (id) => setParams({ queue: 'band-check', artist: String(id) });
+  const q = params.get('bq') || '';
+  const offset = Math.max(0, parseInt(params.get('bp'), 10) || 0);
+  // keep bq/bp across band <-> list so Back restores the search and page; typing/paging replaces history entries
+  const update = (fn, opts) => setParams(prev => { const n = new URLSearchParams(prev); fn(n); return n; }, opts);
+  const setQuery = (v) => update(n => { if (v) n.set('bq', v); else n.delete('bq'); n.delete('bp'); }, { replace: true });
+  const setOffset = (v) => update(n => { if (v > 0) n.set('bp', String(v)); else n.delete('bp'); }, { replace: true });
+  const pick = (id) => update(n => { n.set('queue', 'band-check'); n.set('artist', String(id)); });
+  const back = () => update(n => { n.set('queue', 'band-check'); n.delete('artist'); });
   return (
     <div className="songs-main" style={{ flex: 1, minWidth: 0 }}>
       {Number.isSafeInteger(artist) && artist > 0
-        ? <Review key={artist} artistId={artist} onBack={() => setParams({ queue: 'band-check' })} onAdded={onAdded} />
-        : <><div className="queue-toolbar"><h2>Band check</h2></div><BandList onPick={pick} /></>}
+        ? <Review key={artist} artistId={artist} onBack={back} onAdded={onAdded} />
+        : <><div className="queue-toolbar"><h2>Band check</h2></div><BandList q={q} offset={offset} onQuery={setQuery} onOffset={setOffset} onPick={pick} /></>}
     </div>
   );
 }

@@ -190,4 +190,23 @@
 .band-chip.error, .band-chip.warn { border-color: var(--accent-ember-60); }
 .band-release h3 { display: flex; gap: var(--space-2); align-items: baseline; margin-top: var(--space-4); }
 .band-footer { position: sticky; bottom: 0; padding: var(--space-3) 0; background: var(--bg-canvas); }
-.band-tabs, .band-paste, .band-pager { display: flex; gap: var(--space-2); align-items: center; margin: var(--space-2) 0; }
+.band-pager { display: flex; gap: var(--space-2); align-items: center; margin: var(--space-2) 0; }
+.band-muted { color: var(--text-muted); font-size: 0.85em; }
+.band-identify { background: var(--bg-surface); border: 1px solid var(--border-hairline); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); margin: var(--space-3) 0 var(--space-4); }
+.band-identify-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding-bottom: var(--space-2); }
+.band-identify .admin-message { margin: 0 0 var(--space-2); }
+.band-source { border-top: 1px solid var(--border-hairline); }
+.band-source-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-2) 0; }
+.band-source-name { width: 6.5rem; font-weight: 600; font-size: 0.9rem; }
+.band-source-status { flex: 1; min-width: 0; font-size: 0.85rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.band-source-actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
+.band-link-btn { background: none; border: none; padding: 0; color: var(--text-muted); font-size: 0.8rem; text-decoration: underline; cursor: pointer; }
+.band-link-btn:hover:not(:disabled) { color: var(--text-primary); }
+.band-source-body { display: flex; flex-direction: column; gap: var(--space-2); padding: 0 0 var(--space-3); }
+.band-source-body .admin-input { width: 100%; box-sizing: border-box; }
+.band-cand { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); font-size: 0.9rem; }
+.band-cand-text { min-width: 0; overflow-wrap: anywhere; }
+.band-paste { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.band-paste .admin-input { flex: 1 1 14rem; width: auto; min-width: 0; }
+.band-status { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); margin: var(--space-3) 0; }
+.band-status .btn { flex-shrink: 0; }
