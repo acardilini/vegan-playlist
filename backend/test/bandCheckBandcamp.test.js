@@ -91,3 +91,64 @@ test('truncated is true only when /music lists more than 40 releases', async () 
   assert.equal((await build(40).fetchCatalogue(ORIGIN)).truncated, false);
   assert.equal((await build(3).fetchCatalogue(ORIGIN)).truncated, false);
 });
+
+const redirect = (to, status = 301) => ({ ok: false, status, headers: { get: (h) => (String(h).toLowerCase() === 'location' ? to : null) }, text: async () => '' });
+
+test('requests do not auto-follow redirects', async () => {
+  const seen = [];
+  const a = createBandcampAdapter({ fetch: async (url, opts) => { seen.push(opts); return page(MUSIC); }, sleep: async () => {} });
+  await a.fetchCatalogue(ORIGIN).catch(() => {});
+  assert.ok(seen.length > 0 && seen.every(o => o.redirect === 'manual'));
+});
+
+test('a same-site redirect is followed', async () => {
+  const { a, urls } = adapterFor({
+    [ORIGIN + '/music']: redirect('/music2'),
+    [ORIGIN + '/music2']: page('<a href="/album/one">x</a>'),
+    [ORIGIN + '/album/one']: redirect('http://bloodmouth.bandcamp.com/album/one-v2', 302),
+    [ORIGIN + '/album/one-v2']: page(album('One', ['T'])),
+  });
+  const cat = await a.fetchCatalogue(ORIGIN);
+  assert.deepEqual(cat.releases.map(r => r.name), ['One']);
+  assert.ok(urls.includes(ORIGIN + '/album/one-v2'));
+});
+
+test('a redirect to a custom domain is UNREADABLE and the off-host URL is never fetched', async () => {
+  const { a, urls } = adapterFor({ [ORIGIN + '/music']: redirect('https://bloodmouth-band.example.org/music') });
+  await assert.rejects(a.fetchCatalogue(ORIGIN), (e) => e.code === 'UNREADABLE');
+  assert.ok(!urls.some(u => /example\.org/.test(u)));
+  const missing = adapterFor({ [ORIGIN + '/music']: { ok: false, status: 302, text: async () => '' } });
+  await assert.rejects(missing.a.fetchCatalogue(ORIGIN), (e) => e.code === 'UNREADABLE');
+});
+
+test('a redirect loop is UNREADABLE after 3 hops', async () => {
+  const { a, urls } = adapterFor({ [ORIGIN + '/music']: redirect(ORIGIN + '/music') });
+  await assert.rejects(a.fetchCatalogue(ORIGIN), (e) => e.code === 'UNREADABLE' && !/bandcamp/.test(e.message));
+  assert.equal(urls.length, 4); // the request plus 3 followed hops
+});
+
+test('/music redirecting to /album/<slug> reads that release as the only one', async () => {
+  const { a } = adapterFor({
+    [ORIGIN + '/music']: redirect(ORIGIN + '/album/solo'),
+    [ORIGIN + '/album/solo']: page(album('Solo', ['A', 'B'])),
+  });
+  const cat = await a.fetchCatalogue(ORIGIN);
+  assert.equal(cat.releases.length, 1);
+  assert.equal(cat.releases[0].name, 'Solo');
+  assert.deepEqual(cat.releases[0].tracks.map(t => t.title), ['A', 'B']);
+  assert.equal(cat.releases[0].release_date, '2019-06-13');
+  assert.equal(cat.releases[0].album_type, 'album');
+  assert.equal(cat.truncated, false);
+});
+
+test('/music redirecting to /track/<slug> yields one single; unparseable is UNREADABLE', async () => {
+  const { a } = adapterFor({
+    [ORIGIN + '/music']: redirect(ORIGIN + '/track/lone'),
+    [ORIGIN + '/track/lone']: page(ld({ '@type': 'MusicRecording', name: 'Lone Song', '@id': ORIGIN + '/track/lone' })),
+  });
+  const cat = await a.fetchCatalogue(ORIGIN);
+  assert.equal(cat.releases.length, 1);
+  assert.equal(cat.releases[0].album_type, 'single');
+  const bad = adapterFor({ [ORIGIN + '/music']: redirect(ORIGIN + '/album/solo'), [ORIGIN + '/album/solo']: page('<html>no json</html>') });
+  await assert.rejects(bad.a.fetchCatalogue(ORIGIN), (e) => e.code === 'UNREADABLE');
+});

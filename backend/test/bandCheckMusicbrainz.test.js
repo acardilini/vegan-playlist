@@ -68,3 +68,43 @@ test('truncated is true when the page cap is hit with recordings remaining, fals
   const small = harness(() => ok({ 'recording-count': 2, recordings: [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }] }));
   assert.equal((await small.adapter.fetchCatalogue(MBID)).truncated, false);
 });
+
+test('overlapping requests queue: fetch times stay >= 1100ms apart', async () => {
+  let t = 1_000_000;
+  const times = [];
+  const adapter = createMusicBrainzAdapter({
+    fetch: async () => { times.push(t); return ok({ artists: [] }); },
+    sleep: async (ms) => { t += ms; },
+    now: () => t,
+  });
+  await adapter.identify('prime'); // so both overlapping calls below see a wait to serve
+  times.length = 0;
+  await Promise.all([adapter.identify('a'), adapter.identify('b')]);
+  assert.equal(times.length, 2);
+  assert.ok(times[1] - times[0] >= 1100, `gap ${times[1] - times[0]}`);
+});
+
+test('a failing request does not block the queue', async () => {
+  let n = 0, t = 1_000_000;
+  const adapter = createMusicBrainzAdapter({
+    fetch: async () => { n++; if (n === 1) throw new Error('boom'); return ok({ artists: [] }); },
+    sleep: async (ms) => { t += ms; },
+    now: () => t,
+  });
+  const [r1, r2] = await Promise.allSettled([adapter.identify('a'), adapter.identify('b')]);
+  assert.equal(r1.status, 'rejected');
+  assert.equal(r1.reason.code, 'UPSTREAM');
+  assert.equal(r2.status, 'fulfilled');
+});
+
+test('truncated is false when exiting by a short page or by reaching recording-count', async () => {
+  const recs = (n, off = 0) => Array.from({ length: n }, (_, i) => ({ id: 'r' + (off + i), title: 'T' + (off + i) }));
+  // short page although the reported count is inconsistent (larger)
+  const short = harness(() => ok({ 'recording-count': 500, recordings: recs(40) }));
+  assert.equal((await short.adapter.fetchCatalogue(MBID)).truncated, false);
+  // exactly MAX_PAGES * 100 recordings, count equal to that
+  const exact = harness((url) => ok({ 'recording-count': 1000, recordings: recs(100, Number(/offset=(\d+)/.exec(url)[1])) }));
+  const cat = await exact.adapter.fetchCatalogue(MBID);
+  assert.equal(cat.releases[0].tracks.length, 1000);
+  assert.equal(cat.truncated, false);
+});

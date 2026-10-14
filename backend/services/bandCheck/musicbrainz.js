@@ -12,7 +12,15 @@ function createMusicBrainzAdapter({
 }) {
   let last = 0;
 
-  async function get(path) {
+  // The adapter is shared by overlapping admin requests: serialise everything through one chain so the pacing holds.
+  let chain = Promise.resolve();
+  function get(path) {
+    const run = chain.then(() => doGet(path));
+    chain = run.catch(() => {}); // a rejected request must not block the queue
+    return run;
+  }
+
+  async function doGet(path) {
     const wait = last + gapMs - now();
     if (wait > 0) await sleep(wait);
     last = now();
@@ -39,14 +47,15 @@ function createMusicBrainzAdapter({
     if (!UUID.test(String(mbid))) throw coded('NOT_FOUND');
     const tracks = [];
     let total = 0;
+    let truncated = true; // stays true only if the loop exhausts MAX_PAGES without breaking out
     for (let page = 0; page < MAX_PAGES; page++) {
       const j = await get(`/recording?artist=${mbid}&fmt=json&limit=${PAGE}&offset=${page * PAGE}`);
       const items = j.recordings || [];
       for (const r of items) tracks.push({ title: r.title, id: r.id, url: `https://musicbrainz.org/recording/${r.id}` });
       total = j['recording-count'] || 0;
-      if (items.length < PAGE || tracks.length >= total) break;
+      if (items.length < PAGE || tracks.length >= total) { truncated = false; break; }
     }
-    return { source: 'musicbrainz', truncated: tracks.length < total, releases: [{ id: 'mb', name: 'MusicBrainz recordings', album_type: null, release_date: null, url: null, tracks }] };
+    return { source: 'musicbrainz', truncated, releases: [{ id: 'mb', name: 'MusicBrainz recordings', album_type: null, release_date: null, url: null, tracks }] };
   }
 
   // The band's Bandcamp page, if MusicBrainz knows it (a candidate for the Bandcamp identity).

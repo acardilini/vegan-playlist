@@ -429,7 +429,7 @@ async function quickCapture(db, { title, artist } = {}) {
     `INSERT INTO songs (title, status, published, data_source, created_at)
      VALUES ($1, 'pending', false, 'manual', CURRENT_TIMESTAMP) RETURNING id`, [t])).rows[0];
   let art = (await db.query(
-    `SELECT id FROM artists WHERE LOWER(name)=LOWER($1) AND data_source='manual'`, [a])).rows[0];
+    `SELECT id FROM artists WHERE LOWER(name)=LOWER($1) ORDER BY (data_source='manual') DESC, id LIMIT 1`, [a])).rows[0];
   if (!art) {
     art = (await db.query(
       `INSERT INTO artists (name, data_source, created_at) VALUES ($1,'manual',CURRENT_TIMESTAMP) RETURNING id`, [a])).rows[0];

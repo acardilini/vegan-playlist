@@ -180,8 +180,8 @@ router.post('/manual-songs', async (req, res) => {
       for (const artistName of artist_names) {
         // Check if artist exists
         let artistResult = await client.query(
-          'SELECT id FROM artists WHERE LOWER(name) = LOWER($1) AND data_source = $2',
-          [artistName, 'manual']
+          "SELECT id FROM artists WHERE LOWER(name) = LOWER($1) ORDER BY (data_source = 'manual') DESC, id LIMIT 1",
+          [artistName]
         );
         
         if (artistResult.rows.length === 0) {
