@@ -22,7 +22,7 @@ import AdminLayout from './components/admin/AdminLayout';
 import Dashboard from './components/admin/Dashboard';
 import SongsArea from './components/admin/SongsArea';
 import Workbench from './components/admin/Workbench';
-import ArtistsManager from './components/ArtistsManager';
+import ArtistsArea from './components/admin/ArtistsArea';
 import ManagePlaylistsTab from './components/ManagePlaylistsTab';
 import DuplicateManager from './components/DuplicateManager';
 
@@ -59,7 +59,7 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="songs" element={<SongsArea />} />
-            <Route path="artists" element={<ArtistsManager />} />
+            <Route path="artists" element={<ArtistsArea />} />
             <Route path="playlists" element={<ManagePlaylistsTab />} />
             <Route path="data-quality" element={<DuplicateManager />} />
             <Route path="song/:id" element={<Workbench />} />

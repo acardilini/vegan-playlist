@@ -7,15 +7,14 @@ import AddSongPanel from './AddSongPanel';
 import InboxList from './InboxList';
 import SpotifyLists from './SpotifyLists';
 import JunkLyricsList from './JunkLyricsList';
-import BandCheck from './BandCheck';
 
 const DEFAULT_QUEUE = 'to-process';
 // Only these queues are selectable — Needs analysis is rail-disabled (reserved for
 // sub-project B). Guard against a stale/typo'd ?queue= landing on a queue that can't
-// render. 'inbox' renders InboxList, 'spotify' SpotifyLists and 'band-check' BandCheck; the rest render SongQueueList.
+// render. 'inbox' renders InboxList, and 'spotify' SpotifyLists; the rest render SongQueueList.
 const SELECTABLE_QUEUES = [
   'inbox', 'to-process', 'needs-lyrics', 'needs-cover', 'needs-video', 'no-video', 'junk-lyrics',
-  'to-transcribe', 'lyrics-on-hold', 'remind-later', 'to-finalise', 'live', 'all', 'featured', 'spotify', 'band-check',
+  'to-transcribe', 'lyrics-on-hold', 'remind-later', 'to-finalise', 'live', 'all', 'featured', 'spotify',
 ];
 
 function SongsArea() {
@@ -47,13 +46,11 @@ function SongsArea() {
         <QueueRail counts={counts} activeQueue={activeQueue} onSelect={selectQueue} />
         {activeQueue === 'inbox'
           ? <InboxList refreshKey={refreshKey} onChanged={() => { loadCounts(); setRefreshKey(k => k + 1); }} />
-          : activeQueue === 'band-check'
-            ? <BandCheck onAdded={() => loadCounts()} />
-            : activeQueue === 'spotify'
-              ? <SpotifyLists />
-              : activeQueue === 'junk-lyrics'
-                ? <JunkLyricsList refreshKey={refreshKey} onChanged={() => { loadCounts(); setRefreshKey(k => k + 1); }} />
-                : <SongQueueList queue={activeQueue} refreshKey={refreshKey} />}
+          : activeQueue === 'spotify'
+            ? <SpotifyLists />
+            : activeQueue === 'junk-lyrics'
+              ? <JunkLyricsList refreshKey={refreshKey} onChanged={() => { loadCounts(); setRefreshKey(k => k + 1); }} />
+              : <SongQueueList queue={activeQueue} refreshKey={refreshKey} />}
       </div>
       {showAdd && (
         <AddSongPanel
