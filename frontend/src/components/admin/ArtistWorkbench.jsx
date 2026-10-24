@@ -15,6 +15,7 @@ function ArtistWorkbench() {
   const [focus, setFocus] = useState({ open: null, n: 0 }); // Links panel row requested by the Catalogue panel
   const [refreshKey, setRefreshKey] = useState(0);          // bumps when identity changes -> Catalogue re-checks
   const token = useRef(0);                                   // only the latest request's response wins
+  const idRef = useRef(id); idRef.current = id;                // the artist currently on screen
 
   const reload = useCallback(() => {
     const my = ++token.current;
@@ -36,7 +37,7 @@ function ArtistWorkbench() {
       const d = await r.json().catch(() => ({}));
       if (r.ok) {
         if (my === token.current) setArtist(d);
-        else reload(); // a reload/navigation began after this PUT was sent; refetch so controlled state is not stale
+        else if (idRef.current === id) reload(); // superseded by a same-artist reload: refetch so controlled state is not stale; if the user moved to another artist, drop it
         return { ok: true };
       }
       return { ok: false, error: d.message || d.error || 'Save failed' };
