@@ -14,7 +14,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
   component in Chrome through a throwaway mock harness (outside the repo) over three rounds and signed off. Backend: MusicBrainz requests queue through the shared adapter
   (1.1s apart); Bandcamp follows redirects manually (<=3 hops, same `*.bandcamp.com` origin only; a `/music` that lands on one album/track page is read as the only release - untested
   against a real single-release band); `quickCapture` and the legacy manual add match an existing artist by name regardless of `data_source`. **Verified:** backend **361/361**, lint 0 errors,
-  build clean. **Still to smoke:** the new Identify card in the real admin; a Bandcamp-only song (none exists for Bloodmouth); a band with many Bandcamp releases and one with a single release.
+  build clean. **Curator smoke 2026-10-24 PASSED:** Identify card, URL-kept search/page + Back restore, Bandcamp-only add (Bandcamp URL becomes the play link). **Still to smoke (no band found yet; curator watching for one):** the *partial* note (Bandcamp 40-release / MusicBrainz 1,000-recording cap) and a single-release Bandcamp band (`/music` redirect path).
 - **Current session (2026-10-14): Sub-project H - multi-source Band check - BUILT on `session-band-check` and MERGED to `main` (merge `12cc1c8`) after the curator's first smoke (identify / review / add worked); remaining smoke items are listed in the follow-up entry above.**
   Spec `docs/superpowers/specs/2026-10-13-H-band-check-design.md`, plan `docs/superpowers/plans/2026-10-14-H-band-check.md`. Backend `services/bandCheck/` (Spotify /
   Bandcamp / MusicBrainz adapters, pure `merge.js`, orchestrator), migration **014** (`artists.bandcamp_url`, `artists.musicbrainz_id`; applied to the dev DB), five routes
@@ -506,7 +506,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
-> **⏭ NEXT (start here, 2026-10-14): the multi-source Band check is MERGED to `main` (`12cc1c8`); the curator finishes its remaining smoke items as bands turn up (see Current State).** Smoke also: a band with many Bandcamp
+> **⏭ NEXT (start here, 2026-10-14): the multi-source Band check is MERGED to `main` (`12cc1c8`); smoke PASSED 2026-10-24 except two cases awaiting a suitable band (partial-cap note; single-release Bandcamp band) - see Current State.** Smoke also: a band with many Bandcamp
 > releases and a band with one (Bandcamp's `/music` grid may hide later items in a data attribute; a single-release `/music` may redirect). Backlog behind it: the 29 pulled songs'
 > include-or-reject, the deferred minors in the SDD ledger (MusicBrainz queue-safe pacing, fetch redirects, BandList state on Back), the deferred junk-lyrics/Spotify-push minors. _(Older NEXT notes below are history.)_
 > **⏭ NEXT (2026-10-13, newest): sub-project G (junk lyrics) is BUILT on `session-junk-lyrics`, awaiting the curator's smoke, then merge.** Smoke:
@@ -2056,6 +2056,8 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-10-24 (Band check smoke)** - curator smoked the Identify card, URL-kept search/page with Back restore, and a Bandcamp-only add: all working. Partial-cap note and single-release band untested (no suitable band found). Docs only.
 
 - **2026-10-14 (H multi-source Band check BUILT, MERGED to `main` as `12cc1c8`)** - branch `session-band-check`; spec, plan, Tasks 1-9 with per-task review. Migration 014; `services/bandCheck/`;
   five admin routes; Songs > Band check view. Backend 341/341 serial; lint 0 errors; build clean; live read-only Bloodmouth check (73 merged songs, 37 Bandcamp-only). Curator smoke pending.
