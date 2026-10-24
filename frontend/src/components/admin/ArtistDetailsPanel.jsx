@@ -16,7 +16,7 @@ function ArtistDetailsPanel({ artist, save }) {
       <AutoText label="Biography" initial={artist.bio} multiline rows={5} onSave={(v) => save({ bio: v })} />
       <AutoText label="Vegan advocacy notes" initial={artist.vegan_advocacy_notes} multiline rows={4}
         onSave={(v) => save({ vegan_advocacy_notes: v })} />
-      <label className="checkbox-label">
+      <label className="wb-check" style={{ display: "flex", margin: "var(--space-2) 0" }}>
         <input type="checkbox" checked={!!artist.no_advocacy_notes_needed}
           onChange={(e) => toggleNoNotes(e.target.checked)} />
         {' '}No advocacy notes needed
