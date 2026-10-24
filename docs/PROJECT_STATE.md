@@ -7,6 +7,12 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
+- **Current session (2026-10-25): Sub-project I1 - Artists area - BUILT on branch `session-artists-area` (10 commits, `9c29187`..`55180ca`), NOT yet merged / curator-smoked.**
+  Spec `docs/superpowers/specs/2026-10-24-I-artists-area-design.md`, plan `docs/superpowers/plans/2026-10-24-I1-artists-area.md`. The old Artists Management page and Songs > Band check are replaced by one **Artists area**: a queue rail
+  (Needs identity / Needs catalogue check / Needs bio / Needs advocacy notes / Done / All) and an **artist workbench** (Details, Links = Spotify/Bandcamp/MusicBrainz identity + Website, Catalogue = Band check, Notes).
+  Fixes the "Failed to fetch artists" search error (count query reused a `$3` placeholder), the cramped stats header, and the Bandcamp URL not showing in artist management. Bandcamp and Website stay distinct fields; the public artist page shows both.
+  New `services/artists.js` + migration **015** (`artists.no_advocacy_notes_needed`, applied to the dev DB); `ArtistsManager.jsx` and `BandCheck.jsx` deleted. **Verified:** backend **368/368** serial; lint 0 errors (5 warnings); build clean; real headless Chrome through a
+  throwaway mock harness (found and fixed a broken checkbox layout and no phone stacking); live read-only API check (850 artists, counts match SQL). Per-task reviews + an opus whole-branch review (fixed: search box dropped-keystroke regression, past-the-end page, stale checkbox after a superseded save, long-website 500); one fix of the fix was caught by the re-review. **Not curator-checked:** the real admin (login gate). **I2 next:** Exclude in Band check (saved as `rejected` songs), the "N new since reviewed" prompt.
 - **Band check follow-up (2026-10-14, after the curator's first smoke: identify/review/add worked; "Identify sources" was too busy) - DONE and MERGED to `main` (merge `12cc1c8`, no-ff, pushed; merged `main` re-verified backend 361/361, lint 0 errors, build clean).**
   UI: Identify is now one bordered card of three compact accordion rows (saved value or "not set", Change/Find/Close, Clear inside its row, Bandcamp paste on one inline line, Done),
   "Select all new" moved onto the counts line, admin-standard `input`/`btn-secondary|ghost btn-sm`, source chips only when they say something (partial / error / "shares no songs"),
@@ -506,6 +512,9 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **⏭ NEXT (2026-10-25): sub-project I1 (Artists area) is built on `session-artists-area`, awaiting the curator's smoke, then merge; then I2 (Exclude + "N new since reviewed").** Smoke: Admin -> Artists: rail counts, search (try a band name and one with an apostrophe), open an artist, edit bio and tick *No advocacy notes needed*, add a Bandcamp URL under Links and see it on the public artist page, run the Catalogue (Band check) from inside the workbench, Mark catalogue reviewed, phone width. Apply migration 015 on any other DB first. Note: opening a workbench runs a full Spotify/Bandcamp/MusicBrainz check (cached 5 min), so walking a queue with Prev/Next hits those sources per artist. Deferred minors: workbench Back loses page/search, row chips wrap, `listBands` has no frontend caller now.
+> **Curator decision 2026-10-24:** the 29 pulled Spotify songs are NOT a task (see below, they flow through the normal pipeline).
+>
 > **Curator decision 2026-10-24:** the 29 pulled Spotify songs are NOT a task - they flow through the normal song pipeline. **NEXT: sub-project I (Artists area)** - spec `docs/superpowers/specs/2026-10-24-I-artists-area-design.md` awaits the curator's review, then plan.
 >
 > **⏭ NEXT (start here, 2026-10-14): the multi-source Band check is MERGED to `main` (`12cc1c8`); smoke PASSED 2026-10-24 except two cases awaiting a suitable band (partial-cap note; single-release Bandcamp band) - see Current State.** Smoke also: a band with many Bandcamp
@@ -2058,6 +2067,9 @@ Newest first. Each entry: date · decision · why.
 ## Changelog
 
 Newest first. What actually happened each session.
+
+- **2026-10-25 (I1 Artists area BUILT, unmerged)** - branch `session-artists-area`; brainstorm, spec, plan, subagent-driven execution (8 tasks, per-task reviews, browser verification via mock harness, opus whole-branch review, fix wave + re-review). Migration 015; `services/artists.js`; four admin routes replace three; Artists area + workbench; public artist page shows Bandcamp and Website separately; ArtistsManager and Songs > Band check retired. Backend 368/368; lint 0 errors; build clean. Curator smoke pending.
+- **2026-10-24 (Band check smoke)** - see entry below.
 
 - **2026-10-24 (Band check smoke)** - curator smoked the Identify card, URL-kept search/page with Back restore, and a Bandcamp-only add: all working. Partial-cap note and single-release band untested (no suitable band found). Docs only.
 

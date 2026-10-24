@@ -25,6 +25,7 @@ The admin Artists page (`ArtistsManager.jsx`) and Songs > Band check grew separa
 - **I1 - Artists area.** Search fix, queues, workbench (Details, Links, Catalogue = existing Band check, Notes), retire `ArtistsManager`, Songs > Band check redirects, public page shows both buttons.
 - **I2 - Review and exclude.** Exclude in Band check, Mark catalogue reviewed, "N new since reviewed", bio/advocacy queues complete with the none-needed mark.
 - I2 follows I1 after the curator's smoke. Each gets its own plan.
+- **Deviation recorded at plan time:** the bio / advocacy-notes queues and the none-needed mark (with migration 015) landed in I1, because the queue predicates need the column; the Mark catalogue reviewed / Clear toggle is also in I1 (always offered). I2 is Exclude in Band check and the "N new since reviewed" prompt.
 
 ## 4. Data (migration 015, additive, idempotent)
 
