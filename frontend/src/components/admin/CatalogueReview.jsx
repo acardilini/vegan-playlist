@@ -16,6 +16,8 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
   const [picked, setPicked] = useState(() => new Set());
   const [result, setResult] = useState('');
   const [adding, setAdding] = useState(false);
+  const [markSaving, setMarkSaving] = useState(false);
+  const [markError, setMarkError] = useState('');
   const seq = useRef(0);
   const resultRef = useRef(null);
   const focusResult = useRef(false);
@@ -60,10 +62,16 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
       <h2>Catalogue</h2>
       {data && <button className="btn btn-secondary btn-sm" onClick={() => { setResult(''); load(true); }}>Refresh</button>}
       {data && (
-        <button className="btn btn-secondary btn-sm" onClick={() => onReviewedChange(!reviewed)}>
+        <button className="btn btn-secondary btn-sm" disabled={markSaving} onClick={async () => {
+          setMarkSaving(true); setMarkError('');
+          const res = await onReviewedChange(!reviewed);
+          setMarkSaving(false);
+          if (!res || !res.ok) setMarkError((res && res.error) || 'Save failed');
+        }}>
           {reviewed ? 'Clear reviewed mark' : 'Mark catalogue reviewed'}
         </button>
       )}
+      {markError && <span className="admin-message error">{markError}</span>}
     </div>
   );
 

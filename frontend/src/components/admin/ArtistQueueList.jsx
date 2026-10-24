@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 
@@ -11,12 +11,17 @@ function ArtistQueueList({ queue, label, q, page, onQuery, onPage }) {
   const [error, setError] = useState('');
 
   // The input is local state committed to the URL after a pause, so a router transition cannot reset it mid-typing.
-  useEffect(() => { setText(q); }, [q, queue]);
+  // committed = the last value this list wrote to (or read from) the URL; a different q is an outside change to adopt
+  const committed = useRef(q);
   useEffect(() => {
-    if (text === q) return undefined;
-    const t = setTimeout(() => onQuery(text), 250);
+    if (q !== committed.current) { committed.current = q; setText(q); }
+  }, [q]);
+  useEffect(() => { committed.current = q; setText(q); }, [queue]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (text === committed.current) return undefined;
+    const t = setTimeout(() => { committed.current = text; onQuery(text); }, 250);
     return () => clearTimeout(t);
-  }, [text, q, onQuery]);
+  }, [text, onQuery]);
 
   const load = useCallback(() => {
     let live = true;
@@ -30,6 +35,8 @@ function ArtistQueueList({ queue, label, q, page, onQuery, onPage }) {
   useEffect(() => load(), [load]);
 
   const rows = data ? data.rows : [];
+  // a stale ?page= past the end would strand the curator on an empty page
+  useEffect(() => { if (data && data.rows.length === 0 && page > 0) onPage(0); }, [data, page, onPage]);
   return (
     <div className="songs-main" style={{ flex: 1, minWidth: 0 }}>
       <div className="queue-toolbar">
@@ -61,7 +68,7 @@ function ArtistQueueList({ queue, label, q, page, onQuery, onPage }) {
       {data && data.total > PAGE_SIZE && (
         <div className="queue-pager">
           <button className="btn btn-secondary btn-sm" disabled={page === 0} onClick={() => onPage(Math.max(0, page - 1))}>← Prev</button>
-          <span className="admin-stub">{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, data.total)} of {data.total}</span>
+          <span className="admin-stub">{Math.min(page * PAGE_SIZE + 1, data.total)}–{Math.min((page + 1) * PAGE_SIZE, data.total)} of {data.total}</span>
           <button className="btn btn-secondary btn-sm" disabled={(page + 1) * PAGE_SIZE >= data.total} onClick={() => onPage(page + 1)}>Next →</button>
         </div>
       )}

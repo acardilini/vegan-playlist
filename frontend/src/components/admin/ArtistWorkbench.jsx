@@ -34,10 +34,14 @@ function ArtistWorkbench() {
     try {
       const r = await adminFetch(`/api/admin/artists/${id}`, { method: 'PUT', body: patch });
       const d = await r.json().catch(() => ({}));
-      if (r.ok) { if (my === token.current) setArtist(d); return { ok: true }; }
+      if (r.ok) {
+        if (my === token.current) setArtist(d);
+        else reload(); // a reload/navigation began after this PUT was sent; refetch so controlled state is not stale
+        return { ok: true };
+      }
       return { ok: false, error: d.message || d.error || 'Save failed' };
     } catch { return { ok: false, error: 'Request failed' }; }
-  }, [id]);
+  }, [id, reload]);
 
   const onIdentitySaved = useCallback(async () => { await reload(); setRefreshKey((k) => k + 1); }, [reload]);
   const needIdentity = useCallback((source) => setFocus((f) => ({ open: source, n: f.n + 1 })), []);

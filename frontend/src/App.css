@@ -3591,7 +3591,7 @@ main {
 /* Were ".stat-card h3"/".stat-card p" in the now-deleted public "Data
    Dashboard Styles" block (App.css). Higher specificity than .stat-value/
    .stat-title below, so they already governed this admin StatCard's h3/p
-   (ArtistsManager's stat-card uses div.stat-number/div.stat-label, so it was
+   (the retired artist stat cards used div.stat-number/div.stat-label, so they were
    never affected) — kept here verbatim so deleting the public block doesn't
    visually change the admin dashboard. */
 .stat-card h3 {

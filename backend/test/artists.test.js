@@ -113,6 +113,8 @@ test('update rejects bad input without writing, and a missing artist is NOT_FOUN
   const id = await mk('ZZZART guard');
   await assert.rejects(() => svc.update(pool, id, { name: '   ' }), { code: 'BAD_INPUT' });
   await assert.rejects(() => svc.update(pool, id, { website_url: 'javascript:alert(1)' }), { code: 'BAD_INPUT' });
+  await assert.rejects(() => svc.update(pool, id, { website_url: 'https://example.org/' + 'a'.repeat(500) }), { code: 'BAD_INPUT' });
+  assert.equal((await svc.get(pool, id)).website_url, null, 'over-long website was not written');
   await assert.rejects(() => svc.update(pool, id, { genres: 'punk' }), { code: 'BAD_INPUT' });
   await assert.rejects(() => svc.update(pool, id, { no_advocacy_notes_needed: 'yes' }), { code: 'BAD_INPUT' });
   assert.equal((await svc.get(pool, id)).name, 'ZZZART guard');

@@ -101,6 +101,7 @@ async function update(db, id, patch = {}) {
   if (patch.website_url !== undefined) {
     const v = patch.website_url === null ? '' : String(patch.website_url).trim();
     if (v && !isHttp(v)) throw coded('BAD_INPUT', 'Website must be an http(s) address');
+    if (v.length > 500) throw coded('BAD_INPUT', 'Website address is too long (500 characters at most)');
     set('website_url', v || null);
   }
   if (patch.genres !== undefined) {
