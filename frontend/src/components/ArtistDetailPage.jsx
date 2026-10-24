@@ -134,7 +134,17 @@ function ArtistDetailPage() {
                 Open in Spotify
               </a>
             )}
-            {artist.website_url && (
+            {artist.bandcamp_url && (
+              <a
+                href={artist.bandcamp_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="overlay-btn"
+              >
+                Bandcamp
+              </a>
+            )}
+            {artist.website_url && artist.website_url !== artist.bandcamp_url && (
               <a
                 href={artist.website_url}
                 target="_blank"
