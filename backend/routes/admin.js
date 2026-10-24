@@ -14,6 +14,7 @@ const { findDuplicateGroups } = require('../services/duplicates');
 const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDismissals');
 const spotifyPush = require('../services/spotifyPush');
 const bandCheck = require('../services/bandCheck');
+const artistsSvc = require('../services/artists');
 const { defaultAuth: spotifyAuth } = require('../services/spotifyAuth');
 const multer = require('multer');
 const csv = require('csv-parser');
@@ -1519,249 +1520,39 @@ router.post('/band-check/bands/:id/add', async (req, res) => {
 
 // ==================== Artists ====================
 
-// Get all artists for admin management
-router.get('/all-artists', async (req, res) => {
+function artistError(res, e, label) {
+  const status = { NOT_FOUND: 404, BAD_INPUT: 400 }[e.code];
+  if (status) return res.status(status).json({ error: e.code, message: e.message });
+  console.error(`artists ${label} error:`, e.code || 'error');
+  return res.status(500).json({ error: `Failed to ${label}` });
+}
+const artistId = (req) => { const n = parseInt(req.params.id, 10); return Number.isSafeInteger(n) && n > 0 ? n : -1; };
+
+// Static path first so ':id' never swallows it.
+router.get('/artists/queues', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const offset = (page - 1) * limit;
-    const search = req.query.search || '';
-    const reviewedFilter = req.query.reviewed; // 'true', 'false', or undefined for all
-    const sortBy = req.query.sortBy || 'name';
-    const sortOrder = req.query.sortOrder || 'asc';
-    
-    let whereClause = 'WHERE 1=1';
-    let params = [limit, offset];
-    let paramIndex = 3;
-    
-    if (search) {
-      whereClause += ` AND (LOWER(a.name) LIKE LOWER($${paramIndex}) OR LOWER(a.bio) LIKE LOWER($${paramIndex}) OR LOWER(a.vegan_advocacy_notes) LIKE LOWER($${paramIndex}))`;
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
-    
-    if (reviewedFilter === 'true') {
-      whereClause += ' AND a.discography_reviewed = true';
-    } else if (reviewedFilter === 'false') {
-      whereClause += ' AND (a.discography_reviewed = false OR a.discography_reviewed IS NULL)';
-    }
-    
-    // Map frontend sort fields to database fields
-    const sortFieldMap = {
-      'name': 'a.name',
-      'song_count': 'COUNT(sa.song_id)',
-      'followers': 'a.followers',
-      'popularity': 'a.popularity',
-      'discography_reviewed': 'a.discography_reviewed',
-      'updated_at': 'a.updated_at',
-      'created_at': 'a.created_at'
-    };
-    
-    const validSortField = sortFieldMap[sortBy] || 'a.name';
-    const validSortOrder = (sortOrder === 'desc') ? 'DESC' : 'ASC';
-    const orderByClause = `ORDER BY ${validSortField} ${validSortOrder}, a.name ASC`;
-    
-    const artistsResult = await pool.query(`
-      SELECT 
-        a.id,
-        a.spotify_id,
-        a.name,
-        a.spotify_url,
-        a.genres,
-        a.images,
-        a.followers,
-        a.popularity,
-        a.bio,
-        a.vegan_advocacy_notes,
-        a.website_url,
-        a.discography_reviewed,
-        a.discography_reviewed_date,
-        a.discography_review_notes,
-        a.data_source,
-        a.created_at,
-        a.updated_at,
-        COUNT(sa.song_id) as song_count,
-        string_agg(DISTINCT s.title, ', ' ORDER BY s.title) as sample_songs
-      FROM artists a
-      LEFT JOIN song_artists sa ON a.id = sa.artist_id
-      LEFT JOIN songs s ON sa.song_id = s.id
-      ${whereClause}
-      GROUP BY a.id, a.spotify_id, a.name, a.spotify_url, a.genres, a.images,
-               a.followers, a.popularity, a.bio, a.vegan_advocacy_notes, a.website_url,
-               a.discography_reviewed, a.discography_reviewed_date,
-               a.discography_review_notes, a.data_source, a.created_at, a.updated_at
-      ${orderByClause}
-      LIMIT $1 OFFSET $2
-    `, params);
-    
-    // Get total count
-    let countParams = params.slice(2); // Remove limit and offset
-    const countResult = await pool.query(`
-      SELECT COUNT(*) as total
-      FROM artists a
-      ${whereClause}
-    `, countParams);
-    
-    const total = parseInt(countResult.rows[0].total);
-    
-    res.json({
-      artists: artistsResult.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-    
-  } catch (error) {
-    console.error('Error fetching artists:', error);
-    res.status(500).json({ error: 'Failed to fetch artists', details: error.message });
-  }
+    const c = await artistsSvc.counts(pool);
+    res.json({ queues: artistsSvc.QUEUES.map(q => ({ ...q, count: c[q.key] })) });
+  } catch (e) { artistError(res, e, 'count artists'); }
 });
 
-// Update artist
+router.get('/artists', async (req, res) => {
+  try {
+    res.json(await artistsSvc.list(pool, {
+      queue: String(req.query.queue || 'all'), q: String(req.query.q || '').trim().slice(0, 100),
+      limit: req.query.limit, offset: req.query.offset,
+    }));
+  } catch (e) { artistError(res, e, 'list artists'); }
+});
+
+router.get('/artists/:id', async (req, res) => {
+  try { res.json(await artistsSvc.get(pool, artistId(req))); }
+  catch (e) { artistError(res, e, 'read the artist'); }
+});
+
 router.put('/artists/:id', async (req, res) => {
-  try {
-    const artistId = parseInt(req.params.id);
-    const {
-      name,
-      bio,
-      vegan_advocacy_notes,
-      website_url,
-      discography_reviewed,
-      discography_review_notes,
-      genres
-    } = req.body;
-    
-    console.log(`Updating artist ${artistId}:`, req.body);
-    
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      // Prepare the update query
-      let updateFields = [];
-      let params = [];
-      let paramIndex = 1;
-      
-      if (name !== undefined) {
-        updateFields.push(`name = $${paramIndex}`);
-        params.push(name);
-        paramIndex++;
-      }
-      
-      if (bio !== undefined) {
-        updateFields.push(`bio = $${paramIndex}`);
-        params.push(bio);
-        paramIndex++;
-      }
-      
-      if (vegan_advocacy_notes !== undefined) {
-        updateFields.push(`vegan_advocacy_notes = $${paramIndex}`);
-        params.push(vegan_advocacy_notes);
-        paramIndex++;
-      }
-
-      if (website_url !== undefined) {
-        updateFields.push(`website_url = $${paramIndex}`);
-        params.push(website_url || null);
-        paramIndex++;
-      }
-      
-      if (genres !== undefined) {
-        updateFields.push(`genres = $${paramIndex}`);
-        params.push(genres);
-        paramIndex++;
-      }
-      
-      if (discography_reviewed !== undefined) {
-        updateFields.push(`discography_reviewed = $${paramIndex}`);
-        params.push(discography_reviewed);
-        paramIndex++;
-        
-        // If marking as reviewed, set the date
-        if (discography_reviewed) {
-          updateFields.push(`discography_reviewed_date = CURRENT_TIMESTAMP`);
-        } else {
-          // If unmarking, clear the date
-          updateFields.push(`discography_reviewed_date = NULL`);
-        }
-      }
-      
-      if (discography_review_notes !== undefined) {
-        updateFields.push(`discography_review_notes = $${paramIndex}`);
-        params.push(discography_review_notes);
-        paramIndex++;
-      }
-      
-      updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-      params.push(artistId);
-      
-      const updateQuery = `
-        UPDATE artists 
-        SET ${updateFields.join(', ')}
-        WHERE id = $${paramIndex}
-        RETURNING *
-      `;
-      
-      const result = await client.query(updateQuery, params);
-      
-      await client.query('COMMIT');
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Artist not found' });
-      }
-      
-      res.json({
-        success: true,
-        artist: result.rows[0],
-        message: `Artist "${name || result.rows[0].name}" updated successfully`
-      });
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-    
-  } catch (error) {
-    console.error('Error updating artist:', error);
-    res.status(500).json({ 
-      error: 'Failed to update artist', 
-      details: error.message 
-    });
-  }
-});
-
-// Get artist statistics
-router.get('/artists-stats', async (req, res) => {
-  try {
-    const stats = await pool.query(`
-      SELECT 
-        COUNT(*) as total_artists,
-        COUNT(*) FILTER (WHERE discography_reviewed = true) as reviewed_artists,
-        COUNT(*) FILTER (WHERE discography_reviewed = false OR discography_reviewed IS NULL) as unreviewed_artists,
-        COUNT(*) FILTER (WHERE vegan_advocacy_notes IS NOT NULL AND vegan_advocacy_notes != '') as artists_with_notes,
-        COUNT(*) FILTER (WHERE data_source = 'spotify') as spotify_artists,
-        COUNT(*) FILTER (WHERE data_source = 'manual') as manual_artists
-      FROM artists
-    `);
-    
-    res.json({
-      success: true,
-      stats: stats.rows[0]
-    });
-    
-  } catch (error) {
-    console.error('Error fetching artist stats:', error);
-    res.status(500).json({
-      error: 'Failed to fetch artist statistics',
-      details: error.message
-    });
-  }
+  try { res.json(await artistsSvc.update(pool, artistId(req), req.body || {})); }
+  catch (e) { artistError(res, e, 'update the artist'); }
 });
 
 // ==================== Staging / lifecycle ====================
