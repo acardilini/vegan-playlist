@@ -506,6 +506,8 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ### Next Tasks (start here)
 
+> **Curator decision 2026-10-24:** the 29 pulled Spotify songs are NOT a task - they flow through the normal song pipeline. **NEXT: sub-project I (Artists area)** - spec `docs/superpowers/specs/2026-10-24-I-artists-area-design.md` awaits the curator's review, then plan.
+>
 > **⏭ NEXT (start here, 2026-10-14): the multi-source Band check is MERGED to `main` (`12cc1c8`); smoke PASSED 2026-10-24 except two cases awaiting a suitable band (partial-cap note; single-release Bandcamp band) - see Current State.** Smoke also: a band with many Bandcamp
 > releases and a band with one (Bandcamp's `/music` grid may hide later items in a data attribute; a single-release `/music` may redirect). Backlog behind it: the 29 pulled songs'
 > include-or-reject, the deferred minors in the SDD ledger (MusicBrainz queue-safe pacing, fetch redirects, BandList state on Back), the deferred junk-lyrics/Spotify-push minors. _(Older NEXT notes below are history.)_
