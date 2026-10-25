@@ -7,7 +7,7 @@ _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ## Current State
 
-- **Current session (2026-10-25): Sub-project I1 - Artists area - BUILT on branch `session-artists-area` (10 commits, `9c29187`..`55180ca`), NOT yet merged / curator-smoked.**
+- **Current session (2026-10-25): Sub-project I1 - Artists area - BUILT, curator-smoked and MERGED to `main` (no-ff; merged `main` re-verified backend 369/369, lint 0 errors, build clean).**
   Spec `docs/superpowers/specs/2026-10-24-I-artists-area-design.md`, plan `docs/superpowers/plans/2026-10-24-I1-artists-area.md`. The old Artists Management page and Songs > Band check are replaced by one **Artists area**: a queue rail
   (Needs identity / Needs catalogue check / Needs bio / Needs advocacy notes / Done / All) and an **artist workbench** (Details, Links = Spotify/Bandcamp/MusicBrainz identity + Website, Catalogue = Band check, Notes).
   Fixes the "Failed to fetch artists" search error (count query reused a `$3` placeholder), the cramped stats header, and the Bandcamp URL not showing in artist management. Bandcamp and Website stay distinct fields; the public artist page shows both.
