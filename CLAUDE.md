@@ -119,7 +119,13 @@ Run before ending every working session:
   clear; `spotify_url` written with it) / `artists.bandcamp_url` / `artists.musicbrainz_id` (migration 014). Sources fail independently on read (coded errors, 5-minute
   cache, `?fresh`), but **any failed source aborts an add**; one add at a time (`BUSY`), cap 100. **Nothing may log or rethrow a fetch error's message, URL or token.**
   Five routes under `/api/admin/band-check/...`; adds go through `staging.insertManualCandidate` / `insertCandidates` as pending, tagged `bandcheck` ("From band check").
-  Tests: `test/bandCheck*.test.js`. Frontend: `components/admin/BandCheck.jsx` (Songs > Band check)
+  Tests: `test/bandCheck*.test.js`. Frontend: `components/admin/CatalogueReview.jsx` (the artist workbench's Catalogue panel) + `IdentifyPanel.jsx` (its Links panel) over `bandCheckApi.js`; the old Songs > Band check view was retired in I1
+- **services/artists.js** (sub-project I1, Artists area): the admin Artists queues, list, read and update. The five queue predicates (`needs-identity`, `needs-check`, `needs-bio`,
+  `needs-notes`, `done`; plus `all`) live in ONE `PREDICATE` table feeding both `counts()` and `list()`, so a rail count cannot disagree with its list; search is literal
+  (`%`/`_` escaped) and the list and count queries share one filter (the old `/all-artists` reused a `$3` placeholder in the count query and failed on any search). `update` writes
+  only whitelisted artist columns (never `songs`) and **never identity** - `bandCheck.saveIdentity` is the single writer of `spotify_id`/`bandcamp_url`/`musicbrainz_id`.
+  `artists.no_advocacy_notes_needed` (migration 015) lets an artist leave the notes queue. `discography_reviewed` now means "catalogue checked via Band check". Routes: `GET /api/admin/artists/queues`,
+  `GET /api/admin/artists`, `GET|PUT /api/admin/artists/:id` (the old `/all-artists`, `/artists-stats` are gone). Tests: `test/artists.test.js` (sentinel `ZZZART`)
 - **services/inbox.js**: the Submissions Inbox (sub-project C) — `listInbox` (pending, **oldest first**,
   catalogue match flagged with `live`), `acceptSubmission`, `dismissSubmission`. **Accept claims the row
   first** (`approved`, match cleared) and only then bridges via staging, reverting to `pending` if the bridge
@@ -231,7 +237,7 @@ Run before ending every working session:
   as before, so no existing link breaks. All three consume `pages/about/useCodebook.js`, a small
   hook fetching `GET /api/analysis/codebook` once and sharing it across the tabs. Single-consumer
   helpers stay local to their page file
-- **src/components/**: 45 components (27 public + 18 admin; **BandCheck**, the Songs > Band check view; **SpotifySyncCard** on the Dashboard and **SpotifyLists**, the Songs > Spotify sync view) — public (SearchAndFilter,
+- **src/components/**: components (public + admin; the **Artists area** - `ArtistsArea` + `ArtistQueueList` (rail and list, `/admin/artists?queue=&q=&page=`) and `ArtistWorkbench` (`/admin/artist/:id`: Details, Links, Catalogue = Band check, Notes); `QueueRail` takes a `groups` prop so both areas share it; **SpotifySyncCard** on the Dashboard and **SpotifyLists**, the Songs > Spotify sync view) — public (SearchAndFilter,
   ArtistSearchResults, ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge,
   YouTubeEmbed, **SimilarSongs** (the song page's two embedding tabs + genre fallback), plus
   **`components/explore/`** — `ExploreMap` (hand-rolled canvas scatter, **no charting

@@ -14,6 +14,7 @@
 .admin-message.error { color: var(--color-danger); background: var(--bg-surface-raised); border: 1px solid var(--color-danger); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-3); font-size: 0.85rem; }
 .songs-layout { display: flex; gap: var(--space-5); align-items: flex-start; }
 .queue-rail { width: 210px; flex-shrink: 0; }
+@media (max-width: 700px) { .songs-layout { flex-direction: column; align-items: stretch; } .queue-rail { width: auto; } }
 .queue-rail .rail-group { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); padding: var(--space-3) var(--space-2) var(--space-1); }
 .queue-item { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: var(--space-2) var(--space-3); border: none; background: none; border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.9rem; cursor: pointer; text-align: left; }
 .queue-item:hover:not(:disabled) { background: var(--bg-surface-raised); }

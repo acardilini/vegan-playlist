@@ -823,11 +823,14 @@ router.get('/artists/:id', async (req, res) => {
         a.popularity,
         a.bio,
         a.vegan_advocacy_notes,
-        a.website_url
+        a.website_url,
+        a.bandcamp_url
       FROM artists a
       WHERE a.id = $1
+        AND EXISTS (SELECT 1 FROM song_artists sa JOIN songs s ON s.id = sa.song_id
+                    WHERE sa.artist_id = a.id AND s.status = 'included' AND s.published = true)
     `, [artistId]);
-    
+
     if (artistResult.rows.length === 0) {
       return res.status(404).json({ error: 'Artist not found' });
     }

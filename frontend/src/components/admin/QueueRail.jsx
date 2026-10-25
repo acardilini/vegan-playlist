@@ -1,7 +1,7 @@
 // Presentational queue rail. Groups + labels the derived queues; the disabled
 // slot (Needs analysis) is reserved for sub-project B.
 const GROUPS = [
-  ['Capture', [['inbox', 'Inbox', false], ['to-process', 'To be processed', false], ['band-check', 'Band check', false, true]]],
+  ['Capture', [['inbox', 'Inbox', false], ['to-process', 'To be processed', false]]],
   ['Needs work', [
     ['needs-lyrics', 'Needs lyrics', false],
     ['needs-cover', 'Needs cover', false],
@@ -16,10 +16,10 @@ const GROUPS = [
   ['Spotify', [['spotify', 'Spotify sync', false, true]]], // 4th slot: no count (it is not a queue)
 ];
 
-function QueueRail({ counts, activeQueue, onSelect }) {
+function QueueRail({ counts, activeQueue, onSelect, groups = GROUPS }) {
   return (
     <nav className="queue-rail">
-      {GROUPS.map(([group, items]) => (
+      {groups.map(([group, items]) => (
         <div key={group}>
           <div className="rail-group">{group}</div>
           {items.map(([key, label, disabled, noCount]) => (
