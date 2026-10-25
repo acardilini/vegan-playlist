@@ -51,7 +51,7 @@ async function list(db, { queue = 'all', q = '', limit = 50, offset = 0 } = {}) 
     LEFT JOIN songs s ON s.id = sa.song_id
     ${where}
     GROUP BY a.id
-    ORDER BY LOWER(a.name), a.id
+    ORDER BY songs DESC, LOWER(a.name), a.id
     LIMIT $2 OFFSET $3`, [pat, lim, off])).rows;
   return {
     total,

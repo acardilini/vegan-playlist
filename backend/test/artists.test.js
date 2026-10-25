@@ -81,6 +81,20 @@ test('rows carry song counts and flags; an artist with no songs lists fine; unkn
   await assert.rejects(() => svc.list(pool, { queue: 'nope' }), { code: 'BAD_INPUT' });
 });
 
+test('queues are ordered by total song count (all songs), then name', async () => {
+  const none = await mk('ZZZART ordtest a-none');
+  const three = await mk('ZZZART ordtest z-three');
+  const one = await mk('ZZZART ordtest m-one');
+  for (const t of ['x', 'y', 'z']) await mkSong(three, `ZZZART ord ${t}`);
+  await mkSong(one, 'ZZZART ord one', { status: 'pending', published: false }); // non-live songs still count
+  const L = async () => names(await svc.list(pool, { queue: 'all', q: 'ZZZART ordtest', limit: 200 }));
+  assert.deepEqual(await L(), ['ZZZART ordtest z-three', 'ZZZART ordtest m-one', 'ZZZART ordtest a-none']);
+  const tie = await mk('ZZZART ordtest b-tie');
+  await mkSong(tie, 'ZZZART ord tie');
+  assert.deepEqual(await L(), ['ZZZART ordtest z-three', 'ZZZART ordtest b-tie', 'ZZZART ordtest m-one', 'ZZZART ordtest a-none']);
+  void none;
+});
+
 test('get returns the full artist; missing id is NOT_FOUND', async () => {
   const id = await mk('ZZZART full', { bio: 'b', notes: 'n', bandcamp_url: 'https://f.bandcamp.com' });
   const a = await svc.get(pool, id);
