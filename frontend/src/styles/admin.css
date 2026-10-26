@@ -207,6 +207,9 @@ a.band-chip:hover { text-decoration: underline; }
 .band-release-head > div { flex: 1; min-width: 0; }
 .band-release-head h3 { display: inline; margin: 0; }
 .band-check { display: inline-block; width: 1rem; height: 1rem; margin: 0 var(--space-2) 0 0; vertical-align: middle; }
+.band-song { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; min-width: 0; }
+.band-choice { display: inline-flex; gap: var(--space-3); flex: none; }
+.band-choice label { display: inline-flex; align-items: center; gap: var(--space-1); font-size: 0.9em; cursor: pointer; }
 .band-footer .admin-message { margin-bottom: var(--space-2); }
 .band-footer { position: sticky; bottom: 0; padding: var(--space-3) 0; background: var(--bg-canvas); }
 .band-pager { display: flex; gap: var(--space-2); align-items: center; margin: var(--space-2) 0; }

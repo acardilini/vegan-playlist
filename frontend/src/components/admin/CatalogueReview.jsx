@@ -10,11 +10,13 @@ function stateChip(match) {
   return match.published ? 'live' : 'not live';
 }
 
+// choice: song key -> 'process' | 'reject'. Untouched songs are left alone.
 function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed, onReviewedChange, refreshKey }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
-  const [picked, setPicked] = useState(() => new Set());
+  const [choice, setChoice] = useState(() => new Map());
   const [result, setResult] = useState('');
+  const [added, setAdded] = useState(0);
   const [adding, setAdding] = useState(false);
   const [markSaving, setMarkSaving] = useState(false);
   const [markError, setMarkError] = useState('');
@@ -32,10 +34,10 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
       const d = await api(`/api/admin/band-check/bands/${artistId}${fresh ? '?fresh=1' : ''}`);
       if (my === seq.current) {
         setData(d);
-        if (fresh) { // keep ticks that are still new songs; drop ones that vanished or are now held
+        if (fresh) { // keep choices that are still new songs; drop ones that vanished or are now held
           const stillNew = new Set(d.releases.flatMap(r => r.songs).filter(s => s.state === 'new').map(s => s.key));
-          setPicked(p => new Set([...p].filter(k => stillNew.has(k))));
-        } else setPicked(new Set());
+          setChoice(c => new Map([...c].filter(([k]) => stillNew.has(k))));
+        } else setChoice(new Map());
       }
     } catch (e) {
       if (my !== seq.current) return;
@@ -52,22 +54,24 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
   useEffect(() => { load(false); }, [load]);
   // the parent bumps refreshKey (starts at 0, so mount does not double-load) when identity changed
   useEffect(() => { if (refreshKey) load(true); }, [refreshKey, load]);
-  // after a successful add the focused Add button unmounts: move focus to the footer message
+  // after a successful apply the focused Apply button unmounts: move focus to the footer message
   useEffect(() => {
     if (result && focusResult.current) { focusResult.current = false; resultRef.current?.focus(); }
   }, [result]);
+
+  const toggleReviewed = async (next) => {
+    setMarkSaving(true); setMarkError('');
+    const res = await onReviewedChange(next);
+    setMarkSaving(false);
+    if (!res || !res.ok) setMarkError((res && res.error) || 'Save failed');
+  };
 
   const toolbar = (
     <div className="queue-toolbar band-toolbar">
       <h2>Catalogue</h2>
       {data && <button className="btn btn-secondary btn-sm" onClick={() => { setResult(''); load(true); }}>Refresh</button>}
       {data && (
-        <button className="btn btn-secondary btn-sm" disabled={markSaving} onClick={async () => {
-          setMarkSaving(true); setMarkError('');
-          const res = await onReviewedChange(!reviewed);
-          setMarkSaving(false);
-          if (!res || !res.ok) setMarkError((res && res.error) || 'Save failed');
-        }}>
+        <button className="btn btn-secondary btn-sm" disabled={markSaving} onClick={() => toggleReviewed(!reviewed)}>
           {reviewed ? 'Clear reviewed mark' : 'Mark catalogue reviewed'}
         </button>
       )}
@@ -77,14 +81,25 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
 
   if (data === null) return <div>{toolbar}<div className="queue-empty">Reading the sources…</div></div>;
   const newSongs = data.releases.flatMap(r => r.songs).filter(s => s.state === 'new');
-  const toggle = (key) => { setResult(''); setPicked(p => { const n = new Set(p); if (n.has(key)) n.delete(key); else n.add(key); return n; }); };
-  const selectAll = (songs) => { setResult(''); setPicked(p => { const n = new Set(p); songs.filter(s => s.state === 'new').forEach(s => n.add(s.key)); return n; }); };
+  const processKeys = [...choice].filter(([, v]) => v === 'process').map(([k]) => k);
+  const rejectKeys = [...choice].filter(([, v]) => v === 'reject').map(([k]) => k);
+  const P = processKeys.length, R = rejectKeys.length;
+  // ticking the same box again clears the choice; ticking the other box switches it
+  const setOne = (key, value) => {
+    setResult('');
+    setChoice(c => { const n = new Map(c); if (n.get(key) === value) n.delete(key); else n.set(key, value); return n; });
+  };
+  const setMany = (songs, value) => {
+    setResult('');
+    setChoice(c => { const n = new Map(c); songs.filter(s => s.state === 'new').forEach(s => n.set(s.key, value)); return n; });
+  };
 
-  const add = async () => {
+  const apply = async () => {
     setAdding(true); setResult('');
     try {
-      const d = await api(`/api/admin/band-check/bands/${artistId}/add`, { method: 'POST', body: { keys: [...picked] } });
-      setResult(`Added ${d.added}${d.skippedExisting ? `, ${d.skippedExisting} already held` : ''}${d.notFound ? `, ${d.notFound} no longer listed` : ''}.`);
+      const d = await api(`/api/admin/band-check/bands/${artistId}/add`, { method: 'POST', body: { keys: processKeys, rejectKeys } });
+      setAdded(d.added);
+      setResult(`Added ${d.added}, rejected ${d.rejected}${d.skippedExisting ? `, ${d.skippedExisting} already held` : ''}${d.notFound ? `, ${d.notFound} no longer listed` : ''}.`);
       focusResult.current = true;
       onAdded?.();
       await load(true);
@@ -104,6 +119,8 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
   });
 
   const noIdentity = SOURCES.every(s => !(identity || {})[s]);
+  // reviewed prompts only on a real read: counts exist and there is something listed
+  const readOk = !error && !!data.counts && data.releases.length > 0 && Object.values(data.sources).every(s => s.status === 'ok');
 
   return (
     <div>
@@ -116,7 +133,24 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
               <span>{data.counts.new} new</span><span>{data.counts.in_catalogue} held</span><span>{data.counts.rejected} rejected</span><span>{data.counts.single_source} on one source only</span>
             </div>
           )}
-          {newSongs.length > 0 && <button className="btn btn-ghost btn-sm" onClick={() => selectAll(newSongs)}>Select all new ({newSongs.length})</button>}
+          {newSongs.length > 0 && (
+            <>
+              <button className="btn btn-ghost btn-sm" onClick={() => setMany(newSongs, 'process')}>Process all new ({newSongs.length})</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setMany(newSongs, 'reject')}>Reject all new ({newSongs.length})</button>
+            </>
+          )}
+        </div>
+      )}
+      {readOk && !reviewed && data.counts.new === 0 && (
+        <div className="band-note">
+          <span>Nothing new left.</span>{' '}
+          <button className="btn btn-secondary btn-sm" disabled={markSaving} onClick={() => toggleReviewed(true)}>Mark catalogue reviewed</button>
+        </div>
+      )}
+      {readOk && reviewed && data.counts.new > 0 && (
+        <div className="band-note warn">
+          <span>{data.counts.new} new since you marked this reviewed.</span>{' '}
+          <button className="btn btn-secondary btn-sm" disabled={markSaving} onClick={() => toggleReviewed(false)}>Back to Needs catalogue check</button>
         </div>
       )}
       {notes.map(n => (n.source
@@ -127,17 +161,27 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
         <section key={`${rel.source}:${rel.name}:${rel.release_date}:${i}`} className="band-release">
           <div className="band-release-head">
             <div><h3>{rel.name}</h3> <span className="band-meta">{rel.album_type || ''} {rel.release_date ? `· ${rel.release_date.slice(0, 4)}` : ''}</span></div>
-            {rel.songs.some(s => s.state === 'new') && <button className="btn btn-ghost btn-sm" onClick={() => selectAll(rel.songs)}>Select new</button>}
+            {rel.songs.some(s => s.state === 'new') && (
+              <div>
+                <button className="btn btn-ghost btn-sm" onClick={() => setMany(rel.songs, 'process')}>Process all new</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setMany(rel.songs, 'reject')}>Reject all new</button>
+              </div>
+            )}
           </div>
           {rel.songs.map(s => (
             <div key={s.key} className={`inbox-row ${s.state === 'in_catalogue' ? 'band-held' : ''}`}>
-              <label>
+              <div className="band-song">
                 {s.state === 'new'
-                  ? <input className="band-check" type="checkbox" checked={picked.has(s.key)} onChange={() => toggle(s.key)} />
+                  ? (
+                    <span className="band-choice">
+                      <label><input type="checkbox" aria-label={`Process ${s.title}`} checked={choice.get(s.key) === 'process'} onChange={() => setOne(s.key, 'process')} /> Process</label>
+                      <label><input type="checkbox" aria-label={`Reject ${s.title}`} checked={choice.get(s.key) === 'reject'} onChange={() => setOne(s.key, 'reject')} /> Reject</label>
+                    </span>
+                  )
                   : <span className="band-check" aria-hidden="true" />}
                 <strong>{s.title}</strong>
                 {s.also_on.length > 0 && <span className="band-meta"> · also on {s.also_on.join(', ')}</span>}
-              </label>
+              </div>
               <div className="band-meta">
                 {Object.keys(s.sources).map(src => (s.sources[src].url
                   ? <a key={src} className="band-chip" href={s.sources[src].url} target="_blank" rel="noreferrer">{SOURCE_LABEL[src]}</a>
@@ -149,12 +193,16 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
           ))}
         </section>
       ))}
-      {(picked.size > 0 || result) && (
+      {(P + R > 0 || result) && (
         <div className="band-footer">
-          {result && <div ref={resultRef} tabIndex={-1} role="status" className="admin-message success">{result} <Link to="/admin/songs?queue=to-process">Open To be processed</Link></div>}
-          {picked.size > 0 && (
-            <button className="btn btn-primary" disabled={adding} onClick={add}>
-              {adding ? 'Adding…' : `Add ${picked.size} to To be processed`}
+          {result && (
+            <div ref={resultRef} tabIndex={-1} role="status" className="admin-message success">
+              {result}{added > 0 && <> <Link to="/admin/songs?queue=to-process">Open To be processed</Link></>}
+            </div>
+          )}
+          {P + R > 0 && (
+            <button className="btn btn-primary" disabled={adding} onClick={apply}>
+              {adding ? 'Applying…' : `Apply: process ${P} · reject ${R}`}
             </button>
           )}
         </div>

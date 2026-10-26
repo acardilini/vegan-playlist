@@ -1514,7 +1514,10 @@ router.get('/band-check/bands/:id', async (req, res) => {
 });
 
 router.post('/band-check/bands/:id/add', async (req, res) => {
-  try { res.json({ success: true, ...(await bandCheck.addSelected(pool, bandId(req), (req.body || {}).keys, { adapters: bandAdapters })) }); }
+  try {
+    const { keys, rejectKeys } = req.body || {};
+    res.json({ success: true, ...(await bandCheck.addSelected(pool, bandId(req), keys, { adapters: bandAdapters, rejectKeys })) });
+  }
   catch (e) { bandCheckError(res, e, 'add the songs'); }
 });
 
