@@ -120,7 +120,7 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
 
   const noIdentity = SOURCES.every(s => !(identity || {})[s]);
   // reviewed prompts only on a real read: counts exist and there is something listed
-  const readOk = !!data.counts && data.releases.length > 0;
+  const readOk = !error && !!data.counts && data.releases.length > 0 && Object.values(data.sources).every(s => s.status === 'ok');
 
   return (
     <div>
