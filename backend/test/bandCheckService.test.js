@@ -160,7 +160,7 @@ test('addSelected: Spotify songs via intake, bandcamp-only via manual path, band
   const { a } = await mergedBand();
   const adapters = fakeAdapters({ spotify: SPOT, bandcamp: BAND });
   const res = await svc.addSelected(pool, a, ['zzzbandsvc fresh', 'zzzbandsvc bandcamp only', 'zzzbandsvc held', 'not a real key'], { adapters });
-  assert.deepEqual(res, { added: 2, skippedExisting: 1, notFound: 1 });
+  assert.deepEqual(res, { added: 2, rejected: 0, skippedExisting: 1, notFound: 1 });
   const rows = (await pool.query(
     `SELECT title, status, data_source, spotify_id, bandcamp_url, status_notes FROM songs WHERE title IN ('ZZZBANDSVC Fresh','ZZZBANDSVC Bandcamp Only') ORDER BY title`)).rows;
   const fresh = rows.find(r => r.title === 'ZZZBANDSVC Fresh'), only = rows.find(r => r.title === 'ZZZBANDSVC Bandcamp Only');
@@ -172,7 +172,7 @@ test('addSelected: Spotify songs via intake, bandcamp-only via manual path, band
   assert.equal((await pool.query(`SELECT count(*)::int n FROM artists WHERE name='ZZZBANDSVC Merged'`)).rows[0].n, 1);
 
   const again = await svc.addSelected(pool, a, ['zzzbandsvc fresh', 'zzzbandsvc bandcamp only'], { adapters });
-  assert.deepEqual(again, { added: 0, skippedExisting: 2, notFound: 0 }); // double-click is harmless
+  assert.deepEqual(again, { added: 0, rejected: 0, skippedExisting: 2, notFound: 0 }); // double-click is harmless
 
   for (const bad of [undefined, [], 'x', [1], Array.from({ length: 101 }, (_, i) => 'k' + i)]) {
     await assert.rejects(svc.addSelected(pool, a, bad, { adapters }), (e) => e.code === 'BAD_INPUT');
@@ -203,6 +203,68 @@ test('addSelected: a failing source aborts before any write, with its code, and 
   assert.equal(n, 0);
   const ok = await svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters: fakeAdapters({ spotify: SPOT, bandcamp: BAND }) });
   assert.equal(ok.added, 1);
+});
+
+test('addSelected: rejectKeys saves new songs as rejected rows, never public, and they read as rejected (not new) on the next check', async () => {
+  svc._resetForTests();
+  const { a } = await mergedBand();
+  const adapters = fakeAdapters({ spotify: SPOT, bandcamp: BAND });
+  const res = await svc.addSelected(pool, a, undefined,
+    { adapters, rejectKeys: ['zzzbandsvc fresh', 'zzzbandsvc bandcamp only', 'zzzbandsvc held', 'not a real key'] });
+  assert.deepEqual(res, { added: 0, rejected: 2, skippedExisting: 1, notFound: 1 });
+
+  const rows = (await pool.query(
+    `SELECT title, status, published, published_at, data_source, spotify_id, bandcamp_url, status_notes
+     FROM songs WHERE title LIKE 'ZZZBANDSVC%' ORDER BY title`)).rows;
+  const by = Object.fromEntries(rows.map(r => [r.title, r]));
+  for (const t of ['ZZZBANDSVC Fresh', 'ZZZBANDSVC Bandcamp Only']) {
+    assert.equal(by[t].status, 'rejected', t);
+    assert.equal(by[t].published, false, t);
+    assert.equal(by[t].published_at, null, t);
+    assert.match(by[t].status_notes, /^rejected via band check \(ZZZBANDSVC Merged\)/);
+  }
+  assert.equal(by['ZZZBANDSVC Fresh'].spotify_id, 'ZZZBANDSVCt2');
+  assert.equal(by['ZZZBANDSVC Fresh'].bandcamp_url, 'https://zzzbandsvcm.bandcamp.com/track/fresh');
+  assert.equal(by['ZZZBANDSVC Bandcamp Only'].data_source, 'manual');
+  // the existing catalogue song passed in rejectKeys is untouched
+  assert.deepEqual([by['ZZZBANDSVC Held'].status, by['ZZZBANDSVC Held'].published], ['included', true]);
+
+  svc._resetForTests();
+  const chk = await svc.checkBand(pool, a, { adapters, fresh: true });
+  assert.equal(chk.counts.new, 0);
+  assert.equal(chk.counts.rejected, 2);
+  assert.equal(chk.counts.in_catalogue, 1);
+});
+
+test('addSelected: process and reject in one apply; a key in both lists, or too many keys in total, writes nothing', async () => {
+  svc._resetForTests();
+  const { a } = await mergedBand();
+  const adapters = fakeAdapters({ spotify: SPOT, bandcamp: BAND });
+  const both = await svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters, rejectKeys: ['zzzbandsvc fresh'] }).catch(e => e);
+  assert.equal(both.code, 'BAD_INPUT');
+  const tooMany = await svc.addSelected(pool, a, Array.from({ length: 60 }, (_, i) => 'a' + i),
+    { adapters, rejectKeys: Array.from({ length: 41 }, (_, i) => 'b' + i) }).catch(e => e);
+  assert.equal(tooMany.code, 'BAD_INPUT');
+  for (const bad of [{ rejectKeys: 'x' }, { rejectKeys: [1] }, { rejectKeys: [] }]) {
+    await assert.rejects(svc.addSelected(pool, a, undefined, { adapters, ...bad }), (e) => e.code === 'BAD_INPUT');
+  }
+  assert.equal((await pool.query(`SELECT count(*)::int n FROM songs WHERE title IN ('ZZZBANDSVC Fresh','ZZZBANDSVC Bandcamp Only')`)).rows[0].n, 0);
+
+  const res = await svc.addSelected(pool, a, ['zzzbandsvc fresh'], { adapters, rejectKeys: ['zzzbandsvc bandcamp only'] });
+  assert.deepEqual(res, { added: 1, rejected: 1, skippedExisting: 0, notFound: 0 });
+  const st = Object.fromEntries((await pool.query(
+    `SELECT title, status, status_notes FROM songs WHERE title IN ('ZZZBANDSVC Fresh','ZZZBANDSVC Bandcamp Only')`)).rows.map(r => [r.title, r]));
+  assert.equal(st['ZZZBANDSVC Fresh'].status, 'pending');
+  assert.match(st['ZZZBANDSVC Fresh'].status_notes, /^added via band check/);
+  assert.equal(st['ZZZBANDSVC Bandcamp Only'].status, 'rejected');
+});
+
+test('addSelected: a failing source writes nothing for rejectKeys either', async () => {
+  svc._resetForTests();
+  const { a } = await mergedBand();
+  const bad = fakeAdapters({ spotify: Object.assign(new Error('x'), { code: 'RATE_LIMITED' }), bandcamp: BAND });
+  await assert.rejects(svc.addSelected(pool, a, undefined, { adapters: bad, rejectKeys: ['zzzbandsvc fresh'] }), (e) => e.code === 'RATE_LIMITED');
+  assert.equal((await pool.query(`SELECT count(*)::int n FROM songs WHERE title IN ('ZZZBANDSVC Fresh','ZZZBANDSVC Bandcamp Only')`)).rows[0].n, 0);
 });
 
 test('checkBand reports per-source songs/overlap and artist.songs so a wrong-band source is visible', async () => {

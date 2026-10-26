@@ -188,11 +188,17 @@ async function checkBand(db, artistId, { adapters, fresh = false, now = Date.now
   return { artist: { id: artist.id, name: artist.name, identity: identityOf(artist), songs: artistSongs }, sources, releases, counts };
 }
 
-// Adds the songs the curator ticked. Never trusts client data: only song keys come in, and the catalogue is re-read live.
-async function addSelected(db, artistId, keys, { adapters } = {}) {
-  if (!Array.isArray(keys) || keys.length === 0 || keys.length > MAX_ADD || keys.some(k => typeof k !== 'string' || !k)) {
-    throw coded('BAD_INPUT', `keys must be 1-${MAX_ADD} song keys`);
+// Adds the songs the curator ticked (keys) and/or saves the ones they rejected (rejectKeys) as `rejected` rows.
+// Never trusts client data: only song keys come in, and the catalogue is re-read live.
+async function addSelected(db, artistId, keys, { adapters, rejectKeys } = {}) {
+  const proc = keys === undefined ? [] : keys;
+  const rej = rejectKeys === undefined ? [] : rejectKeys;
+  const okList = (l) => Array.isArray(l) && l.every(k => typeof k === 'string' && k);
+  if (!okList(proc) || !okList(rej) || proc.length + rej.length < 1 || proc.length + rej.length > MAX_ADD) {
+    throw coded('BAD_INPUT', `keys and rejectKeys must hold 1-${MAX_ADD} song keys in total`);
   }
+  const procSet = new Set(proc);
+  if (rej.some(k => procSet.has(k))) throw coded('BAD_INPUT', 'A song cannot be both processed and rejected');
   if (adding) throw coded('BUSY', 'Another add is in progress');
   adding = true;
   try {
@@ -206,34 +212,59 @@ async function addSelected(db, artistId, keys, { adapters } = {}) {
       throw coded(failed.code, `${label} could not be read, so nothing was added - retry, or clear that source under Identify sources`);
     }
     const byKey = new Map(songs.map(s => [s.key, s]));
-    let skippedExisting = 0, notFound = 0, added = 0;
-    const picked = [];
-    for (const key of [...new Set(keys)]) {
-      const s = byKey.get(key);
-      if (!s) notFound++;
-      else if (s.state !== 'new') skippedExisting++;
-      else picked.push(s);
-    }
-    const note = `added via band check (${artist.name})`;
-    const withSpotify = picked.filter(s => s.sources.spotify && s.sources.spotify.mapped);
-    if (withSpotify.length) {
-      const r = await staging.insertCandidates(db, withSpotify.map(s => s.sources.spotify.mapped), { note });
-      added += r.added; skippedExisting += r.skippedExisting;
-      for (const s of withSpotify) {
-        if (s.sources.bandcamp && s.sources.bandcamp.url) {
-          // only a song THIS add just created (its note proves it): never touch an existing catalogue song
-          await db.query(`UPDATE songs SET bandcamp_url = COALESCE(bandcamp_url, $1) WHERE spotify_id = $2 AND status_notes = $3`,
-            [s.sources.bandcamp.url, s.sources.spotify.mapped.spotify_id, note]);
+    let skippedExisting = 0, notFound = 0;
+    const pick = (list) => {
+      const picked = [];
+      for (const key of [...new Set(list)]) {
+        const s = byKey.get(key);
+        if (!s) notFound++;
+        else if (s.state !== 'new') skippedExisting++;
+        else picked.push(s);
+      }
+      return picked;
+    };
+    const toProcess = pick(proc), toReject = pick(rej);
+
+    // Inserts picked songs as pending under `note`; reports the ids it created so a caller can act on exactly those rows.
+    const insertPicked = async (picked, note) => {
+      let added = 0;
+      const spotifyIds = [], songIds = [];
+      const withSpotify = picked.filter(s => s.sources.spotify && s.sources.spotify.mapped);
+      if (withSpotify.length) {
+        const r = await staging.insertCandidates(db, withSpotify.map(s => s.sources.spotify.mapped), { note });
+        added += r.added; skippedExisting += r.skippedExisting;
+        for (const s of withSpotify) {
+          spotifyIds.push(s.sources.spotify.mapped.spotify_id);
+          if (s.sources.bandcamp && s.sources.bandcamp.url) {
+            // only a song THIS add just created (its note proves it): never touch an existing catalogue song
+            await db.query(`UPDATE songs SET bandcamp_url = COALESCE(bandcamp_url, $1) WHERE spotify_id = $2 AND status_notes = $3`,
+              [s.sources.bandcamp.url, s.sources.spotify.mapped.spotify_id, note]);
+          }
         }
       }
+      for (const s of picked.filter(p => !(p.sources.spotify && p.sources.spotify.mapped))) {
+        const r = await staging.insertManualCandidate(db, {
+          title: s.title, artistId: artist.id, bandcamp_url: (s.sources.bandcamp && s.sources.bandcamp.url) || null, note,
+        });
+        added += r.added; skippedExisting += r.skippedExisting;
+        if (r.song_id) songIds.push(r.song_id);
+      }
+      return { added, spotifyIds, songIds };
+    };
+
+    const processed = await insertPicked(toProcess, `added via band check (${artist.name})`);
+    let rejected = 0;
+    if (toReject.length) {
+      const rejectNote = `rejected via band check (${artist.name})`;
+      const made = await insertPicked(toReject, rejectNote);
+      // flip ONLY the rows this call just created: still pending, carrying this call's note, and one of the ids it reported
+      const upd = await db.query(
+        `UPDATE songs SET status='rejected', published=false, published_at=NULL, updated_at=CURRENT_TIMESTAMP
+         WHERE status='pending' AND status_notes=$1 AND (spotify_id = ANY($2::text[]) OR id = ANY($3::int[]))`,
+        [rejectNote, made.spotifyIds, made.songIds]);
+      rejected = upd.rowCount;
     }
-    for (const s of picked.filter(p => !(p.sources.spotify && p.sources.spotify.mapped))) {
-      const r = await staging.insertManualCandidate(db, {
-        title: s.title, artistId: artist.id, bandcamp_url: (s.sources.bandcamp && s.sources.bandcamp.url) || null, note,
-      });
-      added += r.added; skippedExisting += r.skippedExisting;
-    }
-    return { added, skippedExisting, notFound };
+    return { added: processed.added, rejected, skippedExisting, notFound };
   } finally { adding = false; }
 }
 
