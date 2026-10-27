@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AutoText, SaveTag } from './SavedField';
 import { adminFetch } from '../../api/adminApi';
+import SpotifyFill from './SpotifyFill';
 
 function coverUrl(images) {
   if (!images) return null;
@@ -125,6 +126,7 @@ function DetailsPanel({ wb, savePanel }) {
         {!albumEditable && <div><span className="k">Released</span>{(wb.album && wb.album.release_date) || '—'}</div>}
         <div><span className="k">Spotify id</span>{wb.spotify_id || '—'}</div>
       </div>
+      {wb.spotify_url && <SpotifyFill key={wb.id} wb={wb} savePanel={savePanel} />}
       {albumEditable && (
         <>
           <AutoText label="Album" initial={(wb.album && wb.album.name) || ''}
