@@ -111,6 +111,8 @@ function LanguageChips({ wb, savePanel }) {
 function DetailsPanel({ wb, savePanel }) {
   const artistNames = (wb.artists || []).map((a) => a.name).join(', ') || '—';
   const cover = coverUrl(wb.album && wb.album.images);
+  // Spotify owns its albums; only a manual album, or no album yet, can be edited here.
+  const albumEditable = !wb.album || !wb.album.source || wb.album.source === 'manual';
 
   return (
     <section className="wb-panel">
@@ -119,10 +121,20 @@ function DetailsPanel({ wb, savePanel }) {
       <LanguageChips wb={wb} savePanel={savePanel} />
       <div className="wb-readonly">
         <div><span className="k">Artist(s)</span>{artistNames}</div>
-        <div><span className="k">Album</span>{(wb.album && wb.album.name) || '—'}</div>
-        <div><span className="k">Released</span>{(wb.album && wb.album.release_date) || '—'}</div>
+        {!albumEditable && <div><span className="k">Album</span>{(wb.album && wb.album.name) || '—'}</div>}
+        {!albumEditable && <div><span className="k">Released</span>{(wb.album && wb.album.release_date) || '—'}</div>}
         <div><span className="k">Spotify id</span>{wb.spotify_id || '—'}</div>
       </div>
+      {albumEditable && (
+        <>
+          <AutoText label="Album" initial={(wb.album && wb.album.name) || ''}
+            placeholder="Album, or the single's name"
+            onSave={(v) => savePanel('album', { name: v })} />
+          <AutoText label="Released" initial={(wb.album && wb.album.release_date) || ''}
+            placeholder="YYYY-MM-DD"
+            onSave={(v) => savePanel('album', { release_date: v })} />
+        </>
+      )}
       <div className="wb-cover">
         {cover ? <img src={cover} alt="" className="wb-cover-img" /> : <span className="wb-cover-ph" />}
         <AutoText label="Cover image URL (paste)" initial={cover || ''} placeholder="https://…"
