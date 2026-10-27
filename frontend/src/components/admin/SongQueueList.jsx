@@ -7,6 +7,7 @@ const ORIGIN_LABELS = { spotify: 'From Spotify', submission: 'From submit form',
 
 const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
+  'needs-album': 'Needs album', 'needs-released': 'Needs released', 'needs-language': 'Needs language',
   'needs-video': 'Needs video', 'no-video': 'No video available', 'junk-lyrics': 'Junk lyrics', 'to-transcribe': 'To transcribe', 'lyrics-on-hold': 'Lyrics on hold',
   'remind-later': 'Remind me later', 'to-finalise': 'To finalise',
   'live': 'Live', 'all': 'All songs', 'featured': 'Featured',

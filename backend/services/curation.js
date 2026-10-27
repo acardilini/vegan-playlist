@@ -47,7 +47,7 @@ const HAS_LYRICS_SQL = `EXISTS (SELECT 1 FROM song_lyrics sl
 // COALESCE: a song with no song_processing row has park_reason NULL, and NOT(NULL) would drop it.
 const SHELVED_SQL = `(COALESCE(sp.park_reason IN ${LYRIC_PARK_REASONS_SQL}, false) AND NOT ${HAS_LYRICS_SQL})`;
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics',
-  'needs-cover','needs-video','no-video','junk-lyrics','needs-analysis','to-finalise','live','all','featured'];
+  'needs-cover','needs-album','needs-released','needs-language','needs-video','no-video','junk-lyrics','needs-analysis','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
@@ -68,6 +68,14 @@ function queueWhere(queue) {
       return `s.status='included' AND NOT ${HAS_LYRICS_SQL} AND sp.park_reason IS NULL`;
     case 'needs-cover':
       return `s.status='included' AND NOT ${ARTWORK_SQL}`;
+    // Gap-filling lists, not publishing gates: songs stay live while they sit here. An empty
+    // language list means "not yet checked".
+    case 'needs-album':
+      return `s.status='included' AND (s.album_id IS NULL OR btrim(al.name) = '')`;
+    case 'needs-released':
+      return `s.status='included' AND al.release_date IS NULL`;
+    case 'needs-language':
+      return `s.status='included' AND (s.language IS NULL OR cardinality(s.language) = 0)`;
     case 'needs-video':
       return `s.status='included' AND s.no_video_display IS NULL
               AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
@@ -215,7 +223,7 @@ function hasArt(images) {
 
 async function getWorkbench(db, id) {
   const s = (await db.query(`
-    SELECT s.*, al.name AS album_name, al.images AS album_images, al.release_date AS album_release_date
+    SELECT s.*, al.name AS album_name, al.data_source AS album_source, al.images AS album_images, to_char(al.release_date, 'YYYY-MM-DD') AS album_release_date
     FROM songs s LEFT JOIN albums al ON al.id=s.album_id WHERE s.id=$1`, [id])).rows[0];
   if (!s) { const e = new Error('song not found'); e.code = 'NOT_FOUND'; throw e; }
 
@@ -241,7 +249,7 @@ async function getWorkbench(db, id) {
     spotify_id: s.spotify_id, spotify_url: s.spotify_url, bandcamp_url: s.bandcamp_url, soundcloud_url: s.soundcloud_url,
     lyrics_status: s.lyrics_status, lyrics_url: s.lyrics_url, lyrics_source: s.lyrics_source,
     lyrics_highlights: s.lyrics_highlights, status_notes: s.status_notes,
-    album: { name: s.album_name, images: s.album_images, release_date: s.album_release_date },
+    album: { name: s.album_name, images: s.album_images, release_date: s.album_release_date, source: s.album_source },
     artists, videos,
     lyrics: (lyricsRow && lyricsRow.lyrics) ? lyricsRow.lyrics : null,
     lyrics_source_url: lyricsRow ? lyricsRow.source_url : null,
@@ -421,6 +429,43 @@ async function setCover(db, id, { cover_url } = {}) {
   return getWorkbench(db, id);
 }
 
+// Album name and release date for a song with no Spotify album. Only manual albums are written:
+// a Spotify-owned album is refused, so Spotify data is never overwritten. An omitted field is left
+// alone; '' clears the date. A song with no album gets a manual one (named for the song, as setCover does).
+async function saveAlbum(db, id, { name, release_date } = {}) {
+  await assertSong(db, id);
+  if (name !== undefined && !String(name).trim()) {
+    const e = new Error('album name cannot be blank'); e.code = 'BAD_INPUT'; throw e;
+  }
+  let date;
+  if (release_date !== undefined) {
+    date = release_date === null || release_date === '' ? null : String(release_date).trim();
+    if (date !== null) {
+      const d = new Date(`${date}T00:00:00Z`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== date) {
+        const e = new Error('release_date must be a real date as YYYY-MM-DD'); e.code = 'BAD_INPUT'; throw e;
+      }
+    }
+  }
+  const song = (await db.query(
+    `SELECT s.album_id, s.title, al.data_source FROM songs s LEFT JOIN albums al ON al.id=s.album_id WHERE s.id=$1`, [id])).rows[0];
+  if (song.album_id) {
+    if (song.data_source !== 'manual') {
+      const e = new Error('this album comes from Spotify and cannot be edited'); e.code = 'BAD_INPUT'; throw e;
+    }
+    const sets = [], params = [song.album_id];
+    if (name !== undefined) { params.push(String(name).trim()); sets.push(`name=$${params.length}`); }
+    if (date !== undefined) { params.push(date); sets.push(`release_date=$${params.length}`); }
+    if (sets.length) await db.query(`UPDATE albums SET ${sets.join(', ')} WHERE id=$1`, params);
+  } else {
+    const made = (await db.query(
+      `INSERT INTO albums (name, release_date, data_source) VALUES ($1, $2, 'manual') RETURNING id`,
+      [name !== undefined ? String(name).trim() : (song.title || 'Untitled'), date === undefined ? null : date])).rows[0];
+    await db.query('UPDATE songs SET album_id=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1', [id, made.id]);
+  }
+  return getWorkbench(db, id);
+}
+
 async function quickCapture(db, { title, artist } = {}) {
   const t = (title || '').trim();
   const a = (artist || '').trim();
@@ -440,4 +485,4 @@ async function quickCapture(db, { title, artist } = {}) {
 
 module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, setCover, setNoVideo, quickCapture, setFeatured, listLanguages };
+  saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, quickCapture, setFeatured, listLanguages };

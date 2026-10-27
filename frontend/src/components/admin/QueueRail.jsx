@@ -5,6 +5,9 @@ const GROUPS = [
   ['Needs work', [
     ['needs-lyrics', 'Needs lyrics', false],
     ['needs-cover', 'Needs cover', false],
+    ['needs-album', 'Needs album', false],
+    ['needs-released', 'Needs released', false],
+    ['needs-language', 'Needs language', false],
     ['needs-video', 'Needs video', false],
     ['no-video', 'No video available', false],
     ['junk-lyrics', 'Junk lyrics', false],

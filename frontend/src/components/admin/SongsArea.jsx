@@ -13,7 +13,7 @@ const DEFAULT_QUEUE = 'to-process';
 // sub-project B). Guard against a stale/typo'd ?queue= landing on a queue that can't
 // render. 'inbox' renders InboxList, and 'spotify' SpotifyLists; the rest render SongQueueList.
 const SELECTABLE_QUEUES = [
-  'inbox', 'to-process', 'needs-lyrics', 'needs-cover', 'needs-video', 'no-video', 'junk-lyrics',
+  'inbox', 'to-process', 'needs-lyrics', 'needs-cover', 'needs-album', 'needs-released', 'needs-language', 'needs-video', 'no-video', 'junk-lyrics',
   'to-transcribe', 'lyrics-on-hold', 'remind-later', 'to-finalise', 'live', 'all', 'featured', 'spotify',
 ];
 
