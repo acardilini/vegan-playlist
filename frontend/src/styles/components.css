@@ -1005,11 +1005,6 @@
 }
 
 /* Hierarchical genre filter — genre signals are moss, per the kit */
-.hierarchical-genre-filter .filter-options {
-  max-height: 250px;
-  overflow-y: auto;
-}
-
 .genre-hierarchy-item {
   margin-bottom: 2px;
 }
@@ -1040,7 +1035,7 @@
 }
 
 .parent-genre .filter-label strong {
-  color: var(--accent-moss-60);
+  color: var(--text-primary);
   font: var(--text-label);
   text-transform: capitalize;
 }
@@ -2293,7 +2288,6 @@
   margin-left: var(--space-2);
   padding-left: var(--space-2);
 }
-.facet-rail-neutral { border-left-color: var(--border-hairline); }
 /* Rows: bigger, left-aligned, level-distinct typography */
 .theme-facet-tree .filter-option .filter-label { font: var(--text-body-sm); }
 .facet-subdim .filter-label { font: var(--text-body); font-weight: 600; }
@@ -2305,7 +2299,6 @@
   color: var(--text-secondary);
 }
 .facet-code .filter-label { color: var(--text-primary); }
-.facet-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: var(--space-1); vertical-align: middle; flex-shrink: 0; }
 
 /* B3 — active filter chips (below the filters panel) */
 .filter-chips {
@@ -2334,11 +2327,28 @@
 /* B3 rework — browse sidebar layout */
 .browse-top { margin-bottom: var(--space-4); }
 .browse-body { display: grid; grid-template-columns: 260px 1fr; gap: var(--space-6); align-items: start; }
+/* Flat sidebar: no card, no nested boxes. Hairline dividers between sections and
+   indentation do the grouping; the drawer (<=900px) keeps a surface so it reads as a panel. */
 .browse-sidebar { display: flex; flex-direction: column; gap: var(--space-5);
-  background: var(--bg-surface); border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-md); padding: var(--space-4); position: sticky; top: var(--space-4);
-  max-height: calc(100vh - var(--space-4) * 2); overflow-y: auto; }
-.sidebar-groups { display: flex; flex-direction: column; gap: var(--space-5); }
+  position: sticky; top: var(--space-4);
+  max-height: calc(100vh - var(--space-4) * 2); overflow-y: auto; padding-right: var(--space-2); }
+.sidebar-groups { display: flex; flex-direction: column; }
+.sidebar-groups > .filter-section { border-top: 1px solid var(--border-hairline); padding: var(--space-3) 0; }
+.sidebar-groups > .filter-section:first-child { border-top: 0; padding-top: 0; }
+.sidebar-group-label { margin: var(--space-6) 0 var(--space-2); font: var(--text-meta); color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.08em; }
+.show-more { align-self: flex-start; background: none; border: 0; padding: var(--space-1);
+  color: var(--accent-ember-60); font: var(--text-body-sm); cursor: pointer; }
+.show-more:hover { text-decoration: underline; }
+.filter-pills { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.filter-pill { display: inline-flex; align-items: center; gap: var(--space-1); padding: 3px var(--space-3);
+  background: none; border: 1px solid var(--border-hairline); border-radius: var(--radius-pill);
+  color: var(--text-secondary); font: var(--text-body-sm); cursor: pointer; }
+.filter-pill:hover { border-color: var(--accent-ember-60); }
+.filter-pill[aria-pressed='true'] { background: var(--accent-ember-60); border-color: var(--accent-ember-60); color: var(--text-on-accent); }
+.filter-pill[aria-pressed='true'] .filter-count { color: inherit; }
+.filter-pill:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--focus-ring); }
+.filter-pill.is-zero { opacity: 0.4; cursor: not-allowed; }
 .sidebar-drawer-head { display: none; }
 .browse-results { min-width: 0; }
 /* Chips live at the top of the results column (right of the sidebar, above the
@@ -2352,7 +2362,7 @@
   .drawer-toggle { display: inline-flex; }
   .browse-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
     width: min(320px, 85vw); transform: translateX(-100%); transition: transform var(--duration-fast) var(--ease-standard);
-    overflow-y: auto; border-radius: 0; }
+    overflow-y: auto; border-radius: 0; background: var(--bg-surface); padding: var(--space-4); }
   .browse-sidebar.open { transform: translateX(0); }
   .sidebar-drawer-head { display: flex; justify-content: space-between; align-items: center; }
   .drawer-close { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; }

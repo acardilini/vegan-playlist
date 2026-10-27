@@ -3,9 +3,12 @@ import { useState } from 'react';
 // Backend-driven genre tree (data from /filter-options genre_tree). No hardcoded
 // hierarchy or counts — parents/subgenres/counts all come from the effective-genre
 // rollup so the numbers match what filtering returns.
+const COLLAPSED_COUNT = 6;
+
 function GenreFilterTree({ tree, selectedGenres, selectedParents, onToggleParent, onToggleGenre }) {
   const [expanded, setExpanded] = useState(new Set());
   const [term, setTerm] = useState('');
+  const [showAll, setShowAll] = useState(false);
 
   const parents = tree?.parents || [];
   const q = term.trim().toLowerCase();
@@ -19,6 +22,13 @@ function GenreFilterTree({ tree, selectedGenres, selectedParents, onToggleParent
     setExpanded(next);
   };
 
+  const visibleParents = parents.filter(matchParent);
+  // Searching shows every match; otherwise the list is cut to a handful (parents with a pick stay visible).
+  const shown = (q || showAll) ? visibleParents
+    : visibleParents.filter((p, i) => i < COLLAPSED_COUNT || selectedParents.includes(p.value)
+        || p.subgenres.some(s => selectedGenres.includes(s.value)));
+  const hiddenCount = visibleParents.length - shown.length;
+
   return (
     <div className="hierarchical-genre-filter">
       <div className="filter-search">
@@ -31,8 +41,8 @@ function GenreFilterTree({ tree, selectedGenres, selectedParents, onToggleParent
         />
       </div>
 
-      <div className="filter-options scrollable">
-        {parents.filter(matchParent).map((parent) => {
+      <div className="filter-options">
+        {shown.map((parent) => {
           const isExpanded = expanded.has(parent.value) || !!q;
           const subs = q ? parent.subgenres.filter(s => s.value.toLowerCase().includes(q)) : parent.subgenres;
           const subValues = parent.subgenres.map(s => s.value);
@@ -80,6 +90,11 @@ function GenreFilterTree({ tree, selectedGenres, selectedParents, onToggleParent
             </div>
           );
         })}
+        {!q && (hiddenCount > 0 || showAll) && visibleParents.length > COLLAPSED_COUNT && (
+          <button type="button" className="show-more" onClick={() => setShowAll(v => !v)}>
+            {showAll ? 'Show fewer' : `Show ${hiddenCount} more`}
+          </button>
+        )}
       </div>
 
       {tree?.uncovered_count > 0 && (

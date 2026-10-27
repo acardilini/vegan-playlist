@@ -5,7 +5,9 @@ import { readBrowseState } from '../utils/browseUrlState';
 import SearchAndFilter from '../components/SearchAndFilter';
 import SongCard from '../components/SongCard';
 import PaginationControls from '../components/PaginationControls';
-import { roundedStat } from '../utils/stats';
+
+// Exact live figure; '…' while loading
+const statValue = (value) => (value ? value.toLocaleString() : '…');
 
 function HeroArea() {
   const [stats, setStats] = useState(null);
@@ -20,22 +22,19 @@ function HeroArea() {
     <section className="hero">
       <div className="hero-copy">
         <h1>A searchable database of vegan &amp; animal-liberation songs</h1>
-        <p>
-          {stats ? `${roundedStat(stats.songs)} songs` : 'Songs'}, tagged by
-          theme, genre, artist, and date.
-        </p>
+        <p>Tagged by theme, genre, artist, and date.</p>
       </div>
       <div className="hero-stats">
         <div className="stat-badge">
-          <span className="stat-value">{roundedStat(stats?.songs)}</span>
+          <span className="stat-value">{statValue(stats?.songs)}</span>
           <span className="stat-label">Songs</span>
         </div>
         <div className="stat-badge">
-          <span className="stat-value">{roundedStat(stats?.artists)}</span>
+          <span className="stat-value">{statValue(stats?.artists)}</span>
           <span className="stat-label">Artists</span>
         </div>
         <div className="stat-badge">
-          <span className="stat-value">40+</span>
+          <span className="stat-value">{statValue(stats?.hours)}</span>
           <span className="stat-label">Hours</span>
         </div>
       </div>
