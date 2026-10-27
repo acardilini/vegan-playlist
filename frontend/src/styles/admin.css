@@ -98,6 +98,13 @@
 .wb-lang-chip { display: inline-flex; align-items: center; gap: var(--space-1); padding: 1px var(--space-2); border-radius: var(--radius-pill); font-size: 0.75rem; background: var(--bg-surface-raised); border: 1px solid var(--border-hairline); color: var(--text-secondary); }
 .wb-lang-x { background: none; border: none; padding: 0; cursor: pointer; color: var(--text-muted); font-size: 0.95rem; line-height: 1; }
 .wb-lang-x:hover { color: var(--accent-ember-60); }
+.wb-fill { margin-bottom: var(--space-3); }
+.wb-fill-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: var(--space-2); }
+.wb-fill-table th, .wb-fill-table td { text-align: left; vertical-align: top; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--border-hairline); }
+.wb-fill-table th { color: var(--text-muted); font-weight: 500; }
+.wb-fill-same td { color: var(--text-muted); }
+.wb-fill-error { font-size: 0.85rem; color: var(--text-secondary); margin: var(--space-2) 0; }
+.wb-fill-actions { display: flex; gap: var(--space-2); }
 .wb-lang-suggest { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
 .wb-linkactions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: calc(-1 * var(--space-1)); margin-bottom: var(--space-3); }
 .wb-linkactions:empty { display: none; margin: 0; }

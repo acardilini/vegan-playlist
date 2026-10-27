@@ -6,6 +6,7 @@ const pool = require('../database/db');
 const { getParentGenres, getAllSubgenres, getParentGenre } = require('../utils/genreMapping');
 const staging = require('../services/staging');
 const curation = require('../services/curation');
+const spotifyFill = require('../services/spotifyFill');
 const inbox = require('../services/inbox');
 const junkLyrics = require('../services/junkLyrics');
 const youtubeSearch = require('../services/youtubeSearch');
@@ -1829,6 +1830,27 @@ router.get('/workbench/:id', async (req, res) => {
     console.error('workbench read error:', e);
     res.status(500).json({ error: 'Failed to load workbench', details: e.message });
   }
+});
+
+// "Fill from Spotify link": GET previews (read-only), PUT applies the chosen fields. Errors carry fixed
+// messages only (services/spotifyFill.js never rethrows a Spotify error's text).
+function fillError(res, e, what) {
+  if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+  if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+  if (e.code === 'RATE_LIMITED') return res.status(429).json({ error: e.message });
+  if (e.code === 'UPSTREAM') return res.status(502).json({ error: e.message });
+  console.error(`spotify fill ${what} error:`, e.code || 'unexpected');
+  return res.status(500).json({ error: 'Failed to fill from Spotify' });
+}
+router.get('/workbench/:id/spotify-fill', async (req, res) => {
+  try { res.json(await spotifyFill.preview(pool, parseInt(req.params.id))); }
+  catch (e) { fillError(res, e, 'preview'); }
+});
+router.put('/workbench/:id/spotify-fill', async (req, res) => {
+  try {
+    const wb = await spotifyFill.apply(pool, parseInt(req.params.id), req.body || {});
+    res.json({ success: true, workbench: wb });
+  } catch (e) { fillError(res, e, 'apply'); }
 });
 
 router.put('/workbench/:id/processing', async (req, res) => {
