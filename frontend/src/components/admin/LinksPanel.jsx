@@ -22,7 +22,11 @@ function LinksPanel({ wb, savePanel, id, reload }) {
     setStatus('saving');
     try {
       const r = await adminFetch(`/api/admin/songs/${id}/attach-spotify`, { method: 'POST' });
-      if (r.ok) { setStatus('saved'); reload(); } else {
+      if (r.ok) {
+        const d = await r.json().catch(() => ({}));
+        if (d.matched === false) { setMsg('No confident match found on Spotify'); setStatus('error'); }
+        else { setStatus('saved'); reload(); }
+      } else {
         const d = await r.json().catch(() => ({}));
         setMsg(d.error || 'Attach failed');
         setStatus('error');

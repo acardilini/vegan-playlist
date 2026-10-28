@@ -107,10 +107,16 @@ router.get('/db-stats', async (req, res) => {
       SELECT COUNT(DISTINCT album_id) FROM songs
       WHERE status = 'included' AND published = true AND album_id IS NOT NULL`);
 
+    // Songs with no stored duration contribute nothing, so this slightly under-counts.
+    const durationSum = await pool.query(`
+      SELECT COALESCE(SUM(duration_ms), 0) AS ms FROM songs
+      WHERE status = 'included' AND published = true`);
+
     res.json({
       songs: parseInt(songCount.rows[0].count),
       artists: parseInt(artistCount.rows[0].count),
-      albums: parseInt(albumCount.rows[0].count)
+      albums: parseInt(albumCount.rows[0].count),
+      hours: Math.round(Number(durationSum.rows[0].ms) / 3600000)
     });
   } catch (error) {
     console.error('Database stats error:', error);

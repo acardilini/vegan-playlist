@@ -327,6 +327,40 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         />
       </FilterSection>
 
+      <FilterSection title="Year" count={(filters.year_from || filters.year_to) ? 1 : 0} defaultOpen>
+        <div className="range-inputs">
+          {/* Bare years, like Tempo: "From 1970" clips in these boxes. */}
+          <input type="number" placeholder={yr.min_year ? String(yr.min_year) : 'From'}
+            aria-label="Year from"
+            value={filters.year_from} onChange={(e) => setScalar('year_from', e.target.value)}
+            min={yr.min_year} max={yr.max_year} />
+          <span>to</span>
+          <input type="number" placeholder={yr.max_year ? String(yr.max_year) : 'To'}
+            aria-label="Year to"
+            value={filters.year_to} onChange={(e) => setScalar('year_to', e.target.value)}
+            min={yr.min_year} max={yr.max_year} />
+        </div>
+      </FilterSection>
+
+      <FilterSection title="Song length" count={filters.lengths.length} defaultOpen
+        note="Short is under 2 minutes, long is over 4.">
+        <div className="filter-pills">
+          {(filterOptions.length_buckets || []).map(b => {
+            const selected = filters.lengths.includes(b.value);
+            const zero = b.count === 0 && !selected;
+            return (
+              <button key={b.value} type="button" className={`filter-pill ${zero ? 'is-zero' : ''}`}
+                aria-pressed={selected} disabled={zero}
+                onClick={() => toggleInArray('lengths', b.value, !selected)}>
+                {b.label}<span className="filter-count">{b.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </FilterSection>
+
+      <p className="sidebar-group-label">Lyrics &amp; sound</p>
+
       <FilterSection
         title="Themes & advocacy"
         count={DIM_KEYS.reduce((n, k) => n + filters[k].length, 0) + filters.facet_groups.length + filters.facet_subdims.length}
@@ -381,37 +415,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
         </FilterSection>
       </FilterSection>
 
-      <FilterSection title="Year range" count={(filters.year_from || filters.year_to) ? 1 : 0}>
-        <div className="range-inputs">
-          {/* Bare years, like Tempo: "From 1970" clips in these boxes. */}
-          <input type="number" placeholder={yr.min_year ? String(yr.min_year) : 'From'}
-            aria-label="Year from"
-            value={filters.year_from} onChange={(e) => setScalar('year_from', e.target.value)}
-            min={yr.min_year} max={yr.max_year} />
-          <span>to</span>
-          <input type="number" placeholder={yr.max_year ? String(yr.max_year) : 'To'}
-            aria-label="Year to"
-            value={filters.year_to} onChange={(e) => setScalar('year_to', e.target.value)}
-            min={yr.min_year} max={yr.max_year} />
-        </div>
-      </FilterSection>
-
-      <FilterSection title="Song length" count={filters.lengths.length}
-        note="Short is under 2 minutes, long is over 4.">
-        <div className="filter-options">
-          {(filterOptions.length_buckets || []).map(b => {
-            const selected = filters.lengths.includes(b.value);
-            const zero = b.count === 0 && !selected;
-            return (
-              <label key={b.value} className={`filter-option ${zero ? 'is-zero' : ''}`}>
-                <input type="checkbox" checked={selected} disabled={zero}
-                  onChange={(e) => toggleInArray('lengths', b.value, e.target.checked)} />
-                <span className="filter-label">{b.label}<span className="filter-count">({b.count})</span></span>
-              </label>
-            );
-          })}
-        </div>
-      </FilterSection>
+      <p className="sidebar-group-label">Availability</p>
 
       <FilterSection title="Available on" count={(filters.on_spotify ? 1 : 0) + (filters.has_youtube ? 1 : 0)}>
         <div className="filter-options">

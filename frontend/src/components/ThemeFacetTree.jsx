@@ -1,4 +1,3 @@
-import { subDimensionColor } from '../styles/subDimensionPalette';
 import FilterSection from './FilterSection';
 
 const DIM_ORDER = ['themes', 'targets', 'actions', 'moral_frames'];
@@ -28,7 +27,6 @@ function ThemeFacetTree({ facets, selected, onToggle, selectedGroups = [], selec
               title={`${dim.label} (${dim.count})`}
             >
               {dim.sub_dimensions.map((sub) => {
-                const hue = subDimensionColor(sub.id);
                 const subOn = subSel(dimKey, sub.id);
                 const subZero = sub.count === 0 && !subOn;
                 return (
@@ -37,14 +35,12 @@ function ThemeFacetTree({ facets, selected, onToggle, selectedGroups = [], selec
                       <input type="checkbox" checked={subOn} disabled={subZero}
                         onChange={(e) => onToggleSubdim(dimKey, sub.id, e.target.checked)} />
                       <span className="filter-label">
-                        <span className="facet-subdim-label" style={{ color: hue }}>
-                          <span className="facet-dot" style={{ background: hue }} />{sub.label}
-                        </span>
+                        <span className="facet-subdim-label">{sub.label}</span>
                         <span className="filter-count">({sub.count})</span>
                       </span>
                     </label>
 
-                    <div className="facet-rail" style={{ borderLeftColor: hue }}>
+                    <div className="facet-rail">
                       {sub.groups.map((group) => {
                         const grpOn = grpSel(dimKey, group.id);
                         const grpChecked = grpOn || subOn;      // covered by its sub-dimension
@@ -60,7 +56,7 @@ function ThemeFacetTree({ facets, selected, onToggle, selectedGroups = [], selec
                               </span>
                             </label>
 
-                            <div className="facet-rail facet-rail-neutral">
+                            <div className="facet-rail">
                               {group.codes.map((c) => {
                                 const covered = subOn || grpOn;    // ancestor covers the code
                                 const cChecked = codeSel(dimKey, c.code) || covered;
@@ -70,7 +66,7 @@ function ThemeFacetTree({ facets, selected, onToggle, selectedGroups = [], selec
                                     <input type="checkbox" checked={cChecked} disabled={covered || cZero}
                                       onChange={(e) => onToggle(dimKey, c.code, e.target.checked)} />
                                     <span className="filter-label">
-                                      <span><span className="facet-dot" style={{ background: hue }} />{c.label}</span>
+                                      <span>{c.label}</span>
                                       <span className="filter-count">({c.count})</span>
                                     </span>
                                   </label>
