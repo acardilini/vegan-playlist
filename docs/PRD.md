@@ -319,6 +319,7 @@ keep/rebuild/drop/defer decisions are recorded in
   has-analysis / language filters; removable filter chips; sorting (Title/Artist/Year/Date-added)
   **with a direction toggle**; pagination. ✅ _(B3, 2026-07-20; sort direction + independently
   scrolling sidebar, triage 4, 2026-07-22.)_
+  _(Sidebar flattened 2026-10-27: no nested boxes, hairline dividers, group labels, Song length as toggle pills, Genre collapsed to 6 + "Show more"; every filter kept. Home hero stats show exact live songs / artists / hours.)_
 - **Lyric-metadata filters:** the seven scalar analysis components (Perspective, Tone, Intensity,
   Clarity, Focus, Speaking to, Emotions) as browse filters — **OR within a component, AND across** —
   with exclude-self counts, read from each song's latest analysis pass. ✅ _(Triage 1b, 2026-07-22;
