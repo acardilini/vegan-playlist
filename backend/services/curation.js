@@ -161,6 +161,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
                   OR EXISTS (SELECT 1 FROM song_submissions ss WHERE ss.existing_song_id=s.id AND ss.status='approved' AND s.created_at >= ss.created_at)
                 THEN 'submission'
                 WHEN s.status_notes LIKE 'added via band check%' THEN 'bandcheck'
+                WHEN s.status_notes LIKE 'added via playlist cross-check%' THEN 'crosscheck'
                 WHEN s.playlist_added_by='playlist-diff' AND s.status_notes LIKE 'on Spotify playlist%'
                 THEN 'spotify' END AS origin
     FROM songs s

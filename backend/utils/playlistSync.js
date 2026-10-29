@@ -51,7 +51,7 @@ async function fetchPlaylistTracks(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID)
     const page = await withRetry(() => spotifyApi.getPlaylistTracks(playlistId, {
       offset, limit: 100,
       fields: 'items(added_at,track(id,name,duration_ms,popularity,explicit,track_number,disc_number,external_urls,artists(id,name,external_urls),album(id,name,images,release_date,total_tracks,album_type,external_urls))),next',
-    }));
+    }), retryOpts);
     for (const item of page.body.items) {
       const t = item.track;
       if (!t || !t.id) continue;

@@ -95,7 +95,7 @@ async function setPlayLink(db, id, { bandcamp_url, soundcloud_url } = {}) {
   return r.rows[0];
 }
 
-async function insertCandidates(db, tracks, { note } = {}) {
+async function insertCandidates(db, tracks, { note, allowTitleDuplicates = false } = {}) {
   const existing = (await db.query(`
     SELECT s.spotify_id, s.title, COALESCE(string_agg(a.name, ', '), '') AS artists
     FROM songs s
@@ -109,8 +109,9 @@ async function insertCandidates(db, tracks, { note } = {}) {
   let skippedExisting = 0;
   for (const t of tracks) {
     const ta = normalizeName(t.title) + '|' + normalizeName((t.artists || []).map(a => a.name).join(', '));
-    if ((t.spotify_id && existingIds.has(t.spotify_id)) || existingTA.has(ta) ||
-        (t.spotify_id && seenIds.has(t.spotify_id)) || seenTA.has(ta)) {
+    // allowTitleDuplicates (playlist cross-check): the curator chose this look-alike on purpose; Spotify-id dedupe still applies
+    if ((t.spotify_id && existingIds.has(t.spotify_id)) || (!allowTitleDuplicates && existingTA.has(ta)) ||
+        (t.spotify_id && seenIds.has(t.spotify_id)) || (!allowTitleDuplicates && seenTA.has(ta))) {
       skippedExisting++; continue;
     }
     if (t.spotify_id) seenIds.add(t.spotify_id);

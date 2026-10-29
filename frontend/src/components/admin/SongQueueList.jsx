@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 
 const PAGE_SIZE = 50;
-const ORIGIN_LABELS = { spotify: 'From Spotify', submission: 'From submit form', bandcheck: 'From band check' };
+const ORIGIN_LABELS = { spotify: 'From Spotify', submission: 'From submit form', bandcheck: 'From band check', crosscheck: 'From playlist cross-check' };
 
 const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
