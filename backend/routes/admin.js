@@ -16,6 +16,7 @@ const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDis
 const spotifyPush = require('../services/spotifyPush');
 const bandCheck = require('../services/bandCheck');
 const artistsSvc = require('../services/artists');
+const playlistCrosscheck = require('../services/playlistCrosscheck');
 const { defaultAuth: spotifyAuth } = require('../services/spotifyAuth');
 const multer = require('multer');
 const csv = require('csv-parser');
@@ -1520,6 +1521,26 @@ router.post('/band-check/bands/:id/add', async (req, res) => {
     res.json({ success: true, ...(await bandCheck.addSelected(pool, bandId(req), keys, { adapters: bandAdapters, rejectKeys })) });
   }
   catch (e) { bandCheckError(res, e, 'add the songs'); }
+});
+
+// ==================== Playlist cross-check ====================
+// Compare someone else's public Spotify playlist with the catalogue, then import / reject the chosen tracks.
+// Errors are coded by the service with fixed strings; never log e.message (it can hold a URL/token).
+function crosscheckError(res, e, label) {
+  const status = { BAD_INPUT: 400, NOT_READABLE: 404, BUSY: 409, RATE_LIMITED: 429, UPSTREAM: 502 }[e.code];
+  if (status) return res.status(status).json({ error: e.code, message: e.message });
+  console.error(`playlist cross-check ${label} error:`, e.code || 'error');
+  return res.status(500).json({ error: `Failed to ${label}` });
+}
+router.get('/playlist-crosscheck', async (req, res) => {
+  try { res.json(await playlistCrosscheck.compare(pool, { input: String(req.query.url || '').slice(0, 300), fresh: req.query.fresh === '1' })); }
+  catch (e) { crosscheckError(res, e, 'compare the playlist'); }
+});
+router.post('/playlist-crosscheck/apply', async (req, res) => {
+  try {
+    const { url, importIds, rejectIds, lyrics } = req.body || {};
+    res.json({ success: true, ...(await playlistCrosscheck.apply(pool, { input: String(url || '').slice(0, 300), importIds, rejectIds, lyrics })) });
+  } catch (e) { crosscheckError(res, e, 'apply the choices'); }
 });
 
 // ==================== Artists ====================
