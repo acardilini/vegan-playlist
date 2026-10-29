@@ -7,7 +7,6 @@ import AddSongPanel from './AddSongPanel';
 import InboxList from './InboxList';
 import SpotifyLists from './SpotifyLists';
 import JunkLyricsList from './JunkLyricsList';
-import PlaylistCrosscheck from './PlaylistCrosscheck';
 
 const DEFAULT_QUEUE = 'to-process';
 // Only these queues are selectable — Needs analysis is rail-disabled (reserved for
@@ -15,7 +14,7 @@ const DEFAULT_QUEUE = 'to-process';
 // render. 'inbox' renders InboxList, and 'spotify' SpotifyLists; the rest render SongQueueList.
 const SELECTABLE_QUEUES = [
   'inbox', 'to-process', 'needs-lyrics', 'needs-cover', 'needs-album', 'needs-released', 'needs-language', 'needs-genre', 'genre-from-artist', 'needs-video', 'no-video', 'junk-lyrics',
-  'to-transcribe', 'lyrics-on-hold', 'remind-later', 'to-finalise', 'live', 'all', 'featured', 'spotify', 'crosscheck',
+  'to-transcribe', 'lyrics-on-hold', 'remind-later', 'to-finalise', 'live', 'all', 'featured', 'spotify',
 ];
 
 function SongsArea() {
@@ -49,11 +48,9 @@ function SongsArea() {
           ? <InboxList refreshKey={refreshKey} onChanged={() => { loadCounts(); setRefreshKey(k => k + 1); }} />
           : activeQueue === 'spotify'
             ? <SpotifyLists />
-            : activeQueue === 'crosscheck'
-              ? <PlaylistCrosscheck />
-              : activeQueue === 'junk-lyrics'
-                ? <JunkLyricsList refreshKey={refreshKey} onChanged={() => { loadCounts(); setRefreshKey(k => k + 1); }} />
-                : <SongQueueList queue={activeQueue} refreshKey={refreshKey} />}
+            : activeQueue === 'junk-lyrics'
+              ? <JunkLyricsList refreshKey={refreshKey} onChanged={() => { loadCounts(); setRefreshKey(k => k + 1); }} />
+              : <SongQueueList queue={activeQueue} refreshKey={refreshKey} />}
       </div>
       {showAdd && (
         <AddSongPanel

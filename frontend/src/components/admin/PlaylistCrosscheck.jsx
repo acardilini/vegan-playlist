@@ -23,7 +23,7 @@ function PlaylistCrosscheck() {
       const body = await r.json().catch(() => ({}));
       if (!r.ok) { setData(null); setError(body.message || "Couldn't compare that playlist"); return; }
       setData(body); setChoices({}); setLyrics({});
-      setParams({ queue: 'crosscheck', url: link });
+      setParams({ url: link });
     } catch { setData(null); setError("Couldn't compare that playlist"); }
     finally { setBusy(false); }
   };

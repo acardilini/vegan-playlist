@@ -18,7 +18,7 @@ const GROUPS = [
   ['Parked', [['to-transcribe', 'To transcribe', false], ['lyrics-on-hold', 'Lyrics on hold', false], ['remind-later', 'Remind me later', false]]],
   ['Publish', [['to-finalise', 'To finalise', false], ['live', 'Live', false], ['featured', 'Featured', false]]],
   ['Everything', [['all', 'All songs', false]]],
-  ['Spotify', [['spotify', 'Spotify sync', false, true], ['crosscheck', 'Playlist cross-check', false, true]]], // 4th slot: no count (it is not a queue)
+  ['Spotify', [['spotify', 'Spotify sync', false, true]]], // 4th slot: no count (it is not a queue)
 ];
 
 function QueueRail({ counts, activeQueue, onSelect, groups = GROUPS }) {

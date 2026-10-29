@@ -6,6 +6,7 @@ const AREAS = [
   ['/admin', 'Dashboard', true],       // index route → end match
   ['/admin/songs', 'Songs', false],
   ['/admin/artists', 'Artists', false],
+  ['/admin/crosscheck', 'Playlist cross-check', false],
   ['/admin/playlists', 'Playlists', false],
   ['/admin/data-quality', 'Data quality', false],
 ];
