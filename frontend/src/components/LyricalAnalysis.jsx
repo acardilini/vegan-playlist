@@ -120,13 +120,16 @@ function LyricalAnalysis({ analysis }) {
                   {bySubDimension(codes).map((g) => (
                     <div key={g.key} className="la-subdim">
                       {g.label && <div className="la-subdim-caption">{g.label}</div>}
-                      <div className="la-chips">
+                      <p className="la-terms">
                         {g.codes.map((c, i) => (
-                          <InfoTip key={`${c.code}-${i}`} text={c.definition}>
-                            <span className="la-chip">{c.label}</span>
-                          </InfoTip>
+                          <span key={`${c.code}-${i}`}>
+                            {i > 0 && <span className="la-terms-sep" aria-hidden="true">·</span>}
+                            <InfoTip text={c.definition}>
+                              <span className="la-term">{c.label}</span>
+                            </InfoTip>
+                          </span>
                         ))}
-                      </div>
+                      </p>
                     </div>
                   ))}
                   {showQuotes && quoted.length > 0 && (
