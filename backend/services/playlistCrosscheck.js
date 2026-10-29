@@ -2,10 +2,15 @@
 // import / reject the tracks the curator chooses. Spec: docs/superpowers/specs/2026-10-29-playlist-crosscheck-design.md
 // SECURITY: errors carry fixed strings + `.code`; never a Spotify error's message, URL or token.
 const { getSpotifyClient, fetchPlaylistTracks } = require('../utils/playlistSync');
-const { normalizeName } = require('./staging');
+const staging = require('./staging');
+const curation = require('./curation');
+const { normalizeName } = staging;
 
 const CACHE_MS = 60 * 1000;
+const MAX_APPLY = 100;
+const MAX_LYRICS_CHARS = 100000;
 const cache = new Map(); // playlistId -> { at, result }
+let applying = false; // one apply at a time
 
 function coded(code, message) { const e = new Error(message); e.code = code; return e; }
 
@@ -98,8 +103,66 @@ async function compare(db, { input, fetchPlaylist = defaultFetchPlaylist, fresh 
   };
 }
 
-function _resetForTests() { cache.clear(); }
+function idList(v, name) {
+  if (v === undefined) return [];
+  if (!Array.isArray(v) || !v.every((x) => typeof x === 'string' && x)) throw coded('BAD_INPUT', `${name} must be a list of Spotify ids`);
+  return [...new Set(v)];
+}
 
-module.exports = { parsePlaylistId, classifyTracks, compare, defaultFetchPlaylist, _resetForTests,
-  // used by apply (below)
-  _internal: { coded, readPlaylist, loadCatalogue } };
+// Imports the chosen tracks as pending, saves the rejected ones as `rejected` rows, then saves any pasted lyrics.
+// Never trusts client data: only ids (and lyrics keyed by id) come in; titles and artists come from the server's own read.
+// Never touches an existing song: the reject flip only hits rows this call just created.
+async function apply(db, { input, importIds, rejectIds, lyrics, fetchPlaylist = defaultFetchPlaylist, saveLyricsFn = curation.saveLyrics } = {}) {
+  const imp = idList(importIds, 'importIds'), rej = idList(rejectIds, 'rejectIds');
+  if (imp.length + rej.length < 1 || imp.length + rej.length > MAX_APPLY) throw coded('BAD_INPUT', `Choose 1-${MAX_APPLY} songs at a time`);
+  const impSet = new Set(imp);
+  if (rej.some((id) => impSet.has(id))) throw coded('BAD_INPUT', 'A song cannot be both imported and rejected');
+  if (lyrics !== undefined && (lyrics === null || typeof lyrics !== 'object' || Array.isArray(lyrics)
+      || Object.values(lyrics).some((v) => typeof v !== 'string' || v.length > MAX_LYRICS_CHARS))) {
+    throw coded('BAD_INPUT', `lyrics must be text of at most ${MAX_LYRICS_CHARS} characters per song`);
+  }
+  const playlistId = parsePlaylistId(input);
+  if (applying) throw coded('BUSY', 'Another apply is in progress');
+  applying = true;
+  try {
+    const [songs, pl] = [await loadCatalogue(db), await readPlaylist(fetchPlaylist, playlistId)];
+    const byId = new Map(classifyTracks(songs, pl.tracks).map((c) => [c.track.spotify_id, c]));
+    const skipped = [];
+    const pick = (ids) => ids.flatMap((id) => {
+      const c = byId.get(id);
+      if (!c) { skipped.push({ spotify_id: id, reason: 'not_on_playlist' }); return []; }
+      if (c.state === 'have') { skipped.push({ spotify_id: id, reason: 'already_have' }); return []; }
+      return [c.track];
+    });
+    const toImport = pick(imp), toReject = pick(rej);
+    const importNote = `added via playlist cross-check (${pl.name})`, rejectNote = `rejected via playlist cross-check (${pl.name})`;
+
+    let imported = 0, rejected = 0;
+    if (toImport.length) imported = (await staging.insertCandidates(db, toImport, { note: importNote, allowTitleDuplicates: true })).added;
+    if (toReject.length) {
+      await staging.insertCandidates(db, toReject, { note: rejectNote, allowTitleDuplicates: true });
+      // flip ONLY the rows this call just created: still pending, carrying this call's note, one of the ids it chose
+      rejected = (await db.query(
+        `UPDATE songs SET status='rejected', published=false, published_at=NULL, updated_at=CURRENT_TIMESTAMP
+         WHERE status='pending' AND status_notes=$1 AND spotify_id = ANY($2::text[])`,
+        [rejectNote, toReject.map((t) => t.spotify_id)])).rowCount;
+    }
+
+    let lyricsSaved = 0;
+    const lyricsFailed = [];
+    const chosen = [...toImport, ...toReject].map((t) => t.spotify_id).filter((id) => lyrics && typeof lyrics[id] === 'string' && lyrics[id].trim());
+    if (chosen.length) {
+      const made = (await db.query(`SELECT id, spotify_id FROM songs WHERE spotify_id = ANY($1::text[]) AND status_notes = ANY($2::text[])`,
+        [chosen, [importNote, rejectNote]])).rows;
+      for (const m of made) {
+        try { await saveLyricsFn(db, m.id, { lyrics: lyrics[m.spotify_id] }); lyricsSaved++; }
+        catch (e) { console.error('crosscheck lyrics error:', e.code || 'error'); lyricsFailed.push(m.spotify_id); }
+      }
+    }
+    return { imported, rejected, lyricsSaved, skipped, lyricsFailed };
+  } finally { applying = false; }
+}
+
+function _resetForTests() { cache.clear(); applying = false; }
+
+module.exports = { parsePlaylistId, classifyTracks, compare, apply, defaultFetchPlaylist, _resetForTests };
