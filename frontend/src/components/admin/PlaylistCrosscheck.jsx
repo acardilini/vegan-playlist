@@ -40,14 +40,15 @@ function PlaylistCrosscheck() {
   const apply = async () => {
     setBusy(true); setError('');
     const ids = [...chosenIds('import'), ...chosenIds('reject')];
-    const body = { url, importIds: chosenIds('import'), rejectIds: chosenIds('reject'),
+    // the playlist that was compared, not whatever is typed in the box now
+    const body = { url: data.playlist.id, importIds: chosenIds('import'), rejectIds: chosenIds('reject'),
       lyrics: Object.fromEntries(ids.filter((id) => (lyrics[id] || '').trim()).map((id) => [id, lyrics[id]])) };
     try {
       const r = await adminFetch('/api/admin/playlist-crosscheck/apply', { method: 'POST', body });
       const out = await r.json().catch(() => ({}));
       if (!r.ok) { setError(out.message || "Couldn't apply your choices"); setBusy(false); return; }
       setResult(out);
-      await compare(url, { keepResult: true });
+      await compare(data.playlist.id, { keepResult: true });
     } catch { setError("Couldn't apply your choices"); setBusy(false); }
   };
 

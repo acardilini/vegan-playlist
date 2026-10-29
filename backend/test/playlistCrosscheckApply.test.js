@@ -111,3 +111,19 @@ test('a Spotify id listed twice on the playlist is applied once', async () => {
   assert.equal(r.imported, 1);
   assert.equal((await pool.query(`SELECT count(*)::int n FROM songs WHERE spotify_id='ZZZXCHKA_d1'`)).rows[0].n, 1);
 });
+
+test('apply never stamps a stranger\'s Spotify id onto an existing same-named artist (reject path included)', async () => {
+  const existing = (await pool.query(`INSERT INTO artists (name, data_source) VALUES ('ZZZXCHKA Fury','manual') RETURNING id`)).rows[0].id;
+  const t = { ...track('ZZZXCHKA_fury', 'ZZZXCHKA Fury Song', 'ZZZXCHKA Fury') };
+  await xc.apply(pool, { input: INPUT, rejectIds: ['ZZZXCHKA_fury'], fetchPlaylist: listOf(t) });
+  const a = (await pool.query(`SELECT spotify_id FROM artists WHERE id=$1`, [existing])).rows[0];
+  assert.equal(a.spotify_id, null);
+  assert.equal((await pool.query(`SELECT count(*)::int n FROM artists WHERE name='ZZZXCHKA Fury'`)).rows[0].n, 2);
+  assert.equal((await pool.query(`SELECT count(*)::int n FROM song_artists WHERE artist_id=$1`, [existing])).rows[0].n, 0);
+});
+
+test('apply does not copy the other playlist owner\'s added_at onto the imported song', async () => {
+  const t = { ...track('ZZZXCHKA_when', 'ZZZXCHKA When'), added_at: '2019-01-01T00:00:00Z' };
+  await xc.apply(pool, { input: INPUT, importIds: ['ZZZXCHKA_when'], fetchPlaylist: listOf(t) });
+  assert.equal((await pool.query(`SELECT playlist_added_at FROM songs WHERE spotify_id='ZZZXCHKA_when'`)).rows[0].playlist_added_at, null);
+});

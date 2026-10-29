@@ -58,8 +58,8 @@ async function loadCatalogue(db) {
 
 const isLive = (s) => s.status === 'included' && s.published === true;
 const matchOf = (s) => ({ id: s.id, title: s.title, artists: s.artists, status: s.status, live: isLive(s) });
-// null when the title normalises to nothing (a non-Latin or punctuation-only title): never match on that
-const keyOf = (title, artist) => { const t = normalizeName(title); return t ? `${t}|${normalizeName(artist)}` : null; };
+// null when the title OR the artist normalises to nothing (non-Latin or punctuation-only): such a key would match unrelated songs
+const keyOf = (title, artist) => { const t = normalizeName(title), a = normalizeName(artist); return t && a ? `${t}|${a}` : null; };
 
 function classifyTracks(songs, tracks) {
   const byId = new Map(songs.filter((s) => s.spotify_id).map((s) => [s.spotify_id, s]));
@@ -134,13 +134,15 @@ async function apply(db, { input, importIds, rejectIds, lyrics, fetchPlaylist = 
       if (c.state === 'have') { skipped.push({ spotify_id: id, reason: 'already_have' }); return []; }
       return [c.track];
     });
-    const toImport = pick(imp), toReject = pick(rej);
+    // a stranger's added_at must not become the song's 'date added'; their artists must never be name-merged into ours
+    const clean = (t) => ({ ...t, added_at: null });
+    const toImport = pick(imp).map(clean), toReject = pick(rej).map(clean);
     const importNote = `added via playlist cross-check (${pl.name})`, rejectNote = `rejected via playlist cross-check (${pl.name})`;
 
     let imported = 0, rejected = 0;
-    if (toImport.length) imported = (await staging.insertCandidates(db, toImport, { note: importNote, allowTitleDuplicates: true })).added;
+    if (toImport.length) imported = (await staging.insertCandidates(db, toImport, { note: importNote, allowTitleDuplicates: true, noNameBackfill: true })).added;
     if (toReject.length) {
-      await staging.insertCandidates(db, toReject, { note: rejectNote, allowTitleDuplicates: true });
+      await staging.insertCandidates(db, toReject, { note: rejectNote, allowTitleDuplicates: true, noNameBackfill: true });
       // flip ONLY the rows this call just created: still pending, carrying this call's note, one of the ids it chose
       rejected = (await db.query(
         `UPDATE songs SET status='rejected', published=false, published_at=NULL, updated_at=CURRENT_TIMESTAMP

@@ -118,3 +118,12 @@ test('fetchPlaylistTracks still works with no retryOpts', async () => {
   const api = { getPlaylistTracks: async () => ({ body: { items: [], next: null } }) };
   assert.deepEqual(await fetchPlaylistTracks(api, '4RvN6XwfV6cQ0eZV7PF215'), []);
 });
+
+test('classifyTracks: a non-Latin artist name (normalises to nothing) never makes a duplicate, nor does an artist-less song', () => {
+  const songs = [
+    song({ id: 6, title: 'ZZZXCHKC Home', spotify_id: 'j1', first_artist: 'Другой', artists: 'Другой' }),
+    song({ id: 7, title: 'ZZZXCHKC Solo', spotify_id: 'j2', first_artist: null, artists: '' }),
+  ];
+  const out = xc.classifyTracks(songs, [track('j3', 'ZZZXCHKC Home', '日本'), track('j4', 'ZZZXCHKC Solo', '日本')]);
+  assert.deepEqual(out.map((o) => o.state), ['new', 'new']);
+});

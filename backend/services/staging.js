@@ -95,7 +95,7 @@ async function setPlayLink(db, id, { bandcamp_url, soundcloud_url } = {}) {
   return r.rows[0];
 }
 
-async function insertCandidates(db, tracks, { note, allowTitleDuplicates = false } = {}) {
+async function insertCandidates(db, tracks, { note, allowTitleDuplicates = false, noNameBackfill = false } = {}) {
   const existing = (await db.query(`
     SELECT s.spotify_id, s.title, COALESCE(string_agg(a.name, ', '), '') AS artists
     FROM songs s
@@ -118,7 +118,7 @@ async function insertCandidates(db, tracks, { note, allowTitleDuplicates = false
     seenTA.add(ta);
     toAdd.push(t);
   }
-  const added = await addTracksAsPending(db, toAdd, note || 'added as candidate via staging intake');
+  const added = await addTracksAsPending(db, toAdd, note || 'added as candidate via staging intake', { noNameBackfill });
   return { added, skippedExisting };
 }
 
