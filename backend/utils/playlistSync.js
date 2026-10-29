@@ -44,7 +44,7 @@ async function withRetry(fn, { maxWaitS = Infinity, maxRetries = Infinity } = {}
 }
 
 // All tracks on the playlist, with full album objects and real added_at.
-async function fetchPlaylistTracks(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID) {
+async function fetchPlaylistTracks(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID, retryOpts = {}) {
   const tracks = [];
   let offset = 0;
   for (;;) {

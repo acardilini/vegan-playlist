@@ -106,3 +106,15 @@ test('compare on an empty playlist returns zero counts and no tracks', async () 
   assert.deepEqual(r.counts, { new: 0, duplicate: 0, have: 0 });
   assert.deepEqual(r.tracks, []);
 });
+
+test('fetchPlaylistTracks honours retryOpts: a long Retry-After fails fast with RATE_LIMITED instead of waiting', async () => {
+  const { fetchPlaylistTracks } = require('../utils/playlistSync');
+  const api = { getPlaylistTracks: async () => { const e = new Error('429'); e.statusCode = 429; e.headers = { 'retry-after': '120' }; throw e; } };
+  await assert.rejects(fetchPlaylistTracks(api, '4RvN6XwfV6cQ0eZV7PF215', { maxWaitS: 30, maxRetries: 3 }), (e) => e.code === 'RATE_LIMITED');
+});
+
+test('fetchPlaylistTracks still works with no retryOpts', async () => {
+  const { fetchPlaylistTracks } = require('../utils/playlistSync');
+  const api = { getPlaylistTracks: async () => ({ body: { items: [], next: null } }) };
+  assert.deepEqual(await fetchPlaylistTracks(api, '4RvN6XwfV6cQ0eZV7PF215'), []);
+});
