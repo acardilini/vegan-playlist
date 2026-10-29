@@ -7,7 +7,7 @@ const ORIGIN_LABELS = { spotify: 'From Spotify', submission: 'From submit form',
 
 const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
-  'needs-album': 'Needs album', 'needs-released': 'Needs released', 'needs-language': 'Needs language',
+  'needs-album': 'Needs album', 'needs-released': 'Needs released', 'needs-language': 'Needs language', 'needs-genre': 'Needs genre', 'genre-from-artist': 'Genre from artist',
   'needs-video': 'Needs video', 'no-video': 'No video available', 'junk-lyrics': 'Junk lyrics', 'to-transcribe': 'To transcribe', 'lyrics-on-hold': 'Lyrics on hold',
   'remind-later': 'Remind me later', 'to-finalise': 'To finalise',
   'live': 'Live', 'all': 'All songs', 'featured': 'Featured',
@@ -89,6 +89,7 @@ function SongQueueList({ queue, refreshKey }) {
               <span className={`queue-status ${statusClass(row)}`}>{statusLabel(row)}</span>
               {row.featured && <span className="featured-badge">Featured</span>}
               {ORIGIN_LABELS[row.origin] && <span className="origin-tag">{ORIGIN_LABELS[row.origin]}</span>}
+              {row.genre && queue === 'genre-from-artist' && <span className="origin-tag" title={row.genre_source === 'artist' ? 'Genre comes from the artist' : 'Genre set on the song'}>{row.genre}{row.genre_source === 'artist' ? ' (artist)' : ''}</span>}
               <span className="miss-chips">
                 {(row.missing || []).map(m => (
                   <span key={m} className="miss-chip warn">no {m}</span>

@@ -13,6 +13,7 @@ const TILES = [
   ['needs-album', 'Needs album', false],
   ['needs-released', 'Needs released', false],
   ['needs-language', 'Needs language', false],
+  ['needs-genre', 'Needs genre', false],
   ['needs-video', 'Needs video', false],
   ['junk-lyrics', 'Junk lyrics', false],
   ['to-finalise', 'To finalise', false],

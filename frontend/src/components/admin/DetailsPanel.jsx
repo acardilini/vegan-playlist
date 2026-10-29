@@ -109,6 +109,58 @@ function LanguageChips({ wb, savePanel }) {
   );
 }
 
+// The song's own genre, with where the effective genre comes from. A song with no genre of its own still
+// shows under its first artist's genre on the public site; the line below says so. Saves on Enter/blur.
+function GenreField({ wb, savePanel }) {
+  const [value, setValue] = useState(wb.genre || '');
+  const [status, setStatus] = useState('idle');
+  const [options, setOptions] = useState([]);
+  useEffect(() => { setValue(wb.genre || ''); }, [wb.genre]);
+  useEffect(() => {
+    adminFetch('/api/admin/categorization-options')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setOptions([...new Set([...(d.parent_genres || []), ...(d.subgenres || [])])].sort()); })
+      // The list is a convenience only; a failed fetch leaves a free-text field.
+      .catch(() => {});
+  }, []);
+
+  const save = async (next) => {
+    const v = next.trim().toLowerCase();
+    if (v === (wb.genre || '')) return;
+    setStatus('saving');
+    const res = await savePanel('details', { genre: v });
+    setStatus(res && res.ok ? 'saved' : 'error');
+  };
+  const ag = wb.artist_genre;
+  let source;
+  if (wb.genre) source = 'Set on this song';
+  else if (ag) source = `Not set on the song - the site uses the artist's genre (${ag.value}, from ${ag.artist})`;
+  else source = 'No genre on the song or its artist';
+
+  return (
+    <div className="wb-field">
+      <span className="wb-field-label">Genre <SaveTag status={status} /></span>
+      <input className="input" list="wb-genre-options" value={value} aria-label="Genre"
+        placeholder="Pick or type a genre, then press Enter"
+        onChange={(e) => { setValue(e.target.value); if (status !== 'idle') setStatus('idle'); }}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save(value); } }}
+        onBlur={() => save(value)} />
+      <datalist id="wb-genre-options">{options.map((o) => <option key={o} value={o} />)}</datalist>
+      <div className="wb-genre-source">
+        {source}
+        {!wb.genre && ag && (
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setValue(ag.value); save(ag.value); }}>
+            Use {ag.value} for this song
+          </button>
+        )}
+        {wb.genre && (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setValue(''); save(''); }}>Clear</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DetailsPanel({ wb, savePanel }) {
   const artistNames = (wb.artists || []).map((a) => a.name).join(', ') || '—';
   const cover = coverUrl(wb.album && wb.album.images);
@@ -119,6 +171,7 @@ function DetailsPanel({ wb, savePanel }) {
     <section className="wb-panel">
       <h2>Details</h2>
       <AutoText label="Title" initial={wb.title} onSave={(v) => savePanel('details', { title: v })} />
+      <GenreField wb={wb} savePanel={savePanel} />
       <LanguageChips wb={wb} savePanel={savePanel} />
       <div className="wb-readonly">
         <div><span className="k">Artist(s)</span>{artistNames}</div>

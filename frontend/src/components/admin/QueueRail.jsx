@@ -8,6 +8,8 @@ const GROUPS = [
     ['needs-album', 'Needs album', false],
     ['needs-released', 'Needs released', false],
     ['needs-language', 'Needs language', false],
+    ['needs-genre', 'Needs genre', false],
+    ['genre-from-artist', 'Genre from artist', false],
     ['needs-video', 'Needs video', false],
     ['no-video', 'No video available', false],
     ['junk-lyrics', 'Junk lyrics', false],

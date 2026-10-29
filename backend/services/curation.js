@@ -2,6 +2,7 @@
 // Mirrors services/staging.js conventions.
 const { hasAnalysisExists, getSongAnalysis } = require('./analysis');
 const junkLyrics = require('./junkLyrics');
+const { GENRE_HIERARCHY, getParentGenre } = require('../utils/genreMapping');
 const PARK_REASONS = ['awaiting_community', 'needs_transcription', 'listened_unclear'];
 
 async function getProcessing(db, songId) {
@@ -46,8 +47,13 @@ const HAS_LYRICS_SQL = `EXISTS (SELECT 1 FROM song_lyrics sl
 // exist it re-enters normal processing even if the reason was never cleared.
 // COALESCE: a song with no song_processing row has park_reason NULL, and NOT(NULL) would drop it.
 const SHELVED_SQL = `(COALESCE(sp.park_reason IN ${LYRIC_PARK_REASONS_SQL}, false) AND NOT ${HAS_LYRICS_SQL})`;
+// Genre has two sources: the song's own `genre` and, failing that, its first artist's first genre (the same
+// fallback the public filter uses - services/genres.js EFFECTIVE_GENRE_JOIN). Keep the two in step.
+const SONG_GENRE_SQL = `NULLIF(btrim(s.genre), '')`;
+const ARTIST_GENRE_SQL = `(SELECT (a2.genres)[1] FROM song_artists sa2 JOIN artists a2 ON a2.id = sa2.artist_id
+              WHERE sa2.song_id = s.id AND array_length(a2.genres, 1) > 0 ORDER BY sa2.id LIMIT 1)`;
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics',
-  'needs-cover','needs-album','needs-released','needs-language','needs-video','no-video','junk-lyrics','needs-analysis','to-finalise','live','all','featured'];
+  'needs-cover','needs-album','needs-released','needs-language','needs-genre','genre-from-artist','needs-video','no-video','junk-lyrics','needs-analysis','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
@@ -76,6 +82,12 @@ function queueWhere(queue) {
       return `s.status='included' AND al.release_date IS NULL`;
     case 'needs-language':
       return `s.status='included' AND (s.language IS NULL OR cardinality(s.language) = 0)`;
+    // Needs genre = no genre anywhere (the song has none and neither has its artist). Genre from artist is the
+    // review list for songs that are covered only by inheritance.
+    case 'needs-genre':
+      return `s.status='included' AND ${SONG_GENRE_SQL} IS NULL AND ${ARTIST_GENRE_SQL} IS NULL`;
+    case 'genre-from-artist':
+      return `s.status='included' AND ${SONG_GENRE_SQL} IS NULL AND ${ARTIST_GENRE_SQL} IS NOT NULL`;
     case 'needs-video':
       return `s.status='included' AND s.no_video_display IS NULL
               AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
@@ -118,6 +130,8 @@ function mapQueueRow(r) {
     language: r.language, has_art: r.has_art, has_lyrics: r.has_lyrics, has_youtube: r.has_youtube,
     has_play_link, play_link_kinds: kinds, snooze_until: r.snooze_until, park_reason: r.park_reason, missing,
     origin: r.origin, no_video_display: r.no_video_display,
+    genre: r.song_genre || r.artist_genre || null,
+    genre_source: r.song_genre ? 'song' : (r.artist_genre ? 'artist' : null),
   };
 }
 
@@ -133,6 +147,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
   }
   let sql = `
     SELECT s.id, s.title, s.status, s.published, s.featured, s.language, s.no_video_display, s.spotify_dormant,
+           ${SONG_GENRE_SQL} AS song_genre, ${ARTIST_GENRE_SQL} AS artist_genre,
            s.spotify_url, s.bandcamp_url, s.soundcloud_url,
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
@@ -230,6 +245,9 @@ async function getWorkbench(db, id) {
   const artists = (await db.query(
     `SELECT a.id, a.name, a.website_url FROM song_artists sa JOIN artists a ON a.id=sa.artist_id
      WHERE sa.song_id=$1 ORDER BY a.name`, [id])).rows;
+  const artistGenre = (await db.query(
+    `SELECT (a.genres)[1] AS genre, a.name FROM song_artists sa JOIN artists a ON a.id=sa.artist_id
+     WHERE sa.song_id=$1 AND array_length(a.genres, 1) > 0 ORDER BY sa.id LIMIT 1`, [id])).rows[0] || null;
   const videos = (await db.query(
     `SELECT id, youtube_id, video_title, video_type, is_primary FROM youtube_videos
      WHERE song_id=$1 ORDER BY is_primary DESC, id`, [id])).rows;
@@ -246,6 +264,8 @@ async function getWorkbench(db, id) {
   return {
     id: s.id, title: s.title, status: s.status, published: s.published, featured: s.featured, language: s.language, no_video_display: s.no_video_display,
     spotify_dormant: s.spotify_dormant,
+    genre: (s.genre && s.genre.trim()) || null, parent_genre: s.parent_genre || null,
+    artist_genre: artistGenre ? { value: artistGenre.genre, artist: artistGenre.name } : null,
     spotify_id: s.spotify_id, spotify_url: s.spotify_url, bandcamp_url: s.bandcamp_url, soundcloud_url: s.soundcloud_url,
     lyrics_status: s.lyrics_status, lyrics_url: s.lyrics_url, lyrics_source: s.lyrics_source,
     lyrics_highlights: s.lyrics_highlights, status_notes: s.status_notes,
@@ -290,11 +310,24 @@ function normLanguages(v) {
   return out.length ? out : null;
 }
 
-async function saveDetails(db, id, { title, language, status_notes } = {}) {
+// The song's own genre. '' / null clears it (the song then falls back to its artist's genre). A named genre is
+// lower-cased like the public filter reads it, and parent_genre is derived: a parent genre is its own parent,
+// a known sub-genre maps up, anything else files under 'other' (the same rule the public tree uses).
+function normGenre(v) {
+  if (v === undefined) return undefined;
+  const g = v == null ? '' : String(v).trim().toLowerCase();
+  if (g.length > 100) { const e = new Error('genre is too long'); e.code = 'BAD_INPUT'; throw e; }
+  if (!g) return { genre: null, parent_genre: null };
+  return { genre: g, parent_genre: Object.prototype.hasOwnProperty.call(GENRE_HIERARCHY, g) ? g : getParentGenre(g) };
+}
+
+async function saveDetails(db, id, { title, language, status_notes, genre } = {}) {
   await assertSong(db, id);
   const sets = [], params = [id];
   const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
   add('title', title); add('language', normLanguages(language)); add('status_notes', status_notes);
+  const g = normGenre(genre);
+  if (g) { add('genre', g.genre); add('parent_genre', g.parent_genre); }
   if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
   return getWorkbench(db, id);
 }
