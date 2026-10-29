@@ -2243,12 +2243,12 @@
 .la-dimension { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-2); }
 .la-dim-heading { margin: 0; font-size: 0.8rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); }
 .la-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.la-subdim { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-1); }
+.la-subdim-caption { font-size: 0.75rem; color: var(--text-muted); }
 .la-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 10px; border: 1px solid var(--border-hairline); border-left-width: 3px;
-  border-radius: 999px; background: var(--bg-surface-raised); color: var(--text-primary);
+  display: inline-block; padding: 4px 10px; border: 1px solid var(--border-hairline);
+  border-radius: 999px; background: transparent; color: var(--text-primary);
 }
-.la-chip-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
 
 /* Per-code quotes, revealed under each dimension by the section "Show quotes" toggle. */
 .la-quotes { list-style: none; margin: var(--space-1) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }

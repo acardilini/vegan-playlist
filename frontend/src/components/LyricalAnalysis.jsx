@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { subDimensionColor } from '../styles/subDimensionPalette';
 import InfoTip from './InfoTip';
 
 // Right-hand "What it's about" dimensions: [data key, display heading].
@@ -9,6 +8,17 @@ const DIMENSIONS = [
   ['actions', 'Actions & advocacy'],
   ['moral_frames', 'Moral frames'],
 ];
+
+// Codes grouped by sub-dimension, in order of first appearance, so each group can carry a caption.
+function bySubDimension(codes) {
+  const groups = new Map();
+  for (const c of codes) {
+    const key = c.sub_dimension || '';
+    if (!groups.has(key)) groups.set(key, { key, label: c.sub_dimension_label || '', codes: [] });
+    groups.get(key).codes.push(c);
+  }
+  return [...groups.values()];
+}
 
 function LyricalAnalysis({ analysis }) {
   const [showQuotes, setShowQuotes] = useState(false);
@@ -107,16 +117,18 @@ function LyricalAnalysis({ analysis }) {
               return (
                 <div key={key} className="la-dimension">
                   <h4 className="la-dim-heading">{heading}</h4>
-                  <div className="la-chips">
-                    {codes.map((c, i) => (
-                      <InfoTip key={`${c.code}-${i}`} text={c.definition}>
-                        <span className="la-chip" style={{ borderColor: subDimensionColor(c.sub_dimension) }}>
-                          <span className="la-chip-dot" style={{ backgroundColor: subDimensionColor(c.sub_dimension) }} />
-                          {c.label}
-                        </span>
-                      </InfoTip>
-                    ))}
-                  </div>
+                  {bySubDimension(codes).map((g) => (
+                    <div key={g.key} className="la-subdim">
+                      {g.label && <div className="la-subdim-caption">{g.label}</div>}
+                      <div className="la-chips">
+                        {g.codes.map((c, i) => (
+                          <InfoTip key={`${c.code}-${i}`} text={c.definition}>
+                            <span className="la-chip">{c.label}</span>
+                          </InfoTip>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                   {showQuotes && quoted.length > 0 && (
                     <ul className="la-quotes">
                       {quoted.map((c, i) => (
