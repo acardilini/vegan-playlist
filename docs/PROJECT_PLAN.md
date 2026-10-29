@@ -488,6 +488,10 @@ pages** (item 6), which is now where it belongs. Backend 121/121. Spec:
 Items intentionally deferred until needed (from the PRD and the Session 0.1
 [Feature Inventory](./FEATURE_INVENTORY.md)). Nothing here is built until it earns its place.
 
+- **Reddit / forum thread song-suggestion finder (tool 2 of the playlist-building pair).** Link or share a thread, have an
+  LLM extract suggested songs, and cross-check them against the catalogue. Needs its own brainstorm (Playlist cross-check,
+  tool 1, is built — see `PROJECT_STATE.md`).
+
 - **Public playlist creation/editing with accounts.** The public site is browse-only for
   playlists (Session 3.3 deleted the anonymous create/remove UI — see Decision Log); the
   backend routes still exist for the admin Manage Playlists tab. Public creation/editing
