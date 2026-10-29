@@ -22,7 +22,7 @@ The example thread (curator pasted the full page text; not stored here): `https:
 - **Named songs** go through the Playlist cross-check table (resolve to a Spotify track, then New / Possible duplicate / Already have it, Import / Reject / Add lyrics), imports tagged by a new origin (e.g. "From Reddit thread").
 - **Vegan-member information on artists** (my default shape, curator invited correction): a status (vegan band / has vegan member(s) / not vegan / unknown), a free-text note naming members, a source link, and a **confirmed** tick. The curator said such information would be good on the **artist information pages**.
 
-## Order agreed (the curator was asked to confirm; they ended the session before answering)
+## Order agreed (curator confirmed the order 2026-10-29; the vegan-information shape is still unconfirmed)
 
 1. **Leads list + vegan information on artists** (backend + admin UI; a Leads queue in the Artists area; the artist workbench gets a vegan-information section). Needs its own spec.
 2. **The thread tool** (Claude Code skill that extracts leads / claims / named songs from pasted text and loads them into Leads and the cross-check table).
@@ -30,7 +30,7 @@ The example thread (curator pasted the full page text; not stored here): `https:
 
 ## Open for next session
 
-- Confirm the order above and the vegan-information shape.
+- Confirm the vegan-information shape (the order is confirmed).
 - Where a lead's vegan claims live before promotion (on the lead record), and what is copied to the artist on promotion.
 - How the skill hands results to the app (it runs with direct DB access like the scratchpad scripts, so a script that takes extracted JSON and writes leads is the likely route; never use the admin password in a browser).
 - Whether leads match existing artists by name (850 artists) and show "already an artist" instead of a new lead (likely yes, normalised-name match, no stamping of identity - see the cross-check review finding about name-merging).
