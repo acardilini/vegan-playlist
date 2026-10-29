@@ -44,14 +44,14 @@ async function withRetry(fn, { maxWaitS = Infinity, maxRetries = Infinity } = {}
 }
 
 // All tracks on the playlist, with full album objects and real added_at.
-async function fetchPlaylistTracks(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID) {
+async function fetchPlaylistTracks(spotifyApi, playlistId = DEFAULT_PLAYLIST_ID, retryOpts = {}) {
   const tracks = [];
   let offset = 0;
   for (;;) {
     const page = await withRetry(() => spotifyApi.getPlaylistTracks(playlistId, {
       offset, limit: 100,
       fields: 'items(added_at,track(id,name,duration_ms,popularity,explicit,track_number,disc_number,external_urls,artists(id,name,external_urls),album(id,name,images,release_date,total_tracks,album_type,external_urls))),next',
-    }));
+    }), retryOpts);
     for (const item of page.body.items) {
       const t = item.track;
       if (!t || !t.id) continue;
@@ -161,11 +161,12 @@ async function upsertAlbum(client, album) {
 // Find-or-create an artist row from a Spotify artist object; backfills spotify_id
 // on a same-named artist that lacks one (genres/images come from the artist
 // enrichment pass, which targets artists with a spotify_id and no genres).
-async function upsertArtist(client, artist) {
+// nameBackfill=false (playlist cross-check, other people's data): never stamp a Spotify id onto an existing same-named artist.
+async function upsertArtist(client, artist, { nameBackfill = true } = {}) {
   const byId = await client.query(`SELECT id FROM artists WHERE spotify_id = $1`, [artist.spotify_id]);
   if (byId.rows.length > 0) return byId.rows[0].id;
-  const byName = await client.query(
-    `SELECT id FROM artists WHERE LOWER(name) = LOWER($1) AND spotify_id IS NULL LIMIT 1`, [artist.name]);
+  const byName = nameBackfill ? await client.query(
+    `SELECT id FROM artists WHERE LOWER(name) = LOWER($1) AND spotify_id IS NULL LIMIT 1`, [artist.name]) : { rows: [] };
   if (byName.rows.length > 0) {
     // artists_source_check requires data_source='spotify' once a spotify_id is set
     await client.query(`UPDATE artists SET spotify_id = $2, spotify_url = COALESCE(spotify_url, $3),
@@ -182,7 +183,7 @@ async function upsertArtist(client, artist) {
 
 // Insert playlist tracks as status='pending' rows with full enrichment.
 // Never touches existing songs. Returns the number added.
-async function addTracksAsPending(pool, tracks, note) {
+async function addTracksAsPending(pool, tracks, note, { noNameBackfill = false } = {}) {
   if (tracks.length === 0) return 0;
   const client = await pool.connect();
   let added = 0;
@@ -200,7 +201,7 @@ async function addTracksAsPending(pool, tracks, note) {
          t.explicit, t.track_number, t.disc_number, t.added_at,
          note || 'on Spotify playlist, not in catalogue — added as pending by playlist diff']);
       for (const a of t.artists) {
-        const artistId = await upsertArtist(client, a);
+        const artistId = await upsertArtist(client, a, { nameBackfill: !noNameBackfill });
         await client.query(`INSERT INTO song_artists (song_id, artist_id) VALUES ($1, $2)`, [song.rows[0].id, artistId]);
       }
       added++;
