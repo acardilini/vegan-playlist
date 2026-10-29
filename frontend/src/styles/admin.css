@@ -246,3 +246,18 @@ a.band-chip:hover { text-decoration: underline; }
   .band-toolbar h2 { order: -1; flex-basis: 100%; }
   .band-counts-list { flex-basis: 100%; }
 }
+.crosscheck-form { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
+.crosscheck-form .input { flex: 1; min-width: 0; }
+.crosscheck-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); font-size: 0.85rem; color: var(--text-secondary); }
+.crosscheck-bulk { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.crosscheck-result { margin-bottom: var(--space-3); padding: var(--space-2); border: 1px solid var(--border-hairline); border-radius: var(--radius-sm); font-size: 0.85rem; }
+.crosscheck-row { border-bottom: 1px solid var(--border-hairline); padding: var(--space-2) 0; }
+.crosscheck-main { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.crosscheck-row { text-align: left; }
+.crosscheck-main .song-meta { flex: 1; min-width: 200px; display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+.crosscheck-main .song-title { font-weight: 600; font-size: 0.9rem; }
+.crosscheck-main .song-artist { display: block; font-size: 0.8rem; color: var(--text-muted); }
+.crosscheck-state { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); font-weight: 600; border: 1px solid var(--border-strong); color: var(--text-secondary); }
+.crosscheck-state.duplicate { color: var(--color-warning); border-color: var(--color-warning); }
+.crosscheck-lyrics { margin-top: var(--space-2); display: grid; gap: var(--space-2); }
+.crosscheck-lyrics textarea { width: 100%; }
