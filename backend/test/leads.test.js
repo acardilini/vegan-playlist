@@ -8,8 +8,8 @@ async function mkArtist(name) {
   return (await pool.query(`INSERT INTO artists (name, data_source) VALUES ($1,'manual') RETURNING id`, [name])).rows[0].id;
 }
 async function clean() {
-  await pool.query(`DELETE FROM leads WHERE name LIKE 'ZZZLEA%'`);
-  await pool.query(`DELETE FROM artists WHERE name LIKE 'ZZZLEA%'`);
+  await pool.query(`DELETE FROM leads WHERE name ILIKE '%ZZZLEA%'`);
+  await pool.query(`DELETE FROM artists WHERE name ILIKE '%ZZZLEA%'`);
 }
 test('pre-clean leftovers from a crashed run', clean);
 after(async () => { await clean(); await pool.end(); });
