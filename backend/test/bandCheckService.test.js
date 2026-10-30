@@ -289,3 +289,19 @@ test('checkBand reports per-source songs/overlap and artist.songs so a wrong-ban
   assert.equal(cut.sources.bandcamp.truncated, true);
   assert.equal(cut.sources.spotify.truncated, false);
 });
+
+test('catalogueForLyrics returns keys, state, match and the Bandcamp URL for each song', async () => {
+  svc._resetForTests();
+  const { a, held } = await mergedBand();
+  const res = await svc.catalogueForLyrics(pool, a, { adapters: fakeAdapters({ spotify: SPOT, bandcamp: BAND }) });
+  assert.deepEqual(res.artist, { id: a, name: 'ZZZBANDSVC Merged' });
+  const by = Object.fromEntries(res.songs.map(s => [s.title, s]));
+  assert.equal(by['ZZZBANDSVC Held'].state, 'in_catalogue');
+  assert.equal(by['ZZZBANDSVC Held'].match.song_id, held);
+  assert.equal(by['ZZZBANDSVC Held'].bandcampUrl, null); // only on Spotify
+  assert.equal(by['ZZZBANDSVC Fresh'].state, 'new');
+  assert.equal(by['ZZZBANDSVC Fresh'].match, null);
+  assert.equal(by['ZZZBANDSVC Fresh'].bandcampUrl, 'https://zzzbandsvcm.bandcamp.com/track/fresh');
+  assert.equal(by['ZZZBANDSVC Bandcamp Only'].key, 'zzzbandsvc bandcamp only');
+  assert.equal(by['ZZZBANDSVC Bandcamp Only'].bandcampUrl, 'https://zzzbandsvcm.bandcamp.com/track/bco');
+});

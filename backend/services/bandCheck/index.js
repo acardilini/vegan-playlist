@@ -188,6 +188,21 @@ async function checkBand(db, artistId, { adapters, fresh = false, now = Date.now
   return { artist: { id: artist.id, name: artist.name, identity: identityOf(artist), songs: artistSongs }, sources, releases, counts };
 }
 
+// The merged catalogue reduced to what the lyrics fetch needs: each song's key, state, held-song match and its Bandcamp URL.
+// Uses the same cached read as checkBand, so the server (never the client) decides which URLs get fetched.
+async function catalogueForLyrics(db, artistId, { adapters, fresh = false, now = Date.now } = {}) {
+  const artist = await loadArtist(db, artistId);
+  adapters = adapters || defaultAdapters();
+  const { songs } = await loadMerged(db, artist, { adapters, fresh, now });
+  return {
+    artist: { id: artist.id, name: artist.name },
+    songs: songs.map(s => ({
+      key: s.key, title: s.title, state: s.state, match: s.match || null,
+      bandcampUrl: (s.sources.bandcamp && s.sources.bandcamp.url) || null,
+    })),
+  };
+}
+
 // Adds the songs the curator ticked (keys) and/or saves the ones they rejected (rejectKeys) as `rejected` rows.
 // Never trusts client data: only song keys come in, and the catalogue is re-read live.
 async function addSelected(db, artistId, keys, { adapters, rejectKeys } = {}) {
@@ -270,5 +285,5 @@ async function addSelected(db, artistId, keys, { adapters, rejectKeys } = {}) {
 
 module.exports = {
   SOURCES, defaultAdapters, listBands, identifyCandidates, saveIdentity, loadArtist, identityOf,
-  checkBand, addSelected, _resetForTests,
+  checkBand, catalogueForLyrics, addSelected, _resetForTests,
 };
