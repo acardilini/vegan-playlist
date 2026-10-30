@@ -16,6 +16,7 @@ const { getDismissedPairKeys, dismissGroup } = require('../services/duplicateDis
 const spotifyPush = require('../services/spotifyPush');
 const bandCheck = require('../services/bandCheck');
 const artistsSvc = require('../services/artists');
+const artistFacts = require('../services/artistFacts');
 const playlistCrosscheck = require('../services/playlistCrosscheck');
 const bandcampLyrics = require('../services/bandcampLyrics');
 const { defaultAuth: spotifyAuth } = require('../services/spotifyAuth');
@@ -1603,7 +1604,7 @@ router.post('/playlist-crosscheck/apply', async (req, res) => {
 // ==================== Artists ====================
 
 function artistError(res, e, label) {
-  const status = { NOT_FOUND: 404, BAD_INPUT: 400 }[e.code];
+  const status = { NOT_FOUND: 404, BAD_INPUT: 400, CONFLICT: 409, NO_IDENTITY: 409, RATE_LIMITED: 429, UPSTREAM: 502, UNREADABLE: 502 }[e.code];
   if (status) return res.status(status).json({ error: e.code, message: e.message });
   console.error(`artists ${label} error:`, e.code || 'error');
   return res.status(500).json({ error: `Failed to ${label}` });
@@ -1635,6 +1636,33 @@ router.get('/artists/:id', async (req, res) => {
 router.put('/artists/:id', async (req, res) => {
   try { res.json(await artistsSvc.update(pool, artistId(req), req.body || {})); }
   catch (e) { artistError(res, e, 'update the artist'); }
+});
+
+// --- Artist facts (Facts panel). Proposals are a read of MusicBrainz and never write; saves are the curator's accept/edit. ---
+const memberId = (req) => { const n = parseInt(req.params.memberId, 10); return Number.isSafeInteger(n) && n > 0 ? n : -1; };
+router.get('/artists/:id/facts', async (req, res) => {
+  try { res.json(await artistFacts.getFacts(pool, artistId(req))); }
+  catch (e) { artistError(res, e, 'read the facts'); }
+});
+router.put('/artists/:id/facts', async (req, res) => {
+  try { res.json(await artistFacts.saveFacts(pool, artistId(req), req.body || {})); }
+  catch (e) { artistError(res, e, 'save the facts'); }
+});
+router.get('/artists/:id/facts/proposals', async (req, res) => {
+  try { res.json(await artistFacts.proposeFromMusicBrainz(pool, artistId(req), { adapters: bandAdapters })); }
+  catch (e) { artistError(res, e, 'read MusicBrainz'); }
+});
+router.post('/artists/:id/facts/members', async (req, res) => {
+  try { res.json(await artistFacts.addMember(pool, artistId(req), req.body || {})); }
+  catch (e) { artistError(res, e, 'add the member'); }
+});
+router.put('/artists/:id/facts/members/:memberId', async (req, res) => {
+  try { res.json(await artistFacts.updateMember(pool, artistId(req), memberId(req), req.body || {})); }
+  catch (e) { artistError(res, e, 'update the member'); }
+});
+router.delete('/artists/:id/facts/members/:memberId', async (req, res) => {
+  try { res.json(await artistFacts.removeMember(pool, artistId(req), memberId(req))); }
+  catch (e) { artistError(res, e, 'remove the member'); }
 });
 
 // ==================== Staging / lifecycle ====================

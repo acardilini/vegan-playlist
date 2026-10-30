@@ -111,3 +111,33 @@ test('propose members: a stored member absent from MusicBrainz is never mentione
   assert.deepEqual(p.members.map((m) => m.name), ['Other']);
   assert.equal((await svc.getFacts(pool, id)).members.length, 1);
 });
+
+test('publicFacts: nothing stored is null', async () => {
+  assert.equal(await svc.publicFacts(pool, await mk('ZZZAFA Ten')), null);
+});
+test('publicFacts: only what exists, no sources, ids or override', async () => {
+  const id = await mk('ZZZAFA Eleven');
+  await svc.saveFacts(pool, id, { country: 'Germany' });
+  assert.deepEqual(await svc.publicFacts(pool, id), { country: 'Germany' });
+});
+test('publicFacts: formed year, label from a stale release, members current first', async () => {
+  const id = await mk('ZZZAFA Twelve');
+  await svc.saveFacts(pool, id, { formed_year: 1999, last_release_year: 2012, last_release_source: 'MusicBrainz', active_override: null });
+  await svc.addMember(pool, id, { name: 'Zed', is_current: false, vegan: true });
+  await svc.addMember(pool, id, { name: 'Amy', is_current: true });
+  const p = await svc.publicFacts(pool, id);
+  assert.deepEqual(p, { formed_year: 1999, active_label: 'Inactive, last release 2012', members: [{ name: 'Amy', is_current: true, vegan: false }, { name: 'Zed', is_current: false, vegan: true }] });
+  assert.ok(!JSON.stringify(p).match(/source|override|"id"/));
+});
+test('publicFacts: a recent live-album-only release never counts (stored last release stays null) so the band is not Active', async () => {
+  const id = await mk('ZZZAFA Thirteen');
+  await svc.saveFacts(pool, id, { formed_year: 2000 });
+  assert.equal((await svc.publicFacts(pool, id)).active_label, undefined);
+});
+test('publicFacts: override beats a disbanded year, and clearing returns to automatic', async () => {
+  const id = await mk('ZZZAFA Fourteen');
+  await svc.saveFacts(pool, id, { disbanded_year: 2010, active_override: true });
+  assert.equal((await svc.publicFacts(pool, id)).active_label, 'Active');
+  await svc.saveFacts(pool, id, { active_override: null });
+  assert.equal((await svc.publicFacts(pool, id)).active_label, 'Inactive');
+});

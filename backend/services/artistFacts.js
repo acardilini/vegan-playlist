@@ -141,4 +141,16 @@ async function proposeFromMusicBrainz(db, artistId, { adapters }) {
   return { musicbrainz: { name: found.name }, fields, members };
 }
 
-module.exports = { activeStatus, nameKey, getFacts, saveFacts, addMember, updateMember, removeMember, proposeFromMusicBrainz };
+// The public view: only stored (accepted) facts, only the parts that exist, null when there is nothing to show.
+// No sources, ids or override flag leave the building.
+async function publicFacts(db, artistId) {
+  const f = await getFacts(db, artistId);
+  const out = {};
+  if (f.country) out.country = f.country;
+  if (f.formed_year) out.formed_year = f.formed_year;
+  if (f.active.label) out.active_label = f.active.label;
+  if (f.members.length) out.members = f.members.map((m) => ({ name: m.name, is_current: m.is_current, vegan: m.vegan }));
+  return Object.keys(out).length ? out : null;
+}
+
+module.exports = { activeStatus, nameKey, getFacts, saveFacts, addMember, updateMember, removeMember, proposeFromMusicBrainz, publicFacts };

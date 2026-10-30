@@ -3,6 +3,7 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const pool = require('../database/db');
 const { getSubgenres } = require('../utils/genreMapping');
 const analysis = require('../services/analysis');
+const artistFacts = require('../services/artistFacts');
 const genres_svc = require('../services/genres');
 const browse = require('../services/browseFilters');
 const codebook = require('../services/metadataCodebook');
@@ -885,6 +886,7 @@ router.get('/artists/:id', async (req, res) => {
       WHERE sa.artist_id = $1 AND s.status = 'included' AND s.published = true
     `, [artistId]);
     
+    artist.facts = await artistFacts.publicFacts(pool, artist.id); // accepted facts only; null when there are none
     res.json({
       artist,
       songs: songsResult.rows,
