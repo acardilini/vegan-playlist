@@ -1,3 +1,4 @@
+import { summaryLine, memberList } from '../utils/artistFactsText';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
@@ -190,6 +191,7 @@ function ArtistDetailPage() {
               </div>
             )}
           </div>
+          {summaryLine(artist.facts) && <p className="artist-facts-line">{summaryLine(artist.facts)}</p>}
         </div>
       </div>
 
@@ -199,6 +201,21 @@ function ArtistDetailPage() {
           <div className="review-content">
             <p>{artist.bio}</p>
           </div>
+        </section>
+      )}
+
+      {memberList(artist.facts).length > 0 && (
+        <section className="detail-section">
+          <h2>Members</h2>
+          <p className="artist-members">
+            {memberList(artist.facts).map((m, i) => (
+              <span key={m.name} className="artist-member">
+                {i > 0 && ', '}{m.name}
+                {m.vegan && <span className="vmark-public" role="img" aria-label="vegan" title="Vegan">V</span>}
+                {m.former && ' (former)'}
+              </span>
+            ))}
+          </p>
         </section>
       )}
 

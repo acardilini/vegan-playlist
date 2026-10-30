@@ -1,9 +1,11 @@
 // MusicBrainz source for the Band check: keyless JSON API, 1 request/second, descriptive User-Agent (no personal data).
 const { coded, fromStatus } = require('./errors');
+const { parseFacts } = require('./musicbrainzFacts');
 
 const BASE = 'https://musicbrainz.org/ws/2';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PAGE = 100;
+const MAX_FACT_PAGES = 5; // 500 release groups is far past any band here
 const MAX_PAGES = 10; // 1,000 recordings is far past any band here
 
 function createMusicBrainzAdapter({
@@ -66,7 +68,21 @@ function createMusicBrainzAdapter({
     return rel ? rel.url.resource : null;
   }
 
-  return { source: 'musicbrainz', identify, fetchCatalogue, bandcampLink };
+  // Facts for the Facts panel: the artist (with member relations) plus its Album/EP/Single release groups, paged.
+  async function fetchFacts(mbid) {
+    if (!UUID.test(String(mbid))) throw coded('NOT_FOUND');
+    const artist = await get(`/artist/${mbid}?inc=artist-rels&fmt=json`);
+    const groups = [];
+    for (let page = 0; page < MAX_FACT_PAGES; page++) {
+      const j = await get(`/release-group?artist=${mbid}&type=album%7Cep%7Csingle&limit=${PAGE}&offset=${page * PAGE}&fmt=json`);
+      const items = j['release-groups'] || [];
+      groups.push(...items);
+      if (items.length < PAGE) break;
+    }
+    return parseFacts(artist, groups);
+  }
+
+  return { source: 'musicbrainz', identify, fetchCatalogue, bandcampLink, fetchFacts };
 }
 
 module.exports = { createMusicBrainzAdapter };

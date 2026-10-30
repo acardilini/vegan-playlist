@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import ArtistDetailsPanel from './ArtistDetailsPanel';
 import ArtistLinksPanel from './ArtistLinksPanel';
+import ArtistFactsPanel from './ArtistFactsPanel';
 import CatalogueReview from './CatalogueReview';
 import { AutoText } from './SavedField';
 
@@ -82,6 +83,7 @@ function ArtistWorkbench() {
         <div className="wb-col wb-col-side">
           <ArtistDetailsPanel artist={artist} save={save} />
           <ArtistLinksPanel artist={artist} save={save} focus={focus} onIdentitySaved={onIdentitySaved} />
+          <ArtistFactsPanel key={artist.id} artist={artist} onNeedIdentity={needIdentity} />
           <section className="wb-panel">
             <h2>Notes</h2>
             <AutoText label="Catalogue review notes" initial={artist.discography_review_notes} multiline rows={3}
