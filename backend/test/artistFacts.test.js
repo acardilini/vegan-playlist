@@ -66,3 +66,48 @@ test('members: add, duplicate by name ignoring case and diacritics, update, remo
 test('nameKey folds case, diacritics and spacing', () => {
   assert.equal(svc.nameKey('  José   PÉREZ '), 'jose perez');
 });
+
+const MB = '11111111-2222-3333-4444-555555555555';
+const stub = (facts) => ({ musicbrainz: { fetchFacts: async () => ({ name: 'Stub Band', country: null, formed_year: null, disbanded_year: null, last_release_year: null, members: [], ...facts }) } });
+
+test('propose: no MusicBrainz link is NO_IDENTITY', async () => {
+  const id = await mk('ZZZAFA Five');
+  await assert.rejects(svc.proposeFromMusicBrainz(pool, id, { adapters: stub({}) }), coded('NO_IDENTITY'));
+});
+test('propose: fresh artist lists every field MusicBrainz has, with current null, and writes nothing', async () => {
+  const id = await mk('ZZZAFA Six', { mb: MB });
+  const p = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({ country: 'Germany', formed_year: 2009, disbanded_year: 2016, last_release_year: 2015 }) });
+  assert.equal(p.musicbrainz.name, 'Stub Band');
+  assert.deepEqual(p.fields.map((f) => [f.field, f.current, f.proposed, f.source]), [
+    ['country', null, 'Germany', 'MusicBrainz'], ['formed_year', null, 2009, 'MusicBrainz'],
+    ['disbanded_year', null, 2016, 'MusicBrainz'], ['last_release_year', null, 2015, 'MusicBrainz']]);
+  const f = await svc.getFacts(pool, id);
+  assert.deepEqual([f.country, f.formed_year, f.members.length], [null, null, 0]);
+});
+test('propose: equal stored values are omitted, a hand-typed differing one shows both, empty MusicBrainz proposes nothing', async () => {
+  const id = await mk('ZZZAFA Seven', { mb: MB });
+  await svc.saveFacts(pool, id, { country: 'Germany', formed_year: 2000 });
+  const p = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({ country: 'Germany', formed_year: 2009 }) });
+  assert.deepEqual(p.fields.map((f) => [f.field, f.current, f.proposed]), [['formed_year', 2000, 2009]]);
+  assert.deepEqual((await svc.getFacts(pool, id)).formed_year, 2000);
+  const none = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({}) });
+  assert.deepEqual([none.fields, none.members], [[], []]);
+});
+test('propose members: matched by name ignoring case/diacritics, vegan mark kept, manual member never removed', async () => {
+  const id = await mk('ZZZAFA Eight', { mb: MB });
+  const jose = await svc.addMember(pool, id, { name: 'José', is_current: true, vegan: true });
+  await svc.addMember(pool, id, { name: 'Manual Only', is_current: true, vegan: true });
+  const p = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({ members: [
+    { name: 'jose', is_current: true }, { name: 'Newbie', is_current: true }, { name: 'MANUAL only', is_current: false }] }) });
+  assert.deepEqual(p.members.map((m) => [m.name, m.change, m.existing && m.existing.vegan]), [['Newbie', 'new', null], ['MANUAL only', 'status', true]]);
+  const f = await svc.getFacts(pool, id);
+  assert.deepEqual(f.members.map((m) => [m.name, m.vegan]).sort(), [['José', true], ['Manual Only', true]]);
+  assert.equal(f.members.find((m) => m.id === jose.id).is_current, true);
+});
+test('propose members: a stored member absent from MusicBrainz is never mentioned', async () => {
+  const id = await mk('ZZZAFA Nine', { mb: MB });
+  await svc.addMember(pool, id, { name: 'Handmade', vegan: true });
+  const p = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({ members: [{ name: 'Other', is_current: true }] }) });
+  assert.deepEqual(p.members.map((m) => m.name), ['Other']);
+  assert.equal((await svc.getFacts(pool, id)).members.length, 1);
+});

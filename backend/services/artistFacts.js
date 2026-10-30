@@ -117,4 +117,28 @@ async function removeMember(db, artistId, memberId) {
   return { removed: true };
 }
 
-module.exports = { activeStatus, nameKey, getFacts, saveFacts, addMember, updateMember, removeMember };
+// What MusicBrainz would add or change, compared with what is stored. Reads only: nothing is written, and a stored member
+// MusicBrainz lacks is never mentioned (a fill must not be able to delete a hand-entered member or touch a vegan mark).
+async function proposeFromMusicBrainz(db, artistId, { adapters }) {
+  const a = (await db.query(`SELECT musicbrainz_id FROM artists WHERE id = $1`, [artistId])).rows[0];
+  if (!a) throw coded('NOT_FOUND', 'Artist not found');
+  if (!a.musicbrainz_id) throw coded('NO_IDENTITY', 'Set a MusicBrainz link under Links first');
+  const found = await adapters.musicbrainz.fetchFacts(a.musicbrainz_id);
+  const stored = await getFacts(db, artistId);
+  const fields = [];
+  for (const field of ['country', ...YEAR_FIELDS]) {
+    const proposed = found[field];
+    if (proposed === null || proposed === undefined || proposed === stored[field]) continue;
+    fields.push({ field, current: stored[field] === undefined ? null : stored[field], proposed, source: 'MusicBrainz' });
+  }
+  const byKey = new Map(stored.members.map((m) => [nameKey(m.name), m]));
+  const members = [];
+  for (const m of found.members) {
+    const have = byKey.get(nameKey(m.name));
+    if (!have) members.push({ name: m.name, is_current: m.is_current, change: 'new', existing: null });
+    else if (have.is_current !== m.is_current) members.push({ name: m.name, is_current: m.is_current, change: 'status', existing: { id: have.id, is_current: have.is_current, vegan: have.vegan } });
+  }
+  return { musicbrainz: { name: found.name }, fields, members };
+}
+
+module.exports = { activeStatus, nameKey, getFacts, saveFacts, addMember, updateMember, removeMember, proposeFromMusicBrainz };
