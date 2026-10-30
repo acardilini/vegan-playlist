@@ -148,3 +148,19 @@ test('deleting a promoted artist leaves the lead, and it can be restored', async
 test('promote of an unknown lead is NOT_FOUND', async () => {
   await assert.rejects(svc.promoteLead(pool, 999999999, { now: NOW }), coded('NOT_FOUND'));
 });
+
+test('no public route file reads the leads table (leads are admin-only)', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  for (const f of ['spotify', 'analytics', 'analysis', 'submissions', 'playlists', 'youtube', 'content']) {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'routes', `${f}.js`), 'utf8');
+    assert.ok(!/\bFROM\s+leads\b|\bJOIN\s+leads\b|services\/leads/i.test(src), `${f}.js must not touch leads`);
+  }
+});
+test('adding a lead changes no public total', async () => {
+  const q = async () => (await pool.query(`SELECT COUNT(*) FROM songs WHERE status='included' AND published=true`)).rows[0].count + '|' +
+    (await pool.query(`SELECT COUNT(DISTINCT a.id) FROM artists a JOIN song_artists sa ON a.id=sa.artist_id JOIN songs s ON sa.song_id=s.id WHERE s.status='included' AND s.published=true`)).rows[0].count;
+  const before = await q();
+  const l = (await svc.addLead(pool, { name: 'ZZZLEA Public Check' })).lead;
+  await svc.promoteLead(pool, l.id);
+  assert.equal(await q(), before);
+});

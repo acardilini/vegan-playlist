@@ -17,6 +17,7 @@ const spotifyPush = require('../services/spotifyPush');
 const bandCheck = require('../services/bandCheck');
 const artistsSvc = require('../services/artists');
 const artistFacts = require('../services/artistFacts');
+const leadsSvc = require('../services/leads');
 const playlistCrosscheck = require('../services/playlistCrosscheck');
 const bandcampLyrics = require('../services/bandcampLyrics');
 const { defaultAuth: spotifyAuth } = require('../services/spotifyAuth');
@@ -1663,6 +1664,39 @@ router.put('/artists/:id/facts/members/:memberId', async (req, res) => {
 router.delete('/artists/:id/facts/members/:memberId', async (req, res) => {
   try { res.json(await artistFacts.removeMember(pool, artistId(req), memberId(req))); }
   catch (e) { artistError(res, e, 'remove the member'); }
+});
+
+// ==================== Leads ====================
+// Bands to look into later: captured by name, promoted into an artist workbench. Admin-only; never read by a public route.
+function leadError(res, e, label) {
+  const status = { NOT_FOUND: 404, BAD_INPUT: 400 }[e.code];
+  if (status) return res.status(status).json({ error: e.code, message: e.message });
+  console.error(`leads ${label} error:`, e.code || 'error');
+  return res.status(500).json({ error: `Failed to ${label}` });
+}
+const leadId = (req) => { const n = parseInt(req.params.id, 10); return Number.isSafeInteger(n) && n > 0 ? n : -1; };
+router.get('/leads', async (req, res) => {
+  try { res.json(await leadsSvc.listLeads(pool, { status: req.query.status || 'new' })); }
+  catch (e) { leadError(res, e, 'list the leads'); }
+});
+router.post('/leads', async (req, res) => {
+  try {
+    const { name, note, song, url } = req.body || {};
+    const r = await leadsSvc.addLead(pool, { name, note, song, url, origin: 'manual' });
+    res.status(r.status === 'added' ? 201 : 200).json(r);
+  } catch (e) { leadError(res, e, 'add the lead'); }
+});
+router.put('/leads/:id', async (req, res) => {
+  try { res.json(await leadsSvc.updateLead(pool, leadId(req), req.body || {})); }
+  catch (e) { leadError(res, e, 'update the lead'); }
+});
+router.post('/leads/:id/promote', async (req, res) => {
+  try { res.json(await leadsSvc.promoteLead(pool, leadId(req))); }
+  catch (e) { leadError(res, e, 'promote the lead'); }
+});
+router.delete('/leads/:id', async (req, res) => {
+  try { res.json(await leadsSvc.deleteLead(pool, leadId(req))); }
+  catch (e) { leadError(res, e, 'delete the lead'); }
 });
 
 // ==================== Staging / lifecycle ====================
