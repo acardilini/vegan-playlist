@@ -194,9 +194,10 @@ async function checkBand(db, artistId, { adapters, fresh = false, now = Date.now
 async function catalogueForLyrics(db, artistId, { adapters, fresh = false, now = Date.now } = {}) {
   const artist = await loadArtist(db, artistId);
   adapters = adapters || defaultAdapters();
-  const { songs } = await loadMerged(db, artist, { adapters, fresh, now });
+  const { songs, sources } = await loadMerged(db, artist, { adapters, fresh, now });
   return {
     artist: { id: artist.id, name: artist.name },
+    bandcamp: sources.bandcamp || null, // lets the caller refuse a run when Bandcamp could not be read (every song would otherwise look unlisted)
     songs: songs.map(s => ({
       key: s.key, title: s.title, state: s.state, match: s.match || null,
       bandcampUrl: (s.sources.bandcamp && s.sources.bandcamp.url) || null,

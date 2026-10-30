@@ -201,6 +201,7 @@ async function executeCatalogue(run, { adapter, targets, artistName, sleep, gapM
 
 async function startCatalogueRun(db, artistId, { catalogue = (d, id) => bandCheck.catalogueForLyrics(d, id), adapter = defaultAdapter(), sleep = (ms) => new Promise((r) => setTimeout(r, ms)), gapMs = GAP_MS } = {}) {
   const cat = await catalogue(db, artistId);
+  if (cat.bandcamp && cat.bandcamp.status !== 'ok') throw coded('UPSTREAM', MESSAGES.UPSTREAM); // a failed read would make every song read 'not listed on Bandcamp'
   const heldIds = cat.songs.filter((s) => s.state === 'in_catalogue' && s.match && s.match.status !== 'rejected').map((s) => s.match.song_id);
   const lacking = new Set(heldIds.length
     ? (await db.query(`SELECT s.id FROM songs s WHERE s.id = ANY($1::int[]) AND NOT ${curation.HAS_LYRICS_SQL}`, [heldIds])).rows.map((r) => r.id)
@@ -212,13 +213,21 @@ async function startCatalogueRun(db, artistId, { catalogue = (d, id) => bandChec
   }
   guardStart();
   const run = newRun(targets.filter((t) => t.bandcampUrl).length);
+  run.artistId = artistId;
   executeCatalogue(run, { adapter, targets, artistName: cat.artist.name, sleep, gapMs }); // background; it catches everything
   return { runId: run.id };
 }
 
-// The lyrics to attach to the songs Apply creates: pasted text wins, else the run's found lyrics. Never throws.
-function resolveForApply(runId, keys, pasted = {}) {
+// True when the run exists, is finished and was started for this artist (keys are bare titles, so another band's run must never apply).
+function runAvailable(runId, artistId) {
+  purge();
   const run = runs.get(runId);
+  return !!run && run.status === 'done' && run.artistId === artistId;
+}
+
+// The lyrics to attach to the songs Apply creates: pasted text wins, else the run's found lyrics. Never throws.
+function resolveForApply(runId, keys, pasted = {}, artistId) {
+  const run = runAvailable(runId, artistId) ? runs.get(runId) : null;
   const out = new Map();
   for (const key of keys) {
     const text = pasted && typeof pasted[key] === 'string' ? pasted[key].trim() : '';
@@ -255,4 +264,4 @@ async function saveHeldLyrics(db, artistId, songId, { runId, key, text } = {}) {
   } finally { savingSongs.delete(songId); }
 }
 
-module.exports = { startArtistRun, startSongRun, startCatalogueRun, getRun, saveFetched, resolveForApply, saveHeldLyrics, _resetForTests };
+module.exports = { startArtistRun, startSongRun, startCatalogueRun, getRun, saveFetched, resolveForApply, runAvailable, saveHeldLyrics, _resetForTests };

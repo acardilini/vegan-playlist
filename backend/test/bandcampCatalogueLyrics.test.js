@@ -94,7 +94,7 @@ test('resolveForApply prefers pasted text, labels the sources and omits keys wit
     [url('ZZZCLR One')]: { artist: 'ZZZCLR Band4', lyrics: 'fetched one' }, [url('ZZZCLR Two')]: { artist: 'ZZZCLR Band4', lyrics: 'fetched two' },
   }, 'ZZZCLR Band4');
   const r = await run(pool, a, s);
-  const m = svc.resolveForApply(r.runId, [key('ZZZCLR One'), key('ZZZCLR Two'), key('ZZZCLR Three')], { [key('ZZZCLR Two')]: '  pasted two  ' });
+  const m = svc.resolveForApply(r.runId, [key('ZZZCLR One'), key('ZZZCLR Two'), key('ZZZCLR Three')], { [key('ZZZCLR Two')]: '  pasted two  ' }, a);
   assert.deepEqual(m.get(key('ZZZCLR One')), { text: 'fetched one', source: 'Bandcamp', url: url('ZZZCLR One') });
   assert.deepEqual(m.get(key('ZZZCLR Two')), { text: 'pasted two', source: 'Added by curator', url: null });
   assert.equal(m.has(key('ZZZCLR Three')), false);
@@ -148,4 +148,23 @@ test('two parallel saveHeldLyrics for one song save once', async () => {
   const settled = await Promise.allSettled([svc.saveHeldLyrics(pool, a, id, { text: 'one' }), svc.saveHeldLyrics(pool, a, id, { text: 'two' })]);
   assert.equal(settled.filter((x) => x.status === 'fulfilled').length, 1);
   assert.equal(settled.find((x) => x.status === 'rejected').reason.code, 'CONFLICT');
+});
+
+test('a failed Bandcamp read refuses the run instead of reporting every song as not on Bandcamp', async () => {
+  const a = await mkArtist('ZZZCLR Band10');
+  const s = setup([song('ZZZCLR Any', { bandcamp: false })], {}, 'ZZZCLR Band10');
+  const catalogue = async () => ({ ...(await s.catalogue()), bandcamp: { status: 'error', code: 'UPSTREAM' } });
+  await assert.rejects(svc.startCatalogueRun(pool, a, { adapter: s.adapter, catalogue, sleep: async () => {}, gapMs: 0 }), coded('UPSTREAM'));
+  assert.deepEqual(s.calls, []);
+});
+
+test('resolveForApply ignores a run that belongs to another artist and reports availability', async () => {
+  const a = await mkArtist('ZZZCLR Band11');
+  const s = setup([song('ZZZCLR Shared')], { [url('ZZZCLR Shared')]: { artist: 'ZZZCLR Band11', lyrics: 'band eleven words' } }, 'ZZZCLR Band11');
+  const r = await run(pool, a, s);
+  assert.equal(svc.resolveForApply(r.runId, [key('ZZZCLR Shared')], {}, a + 1).size, 0);
+  assert.equal(svc.resolveForApply(r.runId, [key('ZZZCLR Shared')], {}, a).size, 1);
+  assert.equal(svc.runAvailable(r.runId, a), true);
+  assert.equal(svc.runAvailable(r.runId, a + 1), false);
+  assert.equal(svc.runAvailable('gone', a), false);
 });

@@ -1524,9 +1524,12 @@ router.post('/band-check/bands/:id/add', async (req, res) => {
     if (pastedLyrics !== undefined || lyricsRunId !== undefined) {
       const okPasted = pastedLyrics === undefined || (pastedLyrics && typeof pastedLyrics === 'object' && !Array.isArray(pastedLyrics) && Object.values(pastedLyrics).every((v) => typeof v === 'string'));
       if (!okPasted || (lyricsRunId !== undefined && typeof lyricsRunId !== 'string')) return res.status(400).json({ error: 'BAD_INPUT', message: 'pastedLyrics must map song keys to text' });
-      lyrics = bandcampLyrics.resolveForApply(lyricsRunId, [...(Array.isArray(keys) ? keys : []), ...(Array.isArray(rejectKeys) ? rejectKeys : [])].filter((k) => typeof k === 'string'), pastedLyrics || {});
+      lyrics = bandcampLyrics.resolveForApply(lyricsRunId, [...(Array.isArray(keys) ? keys : []), ...(Array.isArray(rejectKeys) ? rejectKeys : [])].filter((k) => typeof k === 'string'), pastedLyrics || {}, bandId(req));
     }
-    res.json({ success: true, ...(await bandCheck.addSelected(pool, bandId(req), keys, { adapters: bandAdapters, rejectKeys, lyrics })) });
+    const added = await bandCheck.addSelected(pool, bandId(req), keys, { adapters: bandAdapters, rejectKeys, lyrics });
+    // the fetched text the curator saw could not be used (run expired, replaced or for another band): say so rather than silently saving less
+    const lyricsRunMissing = lyricsRunId !== undefined && !bandcampLyrics.runAvailable(lyricsRunId, bandId(req));
+    res.json({ success: true, ...added, ...(lyricsRunMissing ? { lyricsRunMissing: true } : {}) });
   }
   catch (e) { bandCheckError(res, e, 'add the songs'); }
 });

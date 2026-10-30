@@ -161,7 +161,7 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
       const d = await api(`/api/admin/band-check/bands/${artistId}/add`, { method: 'POST', body });
       setAdded(d.added);
       setResult(`Added ${d.added}, rejected ${d.rejected}${d.skippedExisting ? `, ${d.skippedExisting} already held` : ''}${d.notFound ? `, ${d.notFound} no longer listed` : ''}`
-        + `${d.lyricsSaved ? `, lyrics saved for ${d.lyricsSaved}` : ''}${d.lyricsFailed && d.lyricsFailed.length ? `, lyrics not saved for: ${d.lyricsFailed.join(', ')}` : ''}.`);
+        + `${d.lyricsSaved ? `, lyrics saved for ${d.lyricsSaved}` : ''}${d.lyricsFailed && d.lyricsFailed.length ? `, lyrics not saved for: ${d.lyricsFailed.join(', ')}` : ''}${d.lyricsRunMissing ? ' (the fetched lyrics had expired, so only pasted text was saved - fetch again to attach them)' : ''}.`);
       setPasted(p => new Map([...p].filter(([k]) => !chosen.has(k))));
       lyr.reset(); // the applied songs are now held and have their lyrics; a stale run must not label them
       focusResult.current = true;
