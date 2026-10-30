@@ -276,3 +276,13 @@ a.band-chip:hover { text-decoration: underline; }
 .band-chip.lyr-ok { border-color: var(--accent-moss-60); color: var(--accent-moss-80); }
 .lyr-panel { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
 .lyr-panel .input, .lyr-panel .bcl-lyrics { width: 100%; box-sizing: border-box; }
+
+/* Facts panel */
+.fact-source { margin-top: calc(var(--space-1) * -1); margin-bottom: var(--space-2); }
+.fact-active, .fact-member, .fact-proposal { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.fact-member { margin-bottom: var(--space-1); }
+.fact-member-name { min-width: 8ch; }
+.fact-proposals { margin-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.fact-seg { display: inline-flex; gap: var(--space-1); }
+.vmark { width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid var(--text-muted); background: transparent; color: var(--text-muted); font: inherit; font-size: 0.75rem; font-weight: 700; line-height: 1; cursor: pointer; padding: 0; }
+.vmark.on { border-color: var(--accent-moss-60); color: var(--accent-moss-80); }
