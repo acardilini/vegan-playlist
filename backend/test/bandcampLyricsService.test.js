@@ -207,3 +207,38 @@ test('a source error fails the run with the coded error and no results', async (
   assert.equal(r.results, undefined);
   assert.ok(!/secret/.test(r.error.message));
 });
+
+test('final review: two artist runs started together cannot both run (BUSY)', async () => {
+  const a = await mkArtist('ZZZBCL Band13');
+  await mkSong(a, 'ZZZBCL Racer');
+  let open;
+  const gate = new Promise((res) => { open = res; });
+  const ad = fake({ gate, titles: ['ZZZBCL Racer'] });
+  const slow = { query: async (...args) => { await new Promise((res) => setTimeout(res, 20)); return pool.query(...args); } }; // widen the window between the guard and the claim
+  const settled = await Promise.allSettled([svc.startArtistRun(slow, a, opts(ad)), svc.startArtistRun(slow, a, opts(ad))]);
+  assert.equal(settled.filter((s) => s.status === 'fulfilled').length, 1);
+  assert.equal(settled.find((s) => s.status === 'rejected').reason.code, 'BUSY');
+  open();
+  await finish(settled.find((s) => s.status === 'fulfilled').value.runId);
+});
+
+test('final review: two parallel Saves of one row save once; the other is refused', async () => {
+  const a = await mkArtist('ZZZBCL Band14');
+  const id = await mkSong(a, 'ZZZBCL Twin');
+  const ad = fake({ titles: ['ZZZBCL Twin'], pages: { [tr('ZZZBCL Twin').url]: { artist: 'ZZZBCL Band14', lyrics: 'once' } } });
+  const { runId } = await svc.startArtistRun(pool, a, opts(ad));
+  await finish(runId);
+  const settled = await Promise.allSettled([svc.saveFetched(pool, runId, id), svc.saveFetched(pool, runId, id)]);
+  assert.equal(settled.filter((s) => s.status === 'fulfilled').length, 1);
+  assert.equal(settled.find((s) => s.status === 'rejected').reason.code, 'CONFLICT');
+});
+
+test('final review: an artist with nothing to fetch finishes without reading Bandcamp', async () => {
+  const a = await mkArtist('ZZZBCL Band15');
+  await mkSong(a, 'ZZZBCL Complete', { lyrics: 'have it' });
+  const ad = fake();
+  const r = await finish((await svc.startArtistRun(pool, a, opts(ad))).runId);
+  assert.equal(r.status, 'done');
+  assert.deepEqual(r.results, []);
+  assert.equal(ad.calls.catalogue, 0);
+});

@@ -46,3 +46,8 @@ test('creditMatches rejects an unrelated band', () => {
   assert.equal(creditMatches('Other Band', ['Bloodmouth']), false);
   assert.equal(creditMatches('Other Band', []), false);
 });
+
+test('creditMatches compares whole words, not substrings inside words', () => {
+  assert.equal(creditMatches('Mission of Burma', ['Ion']), false);
+  assert.equal(creditMatches('Earth Crisis', ['Earth']), true);
+});

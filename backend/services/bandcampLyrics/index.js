@@ -112,9 +112,10 @@ async function startArtistRun(db, artistId, { adapter = defaultAdapter(), sleep 
   if (!a) throw coded('NOT_FOUND', 'Artist not found');
   const origin = normalizeBandcampOrigin(a.bandcamp_url);
   if (!origin) throw noLink();
+  const songs = await eligibleSongs(db, { artistId }); // before the guard: nothing may await between the BUSY check and the claim
   guardStart();
-  const songs = await eligibleSongs(db, { artistId });
   const run = newRun(0);
+  if (!songs.length) { finishRun(run, { status: 'done', results: [] }); return { runId: run.id }; } // nothing to fetch: don't read Bandcamp
   execute(run, { adapter, songs, origin, artistName: a.name, sleep, gapMs });
   return { runId: run.id };
 }
@@ -160,13 +161,16 @@ async function saveFetched(db, runId, songId) {
   if (run.status !== 'done') throw coded('CONFLICT', 'The run has not finished');
   const result = run.results.find((r) => r.songId === songId);
   if (!result) throw coded('NOT_FOUND', 'That song is not in this run');
-  if (result.status !== 'found' || result.saved) throw coded('CONFLICT', 'There are no fetched lyrics to save for this song');
+  if (result.status !== 'found' || result.saved || result.saving) throw coded('CONFLICT', 'There are no fetched lyrics to save for this song');
+  result.saving = true; // claimed before any await, so two parallel Saves of one row cannot both write
+  try {
   const stillEmpty = (await db.query(`SELECT 1 FROM songs s WHERE s.id = $1 AND NOT ${curation.HAS_LYRICS_SQL}`, [songId])).rows.length;
   if (!stillEmpty) throw coded('CONFLICT', 'This song now has lyrics - nothing was changed');
   await curation.saveLyrics(db, songId, { lyrics: result.lyrics, source_url: result.url, lyrics_source: 'Bandcamp' });
   result.saved = true;
   delete result.lyrics;
   return { saved: true };
+  } finally { delete result.saving; }
 }
 
 module.exports = { startArtistRun, startSongRun, getRun, saveFetched, _resetForTests };

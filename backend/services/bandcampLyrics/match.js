@@ -6,11 +6,12 @@ const titleKey = (t) => keyOf(String(t || '').replace(/['’`]/g, ''));
 
 const fold = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/\p{M}/gu, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
+// Whole-word containment: 'Ion' must not match 'Mission of Burma'.
 // A page that names no artist gives no evidence against the match; otherwise either name must contain the other.
 function creditMatches(credited, names) {
   const c = fold(credited);
   if (!c) return true;
-  return (names || []).some((n) => { const f = fold(n); return !!f && (f.includes(c) || c.includes(f)); });
+  return (names || []).some((n) => { const f = fold(n); return !!f && ((` ${f} `).includes(` ${c} `) || (` ${c} `).includes(` ${f} `)); });
 }
 
 // songs: [{ id, title }], tracks: [{ title, url }]. A song matches only when exactly one track has its title key.

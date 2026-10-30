@@ -125,7 +125,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing, reload }) {
         <div className="wb-junk"><span className="miss-chip warn">The junk lyrics were cleared. The old analysis stays hidden until real lyrics are added and the song is re-analysed.</span></div>
       )}
 
-      {!hasLyrics && (
+      {(!hasLyrics || wb.junk_kind) && ( // a junk-flagged song counts as having no lyrics, so it can be fetched too
         <div className="bcl-song">
           <div className="bcl-actions">
             <button type="button" className="btn btn-primary btn-sm" disabled={bc.state.phase === 'running'}
