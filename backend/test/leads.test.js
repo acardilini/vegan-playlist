@@ -92,3 +92,59 @@ test('deleteLead removes and reports a missing one', async () => {
   assert.deepEqual(await svc.deleteLead(pool, l.id), { removed: true });
   await assert.rejects(svc.deleteLead(pool, l.id), coded('NOT_FOUND'));
 });
+
+const NOW = new Date('2026-10-31T10:00:00Z');
+const notesOf = async (id) => (await pool.query(`SELECT discography_review_notes n FROM artists WHERE id = $1`, [id])).rows[0].n;
+const artistCount = async (key) => (await pool.query(`SELECT name FROM artists`)).rows.filter((a) => svc.leadKey(a.name) === key).length;
+
+test('promote creates a manual artist, appends the dated line and marks the lead checked', async () => {
+  const l = (await svc.addLead(pool, { name: 'ZZZLEA Promo One', note: 'heard on reddit', song: 'Loud Song', url: 'https://example.com/t' })).lead;
+  const r = await svc.promoteLead(pool, l.id, { now: NOW });
+  assert.equal(r.created, true);
+  const a = (await pool.query(`SELECT name, data_source, spotify_id FROM artists WHERE id = $1`, [r.artistId])).rows[0];
+  assert.deepEqual([a.name, a.data_source, a.spotify_id], ['ZZZLEA Promo One', 'manual', null]);
+  assert.equal(await notesOf(r.artistId), 'Lead (2026-10-31): heard on reddit · song: Loud Song · https://example.com/t');
+  assert.deepEqual([r.lead.status, r.lead.artist_id], ['checked', r.artistId]);
+});
+test('promote uses an existing same-key artist, appends to its notes and never creates a second', async () => {
+  const id = await mkArtist('The ZZZLEA Promo Two');
+  await pool.query(`UPDATE artists SET discography_review_notes = 'my own notes' WHERE id = $1`, [id]);
+  const l = (await svc.addLead(pool, { name: 'ZZZLEA Promo Two Lead', note: 'x' })).lead;
+  await pool.query(`UPDATE leads SET name = 'zzzlea promo two', name_key = $2 WHERE id = $1`, [l.id, svc.leadKey('zzzlea promo two')]); // the artist appeared after the lead
+  const r = await svc.promoteLead(pool, l.id, { now: NOW });
+  assert.deepEqual([r.artistId, r.created], [id, false]);
+  assert.equal(await notesOf(id), 'my own notes\nLead (2026-10-31): x');
+  assert.equal(await artistCount(svc.leadKey('zzzlea promo two')), 1);
+});
+test('a second promote opens the artist without adding another line', async () => {
+  const l = (await svc.addLead(pool, { name: 'ZZZLEA Promo Three', note: 'n' })).lead;
+  const first = await svc.promoteLead(pool, l.id, { now: NOW });
+  const again = await svc.promoteLead(pool, l.id, { now: new Date('2026-11-05') });
+  assert.deepEqual([again.artistId, again.created], [first.artistId, false]);
+  assert.equal(await notesOf(first.artistId), 'Lead (2026-10-31): n');
+});
+test('a lead with no note, song or link appends just the dated stub', async () => {
+  const l = (await svc.addLead(pool, { name: 'ZZZLEA Promo Four' })).lead;
+  const r = await svc.promoteLead(pool, l.id, { now: NOW });
+  assert.equal(await notesOf(r.artistId), 'Lead (2026-10-31)');
+});
+test('a failure inside promote rolls everything back', async () => {
+  const l = (await svc.addLead(pool, { name: 'ZZZLEA Promo Five', note: 'n' })).lead;
+  const failing = { connect: async () => { const c = await pool.connect(); const orig = c.query, release = c.release.bind(c), q = c.query.bind(c);
+    c.release = () => { c.query = orig; c.release = release; release(); }; // the pool reuses this client: undo the patch on release
+    c.query = (sql, ...a) => (/discography_review_notes/.test(String(sql)) && /UPDATE/i.test(String(sql)) ? Promise.reject(new Error('boom')) : q(sql, ...a)); return c; } };
+  await assert.rejects(svc.promoteLead(failing, l.id, { now: NOW }), /boom/);
+  assert.equal(await artistCount(svc.leadKey('ZZZLEA Promo Five')), 0);
+  assert.deepEqual((await pool.query(`SELECT status, artist_id FROM leads WHERE id = $1`, [l.id])).rows[0], { status: 'new', artist_id: null });
+});
+test('deleting a promoted artist leaves the lead, and it can be restored', async () => {
+  const l = (await svc.addLead(pool, { name: 'ZZZLEA Promo Six' })).lead;
+  const r = await svc.promoteLead(pool, l.id, { now: NOW });
+  await pool.query(`DELETE FROM artists WHERE id = $1`, [r.artistId]);
+  const row = (await pool.query(`SELECT status, artist_id FROM leads WHERE id = $1`, [l.id])).rows[0];
+  assert.deepEqual(row, { status: 'checked', artist_id: null });
+  assert.equal((await svc.updateLead(pool, l.id, { status: 'new' })).status, 'new');
+});
+test('promote of an unknown lead is NOT_FOUND', async () => {
+  await assert.rejects(svc.promoteLead(pool, 999999999, { now: NOW }), coded('NOT_FOUND'));
+});

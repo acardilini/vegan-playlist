@@ -94,4 +94,38 @@ async function deleteLead(db, id) {
   return { removed: true };
 }
 
-module.exports = { leadKey, addLead, listLeads, updateLead, deleteLead };
+const isoDate = (d) => d.toISOString().slice(0, 10);
+
+// Turn a lead into an artist (or open the one that already exists) in one transaction. The captured note/song/link is
+// appended to the artist's Catalogue review notes as one dated line, never replacing what is there, and only once.
+async function promoteLead(db, id, { now = new Date() } = {}) {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const lead = (await client.query(`SELECT ${COLS}, name_key FROM leads WHERE id = $1 FOR UPDATE`, [id])).rows[0];
+    if (!lead) throw coded('NOT_FOUND', 'Lead not found');
+    const { name_key, ...leadOut } = lead;
+    if (lead.artist_id && (await client.query(`SELECT 1 FROM artists WHERE id = $1`, [lead.artist_id])).rows.length) {
+      await client.query('COMMIT');
+      return { artistId: lead.artist_id, created: false, lead: leadOut };
+    }
+    const found = (await client.query(`SELECT id, name FROM artists`)).rows.find((a) => leadKey(a.name) === name_key);
+    let artistId = found ? found.id : null;
+    if (!artistId) artistId = (await client.query(`INSERT INTO artists (name, data_source) VALUES ($1, 'manual') RETURNING id`, [lead.name])).rows[0].id;
+    const parts = [lead.note, lead.song ? `song: ${lead.song}` : null, lead.url].filter(Boolean);
+    const line = `Lead (${isoDate(now)})${parts.length ? `: ${parts.join(' · ')}` : ''}`;
+    await client.query(
+      `UPDATE artists SET discography_review_notes = CASE WHEN COALESCE(discography_review_notes, '') = '' THEN $2 ELSE discography_review_notes || E'
+' || $2 END,
+         updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [artistId, line]);
+    const updated = (await client.query(
+      `UPDATE leads SET status = 'checked', artist_id = $2, dismissed_at = NULL WHERE id = $1 RETURNING ${COLS}`, [id, artistId])).rows[0];
+    await client.query('COMMIT');
+    return { artistId, created: !found, lead: updated };
+  } catch (e) {
+    try { await client.query('ROLLBACK'); } catch { /* the original error matters more */ }
+    throw e;
+  } finally { client.release(); }
+}
+
+module.exports = { leadKey, addLead, listLeads, updateLead, deleteLead, promoteLead };
