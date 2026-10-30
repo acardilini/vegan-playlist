@@ -32,12 +32,15 @@ function Dashboard() {
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [leadCount, setLeadCount] = useState(null); // leads still to look into; null until loaded, '-' if the request failed
 
   const load = useCallback(() => {
     adminFetch('/api/admin/curation/counts')
       .then(r => (r.ok ? r.json() : null)).then(setCounts).catch(() => setCounts(null));
     adminFetch('/api/admin/curation/catalogue-stats')
       .then(r => (r.ok ? r.json() : null)).then(setStats).catch(() => setStats(null));
+    adminFetch('/api/admin/leads?status=new')
+      .then(r => (r.ok ? r.json() : null)).then(d => setLeadCount(d && d.counts ? d.counts.new : '-')).catch(() => setLeadCount('-'));
     adminFetch('/api/admin/curation/recent')
       .then(r => (r.ok ? r.json() : []))
       .then(d => setRecent(Array.isArray(d) ? d : [])).catch(() => setRecent([]));
@@ -73,6 +76,10 @@ function Dashboard() {
               </Link>
             );
           })}
+          <Link className="dash-tile" to="/admin/leads">
+            <span className="dash-tile-n">{leadCount === null ? '·' : leadCount}</span>
+            <span className="dash-tile-label">Leads to look into</span>
+          </Link>
         </div>
       </section>
 
