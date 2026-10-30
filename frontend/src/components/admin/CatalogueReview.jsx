@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api, SOURCES, SOURCE_LABEL } from './bandCheckApi';
+import { useBandcampLyricsRun } from './useBandcampLyricsRun';
+import { RunProgress } from './BandcampLyricsResults';
 
 const PARTIAL = { bandcamp: 'first 40 releases', musicbrainz: 'first 1,000 recordings' };
 
@@ -20,6 +22,13 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
   const [adding, setAdding] = useState(false);
   const [markSaving, setMarkSaving] = useState(false);
   const [markError, setMarkError] = useState('');
+  // Lyrics while reviewing: a fetch run (one chip per row), text pasted by hand (song key -> text), which rows are
+  // expanded, held songs whose lyrics were saved from their row, and a per-row error.
+  const lyr = useBandcampLyricsRun();
+  const [pasted, setPasted] = useState(() => new Map());
+  const [openRows, setOpenRows] = useState(() => new Set());
+  const [savedHeld, setSavedHeld] = useState(() => new Set());
+  const [rowError, setRowError] = useState(() => new Map());
   const seq = useRef(0);
   const resultRef = useRef(null);
   const focusResult = useRef(false);
@@ -37,7 +46,9 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
         if (fresh) { // keep choices that are still new songs; drop ones that vanished or are now held
           const stillNew = new Set(d.releases.flatMap(r => r.songs).filter(s => s.state === 'new').map(s => s.key));
           setChoice(c => new Map([...c].filter(([k]) => stillNew.has(k))));
-        } else setChoice(new Map());
+          const listed = new Set(d.releases.flatMap(r => r.songs).map(s => s.key));
+          setPasted(p => new Map([...p].filter(([k]) => listed.has(k)))); // a Refresh must not drop text pasted for songs still listed
+        } else { setChoice(new Map()); setPasted(new Map()); }
       }
     } catch (e) {
       if (my !== seq.current) return;
@@ -76,6 +87,10 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
         </button>
       )}
       {markError && <span className="admin-message error">{markError}</span>}
+      {data && (identity || {}).bandcamp && (
+        <button className="btn btn-secondary btn-sm" disabled={lyr.state.phase === 'running'} onClick={() => lyr.start('catalogue', artistId)}>Fetch lyrics</button>
+      )}
+      {data && !(identity || {}).bandcamp && <span className="band-meta">Set a Bandcamp link under Links to fetch lyrics</span>}
     </div>
   );
 
@@ -94,12 +109,61 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
     setChoice(c => { const n = new Map(c); songs.filter(s => s.state === 'new').forEach(s => n.set(s.key, value)); return n; });
   };
 
+  const results = new Map(lyr.state.results.map(r => [r.key, r]));
+  const toggleRow = (key) => setOpenRows(o => { const n = new Set(o); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+  const setPastedText = (key, text) => setPasted(p => { const n = new Map(p); if (text.trim()) n.set(key, text); else n.delete(key); return n; });
+  const saveHeld = async (s) => {
+    setRowError(m => { const n = new Map(m); n.delete(s.key); return n; });
+    try {
+      const text = (pasted.get(s.key) || '').trim();
+      await api(`/api/admin/bandcamp-lyrics/catalogue/${artistId}/save`, { method: 'POST',
+        body: text ? { songId: s.match.song_id, text } : { songId: s.match.song_id, key: s.key, runId: lyr.state.runId } });
+      setSavedHeld(h => new Set(h).add(s.key));
+    } catch (e) { setRowError(m => new Map(m).set(s.key, e.message)); }
+  };
+
+  // chip + expandable text for a new or held row; only once a fetch has produced a result (rows with none show nothing extra)
+  const lyricsBits = (s) => {
+    if (s.state !== 'new' && !(s.state === 'in_catalogue' && s.match && s.match.status !== 'rejected')) return null;
+    const res = results.get(s.key);
+    const text = (pasted.get(s.key) || '').trim();
+    if (!res && !text) return null;
+    const held = s.state !== 'new';
+    if (held && savedHeld.has(s.key)) return { chip: <span className="band-chip lyr-ok">lyrics saved</span>, panel: null };
+    const found = !!res && res.status === 'found';
+    const open = openRows.has(s.key);
+    const chip = text ? <span className="band-chip lyr-ok">lyrics pasted</span>
+      : found ? <span className="band-chip lyr-ok">lyrics found</span>
+      : <span className="band-chip">no lyrics found</span>;
+    const button = <button className="btn btn-ghost btn-sm" onClick={() => toggleRow(s.key)}>{open ? 'Hide' : (found && !text ? 'Read' : 'Add lyrics')}</button>;
+    const panel = open && (
+      <div className="lyr-panel">
+        {found && !text && <pre className="bcl-lyrics" tabIndex={0}>{res.lyrics}</pre>}
+        {!(found && !text) && (
+          <textarea className="input" rows={5} aria-label={`Lyrics for ${s.title}`} placeholder="Paste lyrics here" value={pasted.get(s.key) || ''}
+            onChange={e => setPastedText(s.key, e.target.value)} />
+        )}
+        {held && (found || text) && <button className="btn btn-primary btn-sm" onClick={() => saveHeld(s)}>Save lyrics</button>}
+        {rowError.get(s.key) && <span className="modal-result">{rowError.get(s.key)}</span>}
+      </div>
+    );
+    return { chip: <>{chip} {button}</>, panel };
+  };
+
   const apply = async () => {
     setAdding(true); setResult('');
     try {
-      const d = await api(`/api/admin/band-check/bands/${artistId}/add`, { method: 'POST', body: { keys: processKeys, rejectKeys } });
+      const chosen = new Set([...processKeys, ...rejectKeys]);
+      const pastedLyrics = Object.fromEntries([...pasted].filter(([k, t]) => chosen.has(k) && t.trim()));
+      const body = { keys: processKeys, rejectKeys };
+      if (lyr.state.phase === 'done' && lyr.state.runId) body.lyricsRunId = lyr.state.runId;
+      if (Object.keys(pastedLyrics).length) body.pastedLyrics = pastedLyrics;
+      const d = await api(`/api/admin/band-check/bands/${artistId}/add`, { method: 'POST', body });
       setAdded(d.added);
-      setResult(`Added ${d.added}, rejected ${d.rejected}${d.skippedExisting ? `, ${d.skippedExisting} already held` : ''}${d.notFound ? `, ${d.notFound} no longer listed` : ''}.`);
+      setResult(`Added ${d.added}, rejected ${d.rejected}${d.skippedExisting ? `, ${d.skippedExisting} already held` : ''}${d.notFound ? `, ${d.notFound} no longer listed` : ''}`
+        + `${d.lyricsSaved ? `, lyrics saved for ${d.lyricsSaved}` : ''}${d.lyricsFailed && d.lyricsFailed.length ? `, lyrics not saved for: ${d.lyricsFailed.join(', ')}` : ''}.`);
+      setPasted(p => new Map([...p].filter(([k]) => !chosen.has(k))));
+      lyr.reset(); // the applied songs are now held and have their lyrics; a stale run must not label them
       focusResult.current = true;
       onAdded?.();
       await load(true);
@@ -126,6 +190,8 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
     <div>
       {toolbar}
       {error && <div className="admin-message error">{error}</div>}
+      <RunProgress state={lyr.state} />
+      {lyr.state.phase === 'error' && <div className="admin-message error">{lyr.state.message}</div>}
       {(data.counts || newSongs.length > 0) && (
         <div className="band-counts">
           {data.counts && (
@@ -168,7 +234,7 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
               </div>
             )}
           </div>
-          {rel.songs.map(s => (
+          {rel.songs.map(s => { const lb = lyricsBits(s); return (
             <div key={s.key} className={`inbox-row ${s.state === 'in_catalogue' ? 'band-held' : ''}`}>
               <div className="band-song">
                 {s.state === 'new'
@@ -181,6 +247,7 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
                   : <span className="band-check" aria-hidden="true" />}
                 <strong>{s.title}</strong>
                 {s.also_on.length > 0 && <span className="band-meta"> · also on {s.also_on.join(', ')}</span>}
+                {lb && lb.chip}
               </div>
               <div className="band-meta">
                 {Object.keys(s.sources).map(src => (s.sources[src].url
@@ -189,8 +256,9 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
                 {s.state === 'new' && Object.keys(s.sources).length === 1 && <span className="band-chip warn">one source only</span>}
                 {s.match && <Link className="band-chip" to={`/admin/song/${s.match.song_id}`} title={s.match.matched_by === 'title' ? 'matched by title' : undefined}>{stateChip(s.match)}</Link>}
               </div>
+              {lb && lb.panel}
             </div>
-          ))}
+          ); })}
         </section>
       ))}
       {(P + R > 0 || result) && (

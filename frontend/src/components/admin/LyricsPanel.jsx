@@ -3,7 +3,7 @@ import { adminFetch } from '../../api/adminApi';
 import { CLEAR_LYRICS_BODY } from './junkLyricsActions';
 import { AutoText, SaveTag } from './SavedField';
 import { useBandcampLyricsRun } from './useBandcampLyricsRun';
-import { FetchedLyricsList, RunProgress } from './BandcampLyricsPanel';
+import { FetchedLyricsList, RunProgress } from './BandcampLyricsResults';
 import { LYRIC_SITES, anywhereUrl, allSitesUrl, siteUrl, youtubeSearchUrl, sourceNameFromUrl } from '../../utils/lyricsSearchUrls';
 
 // songs.lyrics_source defaults to 'other' in the DB, so that counts as unset.

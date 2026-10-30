@@ -271,3 +271,8 @@ a.band-chip:hover { text-decoration: underline; }
 .bcl-row-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .bcl-title { font-weight: 600; color: var(--text-primary); flex: 1 1 auto; }
 .bcl-lyrics { margin: 0; padding: var(--space-3); max-height: 180px; overflow: auto; white-space: pre-wrap; font: var(--text-body-sm); color: var(--text-secondary); background: var(--bg-surface-raised); border-radius: var(--radius-md); }
+
+/* Lyrics chips and the in-place reader / paste box in the Catalogue review */
+.band-chip.lyr-ok { border-color: var(--accent-moss-60); color: var(--accent-moss-80); }
+.lyr-panel { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.lyr-panel .input, .lyr-panel .bcl-lyrics { width: 100%; box-sizing: border-box; }

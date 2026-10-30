@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useBandcampLyricsRun } from './useBandcampLyricsRun';
 
 // One row per song in a finished run. Found lyrics are shown for review; nothing is saved until Save is pressed.
 function ResultRow({ result, onSave }) {
@@ -51,27 +50,3 @@ export function RunProgress({ state }) {
     </div>
   );
 }
-
-// Fetches lyrics for every song of this artist that has none, from the artist's saved Bandcamp link.
-function BandcampLyricsPanel({ artistId, hasBandcamp }) {
-  const { start, state, save } = useBandcampLyricsRun();
-  const running = state.phase === 'running';
-  return (
-    <section className="wb-panel">
-      <h2>Lyrics from Bandcamp</h2>
-      <p className="section-note">Reads the band&rsquo;s Bandcamp song pages for songs that have no lyrics yet. Nothing is saved until you press Save on a song.</p>
-      <div className="bcl-actions">
-        <button type="button" className="btn btn-secondary btn-sm" disabled={!hasBandcamp || running} onClick={() => start('artist', artistId)}>
-          Fetch lyrics from Bandcamp
-        </button>
-        {!hasBandcamp && <span className="section-note">Add a Bandcamp link in the Links panel first</span>}
-      </div>
-      <RunProgress state={state} />
-      {state.phase === 'error' && <div className="admin-message error">{state.message}</div>}
-      {state.phase === 'done' && (state.results.length === 0
-        ? <p className="section-note">Every song by this artist already has lyrics.</p>
-        : <FetchedLyricsList results={state.results} truncated={state.truncated} onSave={save} />)}
-    </section>
-  );
-}
-export default BandcampLyricsPanel;

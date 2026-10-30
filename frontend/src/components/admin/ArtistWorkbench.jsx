@@ -4,7 +4,6 @@ import { adminFetch } from '../../api/adminApi';
 import ArtistDetailsPanel from './ArtistDetailsPanel';
 import ArtistLinksPanel from './ArtistLinksPanel';
 import CatalogueReview from './CatalogueReview';
-import BandcampLyricsPanel from './BandcampLyricsPanel';
 import { AutoText } from './SavedField';
 
 function ArtistWorkbench() {
@@ -79,7 +78,6 @@ function ArtistWorkbench() {
             onNeedIdentity={needIdentity} refreshKey={refreshKey} onAdded={() => {}}
             reviewed={!!artist.discography_reviewed}
             onReviewedChange={(v) => save({ discography_reviewed: v })} />
-          <BandcampLyricsPanel key={`bcl-${artist.id}`} artistId={artist.id} hasBandcamp={!!artist.bandcamp_url} />
         </div>
         <div className="wb-col wb-col-side">
           <ArtistDetailsPanel artist={artist} save={save} />
