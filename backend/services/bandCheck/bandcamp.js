@@ -102,7 +102,18 @@ function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTime
     return { source: 'bandcamp', releases, truncated };
   }
 
-  return { source: 'bandcamp', fetchCatalogue };
+  // One song page -> its title, credited artist and the artist's own lyrics (null when absent or blank).
+  async function fetchTrack(url) {
+    if (!normalizeBandcampOrigin(url)) throw coded('NOT_FOUND');
+    const ldObj = readLd((await getPage(url)).text);
+    if (!ldObj) throw coded('UNREADABLE');
+    const text = ldObj.recordingOf && ldObj.recordingOf.lyrics && ldObj.recordingOf.lyrics.text;
+    const lyrics = typeof text === 'string' && text.trim() ? text.trim() : null;
+    const credit = (ldObj.byArtist && ldObj.byArtist.name) || (ldObj.inAlbum && ldObj.inAlbum.byArtist && ldObj.inAlbum.byArtist.name) || null;
+    return { title: ldObj.name || null, artist: credit, lyrics };
+  }
+
+  return { source: 'bandcamp', fetchCatalogue, fetchTrack };
 }
 
 module.exports = { normalizeBandcampOrigin, createBandcampAdapter };

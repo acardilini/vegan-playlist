@@ -176,3 +176,30 @@ test('3xx response bodies are cancelled before following', async () => {
   await a.fetchCatalogue(ORIGIN);
   assert.equal(cancelled, 1);
 });
+
+const trackLd = (extra = {}) => ld({ '@type': 'MusicRecording', name: 'Prism Warden', '@id': ORIGIN + '/track/prism', byArtist: { name: 'Bloodmouth' }, ...extra });
+
+test('fetchTrack returns title, credited artist and lyrics from the track page JSON-LD', async () => {
+  const { a } = adapterFor({ [ORIGIN + '/track/prism']: page(trackLd({ recordingOf: { lyrics: { text: '  line one\nline two  ' } } })) });
+  assert.deepEqual(await a.fetchTrack(ORIGIN + '/track/prism'), { title: 'Prism Warden', artist: 'Bloodmouth', lyrics: 'line one\nline two' });
+});
+
+test('fetchTrack gives lyrics null when the page has none or only whitespace', async () => {
+  const none = adapterFor({ [ORIGIN + '/track/prism']: page(trackLd()) });
+  assert.equal((await none.a.fetchTrack(ORIGIN + '/track/prism')).lyrics, null);
+  const blank = adapterFor({ [ORIGIN + '/track/prism']: page(trackLd({ recordingOf: { lyrics: { text: '  \n ' } } })) });
+  assert.equal((await blank.a.fetchTrack(ORIGIN + '/track/prism')).lyrics, null);
+});
+
+test('fetchTrack falls back to the album credit and refuses a non-bandcamp URL without a request', async () => {
+  const album2 = adapterFor({ [ORIGIN + '/track/prism']: page(ld({ '@type': 'MusicRecording', name: 'P', inAlbum: { byArtist: { name: 'Album Band' } } })) });
+  assert.equal((await album2.a.fetchTrack(ORIGIN + '/track/prism')).artist, 'Album Band');
+  const bad = adapterFor({});
+  await assert.rejects(bad.a.fetchTrack('https://evil.com/track/x'), (e) => e.code === 'NOT_FOUND');
+  assert.equal(bad.urls.length, 0);
+});
+
+test('fetchTrack fails UNREADABLE when the page has no JSON-LD', async () => {
+  const { a } = adapterFor({ [ORIGIN + '/track/prism']: page('<html>nothing</html>') });
+  await assert.rejects(a.fetchTrack(ORIGIN + '/track/prism'), (e) => e.code === 'UNREADABLE');
+});
