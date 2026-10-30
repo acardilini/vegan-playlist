@@ -24,6 +24,7 @@ import SongsArea from './components/admin/SongsArea';
 import Workbench from './components/admin/Workbench';
 import ArtistsArea from './components/admin/ArtistsArea';
 import PlaylistCrosscheck from './components/admin/PlaylistCrosscheck';
+import LeadsArea from './components/admin/LeadsArea';
 import ArtistWorkbench from './components/admin/ArtistWorkbench';
 import ManagePlaylistsTab from './components/ManagePlaylistsTab';
 import DuplicateManager from './components/DuplicateManager';
@@ -62,6 +63,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="songs" element={<SongsArea />} />
             <Route path="artists" element={<ArtistsArea />} />
+            <Route path="leads" element={<LeadsArea />} />
             <Route path="crosscheck" element={<PlaylistCrosscheck />} />
             <Route path="playlists" element={<ManagePlaylistsTab />} />
             <Route path="data-quality" element={<DuplicateManager />} />
