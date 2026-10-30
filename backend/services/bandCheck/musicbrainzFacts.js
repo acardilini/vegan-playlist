@@ -36,7 +36,8 @@ function lastReleaseYear(groups) {
 }
 
 function parseFacts(artist = {}, releaseGroups = []) {
-  const life = artist['life-span'] || {};
+  // A solo artist's life-span is a birth and death date, not a band's formed/disbanded years: propose neither.
+  const life = artist.type === 'Person' ? {} : (artist['life-span'] || {});
   return {
     name: artist.name || null,
     country: countryName(artist.country),

@@ -71,3 +71,10 @@ test('fetchFacts: bad id is NOT_FOUND without a request; a 503 gives a fixed mes
   assert.equal(urls.length, 0);
   await assert.rejects(a.fetchFacts(MBID), (e) => e.code === 'RATE_LIMITED' && !/http|musicbrainz\.org/i.test(e.message));
 });
+
+test('parseFacts: a solo Person has birth/death dates, not formed/disbanded, so neither is proposed', () => {
+  const f = parseFacts({ type: 'Person', country: 'US', 'life-span': { begin: '1965-09-11', end: '2020-01-01', ended: true } }, [rg('Album', '2018')]);
+  assert.deepEqual([f.country, f.formed_year, f.disbanded_year, f.last_release_year], ['United States', null, null, 2018]);
+  const g = parseFacts({ type: 'Group', 'life-span': { begin: '2001', end: '2010', ended: true } }, []);
+  assert.deepEqual([g.formed_year, g.disbanded_year], [2001, 2010]);
+});
