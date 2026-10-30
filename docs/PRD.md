@@ -371,6 +371,7 @@ keep/rebuild/drop/defer decisions are recorded in
 - **YouTube integration:** per-song video embeds with a primary-video concept. ✅
 - **Lyrics links:** lyrics lookup/links per song. ✅
 - **Artist pages:** stats, discography tracking, advocacy notes. ✅
+- **Artist facts:** country, formed year, active status and members (with a vegan mark), curator-checked with a source per fact; MusicBrainz proposes, the curator accepts; shown on the artist page only when present. ✅
 - **User playlists:** list/detail (browse curated playlists). ✅ — **create/add/remove
   (CRUD) moved to ⛔ deferred pending auth** (Session 3.3: the anonymous create/remove UI
   was deleted from the public site — no auth/spam story existed for it; the backend CRUD
