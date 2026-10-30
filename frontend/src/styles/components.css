@@ -2860,3 +2860,8 @@
   color: var(--text-muted);
   margin: var(--space-1) 0 0;
 }
+
+/* Artist facts on the public artist page: summary line under the name, Members line with a menu-style circled V */
+.artist-facts-line { margin: var(--space-1) 0 var(--space-3); color: var(--text-secondary); }
+.artist-members { margin: 0; }
+.vmark-public { display: inline-flex; align-items: center; justify-content: center; width: 1.1em; height: 1.1em; margin-left: 0.3em; border: 1px solid var(--accent-moss-60); border-radius: 50%; color: var(--accent-moss-80); font-size: 0.7em; font-weight: 700; line-height: 1; vertical-align: 0.1em; }
