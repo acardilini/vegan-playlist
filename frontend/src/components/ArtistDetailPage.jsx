@@ -166,7 +166,6 @@ function ArtistDetailPage() {
 
         <div className="artist-hero-scrim">
           <h1>{artist.name}</h1>
-          {summaryLine(artist.facts) && <p className="artist-facts-line">{summaryLine(artist.facts)}</p>}
 
           {artist.genres && artist.genres.length > 0 && (
             <div className="artist-hero-genres">
@@ -192,6 +191,7 @@ function ArtistDetailPage() {
               </div>
             )}
           </div>
+          {summaryLine(artist.facts) && <p className="artist-facts-line">{summaryLine(artist.facts)}</p>}
         </div>
       </div>
 
