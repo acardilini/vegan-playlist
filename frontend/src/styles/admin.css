@@ -261,3 +261,18 @@ a.band-chip:hover { text-decoration: underline; }
 .crosscheck-state.duplicate { color: var(--color-warning); border-color: var(--color-warning); }
 .crosscheck-lyrics { margin-top: var(--space-2); display: grid; gap: var(--space-2); }
 .crosscheck-lyrics textarea { width: 100%; }
+
+/* Bandcamp lyrics fetch: progress, then a review list (nothing is saved until Save) */
+.bcl-actions { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-3) 0; }
+.bcl-progress { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); font: var(--text-body-sm); color: var(--text-secondary); }
+.bcl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.bcl-row { padding: var(--space-3) 0; border-bottom: 1px solid var(--border-hairline); display: flex; flex-direction: column; gap: var(--space-2); }
+.bcl-row:last-child { border-bottom: 0; }
+.bcl-row-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.bcl-title { font-weight: 600; color: var(--text-primary); flex: 1 1 auto; }
+.bcl-lyrics { margin: 0; padding: var(--space-3); max-height: 180px; overflow: auto; white-space: pre-wrap; font: var(--text-body-sm); color: var(--text-secondary); background: var(--bg-surface-raised); border-radius: var(--radius-md); }
+
+/* Lyrics chips and the in-place reader / paste box in the Catalogue review */
+.band-chip.lyr-ok { border-color: var(--accent-moss-60); color: var(--accent-moss-80); }
+.lyr-panel { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.lyr-panel .input, .lyr-panel .bcl-lyrics { width: 100%; box-sizing: border-box; }

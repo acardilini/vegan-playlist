@@ -17,6 +17,7 @@ const spotifyPush = require('../services/spotifyPush');
 const bandCheck = require('../services/bandCheck');
 const artistsSvc = require('../services/artists');
 const playlistCrosscheck = require('../services/playlistCrosscheck');
+const bandcampLyrics = require('../services/bandcampLyrics');
 const { defaultAuth: spotifyAuth } = require('../services/spotifyAuth');
 const multer = require('multer');
 const csv = require('csv-parser');
@@ -1517,10 +1518,66 @@ router.get('/band-check/bands/:id', async (req, res) => {
 
 router.post('/band-check/bands/:id/add', async (req, res) => {
   try {
-    const { keys, rejectKeys } = req.body || {};
-    res.json({ success: true, ...(await bandCheck.addSelected(pool, bandId(req), keys, { adapters: bandAdapters, rejectKeys })) });
+    const { keys, rejectKeys, lyricsRunId, pastedLyrics } = req.body || {};
+    // Optional lyrics for the songs this add creates: pasted text by song key, plus the key's fetched text from a finished lyrics run.
+    let lyrics;
+    if (pastedLyrics !== undefined || lyricsRunId !== undefined) {
+      const okPasted = pastedLyrics === undefined || (pastedLyrics && typeof pastedLyrics === 'object' && !Array.isArray(pastedLyrics) && Object.values(pastedLyrics).every((v) => typeof v === 'string'));
+      if (!okPasted || (lyricsRunId !== undefined && typeof lyricsRunId !== 'string')) return res.status(400).json({ error: 'BAD_INPUT', message: 'pastedLyrics must map song keys to text' });
+      lyrics = bandcampLyrics.resolveForApply(lyricsRunId, [...(Array.isArray(keys) ? keys : []), ...(Array.isArray(rejectKeys) ? rejectKeys : [])].filter((k) => typeof k === 'string'), pastedLyrics || {}, bandId(req));
+    }
+    const added = await bandCheck.addSelected(pool, bandId(req), keys, { adapters: bandAdapters, rejectKeys, lyrics });
+    // the fetched text the curator saw could not be used (run expired, replaced or for another band): say so rather than silently saving less
+    const lyricsRunMissing = lyricsRunId !== undefined && !bandcampLyrics.runAvailable(lyricsRunId, bandId(req));
+    res.json({ success: true, ...added, ...(lyricsRunMissing ? { lyricsRunMissing: true } : {}) });
   }
   catch (e) { bandCheckError(res, e, 'add the songs'); }
+});
+
+// ==================== Bandcamp lyrics fetch ====================
+// Start a run (artist or single song), poll it, then Save one fetched row. Lyrics live only in the in-memory run until
+// Save. Errors are coded with fixed strings; never log e.message or the lyrics.
+function bandcampLyricsError(res, e, label) {
+  const status = { NOT_FOUND: 404, BAD_INPUT: 400, CONFLICT: 409, BUSY: 409, NO_IDENTITY: 409, RATE_LIMITED: 429, UPSTREAM: 502, UNREADABLE: 502 }[e.code];
+  if (status) return res.status(status).json({ error: e.code, message: e.message });
+  console.error(`bandcamp lyrics ${label} error:`, e.code || 'error');
+  return res.status(500).json({ error: `Failed to ${label}` });
+}
+router.post('/bandcamp-lyrics/artist/:id', async (req, res) => {
+  try { res.json(await bandcampLyrics.startArtistRun(pool, bandId(req), { adapter: bandAdapters.bandcamp })); }
+  catch (e) { bandcampLyricsError(res, e, 'start the Bandcamp lyrics fetch'); }
+});
+router.post('/bandcamp-lyrics/song/:id', async (req, res) => {
+  try { res.json(await bandcampLyrics.startSongRun(pool, bandId(req), { adapter: bandAdapters.bandcamp })); }
+  catch (e) { bandcampLyricsError(res, e, 'start the Bandcamp lyrics fetch'); }
+});
+router.post('/bandcamp-lyrics/catalogue/:id', async (req, res) => {
+  try {
+    res.json(await bandcampLyrics.startCatalogueRun(pool, bandId(req), {
+      adapter: bandAdapters.bandcamp,
+      catalogue: (db, id) => bandCheck.catalogueForLyrics(db, id, { adapters: bandAdapters }),
+    }));
+  } catch (e) { bandcampLyricsError(res, e, 'start the catalogue lyrics fetch'); }
+});
+router.post('/bandcamp-lyrics/catalogue/:id/save', async (req, res) => {
+  try {
+    const { songId, key, runId, text } = req.body || {};
+    const sid = Number(songId);
+    if (!Number.isSafeInteger(sid) || sid <= 0) return res.status(400).json({ error: 'BAD_INPUT', message: 'songId is required' });
+    res.json({ success: true, ...(await bandcampLyrics.saveHeldLyrics(pool, bandId(req), sid, {
+      runId: typeof runId === 'string' ? runId : undefined, key: typeof key === 'string' ? key : undefined, text: typeof text === 'string' ? text : undefined })) });
+  } catch (e) { bandcampLyricsError(res, e, 'save the lyrics'); }
+});
+router.get('/bandcamp-lyrics/runs/:runId', (req, res) => {
+  try { res.set('Cache-Control', 'no-store').json(bandcampLyrics.getRun(String(req.params.runId))); }
+  catch (e) { bandcampLyricsError(res, e, 'read the Bandcamp lyrics run'); }
+});
+router.post('/bandcamp-lyrics/runs/:runId/save', async (req, res) => {
+  try {
+    const songId = Number((req.body || {}).songId);
+    if (!Number.isSafeInteger(songId) || songId <= 0) return res.status(400).json({ error: 'BAD_INPUT', message: 'songId is required' });
+    res.json({ success: true, ...(await bandcampLyrics.saveFetched(pool, String(req.params.runId), songId)) });
+  } catch (e) { bandcampLyricsError(res, e, 'save the fetched lyrics'); }
 });
 
 // ==================== Playlist cross-check ====================

@@ -517,6 +517,6 @@ async function quickCapture(db, { title, artist } = {}) {
   return { id: song.id };
 }
 
-module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES,
+module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES, HAS_LYRICS_SQL,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
   saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, quickCapture, setFeatured, listLanguages };

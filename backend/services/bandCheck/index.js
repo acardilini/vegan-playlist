@@ -6,6 +6,7 @@ const { createBandcampAdapter, normalizeBandcampOrigin } = require('./bandcamp')
 const { defaultFetch } = require('./http');
 const { coded, sourceError } = require('./errors');
 const staging = require('../staging');
+const curation = require('../curation');
 const { mergeCatalogues, buildIndex, classify } = require('./merge');
 
 const SOURCES = ['spotify', 'bandcamp', 'musicbrainz'];
@@ -188,9 +189,25 @@ async function checkBand(db, artistId, { adapters, fresh = false, now = Date.now
   return { artist: { id: artist.id, name: artist.name, identity: identityOf(artist), songs: artistSongs }, sources, releases, counts };
 }
 
+// The merged catalogue reduced to what the lyrics fetch needs: each song's key, state, held-song match and its Bandcamp URL.
+// Uses the same cached read as checkBand, so the server (never the client) decides which URLs get fetched.
+async function catalogueForLyrics(db, artistId, { adapters, fresh = false, now = Date.now } = {}) {
+  const artist = await loadArtist(db, artistId);
+  adapters = adapters || defaultAdapters();
+  const { songs, sources } = await loadMerged(db, artist, { adapters, fresh, now });
+  return {
+    artist: { id: artist.id, name: artist.name },
+    bandcamp: sources.bandcamp || null, // lets the caller refuse a run when Bandcamp could not be read (every song would otherwise look unlisted)
+    songs: songs.map(s => ({
+      key: s.key, title: s.title, state: s.state, match: s.match || null,
+      bandcampUrl: (s.sources.bandcamp && s.sources.bandcamp.url) || null,
+    })),
+  };
+}
+
 // Adds the songs the curator ticked (keys) and/or saves the ones they rejected (rejectKeys) as `rejected` rows.
 // Never trusts client data: only song keys come in, and the catalogue is re-read live.
-async function addSelected(db, artistId, keys, { adapters, rejectKeys } = {}) {
+async function addSelected(db, artistId, keys, { adapters, rejectKeys, lyrics } = {}) {
   const proc = keys === undefined ? [] : keys;
   const rej = rejectKeys === undefined ? [] : rejectKeys;
   const okList = (l) => Array.isArray(l) && l.every(k => typeof k === 'string' && k);
@@ -229,10 +246,18 @@ async function addSelected(db, artistId, keys, { adapters, rejectKeys } = {}) {
     const insertPicked = async (picked, note) => {
       let added = 0;
       const spotifyIds = [], songIds = [];
+      const idByKey = new Map(); // key -> id of a song THIS call created (never an existing one)
       const withSpotify = picked.filter(s => s.sources.spotify && s.sources.spotify.mapped);
       if (withSpotify.length) {
+        const before = new Set((await db.query(`SELECT spotify_id FROM songs WHERE spotify_id = ANY($1::text[])`,
+          [withSpotify.map(s => s.sources.spotify.mapped.spotify_id)])).rows.map(r => r.spotify_id));
         const r = await staging.insertCandidates(db, withSpotify.map(s => s.sources.spotify.mapped), { note });
         added += r.added; skippedExisting += r.skippedExisting;
+        const fresh = withSpotify.filter(s => !before.has(s.sources.spotify.mapped.spotify_id));
+        if (fresh.length) {
+          const ids = (await db.query(`SELECT id, spotify_id FROM songs WHERE spotify_id = ANY($1::text[])`, [fresh.map(s => s.sources.spotify.mapped.spotify_id)])).rows;
+          for (const s of fresh) { const row = ids.find(x => x.spotify_id === s.sources.spotify.mapped.spotify_id); if (row) idByKey.set(s.key, row.id); }
+        }
         for (const s of withSpotify) {
           spotifyIds.push(s.sources.spotify.mapped.spotify_id);
           if (s.sources.bandcamp && s.sources.bandcamp.url) {
@@ -247,16 +272,17 @@ async function addSelected(db, artistId, keys, { adapters, rejectKeys } = {}) {
           title: s.title, artistId: artist.id, bandcamp_url: (s.sources.bandcamp && s.sources.bandcamp.url) || null, note,
         });
         added += r.added; skippedExisting += r.skippedExisting;
-        if (r.song_id) songIds.push(r.song_id);
+        if (r.song_id) { songIds.push(r.song_id); idByKey.set(s.key, r.song_id); }
       }
-      return { added, spotifyIds, songIds };
+      return { added, spotifyIds, songIds, idByKey };
     };
 
     const processed = await insertPicked(toProcess, `added via band check (${artist.name})`);
     let rejected = 0;
+    let made = null;
     if (toReject.length) {
       const rejectNote = `rejected via band check (${artist.name})`;
-      const made = await insertPicked(toReject, rejectNote);
+      made = await insertPicked(toReject, rejectNote);
       // flip ONLY the rows this call just created: still pending, carrying this call's note, and one of the ids it reported
       const upd = await db.query(
         `UPDATE songs SET status='rejected', published=false, published_at=NULL, updated_at=CURRENT_TIMESTAMP
@@ -264,11 +290,28 @@ async function addSelected(db, artistId, keys, { adapters, rejectKeys } = {}) {
         [rejectNote, made.spotifyIds, made.songIds]);
       rejected = upd.rowCount;
     }
-    return { added: processed.added, rejected, skippedExisting, notFound };
+    const result = { added: processed.added, rejected, skippedExisting, notFound };
+    if (lyrics && lyrics.size) {
+      // Best-effort, after the songs exist: only onto songs THIS call created, never failing the add.
+      const created = new Map([...processed.idByKey, ...(made ? made.idByKey : [])]);
+      result.lyricsSaved = 0;
+      result.lyricsFailed = [];
+      for (const [key, l] of lyrics) {
+        const id = created.get(key);
+        if (!id) continue;
+        try {
+          const empty = (await db.query(`SELECT 1 FROM songs s WHERE s.id = $1 AND NOT ${curation.HAS_LYRICS_SQL}`, [id])).rows.length;
+          if (!empty) continue;
+          await curation.saveLyrics(db, id, { lyrics: l.text, source_url: l.url || undefined, lyrics_source: l.source });
+          result.lyricsSaved += 1;
+        } catch { result.lyricsFailed.push((byKey.get(key) || {}).title || key); } // never log: the message could carry lyrics
+      }
+    }
+    return result;
   } finally { adding = false; }
 }
 
 module.exports = {
   SOURCES, defaultAdapters, listBands, identifyCandidates, saveIdentity, loadArtist, identityOf,
-  checkBand, addSelected, _resetForTests,
+  checkBand, catalogueForLyrics, addSelected, _resetForTests,
 };

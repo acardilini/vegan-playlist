@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { adminFetch } from '../../api/adminApi';
 import { CLEAR_LYRICS_BODY } from './junkLyricsActions';
 import { AutoText, SaveTag } from './SavedField';
+import { useBandcampLyricsRun } from './useBandcampLyricsRun';
+import { FetchedLyricsList, RunProgress } from './BandcampLyricsResults';
 import { LYRIC_SITES, anywhereUrl, allSitesUrl, siteUrl, youtubeSearchUrl, sourceNameFromUrl } from '../../utils/lyricsSearchUrls';
 
 // songs.lyrics_source defaults to 'other' in the DB, so that counts as unset.
@@ -18,6 +20,8 @@ function LyricsPanel({ wb, savePanel, saveProcessing, reload }) {
   const [holdSave, setHoldSave] = useState('idle');
   const [junkBusy, setJunkBusy] = useState(false);
   const [junkMsg, setJunkMsg] = useState('');
+  const [moreSites, setMoreSites] = useState(false);
+  const bc = useBandcampLyricsRun();
   const tried = Array.isArray(wb.processing?.lyrics_tried) ? wb.processing.lyrics_tried : [];
   // Synchronous mirror of the tried list so quick successive clicks never save from a stale array.
   const triedRef = useRef(tried);
@@ -121,20 +125,42 @@ function LyricsPanel({ wb, savePanel, saveProcessing, reload }) {
         <div className="wb-junk"><span className="miss-chip warn">The junk lyrics were cleared. The old analysis stays hidden until real lyrics are added and the song is re-analysed.</span></div>
       )}
 
+      {(!hasLyrics || wb.junk_kind) && ( // a junk-flagged song counts as having no lyrics, so it can be fetched too
+        <div className="bcl-song">
+          <div className="bcl-actions">
+            <button type="button" className="btn btn-primary btn-sm" disabled={bc.state.phase === 'running'}
+              onClick={() => bc.start('song', wb.id)}>Fetch from Bandcamp</button>
+            <span className="section-note">If Bandcamp has nothing, use the search below.</span>
+          </div>
+          <RunProgress state={bc.state} />
+          {bc.state.phase === 'error' && <div className="admin-message error">{bc.state.message}</div>}
+          {bc.state.phase === 'done' && (
+            <FetchedLyricsList results={bc.state.results} truncated={bc.state.truncated}
+              onSave={async (songId) => { const r = await bc.save(songId); if (r.ok) reload(); return r; }} />
+          )}
+        </div>
+      )}
+
       <div className="wb-lyric-search">
-        <a className="btn btn-primary btn-sm" href={anywhereUrl(song)} target="_blank" rel="noreferrer"
+        <a className={`btn btn-sm ${hasLyrics ? 'btn-primary' : 'btn-secondary'}`} href={anywhereUrl(song)} target="_blank" rel="noreferrer"
           onClick={() => markTried('google')}>Search the web for lyrics <span aria-hidden="true">&#8599;</span></a>
-        <a className="btn btn-secondary btn-sm" href={allSitesUrl(song)} target="_blank" rel="noreferrer"
-          title="Only the sites named on this row; may find nothing for an obscure song"
-          onClick={() => markTried('google')}>Listed lyric sites only</a>
-        <span className="wb-field-label">or one site:</span>
-        {LYRIC_SITES.map((s) => (
-          <a key={s.key} className="btn btn-ghost btn-sm" href={siteUrl(s, song)} target="_blank" rel="noreferrer"
-            onClick={() => markTried(s.avenue)}>{s.name}</a>
-        ))}
-        <a className="btn btn-ghost btn-sm" href={youtubeSearchUrl(song)} target="_blank" rel="noreferrer"
-          onClick={() => markTried('youtube')}>YouTube</a>
+        <button type="button" className="btn btn-ghost btn-sm" aria-expanded={moreSites}
+          onClick={() => setMoreSites((v) => !v)}>{moreSites ? 'Fewer sites' : 'More sites'}</button>
       </div>
+      {moreSites && (
+        <div className="wb-lyric-search">
+          <a className="btn btn-secondary btn-sm" href={allSitesUrl(song)} target="_blank" rel="noreferrer"
+            title="Only the sites named on this row; may find nothing for an obscure song"
+            onClick={() => markTried('google')}>Listed lyric sites only</a>
+          <span className="wb-field-label">or one site:</span>
+          {LYRIC_SITES.map((s) => (
+            <a key={s.key} className="btn btn-ghost btn-sm" href={siteUrl(s, song)} target="_blank" rel="noreferrer"
+              onClick={() => markTried(s.avenue)}>{s.name}</a>
+          ))}
+          <a className="btn btn-ghost btn-sm" href={youtubeSearchUrl(song)} target="_blank" rel="noreferrer"
+            onClick={() => markTried('youtube')}>YouTube</a>
+        </div>
+      )}
 
       <AutoText label="Full lyrics (local-only)" initial={wb.lyrics} multiline rows={12} monospace
         inputRef={lyricsRef} onSave={(v) => savePanel('lyrics', { lyrics: v })} />
