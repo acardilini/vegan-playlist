@@ -24,6 +24,8 @@ function LeadsArea() {
   const [more, setMore] = useState(false);
   const [dup, setDup] = useState(null); // the result of an add that matched an existing lead or artist
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [busy, setBusy] = useState(false); // one capture at a time: a second Enter while the first is in flight must not send another
+  const drafts = useRef(new Map());       // note text being edited per lead, so Promote can save it first
 
   const load = useCallback(() => api(`/api/admin/leads?status=${status}`)
     .then((d) => { setData(d); setLoaded(true); setError(''); })
@@ -33,18 +35,24 @@ function LeadsArea() {
   const run = async (fn) => { setError(''); try { await fn(); } catch (e) { setError(e.message); } };
 
   const add = () => run(async () => {
-    if (!name.trim()) return;
-    const r = await api('/api/admin/leads', { method: 'POST', body: { name, note, song, url } });
-    if (r.status === 'duplicate') { setDup(r); return; }
-    setDup(null); setName(''); setNote(''); setSong(''); setUrl('');
-    changed(); await load();
-    if (nameRef.current) nameRef.current.focus();
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    try {
+      const r = await api('/api/admin/leads', { method: 'POST', body: { name, note, song: more ? song : '', url: more ? url : '' } });
+      if (r.status === 'duplicate') { setDup(r); return; }
+      setDup(null); setName(''); setNote(''); setSong(''); setUrl('');
+      changed(); await load();
+      if (nameRef.current) nameRef.current.focus();
+    } finally { setBusy(false); }
   });
   const onKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
 
   const update = (lead, patch) => run(async () => { await api(`/api/admin/leads/${lead.id}`, { method: 'PUT', body: patch }); changed(); await load(); });
   const restoreDup = () => run(async () => { await api(`/api/admin/leads/${dup.lead.id}`, { method: 'PUT', body: { status: 'new' } }); setDup(null); setName(''); changed(); await load(); });
-  const promote = (lead) => run(async () => { const r = await api(`/api/admin/leads/${lead.id}/promote`, { method: 'POST', body: {} }); changed(); navigate(`/admin/artist/${r.artistId}`); });
+  const promote = (lead) => run(async () => {
+    const draft = drafts.current.get(lead.id); // an edit still in the note box (its blur save may not have landed) goes first
+    if (draft !== undefined && draft.trim() !== (lead.note || '')) await api(`/api/admin/leads/${lead.id}`, { method: 'PUT', body: { note: draft } });
+    const r = await api(`/api/admin/leads/${lead.id}/promote`, { method: 'POST', body: {} }); changed(); navigate(`/admin/artist/${r.artistId}`); });
   const remove = (lead) => {
     if (confirmDelete !== lead.id) { setConfirmDelete(lead.id); return; }
     setConfirmDelete(null);
@@ -56,6 +64,7 @@ function LeadsArea() {
     if (dup.kind === 'artist') return <>Already an artist: <Link to={`/admin/artist/${dup.artist.id}`}>{dup.artist.name}</Link></>;
     const s = dup.lead.status;
     if (s === 'dismissed') return <>Already a lead, dismissed on {day(dup.lead.dismissed_at)} <button className="btn btn-ghost btn-sm" onClick={restoreDup}>Restore</button></>;
+    if (s === 'checked') return <>Already a lead (Checked) <button className="btn btn-ghost btn-sm" onClick={restoreDup}>Restore</button></>;
     return <>Already a lead ({STATUS_TEXT[s]})</>;
   };
 
@@ -67,7 +76,7 @@ function LeadsArea() {
           <input ref={nameRef} className="input" autoFocus aria-label="Band name" placeholder="Band name, then Enter" value={name}
             onChange={(e) => { setName(e.target.value); if (dup) setDup(null); }} onKeyDown={onKey} />
           <input className="input" aria-label="Note" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={onKey} />
-          <button className="btn btn-primary btn-sm" onClick={add} disabled={!name.trim()}>Add</button>
+          <button className="btn btn-primary btn-sm" onClick={add} disabled={!name.trim() || busy}>Add</button>
           <button className="btn btn-ghost btn-sm" onClick={() => setMore((m) => !m)} aria-expanded={more}>{more ? 'Less' : 'More'}</button>
         </div>
         {more && (
@@ -100,7 +109,7 @@ function LeadsArea() {
             {l.song && <>Song: {l.song} · </>}
             {l.url && (isHttp(l.url) ? <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a> : l.url)}
           </div>
-          <NoteField lead={l} onSave={(v) => update(l, { note: v })} />
+          <NoteField lead={l} drafts={drafts} onSave={(v) => update(l, { note: v })} />
           <div className="lead-actions">
             {l.status === 'new' && <button className="btn btn-primary btn-sm" onClick={() => promote(l)}>Promote</button>}
             {l.status === 'new' && <button className="btn btn-secondary btn-sm" onClick={() => update(l, { status: 'checked' })}>Mark checked</button>}
@@ -116,12 +125,12 @@ function LeadsArea() {
 }
 
 // Inline note edit: saves on blur when changed.
-function NoteField({ lead, onSave }) {
+function NoteField({ lead, drafts, onSave }) {
   const [val, setVal] = useState(lead.note || '');
-  useEffect(() => { setVal(lead.note || ''); }, [lead.note]);
+  useEffect(() => { setVal(lead.note || ''); drafts.current.delete(lead.id); }, [lead.note, lead.id, drafts]);
   return (
     <input className="input lead-note" aria-label={`Note for ${lead.name}`} placeholder="Add a note" value={val}
-      onChange={(e) => setVal(e.target.value)} onBlur={() => { if (val.trim() !== (lead.note || '')) onSave(val); }} />
+      onChange={(e) => { setVal(e.target.value); drafts.current.set(lead.id, e.target.value); }} onBlur={() => { if (val.trim() !== (lead.note || '')) onSave(val); }} />
   );
 }
 

@@ -6,10 +6,12 @@ const STATUSES = ['new', 'checked', 'dismissed'];
 const LIMITS = { name: 255, note: 1000, song: 255, url: 500, origin: 30 };
 const COLS = 'id, name, note, song, url, origin, status, created_at, dismissed_at, artist_id';
 
-// lowercase, diacritics folded, a leading "the" dropped, every non-alphanumeric run one space
+// lowercase, diacritics folded, a leading "the" dropped, every run of non-letters/digits (any script) one space.
+// A name that folds to nothing (e.g. "!!!") falls back to its lowercase text, so it is still a distinct, matchable key.
 function leadKey(name) {
-  return String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ').trim().replace(/^the\b\s*/, '').trim();
+  const folded = String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const key = folded.replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/^the(\s+|$)/u, '').trim();
+  return key || folded.trim();
 }
 
 const isHttp = (v) => { try { return /^https?:$/.test(new URL(v).protocol); } catch { return false; } };
@@ -44,9 +46,11 @@ async function addLead(db, { name, note, song, url, origin = 'manual' } = {}) {
   if (existing) return { status: 'duplicate', kind: 'lead', lead: existing };
   const artist = (await artistsByKey(db)).get(key);
   if (artist) return { status: 'duplicate', kind: 'artist', artist: { id: artist.id, name: artist.name } };
+  // ON CONFLICT: a simultaneous add of the same band loses the race and is reported as the duplicate it is
   const lead = (await db.query(
-    `INSERT INTO leads (name, name_key, note, song, url, origin) VALUES ($1,$2,$3,$4,$5,$6) RETURNING ${COLS}`,
+    `INSERT INTO leads (name, name_key, note, song, url, origin) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (name_key) DO NOTHING RETURNING ${COLS}`,
     [n, key, clean.note, clean.song, clean.url, origin.trim()])).rows[0];
+  if (!lead) return { status: 'duplicate', kind: 'lead', lead: (await db.query(`SELECT ${COLS} FROM leads WHERE name_key = $1 ORDER BY id LIMIT 1`, [key])).rows[0] };
   return { status: 'added', lead };
 }
 

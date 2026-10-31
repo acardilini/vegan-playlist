@@ -17,8 +17,9 @@ const coded = (code) => (e) => e.code === code;
 
 test('leadKey folds case, diacritics, a leading The, punctuation and spacing', () => {
   assert.equal(svc.leadKey('  The  ZZZLEA Bånd! '), svc.leadKey('zzzlea band'));
-  assert.equal(svc.leadKey('The'), '');
-  assert.equal(svc.leadKey('***'), '');
+  assert.equal(svc.leadKey('The'), 'the'); // nothing left after the prefix: fall back to the text itself
+  assert.equal(svc.leadKey('***'), '***');
+  assert.equal(svc.leadKey('Theory of a Deadman'), 'theory of a deadman'); // only a whole leading word is dropped
 });
 
 test('addLead adds with defaults and trims', async () => {
@@ -28,7 +29,7 @@ test('addLead adds with defaults and trims', async () => {
 });
 test('addLead rejects empty, over-length, bad url and bad origin; nothing is inserted', async () => {
   const before = (await pool.query(`SELECT count(*) c FROM leads`)).rows[0].c;
-  for (const bad of [{ name: '   ' }, { name: 'The' }, { name: 'ZZZLEA ' + 'x'.repeat(260) }, { name: 'ZZZLEA Two', note: 'n'.repeat(1001) },
+  for (const bad of [{ name: '   ' }, { name: 'ZZZLEA ' + 'x'.repeat(260) }, { name: 'ZZZLEA Two', note: 'n'.repeat(1001) },
     { name: 'ZZZLEA Two', url: 'ftp://x' }, { name: 'ZZZLEA Two', origin: 'o'.repeat(31) }, { name: 'ZZZLEA Two', origin: '' }, {}]) {
     await assert.rejects(svc.addLead(pool, bad), coded('BAD_INPUT'));
   }
@@ -163,4 +164,24 @@ test('adding a lead changes no public total', async () => {
   const l = (await svc.addLead(pool, { name: 'ZZZLEA Public Check' })).lead;
   await svc.promoteLead(pool, l.id);
   assert.equal(await q(), before);
+});
+
+test('non-Latin and punctuation-only names get a usable key instead of being rejected', async () => {
+  assert.notEqual(svc.leadKey('人間椅子'), '');
+  assert.notEqual(svc.leadKey('Аквариум'), '');
+  assert.notEqual(svc.leadKey('Mø'), svc.leadKey('M'));
+  assert.equal(svc.leadKey('Ghøst'), 'ghøst');
+  for (const name of ['ZZZLEA 人間椅子', 'ZZZLEA Аквариум']) {
+    assert.equal((await svc.addLead(pool, { name })).status, 'added');
+    assert.equal((await svc.addLead(pool, { name })).status, 'duplicate');
+  }
+  const punct = await svc.addLead(pool, { name: 'ZZZLEA !!!' });
+  assert.equal(punct.status, 'added');
+  await svc.deleteLead(pool, punct.lead.id);
+});
+test('two simultaneous adds of the same band make one lead', async () => {
+  const name = 'ZZZLEA Race Band';
+  const [a, b] = await Promise.all([svc.addLead(pool, { name }), svc.addLead(pool, { name: name.toUpperCase() })]);
+  assert.deepEqual([a.status, b.status].sort(), ['added', 'duplicate']);
+  assert.equal((await pool.query(`SELECT count(*) c FROM leads WHERE name_key = $1`, [svc.leadKey(name)])).rows[0].c, '1');
 });
