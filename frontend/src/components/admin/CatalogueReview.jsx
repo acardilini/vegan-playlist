@@ -16,6 +16,7 @@ function stateChip(match) {
 function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed, onReviewedChange, refreshKey }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false); // a read is in flight (a fresh read of a slow source can take several seconds)
   const [choice, setChoice] = useState(() => new Map());
   const [result, setResult] = useState('');
   const [added, setAdded] = useState(0);
@@ -38,7 +39,7 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
 
   const load = useCallback(async (fresh) => {
     const my = ++seq.current;
-    setError(''); setData(d => (fresh ? d : null));
+    setError(''); setLoading(true); setData(d => (fresh ? d : null));
     try {
       const d = await api(`/api/admin/band-check/bands/${artistId}${fresh ? '?fresh=1' : ''}`);
       if (my === seq.current) {
@@ -60,7 +61,7 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
         setError(e.message);
         setData(prev => prev || { artist: { id: artistId, name: '', identity: { spotify: null, bandcamp: null, musicbrainz: null } }, sources: {}, releases: [], counts: null });
       }
-    }
+    } finally { if (my === seq.current) setLoading(false); }
   }, [artistId]);
   useEffect(() => { load(false); }, [load]);
   // the parent bumps refreshKey (starts at 0, so mount does not double-load) when identity changed
@@ -80,7 +81,7 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
   const toolbar = (
     <div className="queue-toolbar band-toolbar">
       <h2>Catalogue</h2>
-      {data && <button className="btn btn-secondary btn-sm" onClick={() => { setResult(''); load(true); }}>Refresh</button>}
+      {data && <button className="btn btn-secondary btn-sm" disabled={loading} onClick={() => { setResult(''); load(true); }}>{loading ? 'Reading…' : 'Refresh'}</button>}
       {data && (
         <button className="btn btn-secondary btn-sm" disabled={markSaving} onClick={() => toggleReviewed(!reviewed)}>
           {reviewed ? 'Clear reviewed mark' : 'Mark catalogue reviewed'}
@@ -190,6 +191,7 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
     <div>
       {toolbar}
       {error && <div className="admin-message error">{error}</div>}
+      {loading && <div className="band-meta" role="status">Reading the sources… this can take several seconds.</div>}
       <RunProgress state={lyr.state} />
       {lyr.state.phase === 'error' && <div className="admin-message error">{lyr.state.message}</div>}
       {(data.counts || newSongs.length > 0) && (
