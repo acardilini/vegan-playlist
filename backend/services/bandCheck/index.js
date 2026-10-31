@@ -113,12 +113,12 @@ const cache = new Map(); // `${artistId}:${source}:${value}` -> { at, catalogue 
 let adding = false;
 function _resetForTests() { cache.clear(); adding = false; }
 
-async function readSource(adapter, artistId, source, value, { fresh, now }) {
+async function readSource(adapter, artistId, source, value, { fresh, now, artistName }) {
   const key = `${artistId}:${source}:${value}`;
   const hit = cache.get(key);
   if (!fresh && hit && now() - hit.at < CACHE_MS) return hit.catalogue;
   if (hit) cache.delete(key);
-  const catalogue = await adapter.fetchCatalogue(value);
+  const catalogue = await adapter.fetchCatalogue(value, { artistName }); // Bandcamp uses the name to ignore a label page's other bands
   cache.set(key, { at: now(), catalogue });
   return catalogue;
 }
@@ -133,11 +133,11 @@ async function loadMerged(db, artist, { adapters, fresh, now }) {
   }
 
   const settled = await Promise.all(active.map(async (source) => {
-    try { return { source, catalogue: await readSource(adapters[source], artist.id, source, identity[source], { fresh, now }) }; }
+    try { return { source, catalogue: await readSource(adapters[source], artist.id, source, identity[source], { fresh, now, artistName: artist.name }) }; }
     catch (e) { const err = sourceError(e); return { source, error: { code: err.code, message: err.message } }; }
   }));
   const sources = {};
-  for (const r of settled) sources[r.source] = r.error ? { status: 'error', ...r.error } : { status: 'ok', truncated: !!r.catalogue.truncated };
+  for (const r of settled) sources[r.source] = r.error ? { status: 'error', ...r.error } : { status: 'ok', truncated: !!r.catalogue.truncated, ...(r.catalogue.label ? { label: r.catalogue.label } : {}) };
 
   const songs = mergeCatalogues(settled.filter(r => r.catalogue).map(r => r.catalogue));
   const spotifyIds = songs.flatMap(s => (s.sources.spotify ? s.sources.spotify.ids : []));

@@ -174,6 +174,7 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
   // notes only for sources that say something: could not be read, partial, or shares nothing with the rest
   const notes = Object.entries(data.sources).flatMap(([s, st]) => {
     const out = [];
+    if (st.status === 'ok' && st.label) out.push({ key: `${s}:label`, kind: 'label', label: st.label });
     if (st.status !== 'ok') out.push({ key: `${s}:err`, kind: 'error', text: `${SOURCE_LABEL[s]}: ${st.message || 'could not be read this time'}` });
     else if (st.truncated) out.push({ key: `${s}:partial`, kind: 'partial', text: `${SOURCE_LABEL[s]}: partial${PARTIAL[s] ? ` (${PARTIAL[s]})` : ''}` });
     const otherSongs = Object.entries(data.sources).some(([o, os]) => o !== s && os.status === 'ok' && os.songs > 0);
@@ -221,7 +222,9 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
           <button className="btn btn-secondary btn-sm" disabled={markSaving} onClick={() => toggleReviewed(false)}>Back to Needs catalogue check</button>
         </div>
       )}
-      {notes.map(n => (n.source
+      {notes.map(n => (n.kind === 'label'
+        ? <LabelNote key={n.key} label={n.label} />
+        : n.source
         ? <button key={n.key} className={`band-note ${n.kind} band-note-btn`} onClick={() => onNeedIdentity(n.source)}>{n.text}</button>
         : <div key={n.key} className={`band-note ${n.kind}`}>{n.text}</div>))}
       {noIdentity && data.releases.length === 0 && <div className="queue-empty">Set at least one source under Links, then Refresh.</div>}
@@ -278,6 +281,25 @@ function CatalogueReview({ artistId, identity, onNeedIdentity, onAdded, reviewed
         </div>
       )}
     </div>
+  );
+}
+
+// Bandcamp label page: only this band's releases are read; the other credits are listed so a different spelling can be spotted.
+function LabelNote({ label }) {
+  const credits = <div className="band-meta">{label.credits.map(c => `${c.artist} (${c.count})`).join(', ')}</div>;
+  if (label.noMatch) {
+    return (
+      <details className="band-note warn">
+        <summary>Bandcamp: label page, and no release is credited to {label.artist}, so nothing was read. Check the link, or how Bandcamp spells the band.</summary>
+        {credits}
+      </details>
+    );
+  }
+  return (
+    <details className="band-note">
+      <summary>Bandcamp: label page. Showing releases credited to {label.artist}; {label.hidden} by other artists hidden.</summary>
+      {credits}
+    </details>
   );
 }
 

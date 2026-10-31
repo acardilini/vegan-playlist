@@ -203,3 +203,93 @@ test('fetchTrack fails UNREADABLE when the page has no JSON-LD', async () => {
   const { a } = adapterFor({ [ORIGIN + '/track/prism']: page('<html>nothing</html>') });
   await assert.rejects(a.fetchTrack(ORIGIN + '/track/prism'), (e) => e.code === 'UNREADABLE');
 });
+
+// ---- record-label pages: keep only releases credited to the band being reviewed ----
+const items = (list) => list.map(([artist, slug, type = 'album']) => ({ artist, page_url: `/${type}/${slug}`, title: slug, type }));
+const musicWith = (list) => `<ol id="music-grid" data-client-items="${JSON.stringify(items(list)).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"></ol>`;
+const labelFor = (list, extra = {}) => {
+  const map = { [ORIGIN + '/music']: page(musicWith(list)), ...extra };
+  for (const [, slug, type = 'album'] of list) if (!map[`${ORIGIN}/${type}/${slug}`]) map[`${ORIGIN}/${type}/${slug}`] = page(album(slug, ['T ' + slug]));
+  return adapterFor(map);
+};
+const LABEL = [['Other Band', 'o1'], ['Wolves Of Dusk', 'w1'], ['Third Act', 't1'], ['Wolves Of Dusk', 'w2', 'track'], ['Other Band', 'o2']];
+
+test('a label page keeps only releases credited to the band and never fetches the rest', async () => {
+  const { a, urls } = labelFor(LABEL);
+  const cat = await a.fetchCatalogue(ORIGIN, { artistName: 'Wolves of Dusk' });
+  assert.deepEqual(cat.releases.map(r => r.name), ['w1', 'w2']);
+  assert.ok(!urls.some(u => /\/(o1|o2|t1)$/.test(u)));
+  assert.deepEqual(cat.label, { artist: 'Wolves of Dusk', hidden: 3, credits: [{ artist: 'Other Band', count: 2 }, { artist: 'Third Act', count: 1 }], noMatch: false });
+  assert.equal(cat.truncated, false);
+});
+
+test('the filter works on the whole client list, so the 40-release cap applies to the band\'s own releases', async () => {
+  const list = [...Array.from({ length: 60 }, (_, i) => ['Filler ' + (i % 7), 'f' + i]), ['Wolves Of Dusk', 'w1'], ['Wolves Of Dusk', 'w2']];
+  const { a, urls } = labelFor(list);
+  const cat = await a.fetchCatalogue(ORIGIN, { artistName: 'Wolves Of Dusk' });
+  assert.equal(cat.releases.length, 2);
+  assert.equal(cat.truncated, false);
+  assert.equal(urls.length, 3); // /music + the two matches
+  assert.equal(cat.label.hidden, 60);
+});
+
+test('names match ignoring case, accents, punctuation and a leading "The", and inside a collaboration credit', async () => {
+  for (const credit of ['wolves of dusk', 'The Wolves of Dusk', 'Wölves Of Dusk!', 'Wolves Of Dusk & Friend', 'Friend / Wolves Of Dusk', 'Friend x Wolves Of Dusk', 'Friend feat. Wolves Of Dusk', 'A, Wolves Of Dusk']) {
+    const { a } = labelFor([['Other Band', 'o1'], [credit, 'w1']]);
+    const cat = await a.fetchCatalogue(ORIGIN, { artistName: 'Wolves Of Dusk' });
+    assert.deepEqual(cat.releases.map(r => r.name), ['w1'], credit);
+  }
+  const { a } = labelFor([['Other Band', 'o1'], ['Wolves Of Dusk Tribute Band', 'w1'], ['Wolves', 'w2']]);
+  await assert.doesNotReject(a.fetchCatalogue(ORIGIN, { artistName: 'Wolves Of Dusk' })); // a longer or partial name is not the band
+  const r = await a.fetchCatalogue(ORIGIN, { artistName: 'Wolves Of Dusk' });
+  assert.equal(r.label.noMatch, true);
+});
+
+test('when nothing on a label page is credited to the band, nothing is read and the note says so', async () => {
+  const { a, urls } = labelFor(LABEL);
+  const cat = await a.fetchCatalogue(ORIGIN, { artistName: 'Nobody At All' });
+  assert.deepEqual(cat.releases, []);
+  assert.deepEqual(urls, [ORIGIN + '/music']);
+  assert.equal(cat.label.noMatch, true);
+  assert.equal(cat.label.hidden, 5);
+  assert.deepEqual(cat.label.credits, [{ artist: 'Other Band', count: 2 }, { artist: 'Wolves Of Dusk', count: 2 }, { artist: 'Third Act', count: 1 }]);
+});
+
+test('a page whose releases all carry one credit is not a label page: nothing is hidden, no note', async () => {
+  const { a } = labelFor([['Bloodmouth', 'a1'], ['Bloodmouth', 'a2']]);
+  const cat = await a.fetchCatalogue(ORIGIN, { artistName: 'Blood Mouth (the band)' });
+  assert.equal(cat.releases.length, 2);
+  assert.equal(cat.label, undefined);
+});
+
+test('no artist name, or no client list, leaves the old behaviour', async () => {
+  const none = labelFor(LABEL);
+  assert.equal((await none.a.fetchCatalogue(ORIGIN)).releases.length, 5);
+  const { a } = adapterFor({ [ORIGIN + '/music']: page(MUSIC), [ORIGIN + '/album/one']: page(album('One', ['A'])), [ORIGIN + '/track/lone']: page(album('Lone', ['B'])), [ORIGIN + '/album/two']: page(album('Two', ['C'])) });
+  const cat = await a.fetchCatalogue(ORIGIN, { artistName: 'Whoever' });
+  assert.equal(cat.releases.length, 3);
+  assert.equal(cat.label, undefined);
+});
+
+// Real label pages split the catalogue: the first screen is <li data-item-id> grid items (artist in .artist-override),
+// the rest is in data-client-items. Both are read.
+test('a label page\'s grid items and its client list are both read (grid artist from artist-override, entities decoded)', async () => {
+  const grid = (slug, artist) => `<li data-item-id="album-1" class="music-grid-item"> <a href="/album/${slug}"> <p class="title"> T <br><span class="artist-override"> ${artist} </span> </p> </a> </li>`;
+  const music = `<ol>${grid('g1', 'Wolves Of Dusk')}${grid('g2', 'Someone&#39;s Band')}</ol>` + musicWith([['Other Band', 'c1'], ['Wolves Of Dusk', 'c2']]);
+  const { a, urls } = adapterFor({
+    [ORIGIN + '/music']: page(music),
+    [ORIGIN + '/album/g1']: page(album('g1', ['A'])), [ORIGIN + '/album/c2']: page(album('c2', ['B'])),
+  });
+  const cat = await a.fetchCatalogue(ORIGIN, { artistName: 'Wolves of Dusk' });
+  assert.deepEqual(cat.releases.map(r => r.name).sort(), ['c2', 'g1']);
+  assert.equal(urls.length, 3);
+  assert.deepEqual(cat.label.credits, [{ artist: 'Other Band', count: 1 }, { artist: "Someone's Band", count: 1 }]);
+});
+
+test('a grid item with no artist-override is kept, never hidden', async () => {
+  const music = '<li data-item-id="album-1"><a href="/album/solo"><p class="title">T</p></a></li>' + musicWith([['Other Band', 'c1'], ['Wolves Of Dusk', 'c2']]);
+  const { a } = adapterFor({ [ORIGIN + '/music']: page(music), [ORIGIN + '/album/solo']: page(album('solo', ['A'])), [ORIGIN + '/album/c2']: page(album('c2', ['B'])) });
+  const cat = await a.fetchCatalogue(ORIGIN, { artistName: 'Wolves Of Dusk' });
+  assert.deepEqual(cat.releases.map(r => r.name).sort(), ['c2', 'solo']);
+  assert.equal(cat.label.hidden, 1);
+});

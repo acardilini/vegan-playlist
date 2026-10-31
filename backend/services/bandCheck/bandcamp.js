@@ -26,6 +26,45 @@ function readLd(html) {
   try { return JSON.parse(m[1]); } catch { return null; }
 }
 
+// A credit/band name folded for comparison: case, diacritics, punctuation and a leading "The" ignored.
+function nameKey(name) {
+  const k = String(name || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/^the(\s+|$)/, '').trim();
+  return k;
+}
+
+// "A & B", "A / B", "A, B", "A + B", "A x B", "A and B", "A feat. B", "A with B" -> each credited name (a name is never cut mid-word).
+function creditParts(credit) {
+  return String(credit || '').split(/\s*(?:[&/,+]|\bx\b|\band\b|\bwith\b|\bw\/|\bfeat\.?|\bfeaturing\b|\bft\.?)\s*/i).map(nameKey).filter(Boolean);
+}
+
+function creditedTo(credit, key) {
+  return nameKey(credit) === key || creditParts(credit).includes(key);
+}
+
+const decode = (t) => t.replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+const RELEASE_PATH = /^\/(?:album|track)\/[^"#?\s]+$/;
+
+// Every release a /music page lists, as [{ path, artist }] (artist '' when the page does not say). The page splits its
+// catalogue in two: the first screen is <li data-item-id> grid items (artist in .artist-override, only on pages that
+// show other artists), the rest is the embedded data-client-items JSON; plain release links come last as a fallback.
+function readItems(html) {
+  const out = [], seen = new Set();
+  const add = (path, artist) => { if (!seen.has(path)) { seen.add(path); out.push({ path, artist: artist.trim() }); } };
+  for (const m of html.matchAll(/<li\b[^>]*\bdata-item-id="[^"]*"[^>]*>([\s\S]*?)<\/li>/g)) {
+    const href = /href="(\/(?:album|track)\/[^"#?\s]+)"/.exec(m[1]);
+    const credit = /class="artist-override">\s*([^<]*?)\s*</.exec(m[1]);
+    if (href) add(href[1], credit ? decode(credit[1]) : '');
+  }
+  const client = /data-client-items="([^"]*)"/.exec(html);
+  if (client) {
+    let list = null;
+    try { list = JSON.parse(decode(client[1])); } catch { /* the plain links below still work */ }
+    for (const i of Array.isArray(list) ? list : []) if (i && typeof i.page_url === 'string' && RELEASE_PATH.test(i.page_url)) add(i.page_url, typeof i.artist === 'string' ? i.artist : '');
+  }
+  for (const m of html.matchAll(/href="(\/(?:album|track)\/[^"#?]+)/g)) add(m[1], '');
+  return out;
+}
+
 function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTimeout(r, ms)), gapMs = 250 }) {
   const REDIRECTS = new Set([301, 302, 303, 307, 308]);
   const MAX_HOPS = 3;
@@ -70,7 +109,7 @@ function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTime
     };
   }
 
-  async function fetchCatalogue(originInput) {
+  async function fetchCatalogue(originInput, { artistName } = {}) {
     const origin = normalizeBandcampOrigin(originInput);
     if (!origin) throw coded('NOT_FOUND');
     const music = await getPage(origin + '/music');
@@ -85,7 +124,25 @@ function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTime
       return { source: 'bandcamp', releases: [release], truncated: false };
     }
 
-    const allPaths = [...new Set([...music.text.matchAll(/href="(\/(?:album|track)\/[^"#?]+)/g)].map(m => m[1]))];
+    // A record label's page lists other bands' releases too: keep only those credited to this band, decided from the
+    // page's own list so the other bands' release pages are never fetched (and never use up the cap). A release the page
+    // gives no credit for is kept, never hidden.
+    const items = readItems(music.text);
+    const key = nameKey(artistName);
+    const distinct = new Set(items.map(i => nameKey(i.artist)).filter(Boolean));
+    const credited = (i) => !i.artist || creditedTo(i.artist, key);
+    const isLabel = !!key && distinct.size > 1;
+    const mine = isLabel ? items.filter(credited) : items;
+    let label;
+    if (isLabel) {
+      const counts = new Map();
+      for (const i of items) if (!credited(i)) counts.set(i.artist, (counts.get(i.artist) || 0) + 1);
+      const credits = [...counts].map(([artist, count]) => ({ artist, count })).sort((a, b) => b.count - a.count || a.artist.localeCompare(b.artist));
+      // noMatch: a label page with nothing credited to this band reads nothing (its other bands' songs must not land in New)
+      label = { artist: artistName, hidden: items.length - mine.length, credits, noMatch: !items.some(i => i.artist && creditedTo(i.artist, key)) };
+    }
+    if (label && label.noMatch) return { source: 'bandcamp', releases: [], truncated: false, label };
+    const allPaths = mine.map(i => i.path);
     const truncated = allPaths.length > MAX_RELEASES;
     const paths = allPaths.slice(0, MAX_RELEASES);
     if (paths.length === 0) throw coded('UNREADABLE');
@@ -99,7 +156,7 @@ function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTime
       if (release) releases.push(release);
     }
     if (releases.length === 0) throw coded('UNREADABLE');
-    return { source: 'bandcamp', releases, truncated };
+    return label ? { source: 'bandcamp', releases, truncated, label } : { source: 'bandcamp', releases, truncated };
   }
 
   // One song page -> its title, credited artist and the artist's own lyrics (null when absent or blank).

@@ -305,3 +305,17 @@ test('catalogueForLyrics returns keys, state, match and the Bandcamp URL for eac
   assert.equal(by['ZZZBANDSVC Bandcamp Only'].key, 'zzzbandsvc bandcamp only');
   assert.equal(by['ZZZBANDSVC Bandcamp Only'].bandcampUrl, 'https://zzzbandsvcm.bandcamp.com/track/bco');
 });
+
+test('the band name goes to the Bandcamp reader, and a label-page note reaches the source status', async () => {
+  svc._resetForTests();
+  const { a } = await mergedBand();
+  const seen = [];
+  const label = { artist: 'ZZZBANDSVC Merged', hidden: 7, credits: [{ artist: 'Other', count: 7 }], noMatch: false };
+  const adapters = { bandcamp: { fetchCatalogue: async (origin, opts) => { seen.push([origin, opts]); return { ...BAND, label }; } } };
+  const res = await svc.checkBand(pool, a, { adapters });
+  assert.deepEqual(seen, [['https://zzzbandsvcm.bandcamp.com', { artistName: 'ZZZBANDSVC Merged' }]]);
+  assert.deepEqual(res.sources.bandcamp.label, label);
+  svc._resetForTests();
+  const plain = await svc.checkBand(pool, a, { adapters: fakeAdapters({ bandcamp: BAND }) });
+  assert.equal('label' in plain.sources.bandcamp, false);
+});
