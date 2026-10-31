@@ -110,13 +110,13 @@ function LeadsArea() {
             {l.url && (isHttp(l.url) ? <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a> : l.url)}
           </div>
           <NoteField lead={l} drafts={drafts} onSave={(v) => update(l, { note: v })} />
-          <div className="lead-actions">
+          <div className="lead-actions"> {/* a promoted lead has no Delete: it stays under Checked as the record of its artist */}
             {l.status === 'new' && <button className="btn btn-primary btn-sm" onClick={() => promote(l)}>Promote</button>}
             {l.status === 'new' && <button className="btn btn-secondary btn-sm" onClick={() => update(l, { status: 'checked' })}>Mark checked</button>}
             {l.status === 'new' && <button className="btn btn-ghost btn-sm" onClick={() => update(l, { status: 'dismissed' })}>Dismiss</button>}
             {l.status !== 'new' && <button className="btn btn-secondary btn-sm" onClick={() => update(l, { status: 'new' })}>Restore</button>}
             {l.artist_id && <Link className="btn btn-ghost btn-sm" to={`/admin/artist/${l.artist_id}`}>Open artist</Link>}
-            <button className="btn btn-ghost btn-sm" onClick={() => remove(l)} onBlur={() => setConfirmDelete(null)}>{confirmDelete === l.id ? 'Confirm delete' : 'Delete'}</button>
+            {!l.artist_id && <button className="btn btn-ghost btn-sm" onClick={() => remove(l)} onBlur={() => setConfirmDelete(null)}>{confirmDelete === l.id ? 'Confirm delete' : 'Delete'}</button>}
           </div>
         </div>
       ))}
