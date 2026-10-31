@@ -152,10 +152,19 @@ function createBandcampAdapter({ fetch, sleep = (ms) => new Promise(r => setTime
       await sleep(gapMs);
       let ldObj = null;
       try { ldObj = readLd((await getPage(origin + path)).text); } catch (e) { if (e.code === 'UPSTREAM' || e.code === 'RATE_LIMITED') throw e; }
+      // the list gave no credit for this release: its own page does, so a label's other bands are still dropped
+      const credit = label && !mine.find(i => i.path === path).artist && ldObj && ((ldObj.byArtist && ldObj.byArtist.name) || (ldObj.inAlbum && ldObj.inAlbum.byArtist && ldObj.inAlbum.byArtist.name));
+      if (credit && !creditedTo(credit, key)) {
+        label.hidden++;
+        const row = label.credits.find(c => c.artist === credit);
+        if (row) row.count++; else label.credits.push({ artist: credit, count: 1 });
+        continue;
+      }
       const release = parseRelease(ldObj, path, origin);
       if (release) releases.push(release);
     }
-    if (releases.length === 0) throw coded('UNREADABLE');
+    if (label) label.credits.sort((a, b) => b.count - a.count || a.artist.localeCompare(b.artist));
+    if (releases.length === 0 && !(label && label.hidden > 0)) throw coded('UNREADABLE');
     return label ? { source: 'bandcamp', releases, truncated, label } : { source: 'bandcamp', releases, truncated };
   }
 

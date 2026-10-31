@@ -293,3 +293,18 @@ test('a grid item with no artist-override is kept, never hidden', async () => {
   assert.deepEqual(cat.releases.map(r => r.name).sort(), ['c2', 'solo']);
   assert.equal(cat.label.hidden, 1);
 });
+
+test('on a label page a release with no credit in the list is checked on its own page and dropped if credited to someone else', async () => {
+  const uncredited = (slug) => `<li data-item-id="album-1"><a href="/album/${slug}"><p class="title">T</p></a></li>`;
+  const withCredit = (slug, by) => page(ld({ '@type': 'MusicAlbum', name: slug, byArtist: { name: by }, track: { itemListElement: [{ item: { name: 'T' + slug } }] } }));
+  const music = uncredited('rage1') + uncredited('mine1') + uncredited('nocredit') + musicWith([['Other Band', 'c1'], ['Wolves Of Dusk', 'c2']]);
+  const { a } = adapterFor({
+    [ORIGIN + '/music']: page(music),
+    [ORIGIN + '/album/rage1']: withCredit('rage1', 'Rage'), [ORIGIN + '/album/mine1']: withCredit('mine1', 'Wolves Of Dusk'),
+    [ORIGIN + '/album/nocredit']: page(album('nocredit', ['A'])), [ORIGIN + '/album/c2']: page(album('c2', ['B'])),
+  });
+  const cat = await a.fetchCatalogue(ORIGIN, { artistName: 'Wolves of Dusk' });
+  assert.deepEqual(cat.releases.map(r => r.name).sort(), ['c2', 'mine1', 'nocredit']);
+  assert.equal(cat.label.hidden, 2);
+  assert.deepEqual(cat.label.credits, [{ artist: 'Other Band', count: 1 }, { artist: 'Rage', count: 1 }]);
+});
