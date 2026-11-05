@@ -109,6 +109,7 @@ function LeadsArea() {
             {l.song && <>Song: {l.song} · </>}
             {l.url && (isHttp(l.url) ? <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a> : l.url)}
           </div>
+          {l.thread_claims && <div className="band-meta" style={{ whiteSpace: 'pre-wrap' }}>Claims: {l.thread_claims}</div>}
           <NoteField lead={l} drafts={drafts} onSave={(v) => update(l, { note: v })} />
           <div className="lead-actions"> {/* a promoted lead has no Delete: it stays under Checked as the record of its artist */}
             {l.status === 'new' && <button className="btn btn-primary btn-sm" onClick={() => promote(l)}>Promote</button>}

@@ -88,6 +88,8 @@ function ArtistWorkbench() {
             <h2>Notes</h2>
             <AutoText label="Catalogue review notes" initial={artist.discography_review_notes} multiline rows={3}
               onSave={(v) => save({ discography_review_notes: v })} />
+            <AutoText label="Claims from threads (admin only)" initial={artist.thread_claims} multiline rows={4}
+              onSave={(v) => save({ thread_claims: v })} />
           </section>
         </div>
       </div>
