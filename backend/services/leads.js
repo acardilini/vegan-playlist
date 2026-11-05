@@ -1,10 +1,11 @@
 // Leads: bands the curator wants to look into later. Capture is deliberately cheap (a name is enough); duplicates are
 // found by a folded name key and never merged. Leads are admin-only and never reach a public route.
 const { coded } = require('./bandCheck/errors');
+const { appendClaimLines } = require('./threadClaims');
 
 const STATUSES = ['new', 'checked', 'dismissed'];
 const LIMITS = { name: 255, note: 1000, song: 255, url: 500, origin: 30 };
-const COLS = 'id, name, note, song, url, origin, status, created_at, dismissed_at, artist_id';
+const COLS = 'id, name, note, song, url, origin, status, created_at, dismissed_at, artist_id, thread_claims';
 
 // lowercase, diacritics folded, a leading "the" dropped, every run of non-letters/digits (any script) one space.
 // A name that folds to nothing (e.g. "!!!") falls back to its lowercase text, so it is still a distinct, matchable key.
@@ -122,6 +123,7 @@ async function promoteLead(db, id, { now = new Date() } = {}) {
       `UPDATE artists SET discography_review_notes = CASE WHEN COALESCE(discography_review_notes, '') = '' THEN $2 ELSE discography_review_notes || E'
 ' || $2 END,
          updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [artistId, line]);
+    if (lead.thread_claims) await appendClaimLines(client, 'artists', artistId, lead.thread_claims.split('\n'));
     const updated = (await client.query(
       `UPDATE leads SET status = 'checked', artist_id = $2, dismissed_at = NULL WHERE id = $1 RETURNING ${COLS}`, [id, artistId])).rows[0];
     await client.query('COMMIT');

@@ -70,7 +70,7 @@ async function get(db, id) {
   const a = (await db.query(`
     SELECT a.id, a.name, a.bio, a.vegan_advocacy_notes, a.no_advocacy_notes_needed, a.website_url, a.genres,
            a.spotify_id, a.bandcamp_url, a.musicbrainz_id,
-           a.discography_reviewed, a.discography_reviewed_date, a.discography_review_notes,
+           a.discography_reviewed, a.discography_reviewed_date, a.discography_review_notes, a.thread_claims,
            (SELECT COUNT(DISTINCT sa.song_id)::int FROM song_artists sa WHERE sa.artist_id = a.id) AS songs,
            (SELECT COUNT(DISTINCT sa.song_id)::int FROM song_artists sa JOIN songs s ON s.id = sa.song_id
              WHERE sa.artist_id = a.id AND s.status='included' AND s.published) AS live_songs
@@ -89,7 +89,7 @@ async function update(db, id, patch = {}) {
     if (!n || n.length > 255) throw coded('BAD_INPUT', 'Name is required (255 characters at most)');
     set('name', n);
   }
-  for (const col of ['bio', 'vegan_advocacy_notes', 'discography_review_notes']) {
+  for (const col of ['bio', 'vegan_advocacy_notes', 'discography_review_notes', 'thread_claims']) {
     if (patch[col] === undefined) continue;
     if (patch[col] !== null && typeof patch[col] !== 'string') throw coded('BAD_INPUT', `${col} must be text`);
     set(col, patch[col] === null || patch[col].trim() === '' ? null : patch[col]);
