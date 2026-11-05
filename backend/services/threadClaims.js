@@ -6,11 +6,14 @@ const STATUS_LABELS = {
 const QUOTE_MAX = 200;
 const PREFIX = /^Reddit \d{4}-\d{2}-\d{2} · /;
 
+// The curator's own calendar day (toISOString would be the UTC day, which can be yesterday or tomorrow here).
+const localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 function claimLine({ url, person, status, quote, dispute }, now = new Date()) {
   const q = String(quote || '').replace(/\s+/g, ' ').trim().slice(0, QUOTE_MAX).trim();
   const who = String(person || '').replace(/\s+/g, ' ').trim() || 'whole band';
   const d = String(dispute || '').replace(/\s+/g, ' ').trim();
-  return `Reddit ${now.toISOString().slice(0, 10)} · ${url} · ${who}: ${STATUS_LABELS[status] || status}`
+  return `Reddit ${localDate(now)} · ${url} · ${who}: ${STATUS_LABELS[status] || status}`
     + (q ? ` - "${q}"` : '') + (d ? ` · disputed: ${d}` : '');
 }
 

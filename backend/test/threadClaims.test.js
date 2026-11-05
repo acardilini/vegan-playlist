@@ -8,7 +8,7 @@ const artistsSvc = require('../services/artists');
 const leadsSvc = require('../services/leads');
 
 // Fixture sentinel for this file: ZZZTCL.
-const NOW = new Date('2026-11-05T10:00:00Z');
+const NOW = new Date(2026, 10, 5, 12, 0, 0); // local noon, so the local calendar day is 2026-11-05 in any timezone
 async function mkArtist(name) {
   return (await pool.query(`INSERT INTO artists (name, data_source) VALUES ($1,'manual') RETURNING id`, [name])).rows[0].id;
 }

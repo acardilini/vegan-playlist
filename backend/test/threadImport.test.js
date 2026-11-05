@@ -5,7 +5,7 @@ const svc = require('../services/threadImport');
 const claims = require('../services/threadClaims');
 
 // Fixture sentinel for this file: ZZZTHR.
-const NOW = new Date('2026-11-05T10:00:00Z');
+const NOW = new Date(2026, 10, 5, 12, 0, 0);
 const URL_ = 'https://www.reddit.com/r/vegan/comments/zzzthr/';
 const coded = (code) => (e) => e.code === code;
 
@@ -186,4 +186,25 @@ test('apply: an unknown band that appears as a lead after planning is treated as
   const again = await svc.apply(pool, t, { now: NOW });
   assert.equal(again.results[0].claimsAdded, 0);
   assert.equal((await pool.query(`SELECT count(*) c FROM leads WHERE name = 'ZZZTHR Raced'`)).rows[0].c, '1');
+});
+
+// ---- overview text ----
+test('formatOverview shows totals, one block per item, labels, songs, claims and skipped reasons', () => {
+  const text = svc.formatOverview({
+    thread: { url: URL_, title: 'Vegans in music' },
+    totals: { existing_artist: 2, existing_lead: 1, new_lead: 2, newSongs: 1, freshClaims: 2 },
+    items: [
+      { n: 1, artist: 'Gojira', kind: 'existing_artist', songs: [{ title: 'Held', state: 'have', haveStatus: 'included' }, { title: 'Fresh', state: 'new' }], claims: [{ line: 'L1', fresh: true }, { line: 'L2', fresh: false }] },
+      { n: 2, artist: 'Empty', kind: 'existing_artist', noSongsYet: true, songs: [], claims: [] },
+      { n: 3, artist: 'Known Lead', kind: 'existing_lead', leadStatus: 'dismissed', songs: [{ title: 'x', state: 'listed' }], claims: [] },
+      { n: 4, artist: 'Cold', kind: 'new_lead', songs: [], claims: [{ line: 'L3', fresh: true }], defaultSkip: true, skipReason: 'nothing to follow up' },
+      { n: 5, artist: 'New Band', kind: 'new_lead', songs: [{ title: 'A', state: 'listed' }], claims: [] }] });
+  const lines = text.split('\n');
+  assert.equal(lines[0], `Thread: Vegans in music (${URL_})`);
+  assert.equal(lines[1], '5 bands: 2 already artists, 1 already leads, 2 new leads · 1 new songs · 2 new claim lines');
+  for (const expected of ['#1 Gojira - already an artist', '    song: Held - have it (included)', '    song: Fresh - NEW song', '    claim: new: L1', '    claim: already noted',
+    '#2 Empty - already an artist (no songs yet)', '#3 Known Lead - already a lead (dismissed)', '    song: x - named',
+    '#4 Cold - NEW lead', '    [skipped by default: nothing to follow up]', '#5 New Band - NEW lead']) {
+    assert.ok(lines.includes(expected), `missing line: ${expected}`);
+  }
 });

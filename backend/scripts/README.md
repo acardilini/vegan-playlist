@@ -37,3 +37,11 @@ copyright).
 > Migration 006 (Sub-project A1) added `song_lyrics.translation` — also local-only
 > (copyright). The same rule applies: no public route may SELECT it, and it is covered by
 > the `pg_dump --exclude-table-data=song_lyrics` production-dump exclusion.
+
+### `importThread.js` — Reddit thread import (dry-run by default)
+The script behind the `reddit-thread-import` skill. Reads a JSON file of mentions that Claude
+extracted from a pasted thread, prints an overview (new vs already have), and with `--apply`
+writes the approved items: unknown bands to Leads, named songs by known artists to
+*To be processed* (tagged "From Reddit thread"), and vegan claims to the admin-only
+`thread_claims` notes on artists and leads. Direct DB access; no HTTP, no admin password.
+`node scripts/importThread.js --file <abs path>` (overview) · add `--apply [--skip 4,9] [--include 12]`.

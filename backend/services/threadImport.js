@@ -133,4 +133,21 @@ async function apply(db, extracted, { skip = [], include = [], now = new Date() 
   return { results };
 }
 
-module.exports = { validate, plan, apply };
+function formatOverview(p) {
+  const t = p.totals;
+  const out = [
+    `Thread: ${p.thread.title || 'untitled'} (${p.thread.url})`,
+    `${p.items.length} bands: ${t.existing_artist} already artists, ${t.existing_lead} already leads, ${t.new_lead} new leads · ${t.newSongs} new songs · ${t.freshClaims} new claim lines`,
+  ];
+  for (const i of p.items) {
+    const label = i.kind === 'existing_artist' ? `already an artist${i.noSongsYet ? ' (no songs yet)' : ''}`
+      : i.kind === 'existing_lead' ? `already a lead (${i.leadStatus})` : 'NEW lead';
+    out.push('', `#${i.n} ${i.artist} - ${label}`);
+    for (const s of i.songs) out.push(`    song: ${s.title} - ${s.state === 'have' ? `have it (${s.haveStatus})` : s.state === 'new' ? 'NEW song' : 'named'}`);
+    for (const c of i.claims) out.push(`    claim: ${c.fresh ? `new: ${c.line}` : 'already noted'}`);
+    if (i.defaultSkip) out.push(`    [skipped by default: ${i.skipReason}]`);
+  }
+  return out.join('\n');
+}
+
+module.exports = { validate, plan, apply, formatOverview };
