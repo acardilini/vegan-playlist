@@ -488,9 +488,11 @@ pages** (item 6), which is now where it belongs. Backend 121/121. Spec:
 Items intentionally deferred until needed (from the PRD and the Session 0.1
 [Feature Inventory](./FEATURE_INVENTORY.md)). Nothing here is built until it earns its place.
 
-- **Reddit / forum thread song-suggestion finder (tool 2 of the playlist-building pair).** Link or share a thread, have an
-  LLM extract suggested songs, and cross-check them against the catalogue. Needs its own brainstorm (Playlist cross-check,
-  tool 1, is built — see `PROJECT_STATE.md`).
+- ~~**Reddit / forum thread song-suggestion finder (tool 2 of the playlist-building pair).**~~ **Built 2026-11-06 as the
+  `reddit-thread-import` skill (piece 4)** — see `PROJECT_STATE.md`; spec `docs/superpowers/specs/2026-11-05-reddit-thread-skill-design.md`.
+- **Artist-facts proposer skill (deferred 2026-11-05).** A Claude Code skill to propose country / years / members for artists
+  with no MusicBrainz page. Dropped from piece 4: the curator is adding MusicBrainz links to every artist that has a page and
+  the built Fill from MusicBrainz covers those facts. Revisit only if a real gap remains.
 
 - **Public playlist creation/editing with accounts.** The public site is browse-only for
   playlists (Session 3.3 deleted the anonymous create/remove UI — see Decision Log); the
