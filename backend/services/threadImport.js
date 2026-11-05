@@ -86,4 +86,51 @@ async function plan(db, extracted, { now = new Date() } = {}) {
   return { thread: v.thread, items, totals };
 }
 
-module.exports = { validate, plan };
+const FAILED = 'could not write this item';
+
+// Write the approved items. Re-plans first, so a stale overview can never cause a write the current data would not allow.
+// Not one transaction per item (staging.insertManualCandidate opens its own); every write is idempotent instead, so a
+// failed item is reported and a re-run completes it.
+async function apply(db, extracted, { skip = [], include = [], now = new Date() } = {}) {
+  const p = await plan(db, extracted, { now });
+  const skipSet = new Set(skip), includeSet = new Set(include);
+  const staging = require('./staging'); // lazy: staging requires bandCheck/merge, as insertManualCandidate does itself
+  const leadsSvc = require('./leads');
+  const { appendClaimLines } = require('./threadClaims');
+  const results = [];
+  for (const item of p.items) {
+    const r = { n: item.n, artist: item.artist, songsAdded: 0, songsHeld: 0, claimsAdded: 0 };
+    results.push(r);
+    if (skipSet.has(item.n)) { r.skipped = 'skipped by you'; continue; }
+    if (item.defaultSkip && !includeSet.has(item.n)) { r.skipped = item.skipReason; continue; }
+    const lines = item.claims.filter((c) => c.fresh).map((c) => c.line);
+    try {
+      let target = null; // [table, id] that receives the claim lines
+      if (item.kind === 'existing_artist') {
+        for (const s of item.songs) {
+          if (s.state === 'have') { r.songsHeld += 1; continue; }
+          const res = await staging.insertManualCandidate(db, { title: s.title, artistId: item.artistId, note: `added via reddit thread (${p.thread.url})` });
+          if (res.added) r.songsAdded += 1; else r.songsHeld += 1;
+        }
+        target = ['artists', item.artistId];
+      } else if (item.kind === 'existing_lead') {
+        if (item.leadStatus !== 'dismissed') target = ['leads', item.leadId];
+      } else {
+        const res = await leadsSvc.addLead(db, {
+          name: item.artist, note: item.genre, song: item.songs.map((s) => s.title).join('; ').slice(0, 255), url: p.thread.url, origin: 'reddit' });
+        if (res.status === 'added') { r.lead = 'added'; target = ['leads', res.lead.id]; }
+        else {
+          r.lead = 'duplicate';
+          if (res.kind === 'artist') target = ['artists', res.artist.id];
+          else if (res.lead.status !== 'dismissed') target = ['leads', res.lead.id];
+        }
+      }
+      if (target && lines.length) r.claimsAdded = await appendClaimLines(db, target[0], target[1], lines);
+    } catch {
+      r.error = FAILED; // fixed string: never the pasted text or an error message
+    }
+  }
+  return { results };
+}
+
+module.exports = { validate, plan, apply };

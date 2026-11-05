@@ -162,6 +162,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
                 THEN 'submission'
                 WHEN s.status_notes LIKE 'added via band check%' THEN 'bandcheck'
                 WHEN s.status_notes LIKE 'added via playlist cross-check%' THEN 'crosscheck'
+                WHEN s.status_notes LIKE 'added via reddit thread%' THEN 'redditthread'
                 WHEN s.playlist_added_by='playlist-diff' AND s.status_notes LIKE 'on Spotify playlist%'
                 THEN 'spotify' END AS origin
     FROM songs s

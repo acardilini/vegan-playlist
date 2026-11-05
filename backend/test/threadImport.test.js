@@ -104,3 +104,86 @@ test('plan writes nothing', async () => {
   await svc.plan(pool, one('ZZZTHR Known', { songs: ['New One'], claims: [claim()] }));
   assert.deepEqual(await counts(), before);
 });
+
+// ---- apply ----
+const curation = require('../services/curation');
+const field = async (table, name, col) => (await pool.query(`SELECT ${col} FROM ${table} WHERE name = $1`, [name])).rows[0][col];
+const bigThread = () => ({ thread: { url: URL_, title: 'T' }, mentions: [
+  { artist: 'ZZZTHR Known', songs: ['ZZZTHR Held', 'ZZZTHR Brand New Song'], claims: [claim({ person: 'Kim' })] },
+  { artist: 'ZZZTHR Fresh Band', genre: 'hardcore', songs: ['One', 'Two'], claims: [claim({ person: 'Lee', dispute: 'later denied' })] },
+  { artist: 'ZZZTHR Lead', claims: [claim({ person: 'Lead Person' })] },
+  { artist: 'ZZZTHR Gone', claims: [claim({ person: 'Gone Person' })] }] });
+
+test('apply writes songs, leads and claims where the plan says, and nothing else', async () => {
+  const { known } = await fixtures();
+  const before = (await pool.query(`SELECT bio, vegan_advocacy_notes FROM artists WHERE id = $1`, [known])).rows[0];
+  const r = await svc.apply(pool, bigThread(), { now: NOW });
+  assert.deepEqual(r.results.map((x) => [x.n, x.songsAdded, x.songsHeld, x.claimsAdded, x.error]), [[1, 1, 1, 1, undefined], [2, 0, 0, 1, undefined], [3, 0, 0, 1, undefined], [4, 0, 0, 0, undefined]]);
+  const song = (await pool.query(`SELECT status, data_source, status_notes FROM songs WHERE title = 'ZZZTHR Brand New Song'`)).rows[0];
+  assert.deepEqual([song.status, song.data_source], ['pending', 'manual']);
+  assert.ok(song.status_notes.startsWith('added via reddit thread ('));
+  const lead = (await pool.query(`SELECT * FROM leads WHERE name = 'ZZZTHR Fresh Band'`)).rows[0];
+  assert.deepEqual([lead.origin, lead.url, lead.song, lead.note, lead.status], ['reddit', URL_, 'One; Two', 'hardcore', 'new']);
+  assert.ok(lead.thread_claims.includes('Lee: vegan') && lead.thread_claims.includes('disputed: later denied'));
+  assert.ok((await field('artists', 'ZZZTHR Known', 'thread_claims')).includes('Kim: vegan'));
+  assert.ok((await field('leads', 'ZZZTHR Lead', 'thread_claims')).includes('Lead Person'));
+  assert.equal(await field('leads', 'ZZZTHR Gone', 'thread_claims'), null);
+  const after = (await pool.query(`SELECT bio, vegan_advocacy_notes FROM artists WHERE id = $1`, [known])).rows[0];
+  assert.deepEqual(after, before);
+  const q = await curation.listCurationQueue(pool, { queue: 'to-process', q: 'ZZZTHR Brand New' });
+  assert.deepEqual(q.rows.map((x) => x.origin), ['redditthread']);
+});
+
+test('apply is idempotent: the same thread again adds nothing', async () => {
+  await fixtures();
+  await svc.apply(pool, bigThread(), { now: NOW });
+  const before = await counts();
+  const claimsBefore = (await pool.query(`SELECT string_agg(coalesce(thread_claims,''), '|' ORDER BY name) c FROM (SELECT name, thread_claims FROM artists WHERE name ILIKE '%ZZZTHR%' UNION ALL SELECT name, thread_claims FROM leads WHERE name ILIKE '%ZZZTHR%') t`)).rows[0].c;
+  const again = await svc.apply(pool, bigThread(), { now: new Date('2026-12-01T00:00:00Z') });
+  assert.deepEqual(await counts(), before);
+  assert.deepEqual(again.results.map((x) => [x.songsAdded, x.claimsAdded]), [[0, 0], [0, 0], [0, 0], [0, 0]]);
+  assert.equal((await pool.query(`SELECT string_agg(coalesce(thread_claims,''), '|' ORDER BY name) c FROM (SELECT name, thread_claims FROM artists WHERE name ILIKE '%ZZZTHR%' UNION ALL SELECT name, thread_claims FROM leads WHERE name ILIKE '%ZZZTHR%') t`)).rows[0].c, claimsBefore);
+});
+
+test('apply honours skip and include; a default-skipped item needs include', async () => {
+  await fixtures();
+  const t = { thread: { url: URL_ }, mentions: [{ artist: 'ZZZTHR Quiet', claims: [claim({ status: 'not_vegan' })] }, { artist: 'ZZZTHR Loud', songs: ['S'] }] };
+  const r1 = await svc.apply(pool, t, { skip: [2] });
+  assert.deepEqual(r1.results.map((x) => x.skipped), ['nothing to follow up', 'skipped by you']);
+  assert.equal((await pool.query(`SELECT count(*) c FROM leads WHERE name ILIKE 'ZZZTHR Quiet' OR name ILIKE 'ZZZTHR Loud'`)).rows[0].c, '0');
+  const r2 = await svc.apply(pool, t, { include: [1] });
+  assert.deepEqual(r2.results.map((x) => x.skipped), [undefined, undefined]);
+  assert.equal((await pool.query(`SELECT count(*) c FROM leads WHERE name ILIKE 'ZZZTHR Quiet' OR name ILIKE 'ZZZTHR Loud'`)).rows[0].c, '2');
+});
+
+test('apply cuts over-long input instead of failing', async () => {
+  await fixtures();
+  const songs = Array.from({ length: 12 }, (_, i) => `ZZZTHR long song title number ${i} `.padEnd(40, 'x'));
+  const quote = 'q'.repeat(500) + '\nsecond line';
+  const r = await svc.apply(pool, { thread: { url: URL_ }, mentions: [{ artist: 'ZZZTHR Long', songs, claims: [claim({ quote })] }] });
+  assert.equal(r.results[0].error, undefined);
+  const lead = (await pool.query(`SELECT song, thread_claims FROM leads WHERE name = 'ZZZTHR Long'`)).rows[0];
+  assert.ok(lead.song.length <= 255 && lead.song.length > 200);
+  assert.equal(lead.thread_claims.split('\n').length, 1);
+  assert.equal(lead.thread_claims.match(/- "(.*)"$/)[1].length, 200);
+});
+
+test('apply is best effort: one item failing does not stop the others, and says so without detail', async () => {
+  await fixtures();
+  const failing = { query: (...a) => pool.query(...a), connect: async () => { throw new Error('secret detail'); } };
+  const t = { thread: { url: URL_ }, mentions: [{ artist: 'ZZZTHR Known', songs: ['ZZZTHR Cannot Insert'] }, { artist: 'ZZZTHR Survivor', songs: ['S'] }] };
+  const r = await svc.apply(failing, t);
+  assert.equal(r.results[0].error, 'could not write this item');
+  assert.ok(!JSON.stringify(r).includes('secret'));
+  assert.equal(r.results[1].lead, 'added');
+  assert.equal((await pool.query(`SELECT count(*) c FROM leads WHERE name = 'ZZZTHR Survivor'`)).rows[0].c, '1');
+});
+
+test('apply: an unknown band that appears as a lead after planning is treated as the duplicate it is', async () => {
+  await fixtures();
+  const t = { thread: { url: URL_ }, mentions: [{ artist: 'ZZZTHR Raced', claims: [claim()] }] };
+  await svc.apply(pool, t, { now: NOW });
+  const again = await svc.apply(pool, t, { now: NOW });
+  assert.equal(again.results[0].claimsAdded, 0);
+  assert.equal((await pool.query(`SELECT count(*) c FROM leads WHERE name = 'ZZZTHR Raced'`)).rows[0].c, '1');
+});
