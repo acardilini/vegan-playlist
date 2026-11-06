@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_CAMERA, PRESETS, MIN_ZOOM, MAX_ZOOM,
   clampCamera, activePreset, projectCloud, interpolateCamera, sortBackToFront,
-  dotRadius, dotAlpha, gizmoAxes, pickPoint,
+  dotRadius, dotAlpha, gizmoAxes, pickPoint, panCentredOn,
 } from './camera3d.js';
 
 const SIZE = { w: 800, h: 520 };
@@ -151,4 +151,20 @@ test('pickPoint without depth falls back to the nearest on screen', () => {
   const a = { id: 'a', x: 10, y: 10 };
   const b = { id: 'b', x: 14, y: 10 };
   assert.equal(pickPoint([a, b], 13, 10, 12).id, 'b');
+});
+
+test('panCentredOn moves a projected point to the plot centre', () => {
+  const c = { ...DEFAULT_CAMERA, zoom: 2 };
+  const [p] = projectCloud([[0.3, -0.2, 0.1]], c, SIZE);
+  const next = panCentredOn(c, p, SIZE);
+  const [q] = projectCloud([[0.3, -0.2, 0.1]], next, SIZE);
+  assert.ok(Math.abs(q.x - SIZE.w / 2) < 0.5 && Math.abs(q.y - SIZE.h / 2) < 0.5);
+  assert.equal(next.yaw, c.yaw);
+  assert.equal(next.zoom, c.zoom);
+});
+
+test('panCentredOn keeps the pan inside the clamp', () => {
+  const next = panCentredOn(DEFAULT_CAMERA, { x: SIZE.w * 3, y: SIZE.h / 2 }, SIZE);
+  assert.equal(next.panX, -SIZE.w / 2);
+  assert.equal(next.panY, 0);
 });

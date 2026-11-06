@@ -41,23 +41,53 @@ export function applyView({ x, y }, view) {
   return { x: x * view.k + view.tx, y: y * view.k + view.ty };
 }
 
+// The fit scale for a space; computed once per layout, and once per projectPoint call.
+function scalesFor({ minX, maxX, minY, maxY }, size) {
+  return { sx: (size.w - PAD * 2) / (maxX - minX), sy: (size.h - PAD * 2) / (maxY - minY) };
+}
+
+// The one place a raw map coordinate becomes a screen position, so a dot and a cluster label
+// (which sits on a raw coordinate) can never disagree about where a spot on the map is.
+function placeAt(c, ext, sc, size, view) {
+  const base = {
+    x: PAD + (c[0] - ext.minX) * sc.sx,
+    // Canvas y grows downward; flip so the plot reads like a chart.
+    y: size.h - PAD - (c[1] - ext.minY) * sc.sy,
+  };
+  return applyView(base, view);
+}
+
+export function projectPoint(coord, extents, size, view) {
+  return placeAt(coord, extents, scalesFor(extents, size), size, view);
+}
+
 export function layout(songs, spaceKey, size, view) {
-  const { minX, maxX, minY, maxY } = extentsFor(songs, spaceKey);
-  const sx = (size.w - PAD * 2) / (maxX - minX);
-  const sy = (size.h - PAD * 2) / (maxY - minY);
+  const ext = extentsFor(songs, spaceKey);
+  const sc = scalesFor(ext, size);
   const out = [];
   for (const song of songs) {
     const c = song.coords[spaceKey];
     if (!c) continue;
-    const base = {
-      x: PAD + (c[0] - minX) * sx,
-      // Canvas y grows downward; flip so the plot reads like a chart.
-      y: size.h - PAD - (c[1] - minY) * sy,
-    };
-    const { x, y } = applyView(base, view);
+    const { x, y } = placeAt(c, ext, sc, size, view);
     out.push({ id: song.id, song, x, y });
   }
   return out;
+}
+
+// True when a screen point is outside the plot or within `margin` (a fraction of each side) of
+// its edge: the test the guided walk uses to decide whether the camera must follow.
+export function outsideCore(point, size, margin = 0.2) {
+  return point.x < size.w * margin || point.x > size.w * (1 - margin)
+    || point.y < size.h * margin || point.y > size.h * (1 - margin);
+}
+
+// Translate the view so the screen point lands at the plot centre (clamped to keep the plot covered).
+export function viewCentredOn(view, point, size) {
+  return clampView({
+    k: view.k,
+    tx: view.tx + (size.w / 2 - point.x),
+    ty: view.ty + (size.h / 2 - point.y),
+  }, size);
 }
 
 // The plot must stay covered: at k the content is size x k, so the translate may run from

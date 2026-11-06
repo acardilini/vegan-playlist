@@ -56,6 +56,15 @@ export function clampCamera(cam, size) {
   return out;
 }
 
+// Shift the pan so the screen point lands at the plot centre (then clamped to the plot).
+export function panCentredOn(cam, point, size) {
+  return clampCamera({
+    ...cam,
+    panX: cam.panX + (size.w / 2 - point.x),
+    panY: cam.panY + (size.h / 2 - point.y),
+  }, size);
+}
+
 // Camera-space coordinates [right, up, away]: yaw about Y, then the pitch tilt. `away` grows
 // with distance from the camera.
 export function rotate(p, yaw, pitch) {

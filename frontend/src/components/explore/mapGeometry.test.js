@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   FIT_VIEW, MAX_K, PAD,
-  applyView, clampView, easeOutCubic, extentsFor, layout, zoomAtPoint,
+  applyView, clampView, easeOutCubic, extentsFor, layout, outsideCore, projectPoint, viewCentredOn,
+  zoomAtPoint,
 } from './mapGeometry.js';
 
 const SIZE = { w: 800, h: 520 };
@@ -105,4 +106,34 @@ test('clampView keeps the plot covered when panned at zoom', () => {
   // that can catch a minTy formula that (e.g.) reused size.w instead of size.h. Same
   // axis-confusion class already caught once in zoomAtPoint, swept here too.
   assert.equal(clampView({ k: 2, tx: 0, ty: -5000 }, size).ty, -520);
+});
+
+test('projectPoint matches layout for the same coordinate', () => {
+  const list = songs([[0, 0], [10, 5], [4, 2], [7, 9]]);
+  const ext = extentsFor(list, 'audio');
+  for (const view of [FIT_VIEW, { k: 3, tx: -120, ty: -60 }]) {
+    for (const p of layout(list, 'audio', SIZE, view)) {
+      const q = projectPoint(p.song.coords.audio, ext, SIZE, view);
+      assert.ok(Math.abs(q.x - p.x) < 1e-9 && Math.abs(q.y - p.y) < 1e-9);
+    }
+  }
+});
+
+test('outsideCore flags edge and outside points', () => {
+  assert.equal(outsideCore({ x: 400, y: 260 }, SIZE), false);
+  assert.equal(outsideCore({ x: 100, y: 260 }, SIZE), true, 'inside the 20% left margin');
+  assert.equal(outsideCore({ x: -5, y: 260 }, SIZE), true);
+  assert.equal(outsideCore({ x: 400, y: 500 }, SIZE), true);
+  assert.equal(outsideCore({ x: 400, y: 260 }, SIZE, 0.5), false);
+  assert.equal(outsideCore({ x: 300, y: 260 }, SIZE, 0.4), true);
+});
+
+test('viewCentredOn puts the point at the centre unless the clamp stops it', () => {
+  const v = viewCentredOn({ k: 2, tx: -200, ty: -100 }, { x: 600, y: 300 }, SIZE);
+  assert.equal(v.k, 2);
+  assert.equal(v.tx, -400);
+  assert.equal(v.ty, -140);
+  // at fit there is no room to move: the clamp keeps the plot covered
+  const fit = viewCentredOn(FIT_VIEW, { x: 790, y: 300 }, SIZE);
+  assert.deepEqual(fit, FIT_VIEW);
 });
