@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 // Explicit .js extensions: every module in this directory is plain ESM that `node --test`
 // may load directly (no bundler), and Node's ESM resolver does not infer extensions.
-import { FIT_VIEW, clampView, zoomAtPoint } from './mapGeometry.js';
+import { FIT_VIEW, clampView, easeOutCubic, zoomAtPoint } from './mapGeometry.js';
 import { deriveView, formatView } from './exploreUrlState.js';
 
 // Below this a pointer-up is a click, not a pan — without it every attempt to drag the map
@@ -11,8 +11,10 @@ const DRAG_THRESHOLD = 4;
 const ZOOM_STEP = 1.5;
 // A wheel gesture has no end event, so the URL write is debounced instead of fired per notch.
 const WHEEL_SETTLE_MS = 300;
+// An eased move of the view (the guided walk following its next song).
+const MOVE_MS = 380;
 
-export function useMapTransform({ size, params, onCommit, hasMeasuredRef }) {
+export function useMapTransform({ size, params, onCommit, hasMeasuredRef, reduceMotion }) {
   const urlView = params.get('view') || '';
   const [view, setView] = useState(() => deriveView(params));
   const [isDragging, setIsDragging] = useState(false);
@@ -34,10 +36,14 @@ export function useMapTransform({ size, params, onCommit, hasMeasuredRef }) {
   // and the rebuild's cleanup cancels the pending debounced commit before it ever fires —
   // the zoom stays on screen but silently never reaches the URL.
   const onCommitRef = useRef(onCommit);
+  const moveRafRef = useRef(0);
+  const reduceRef = useRef(reduceMotion);
 
   useEffect(() => { viewRef.current = view; }, [view]);
   useEffect(() => { sizeRef.current = size; }, [size]);
   useEffect(() => { onCommitRef.current = onCommit; }, [onCommit]);
+  useEffect(() => { reduceRef.current = reduceMotion; }, [reduceMotion]);
+  useEffect(() => () => cancelAnimationFrame(moveRafRef.current), []);
 
   useEffect(() => {
     if (urlView === committedRef.current) return;
@@ -75,7 +81,39 @@ export function useMapTransform({ size, params, onCommit, hasMeasuredRef }) {
     onCommitRef.current(serialised);
   }, []);
 
+  const cancelMove = useCallback(() => {
+    cancelAnimationFrame(moveRafRef.current);
+    moveRafRef.current = 0;
+  }, []);
+
+  // Eases the view to `target` (snaps under reduced motion). Any new gesture cancels it, and the
+  // final view is committed to the URL once, like the end of a drag.
+  const moveTo = useCallback((target) => {
+    cancelMove();
+    const next = clampView(target, sizeRef.current);
+    if (reduceRef.current) {
+      setView(next);
+      commit(next);
+      return;
+    }
+    const from = viewRef.current;
+    const start = performance.now();
+    const frame = (now) => {
+      const t = Math.min(1, (now - start) / MOVE_MS);
+      const e = easeOutCubic(t);
+      setView({
+        k: from.k + (next.k - from.k) * e,
+        tx: from.tx + (next.tx - from.tx) * e,
+        ty: from.ty + (next.ty - from.ty) * e,
+      });
+      if (t < 1) moveRafRef.current = requestAnimationFrame(frame);
+      else { moveRafRef.current = 0; commit(next); }
+    };
+    moveRafRef.current = requestAnimationFrame(frame);
+  }, [cancelMove, commit]);
+
   const zoomBy = useCallback((factor) => {
+    cancelMove();
     const current = viewRef.current;
     const s = sizeRef.current;
     // Buttons zoom about the middle of the plot: there is no cursor to anchor to.
@@ -83,15 +121,16 @@ export function useMapTransform({ size, params, onCommit, hasMeasuredRef }) {
       zoomAtPoint(current, current.k * factor, s.w / 2, s.h / 2), s);
     setView(next);
     commit(next);
-  }, [commit]);
+  }, [cancelMove, commit]);
 
   const zoomIn = useCallback(() => zoomBy(ZOOM_STEP), [zoomBy]);
   const zoomOut = useCallback(() => zoomBy(1 / ZOOM_STEP), [zoomBy]);
 
   const reset = useCallback(() => {
+    cancelMove();
     setView(FIT_VIEW);
     commit(FIT_VIEW);
-  }, [commit]);
+  }, [cancelMove, commit]);
 
   // React attaches `wheel` at the root as a passive listener, so preventDefault() inside an
   // onWheel prop is ignored and the page scrolls instead of the map zooming. The listener has
@@ -101,6 +140,7 @@ export function useMapTransform({ size, params, onCommit, hasMeasuredRef }) {
     if (!el) return undefined;
     const handler = (e) => {
       e.preventDefault();
+      cancelMove();
       const r = el.getBoundingClientRect();
       const px = e.clientX - r.left;
       const py = e.clientY - r.top;
@@ -115,11 +155,12 @@ export function useMapTransform({ size, params, onCommit, hasMeasuredRef }) {
       el.removeEventListener('wheel', handler);
       clearTimeout(wheelTimerRef.current);
     };
-  }, [commit]);
+  }, [cancelMove, commit]);
 
   const onPointerDown = useCallback((e) => {
     if (e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    cancelMove();
     dragRef.current = {
       x: e.clientX, y: e.clientY,
       tx: viewRef.current.tx, ty: viewRef.current.ty,
@@ -127,7 +168,7 @@ export function useMapTransform({ size, params, onCommit, hasMeasuredRef }) {
     // Reset here rather than on pointer-up: `click` fires after `pointerup`, and the click
     // handler is what needs to know whether this gesture was a drag.
     movedRef.current = false;
-  }, []);
+  }, [cancelMove]);
 
   const onPointerMove = useCallback((e) => {
     const d = dragRef.current;
@@ -170,6 +211,6 @@ export function useMapTransform({ size, params, onCommit, hasMeasuredRef }) {
   return {
     view, isDragging,
     onPointerDown, onPointerMove, onPointerUp, onPointerCancel: cancelDrag, didDrag,
-    zoomIn, zoomOut, reset, attachWheel,
+    zoomIn, zoomOut, reset, attachWheel, moveTo,
   };
 }

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 // Docked in the rail rather than anchored to the point: a popover covers the dot's
 // neighbours, which are exactly the songs being compared (spec §5.2).
-function SelectedSongCard({ song, colourLabel, colourValue, onClear }) {
+function SelectedSongCard({ song, colourLabel, colourValue, onClear, walk }) {
   if (!song) {
     return <p className="explore-hint">Click a song to see what it is.</p>;
   }
@@ -29,6 +29,13 @@ function SelectedSongCard({ song, colourLabel, colourValue, onClear }) {
       </div>
       {colourValue && (
         <div className="explore-song-meta">{colourLabel}: {colourValue}</div>
+      )}
+      {walk && (
+        <div className="explore-walk">
+          <button type="button" onClick={walk.onBack} disabled={!walk.canBack}>Back</button>
+          <button type="button" onClick={walk.onNext} disabled={!walk.canNext}>Next similar</button>
+          {walk.step > 1 && <span className="explore-walk-step">Step {walk.step}</span>}
+        </div>
       )}
       <Link className="explore-song-link" to={`/song/${song.id}`}>View song →</Link>
     </div>

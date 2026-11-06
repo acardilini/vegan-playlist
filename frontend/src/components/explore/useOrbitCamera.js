@@ -256,6 +256,6 @@ export function useOrbitCamera({
   return {
     camera, isDragging, drift, setDrift,
     onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onKeyDown, onContextMenu,
-    didDrag, attachWheel, zoomIn, zoomOut, reset, goToPreset,
+    didDrag, attachWheel, zoomIn, zoomOut, reset, goToPreset, moveTo,
   };
 }

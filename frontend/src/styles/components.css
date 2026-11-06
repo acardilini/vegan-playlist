@@ -2593,6 +2593,29 @@
   accent-color: var(--accent-moss-60);
 }
 
+/* Guided walk buttons on the selected-song card (pills, matching the toolbar). */
+.explore-walk {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.explore-walk button {
+  border: 1px solid var(--border-hairline);
+  background: none;
+  color: var(--text-primary);
+  border-radius: var(--radius-pill);
+  padding: 2px var(--space-3);
+  font: var(--text-label);
+  cursor: pointer;
+}
+
+.explore-walk button:disabled { opacity: 0.4; cursor: not-allowed; }
+.explore-walk button:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+.explore-walk-step { color: var(--text-secondary); font: var(--text-label); }
+
 .explore-yearstrip-label { color: var(--text-primary); min-width: 5.5em; }
 .explore-yearstrip-note { color: var(--text-secondary); }
 

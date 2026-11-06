@@ -3,15 +3,18 @@ import { useSearchParams } from 'react-router-dom';
 import { useExplorePoints } from './useExplorePoints';
 import { colourScale, dimColour } from './palette';
 import SelectedSongCard from './SelectedSongCard';
-import { easeOutCubic, extentsFor, layout, projectPoint } from './mapGeometry';
+import {
+  easeOutCubic, extentsFor, layout, outsideCore, projectPoint, viewCentredOn,
+} from './mapGeometry';
 import { useMapTransform } from './useMapTransform';
 import { useOrbitCamera } from './useOrbitCamera';
 import MapToolbar from './MapToolbar';
 import { placeLabels, truncateLabel } from './mapLabels';
 import { nearestSongs } from './neighbours';
+import { walkBack, walkBase, walkNext } from './walk';
 import YearStrip from './YearStrip';
 import {
-  activePreset as presetOf, dotAlpha, dotRadius, gizmoAxes, pickPoint, projectCloud,
+  activePreset as presetOf, dotAlpha, dotRadius, gizmoAxes, panCentredOn, pickPoint, projectCloud,
   sortBackToFront,
 } from './camera3d';
 import {
@@ -143,7 +146,9 @@ function ExploreMap() {
   // The viewport is committed to the URL at the end of a gesture, never per pixel — a pan
   // writing 60 history entries would make Back useless.
   const commitView = useCallback((serialised) => setParam('view', serialised), [setParam]);
-  const transform = useMapTransform({ size, params, onCommit: commitView, hasMeasuredRef });
+  const transform = useMapTransform({
+    size, params, onCommit: commitView, hasMeasuredRef, reduceMotion,
+  });
   const commitCam = useCallback((serialised) => setParam('cam', serialised), [setParam]);
   const orbit = useOrbitCamera({
     size, params, onCommit: commitCam, active: dim === '3d', reduceMotion, hasMeasuredRef,
@@ -205,6 +210,15 @@ function ExploreMap() {
     if (!data || !selectedId || !space || !showLines) return null;
     return new Set(nearestSongs(data.songs, selectedId, space, dim, 8).map(n => n.id));
   }, [data, selectedId, space, dim, showLines]);
+
+  // The guided walk: the path visited so far lives in component state, not the URL. It only means
+  // anything while its last element is the selected song (see walk.js), so clearing or changing
+  // the selection restarts the walk with no extra code.
+  const [walkPath, setWalkPath] = useState([]);
+  const walkLength = walkBase(walkPath, selectedId).length;
+  const canWalkNext = useMemo(
+    () => !!data && !!space && walkNext(data.songs, space, dim, walkPath, selectedId) !== null,
+    [data, space, dim, walkPath, selectedId]);
 
   // The id, not the hover object: `hover` is rebuilt on every mousemove even while the
   // pointer stays on one dot, and it is a draw dependency now.
@@ -429,7 +443,7 @@ function ExploreMap() {
     return () => cancelAnimationFrame(raf);
   }, [
     canvasEl, data, space, dim, colour, scale, size, spotlit, matchIds, selectedId,
-    transform.view, orbit.camera, hoverId, spaceMeta, showLabels, neighbourIds, year,
+    transform.view, orbit.camera, hoverId, spaceMeta, showLabels, neighbourIds, year, bounds,
   ]);
 
   // 12px grab radius; in 3D, of the dots inside it the one nearest the camera wins.
@@ -442,6 +456,21 @@ function ExploreMap() {
     const hit = nearest(e.clientX - r.left, e.clientY - r.top);
     setHover(hit ? { song: hit.song, x: hit.x, y: hit.y } : null);
   };
+
+  // Select the walk's next (or previous) song and, only if it sits near or past the edge of the plot
+  // (an unzoomed map already shows everything), ease the camera or view to centre it.
+  const stepTo = (step) => {
+    if (!step) return;
+    setWalkPath(step.path);
+    setParam('song', String(step.id));
+    const point = positionsRef.current.find(p => p.id === step.id);
+    if (point && outsideCore(point, size)) {
+      if (dim === '3d') orbit.moveTo(panCentredOn(orbit.camera, point, size));
+      else transform.moveTo(viewCentredOn(transform.view, point, size));
+    }
+  };
+  const onWalkNext = () => stepTo(walkNext(data.songs, space, dim, walkPath, selectedId));
+  const onWalkBack = () => stepTo(walkBack(walkPath, selectedId));
 
   const onClick = (e) => {
     // `click` fires after the pointer-up that ended a pan; without this every drag would
@@ -646,6 +675,13 @@ function ExploreMap() {
               ? (findLegendEntry(legend, selected.codes[colour]) || {}).label
               : null}
             onClear={() => setParam('song', null)}
+            walk={{
+              step: walkLength,
+              canBack: walkLength > 1,
+              canNext: canWalkNext,
+              onNext: onWalkNext,
+              onBack: onWalkBack,
+            }}
           />
         </aside>
       </div>
