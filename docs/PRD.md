@@ -330,6 +330,11 @@ keep/rebuild/drop/defer decisions are recorded in
   zoom, camera presets, optional drift, depth cues, axis gizmo) beside the 2D view, switched by a floating
   2D|3D control and shareable through the `dim` and `cam` URL params; Colour by also offers the four lyric-analysis
   dimensions (Themes, Targets & species, Actions & advocacy, Moral frames) coloured by sub-dimension.
+- **Explore map regions, time, neighbours and walk (2026-11-07):** floating **cluster labels** name each region
+  by what is over-represented there (automatic; a Labels toggle); a **year strip** shows songs up to a chosen year
+  and can play them in; selecting a song draws **lines** to its eight nearest neighbours on the map (a Lines toggle);
+  and **Next similar / Back** on the selected-song card walks the map neighbour by neighbour. Shareable through
+  the `yr`, `labels` and `lines` URL params.
 - **Explore map:** a hand-rolled **canvas scatter** (no charting dependency) over the **640 live songs the
   analysis has mapped**, in four projected spaces — Semantic · Thematic · Sound · Holistic — rescaled per
   space. Colour-by is a curated low-cardinality menu (five acoustic dimensions, Focus, and parent genre

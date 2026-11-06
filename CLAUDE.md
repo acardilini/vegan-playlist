@@ -198,7 +198,8 @@ Run before ending every working session:
   most distinct codes** (`themeSubCounts` + `themeBucket`; a tie goes to the sub-dimension **fewer songs touch**, then taxonomy order, so there is no Mixed bucket; no finding is `NOT_CODED`). The single
   colour bucket is in `codes[key]`; the full set of touched sub-dimensions rides in `subs[key]` so a spotlight lights
   every song that touches a lit sub-dimension (`songPassesSpotlight` on the frontend). Legends are sub-dimensions in
-  taxonomy order, then Not coded (<= 5 entries, inside the 7 palette slots), with a usage `note` under the legend (a pick lights every song that touches it, so more dots can light than the count shows)
+  taxonomy order, then Not coded (<= 5 entries, inside the 7 palette slots), with a usage `note` under the legend (a pick lights every song that touches it, so more dots can light than the count shows).
+  **Cluster labels (Round 2):** `services/exploreRegions.js` is the pure labeller - `kmeans` (no random source: farthest-point start, then Lloyd, lowest index wins ties) and `buildRegionLabels`, which names each of `REGION_K = 8` regions (the curator found 12 too many; regions under 15 songs are unlabelled) by what is **over-represented** there (term count x ln(lift); thresholds are exported constants; the most distinctive theme code across all four columns, plus the most distinctive parent genre, joined by " · "; two regions with identical text keep the larger). `explore.js` `labelItems` / `labelsFor` run it per space on the raw 2D column and on the already-normalised 3D cloud, and `mapPayload` serves `spaces[i].labels2d` / `labels3d` (`{label, centre, count}`; 3D is `[]` for a 2D-only space). No per-song code lists reach the payload. Naming is automatic and subjective by design: tune the constants, not the callers
 - **services/referenceCodebook.js**: the read behind the About section's Reference tab
   (`GET /api/analysis/codebook`). **Composes** `metadataCodebook.js`, `acousticCodebook.js` and the
   taxonomy rather than re-reading their JSON, so label rules and suppression stay owned in one place
@@ -271,7 +272,7 @@ Run before ending every working session:
   `useOrbitCamera.js` the gesture/preset/drift hook, left-drag orbits, right- or Shift-drag pans, arrow keys orbit;
   `MapToolbar.jsx` the floating 2D|3D pill with the camera pill (Iso/Top/Front/Side, Drift) stacked under it in 3D; URL params `dim=3d` and
   `cam=<preset>|yaw,pitch,zoom,panX,panY`, both falling back to the default view when invalid, and `dim=3d` falling
-  back to 2D for a space with no 3D data; default view stays 2D), `palette.js` (categorical colours live in
+  back to 2D for a space with no 3D data; default view stays 2D), **Round 2:** `mapLabels.js` (pure `placeLabels`: larger regions win collisions, so zooming in reveals more labels; `truncateLabel`), `neighbours.js` (`nearestSongs` in the map's OWN coordinates, not embedding similarity) and `walk.js` (`walkBase`/`walkNext`/`walkBack`: the path is component state and only counts while its last element is the selected song), `YearStrip.jsx` (a single "up to this year" cutoff with Play; `exploreUrlState.js` `yearBounds`/`deriveYear`/`formatYear`/`yearState`, `deriveFlag`), new URL params `yr=<year>` (absent = all years), `labels=0`, `lines=0`; `mapGeometry.js` gained `projectPoint` (a label centre projects exactly like a dot), `outsideCore`, `viewCentredOn` and `camera3d.js` `panCentredOn` for the walk, and both camera hooks export an eased `moveTo`, `palette.js` (categorical colours live in
   CSS as `--explore-cat-*` so theming stays in the token layer; JS only reads them) — plus the
   shared NavigationMenu, SongCard, PaginationControls) and admin
   (AdminInterface is a

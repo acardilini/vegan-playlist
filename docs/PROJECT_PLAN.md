@@ -485,9 +485,9 @@ pages** (item 6), which is now where it belongs. Backend 121/121. Spec:
 
 ## Explorer upgrade (curator-requested, 2026-11-06)
 
-Round 1 (3D map, motion, Themes colouring) ◐ built on `session-explorer-3d`, awaiting the curator's smoke. Round 2 (cluster labels,
-year scrubber, neighbour lines, guided walk) is next and needs its own plan; then the artist location map (own brainstorm). Spec
-`docs/superpowers/specs/2026-11-06-explorer-3d-design.md`; plan `docs/superpowers/plans/2026-11-06-explorer-3d-round1.md`.
+Round 1 (3D map, motion, Themes colouring) ☑ merged to `main` 2026-11-06 (`d0abe0a`) after the curator's first look. Round 2 (cluster labels,
+year scrubber, neighbour lines, guided walk) ◐ built on `session-explorer-round2`, awaiting the curator's smoke; then the artist location map (own brainstorm). Spec
+`docs/superpowers/specs/2026-11-06-explorer-3d-design.md`; plans `docs/superpowers/plans/2026-11-06-explorer-3d-round1.md` and `docs/superpowers/plans/2026-11-06-explorer-round2.md`.
 
 ## Backlog / Deferred (YAGNI)
 
