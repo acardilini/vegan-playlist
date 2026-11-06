@@ -9,11 +9,16 @@ import {
   deriveSelectedId,
   deriveSpace,
   deriveSpotlit,
+  deriveFlag,
   deriveView,
+  deriveYear,
   formatCamera,
   formatView,
+  formatYear,
   songPassesSpotlight,
   withParam,
+  yearBounds,
+  yearState,
 } from './exploreUrlState.js';
 import { DEFAULT_CAMERA, PRESETS } from './camera3d.js';
 
@@ -153,4 +158,57 @@ test('songPassesSpotlight: empty passes all, plain codes match, themes match any
   assert.equal(songPassesSpotlight(both, 'themes', new Set(['commercial_ecological'])), false);
   // a song with no subs entry still answers on its bucket
   assert.equal(songPassesSpotlight({ codes: { themes: 'NOT_CODED' } }, 'themes', new Set(['NOT_CODED'])), true);
+});
+
+const BOUNDS = { min: 1990, max: 2005, missing: 3 };
+
+test('yearBounds ignores songs without a valid year and counts them', () => {
+  const songs = [
+    { year: 1990 }, { year: 2005 }, { year: 1999 },
+    { year: null }, { year: undefined }, { year: 2000.5 },
+  ];
+  assert.deepEqual(yearBounds(songs), { min: 1990, max: 2005, missing: 3 });
+});
+
+test('yearBounds is null when nobody has a year', () => {
+  assert.equal(yearBounds([{ year: null }, {}]), null);
+  assert.equal(yearBounds([]), null);
+});
+
+test('deriveYear accepts a year inside the range', () => {
+  assert.equal(deriveYear(p('yr=2000'), BOUNDS), 2000);
+  assert.equal(deriveYear(p('yr=1990'), BOUNDS), 1990);
+  assert.equal(deriveYear(p('yr=2004'), BOUNDS), 2004);
+});
+
+test('deriveYear falls back to null (all years) for every invalid value', () => {
+  for (const bad of ['', 'abc', '2020-2021', '2000.5', '1800', '1989', '3000', '2005', '-5', 'NaN']) {
+    assert.equal(deriveYear(p('yr=' + bad), BOUNDS), null, bad);
+  }
+  assert.equal(deriveYear(p(''), BOUNDS), null);
+  assert.equal(deriveYear(p('yr=2000'), null), null, 'no bounds, no cutoff');
+});
+
+test('formatYear writes nothing at the end of the range', () => {
+  assert.equal(formatYear(null, BOUNDS), '');
+  assert.equal(formatYear(2005, BOUNDS), '');
+  assert.equal(formatYear(2010, BOUNDS), '');
+  assert.equal(formatYear(2000, BOUNDS), '2000');
+  assert.equal(formatYear(2000, null), '');
+});
+
+test('yearState: no cutoff shows everything; a cutoff splits in/out/unknown', () => {
+  assert.equal(yearState({ year: null }, null), 'in');
+  assert.equal(yearState({ year: 1999 }, null), 'in');
+  assert.equal(yearState({ year: 2000 }, 2000), 'in', 'up to and including the cutoff');
+  assert.equal(yearState({ year: 2001 }, 2000), 'out');
+  assert.equal(yearState({ year: null }, 2000), 'unknown');
+});
+
+test('deriveFlag is on unless the param is exactly 0', () => {
+  assert.equal(deriveFlag(p(''), 'labels'), true);
+  assert.equal(deriveFlag(p('labels=0'), 'labels'), false);
+  assert.equal(deriveFlag(p('labels=1'), 'labels'), true);
+  assert.equal(deriveFlag(p('labels=off'), 'labels'), true);
+  assert.equal(deriveFlag(p('labels=0'), 'lines'), true, 'a different key is unaffected');
 });

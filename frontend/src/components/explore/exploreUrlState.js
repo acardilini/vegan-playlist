@@ -113,6 +113,53 @@ export function songPassesSpotlight(song, colour, spotlit) {
   return !!subs && subs.some(c => spotlit.has(c));
 }
 
+// --- Round 2: year cutoff and on/off toggles -----------------------------------------------
+
+// Earliest and latest release year on the map, and how many songs have none. Only whole numbers
+// count as a year; null when no song has one (the year strip then does not render).
+export function yearBounds(songs) {
+  let min = Infinity;
+  let max = -Infinity;
+  let missing = 0;
+  for (const s of songs) {
+    if (Number.isInteger(s.year)) {
+      if (s.year < min) min = s.year;
+      if (s.year > max) max = s.year;
+    } else {
+      missing += 1;
+    }
+  }
+  return Number.isFinite(min) ? { min, max, missing } : null;
+}
+
+// `yr=<year>` means "released up to this year". Anything that is not a whole year inside the
+// range, including the latest year itself (which would filter nothing), is null = all years.
+export function deriveYear(params, bounds) {
+  const raw = params.get('yr');
+  if (!bounds || !raw || !/^\d+$/.test(raw)) return null;
+  const year = Number(raw);
+  return year >= bounds.min && year < bounds.max ? year : null;
+}
+
+// All years serialise to the empty string so the param is deleted, like the viewport at fit.
+export function formatYear(year, bounds) {
+  if (!bounds || year == null || year >= bounds.max) return '';
+  return String(year);
+}
+
+// How one song relates to the cutoff. With no cutoff every song is 'in' (songs with no year
+// included); with one, a song with no year is 'unknown' rather than lost.
+export function yearState(song, year) {
+  if (year == null) return 'in';
+  if (!Number.isInteger(song.year)) return 'unknown';
+  return song.year <= year ? 'in' : 'out';
+}
+
+// A toggle that is on by default and written to the URL only when switched off (`key=0`).
+export function deriveFlag(params, key) {
+  return params.get(key) !== '0';
+}
+
 // Fit serialises to the empty string so the param is deleted, not written as `1,0,0` — an
 // unzoomed map should share as a clean URL. Translates round to whole pixels; nobody can see
 // a hundredth of one, and it keeps shared links short.
