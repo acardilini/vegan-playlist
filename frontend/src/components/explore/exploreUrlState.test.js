@@ -128,7 +128,9 @@ test('deriveCamera reads a preset name or five numbers, and nothing else', () =>
 });
 
 test('deriveCamera falls back to the default for any invalid value, never a partial repair', () => {
-  for (const bad of ['banana', '1,2,3', 'NaN,0,1,0,0', '0,120,1,0,0', '0,0,99,0,0', '0,0,0.1,0,0', '']) {
+  // an absurd pan (a hand-edited link) would open to an empty plot
+  for (const bad of ['banana', '1,2,3', 'NaN,0,1,0,0', '0,120,1,0,0', '0,0,99,0,0', '0,0,0.1,0,0', '',
+    '35,20,1,100000,0', '35,20,1,0,-100000']) {
     assert.deepEqual(deriveCamera(p('cam=' + bad)), DEFAULT_CAMERA, bad);
   }
 });
@@ -144,10 +146,11 @@ test('songPassesSpotlight: empty passes all, plain codes match, themes match any
   assert.equal(songPassesSpotlight({ codes: { genre: 'metal' } }, 'genre', new Set()), true);
   assert.equal(songPassesSpotlight({ codes: { genre: 'metal' } }, 'genre', new Set(['metal'])), true);
   assert.equal(songPassesSpotlight({ codes: { genre: 'metal' } }, 'genre', new Set(['punk'])), false);
-  const mixed = { codes: { themes: 'MIXED' }, subs: { themes: ['cruelty_suffering', 'psychology_barriers'] } };
-  assert.equal(songPassesSpotlight(mixed, 'themes', new Set(['psychology_barriers'])), true);
-  assert.equal(songPassesSpotlight(mixed, 'themes', new Set(['MIXED'])), true);
-  assert.equal(songPassesSpotlight(mixed, 'themes', new Set(['commercial_ecological'])), false);
+  // coloured as one sub-dimension, but it touches two: picking EITHER lights it
+  const both = { codes: { themes: 'cruelty_suffering' }, subs: { themes: ['cruelty_suffering', 'psychology_barriers'] } };
+  assert.equal(songPassesSpotlight(both, 'themes', new Set(['psychology_barriers'])), true);
+  assert.equal(songPassesSpotlight(both, 'themes', new Set(['cruelty_suffering'])), true);
+  assert.equal(songPassesSpotlight(both, 'themes', new Set(['commercial_ecological'])), false);
   // a song with no subs entry still answers on its bucket
   assert.equal(songPassesSpotlight({ codes: { themes: 'NOT_CODED' } }, 'themes', new Set(['NOT_CODED'])), true);
 });

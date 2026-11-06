@@ -176,6 +176,10 @@ site shows whatever coordinates it is given.
   resets on Escape/clear. Navigation aid only, no audio. The visited path is kept in component state,
   not the URL.
 
+## Revision 2026-11-06 (after first look at live data)
+
+On the live data `Mixed` held 311 of 612 songs, so the curator asked for a tie-break. **Superseded rule:** a tie goes to the sub-dimension fewer served songs touch, then taxonomy order; there is no `Mixed` bucket, no `Mixed` legend entry and no Mixed colour slot. Spotlight is unchanged (every song that touches a lit sub-dimension lights). The legend instead carries a usage note: each song is coloured by its strongest sub-dimension, and a pick lights every song that touches it. References to `Mixed` below are historical.
+
 ## Settled decisions (curator)
 
 - Order: explorer first, then the artist location map.

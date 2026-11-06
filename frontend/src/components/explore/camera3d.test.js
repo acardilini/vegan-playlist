@@ -81,6 +81,15 @@ test('clampCamera limits pitch, zoom and wraps yaw', () => {
   assert.equal(clampCamera({ ...DEFAULT_CAMERA, pitch: -120 }).pitch, -90);
 });
 
+test('clampCamera keeps the cloud centre on the plot when given the plot size', () => {
+  const c = clampCamera({ ...DEFAULT_CAMERA, panX: 100000, panY: -100000 }, SIZE);
+  assert.equal(c.panX, SIZE.w / 2);
+  assert.equal(c.panY, -SIZE.h / 2);
+  // a pan already inside the plot is untouched, and without a size nothing is clamped
+  assert.equal(clampCamera({ ...DEFAULT_CAMERA, panX: 30, panY: -20 }, SIZE).panX, 30);
+  assert.equal(clampCamera({ ...DEFAULT_CAMERA, panX: 100000 }).panX, 100000);
+});
+
 test('activePreset recognises a preset and nothing once panned or zoomed', () => {
   for (const name of Object.keys(PRESETS)) assert.equal(activePreset(cam(name)), name);
   assert.equal(activePreset({ ...cam('iso'), panX: 12 }), null);
@@ -114,6 +123,25 @@ test('pickPoint prefers the dot nearest the camera, not just the nearest on scre
   const back = { id: 'back', x: 100.4, y: 100, depth: 5 };
   assert.equal(pickPoint([back, front], 100.4, 100, 12).id, 'front');
   assert.equal(pickPoint([back, front], 300, 300, 12), null);
+});
+
+test('pickPoint selects the dot under the cursor, not a nearer-to-camera dot merely close by', () => {
+  const under = { id: 'under', x: 100, y: 100, depth: 4.5, r: 4 };
+  const close = { id: 'close', x: 111, y: 100, depth: 3.5, r: 4 };   // 11px away, does not cover the pointer
+  assert.equal(pickPoint([close, under], 100, 100, 12).id, 'under');
+});
+
+test('pickPoint prefers a lit dot over a dimmed one that is also under the cursor', () => {
+  const dimmedNear = { id: 'dimmed', x: 100, y: 100, depth: 2, r: 4, lit: false };
+  const litFar = { id: 'lit', x: 101, y: 100, depth: 5, r: 4, lit: true };
+  assert.equal(pickPoint([dimmedNear, litFar], 100, 100, 12).id, 'lit');
+});
+
+test('pickPoint falls back to the nearest dot within the grab radius when none is under the cursor', () => {
+  const a = { id: 'a', x: 100, y: 100, depth: 3, r: 2 };
+  const b = { id: 'b', x: 108, y: 100, depth: 3, r: 2 };
+  assert.equal(pickPoint([a, b], 106, 100, 12).id, 'b');   // 6px from a, 2px from b; neither covers... b nearest
+  assert.equal(pickPoint([a], 150, 100, 12), null);
 });
 
 test('pickPoint without depth falls back to the nearest on screen', () => {

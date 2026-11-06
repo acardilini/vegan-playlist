@@ -2515,6 +2515,14 @@
   z-index: 1;
 }
 
+/* Usage help under a legend (what a spotlight matches); quiet, never a definition. */
+.explore-legend-note {
+  margin: var(--space-2) 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
 /* The floating 2D/3D + camera pill, centred over the plot. It leaves room on the right for the
    zoom buttons and wraps rather than overflowing on a narrow plot. */
 .explore-maptools {

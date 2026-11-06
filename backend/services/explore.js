@@ -173,9 +173,11 @@ const COLOUR_DIMENSIONS = [
   ...THEME_DIMENSIONS.map(d => ({ ...d, source: 'theme' })),
 ];
 
-// A song with codes in several sub-dimensions tied for most is neither one nor another.
-const MIXED = 'MIXED';
-const MIXED_LABEL = 'Mixed';
+// Usage help shown under a theme legend (not a definition): the legend counts colour buckets,
+// but a spotlight matches every song that touches the picked sub-dimension.
+const THEME_NOTE = 'Each song is coloured by the sub-dimension it has the most codes in (a tie '
+  + 'goes to the one fewer songs touch). Picking one lights every song that touches it, so more '
+  + 'dots can light than the count shows.';
 
 // Distinct codebook-known codes the song carries per sub-dimension (the same codebook gate every
 // public read uses; unknown codes, blanks and non-arrays are ignored).
@@ -195,17 +197,44 @@ function themeSubCounts(col, codes) {
 }
 
 // Codes carry no weights, so "most codes" is the only strength signal: the sub-dimension with the
-// strictly highest count; a tie is MIXED; no finding is NOT_CODED.
-function themeBucket(counts) {
-  let best = null;
-  let bestN = 0;
-  let tied = false;
+// highest count; no finding is NOT_CODED. A tie goes to the sub-dimension FEWER songs touch
+// (`rarity`: sub id -> song count), so the biggest sub-dimension does not swallow every tie and
+// the map shows more of the rarer ones; then taxonomy `order`, then alphabetical, so the result
+// is always deterministic. Only the tied maximum competes.
+function themeBucket(counts, rarity = new Map(), order = []) {
+  let top = 0;
+  const tied = [];
   for (const [sub, n] of counts) {
-    if (n > bestN) { best = sub; bestN = n; tied = false; }
-    else if (n === bestN) tied = true;
+    if (n > top) { top = n; tied.length = 0; tied.push(sub); }
+    else if (n === top) tied.push(sub);
   }
-  if (best === null) return NOT_CODED;
-  return tied ? MIXED : best;
+  if (tied.length === 0) return NOT_CODED;
+  const rank = (sub) => rarity.has(sub) ? rarity.get(sub) : Infinity;
+  const pos = (sub) => { const i = order.indexOf(sub); return i < 0 ? Infinity : i; };
+  tied.sort((a, b) => {
+    if (rank(a) !== rank(b)) return rank(a) < rank(b) ? -1 : 1;
+    if (pos(a) !== pos(b)) return pos(a) < pos(b) ? -1 : 1;
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+  return tied[0];
+}
+
+// Gives every row its theme colour bucket per dimension, using how many of the served songs touch
+// each sub-dimension. Done once per payload, before any legend is built, so the legend and the
+// colour assignment read the same buckets.
+function annotateThemeBuckets(rows) {
+  for (const d of THEME_DIMENSIONS) {
+    const counted = rows.map(r => themeSubCounts(d.col, r[d.col]));
+    const rarity = new Map();
+    for (const c of counted) {
+      for (const sub of c.keys()) rarity.set(sub, (rarity.get(sub) || 0) + 1);
+    }
+    const order = Object.keys(analysis.taxonomy.hierarchy[d.key].sub_dimensions);
+    rows.forEach((r, i) => {
+      if (!r.themeBucket) r.themeBucket = {};
+      r.themeBucket[d.key] = themeBucket(counted[i], rarity, order);
+    });
+  }
 }
 
 const DIMENSION_BY_KEY = Object.fromEntries(COLOUR_DIMENSIONS.map(d => [d.key, d]));
@@ -217,7 +246,12 @@ function codeFor(dimensionKey, row) {
   if (dim.source === 'genre') {
     return getParentGenre(row.genre) || NOT_CODED;
   }
-  if (dim.source === 'theme') return themeBucket(themeSubCounts(dim.col, row[dim.col]));
+  // Annotated per payload (see annotateThemeBuckets); the fallback has no catalogue-wide rarity
+  // to break ties with, so it falls back to taxonomy-free alphabetical order.
+  if (dim.source === 'theme') {
+    return (row.themeBucket && row.themeBucket[dim.key])
+      || themeBucket(themeSubCounts(dim.col, row[dim.col]));
+  }
   const v = row[dimensionKey];
   if (!v) return NOT_CODED;
   if (dim.source === 'scalar' && codebook.isSuppressed(v)) return NOT_CODED;
@@ -227,9 +261,7 @@ function codeFor(dimensionKey, row) {
 function labelFor(dim, code) {
   if (code === NOT_CODED) return NOT_CODED_LABEL;
   if (code === OTHER_GENRES) return OTHER_GENRES_LABEL;
-  if (dim.source === 'theme') {
-    return code === MIXED ? MIXED_LABEL : analysis.subDimensionLabel(dim.col, code);
-  }
+  if (dim.source === 'theme') return analysis.subDimensionLabel(dim.col, code);
   // getParentGenre returns the literal 'other' for a genre string it does not recognise —
   // the song HAS a genre, it just is not one we map. That is a different claim from
   // "Not coded", and naming it "Other" inside "Other genres" would blur both.
@@ -275,13 +307,10 @@ function legendFor(dim, rows, top) {
   const seen = new Set([NOT_CODED]);
   const known = dim.source === 'acoustic' ? acoustic.optionsFor(dim.key)
     : dim.source === 'scalar' ? codebook.optionsFor(dim.key)
-    // Sub-dimensions in taxonomy order, then Mixed; the shared tail adds Not coded last.
+    // Sub-dimensions in taxonomy order; the shared tail adds Not coded last.
     : dim.source === 'theme'
-      ? [
-        ...Object.entries(analysis.taxonomy.hierarchy[dim.key].sub_dimensions)
-          .map(([code, sub]) => ({ code, label: sub.label })),
-        { code: MIXED, label: MIXED_LABEL },
-      ]
+      ? Object.entries(analysis.taxonomy.hierarchy[dim.key].sub_dimensions)
+        .map(([code, sub]) => ({ code, label: sub.label }))
       : [];
   for (const o of known) {
     seen.add(o.code);
@@ -328,6 +357,7 @@ function legendFor(dim, rows, top) {
 async function mapPayload(db) {
   const spaces = await discoverSpaces(db);
   const rows = await mapRows(db, spaces);
+  annotateThemeBuckets(rows);
   const live = await db.query(
     `SELECT COUNT(*)::int AS n FROM songs WHERE status = 'included' AND published = true`);
   // Computed once and shared with legendFor below: the legend and the colour assignment must
@@ -382,7 +412,10 @@ async function mapPayload(db) {
     spaces: spaces.map(s => ({
       key: s.key, label: s.label, description: s.description, has3d: !!s.column3d,
     })),
-    colourBy: COLOUR_DIMENSIONS.map(d => ({ key: d.key, label: d.label, codes: legendFor(d, rows, top) })),
+    colourBy: COLOUR_DIMENSIONS.map(d => ({
+      key: d.key, label: d.label, codes: legendFor(d, rows, top),
+      ...(d.source === 'theme' ? { note: THEME_NOTE } : {}),
+    })),
     coverage: { mapped: songs.length, live: live.rows[0].n },
     songs,
   };
@@ -540,7 +573,7 @@ async function similarFor(db, songId, limit = 6) {
 
 module.exports = {
   SPACE_LABELS, spaceLabel, SPACE_DESCRIPTIONS, spaceDescription, discoverSpaces, mapRows,
-  normaliseCloud, column3dFor, MIXED, THEME_DIMENSIONS, themeSubCounts, themeBucket,
+  normaliseCloud, column3dFor, THEME_DIMENSIONS, themeSubCounts, themeBucket,
   NOT_CODED, COLOUR_DIMENSIONS, codeFor, mapPayload,
   GENRE_TOP_N, OTHER_GENRES, OTHER_GENRES_LABEL, genreTopSet, legendFor,
   SIMILARITY, similarByEmbedding, genreFallback, similarFor,

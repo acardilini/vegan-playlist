@@ -195,10 +195,10 @@ Run before ending every working session:
   [-1,1]^3 with uniform scale; degenerate clouds collapse to the origin). **Theme colour-by:** four more
   `COLOUR_DIMENSIONS` (`themes`, `targets`, `actions`, `moral_frames`, `source: 'theme'`, columns `themes` / `topics` /
   `advocacy` / `moral_frames`; **never `tactics`**, a mirror of advocacy) colour a song by its **sub-dimension with the
-  most distinct codes** (`themeSubCounts` + `themeBucket`; a tie is `MIXED`, no finding `NOT_CODED`). The single
+  most distinct codes** (`themeSubCounts` + `themeBucket`; a tie goes to the sub-dimension **fewer songs touch**, then taxonomy order, so there is no Mixed bucket; no finding is `NOT_CODED`). The single
   colour bucket is in `codes[key]`; the full set of touched sub-dimensions rides in `subs[key]` so a spotlight lights
   every song that touches a lit sub-dimension (`songPassesSpotlight` on the frontend). Legends are sub-dimensions in
-  taxonomy order, then Mixed, then Not coded (<= 6 entries, inside the 7 palette slots)
+  taxonomy order, then Not coded (<= 5 entries, inside the 7 palette slots), with a usage `note` under the legend (a pick lights every song that touches it, so more dots can light than the count shows)
 - **services/referenceCodebook.js**: the read behind the About section's Reference tab
   (`GET /api/analysis/codebook`). **Composes** `metadataCodebook.js`, `acousticCodebook.js` and the
   taxonomy rather than re-reading their JSON, so label rules and suppression stay owned in one place

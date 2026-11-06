@@ -34,13 +34,23 @@ function wrapDeg(d) {
   return ((((d + 180) % 360) + 360) % 360) - 180;
 }
 
-export function clampCamera(cam) {
-  return {
+// Largest pan (px) a URL may carry. Any real plot is far smaller; beyond this a link is junk.
+export const MAX_PAN = 5000;
+
+// With the plot size the pan is also limited so the cloud's centre stays on the plot (a hand-
+// edited link or a wild drag cannot leave an empty plot); without it, only yaw/pitch/zoom.
+export function clampCamera(cam, size) {
+  const out = {
     ...cam,
     yaw: wrapDeg(cam.yaw),
     pitch: clamp(cam.pitch, -90, 90),
     zoom: clamp(cam.zoom, MIN_ZOOM, MAX_ZOOM),
   };
+  if (size) {
+    out.panX = clamp(cam.panX, -size.w / 2, size.w / 2);
+    out.panY = clamp(cam.panY, -size.h / 2, size.h / 2);
+  }
+  return out;
 }
 
 // Camera-space coordinates [right, up, away]: yaw about Y, then the pitch tilt. `away` grows
@@ -116,19 +126,31 @@ export function gizmoAxes(cam) {
   });
 }
 
-// The point under the pointer: among those within grabPx, the one nearest the camera (smallest
-// depth); equal or missing depths (the 2D view) fall back to the nearest on screen.
+// A dot "covers" the pointer when it is within its drawn radius `r` plus this much slack.
+const PICK_SLACK = 3;
+
+// The point under the pointer. Dots that actually cover it win first: among those a lit dot
+// beats a dimmed one (so picking matches what is painted on top), then the dot nearest the
+// camera (smallest depth), then the nearest on screen. Only when no dot covers the pointer does
+// it fall back to the nearest dot within grabPx, so a near-miss still selects something. Points
+// without `r`/`lit`/`depth` (the 2D view) behave as plain nearest-on-screen.
 export function pickPoint(points, mx, my, grabPx) {
-  let best = null;
-  let bestDepth = Infinity;
-  let bestDist = Infinity;
+  const rank = (p, d) => [p.lit === false ? 1 : 0, p.depth ?? 0, d];
+  const better = (a, b) => {
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] < b[i];
+    return false;
+  };
+  let under = null;
+  let underRank = null;
+  let near = null;
+  let nearDist = Infinity;
   for (const p of points) {
     const d = Math.hypot(p.x - mx, p.y - my);
-    if (d > grabPx) continue;
-    const depth = p.depth ?? 0;
-    if (depth < bestDepth || (depth === bestDepth && d < bestDist)) {
-      best = p; bestDepth = depth; bestDist = d;
+    if (d <= (p.r ?? 0) + PICK_SLACK) {
+      const r = rank(p, d);
+      if (!under || better(r, underRank)) { under = p; underRank = r; }
     }
+    if (d <= grabPx && d < nearDist) { near = p; nearDist = d; }
   }
-  return best;
+  return under || near;
 }

@@ -10,7 +10,7 @@
 
 import { FIT_VIEW, MAX_K, MIN_K } from './mapGeometry.js';
 import {
-  DEFAULT_CAMERA, MAX_ZOOM, MIN_ZOOM, PRESETS, activePreset, clampCamera,
+  DEFAULT_CAMERA, MAX_PAN, MAX_ZOOM, MIN_ZOOM, PRESETS, activePreset, clampCamera,
 } from './camera3d.js';
 
 export const DEFAULT_COLOUR = 'sonic_energy';
@@ -87,6 +87,7 @@ export function deriveCamera(params) {
   const [yaw, pitch, zoom, panX, panY] = parts.map(Number);
   if (![yaw, pitch, zoom, panX, panY].every(Number.isFinite)) return DEFAULT_CAMERA;
   if (pitch < -90 || pitch > 90 || zoom < MIN_ZOOM || zoom > MAX_ZOOM) return DEFAULT_CAMERA;
+  if (Math.abs(panX) > MAX_PAN || Math.abs(panY) > MAX_PAN) return DEFAULT_CAMERA;
   return clampCamera({ yaw, pitch, zoom, panX, panY });
 }
 

@@ -225,11 +225,20 @@ test('themeSubCounts counts distinct codebook codes per sub-dimension', () => {
   assert.equal(explore.themeSubCounts('themes', 'junk').size, 0);
 });
 
-test('themeBucket: unique maximum wins, a tie is MIXED, nothing is NOT_CODED', () => {
+test('themeBucket: most codes wins; a tie goes to the rarer sub-dimension, then taxonomy order', () => {
   assert.equal(explore.themeBucket(new Map([['a', 3], ['b', 1]])), 'a');
-  assert.equal(explore.themeBucket(new Map([['a', 2], ['b', 2]])), explore.MIXED);
   assert.equal(explore.themeBucket(new Map()), explore.NOT_CODED);
   assert.equal(explore.themeBucket(new Map([['a', 1]])), 'a');
+  const tie = new Map([['a', 2], ['b', 2]]);
+  // fewer songs touch b, so b wins the tie
+  assert.equal(explore.themeBucket(tie, new Map([['a', 100], ['b', 5]])), 'b');
+  // equally rare: taxonomy order decides
+  assert.equal(explore.themeBucket(tie, new Map([['a', 5], ['b', 5]]), ['b', 'a']), 'b');
+  // nothing to go on: alphabetical, so the result is still deterministic
+  assert.equal(explore.themeBucket(tie), 'a');
+  // only the tied maximum competes: a sub-dimension with fewer codes never wins on rarity alone
+  assert.equal(explore.themeBucket(new Map([['a', 3], ['b', 3], ['c', 1]]),
+    new Map([['a', 50], ['b', 40], ['c', 1]])), 'b');
 });
 
 test('theme colour-by via mapPayload: bucket, subs, legend order and palette fit', async () => {
@@ -250,7 +259,14 @@ test('theme colour-by via mapPayload: bucket, subs, legend order and palette fit
   const sc = p.songs.find(s => s.id === c);
   assert.equal(sa.codes.themes, 'cruelty_suffering');
   assert.deepEqual(sa.subs.themes, ['cruelty_suffering', 'psychology_barriers']);
-  assert.equal(sb.codes.themes, 'MIXED');
+  // B ties 1-1 between two sub-dimensions: the rarer one on the map wins (taxonomy order if equal)
+  const touching = (sub) => p.songs.filter(s => (s.subs.themes || []).includes(sub)).length;
+  const [first, second] = ['cruelty_suffering', 'psychology_barriers'];   // taxonomy order
+  const expected = touching(second) < touching(first) ? second : first;
+  assert.equal(sb.codes.themes, expected);
+  assert.deepEqual(sb.subs.themes, ['cruelty_suffering', 'psychology_barriers'],
+    'a tied song still carries both, so spotlighting either one lights it');
+  assert.ok(!p.songs.some(s => s.codes.themes === 'MIXED'), 'no song is left Mixed');
   assert.equal(sc.codes.themes, explore.NOT_CODED);
   assert.ok(!sc.subs || !('themes' in sc.subs), 'no theme finding -> no subs entry');
   assert.equal(sc.codes.actions, explore.NOT_CODED, 'tactics is never read for actions');
@@ -260,15 +276,17 @@ test('theme colour-by via mapPayload: bucket, subs, legend order and palette fit
   assert.ok(legend.codes.every(e => e.count > 0), 'only present buckets are listed');
   const cruelty = legend.codes.find(e => e.code === 'cruelty_suffering');
   assert.equal(cruelty.label, 'Bodily Harm, Confinement & Suffering');
-  const mixed = legend.codes.find(e => e.code === 'MIXED');
-  assert.equal(mixed.label, 'Mixed');
+  assert.ok(!legend.codes.some(e => e.code === 'MIXED'), 'there is no Mixed entry any more');
   assert.equal(legend.codes[legend.codes.length - 1].code, explore.NOT_CODED, 'Not coded last');
-  assert.ok(legend.codes.indexOf(mixed) > legend.codes.indexOf(cruelty), 'Mixed after sub-dimensions');
+  assert.ok(cruelty, 'sub-dimensions are listed');
   for (const key of ['themes', 'targets', 'actions', 'moral_frames']) {
     const l = p.colourBy.find(x => x.key === key);
     assert.ok(l, `${key} is in the colour-by menu`);
-    assert.ok(l.codes.length <= 6, `${key} legend fits the palette`);
+    assert.ok(l.codes.length <= 5, `${key} legend (<= 4 sub-dimensions + Not coded) fits the palette`);
+    // the legend counts colour buckets, but a pick lights every song that touches it: say so
+    assert.match(l.note, /touches/i, `${key} carries the usage note`);
   }
+  assert.equal(p.colourBy.find(x => x.key === 'genre').note, undefined, 'other dimensions carry no note');
 });
 
 test('genreTopSet picks the top-N named parents and never the literal other', () => {

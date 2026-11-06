@@ -17,7 +17,9 @@ const ORBIT_DEG_PER_PX = 0.4;
 const KEY_STEP_DEG = 5;
 const DRIFT_DEG_PER_S = 6;
 
-export function useOrbitCamera({ size, params, onCommit, active, reduceMotion }) {
+export function useOrbitCamera({
+  size, params, onCommit, active, reduceMotion, hasMeasuredRef,
+}) {
   const urlCam = params.get('cam') || '';
   const [camera, setCamera] = useState(() => deriveCamera(params));
   const [isDragging, setIsDragging] = useState(false);
@@ -39,13 +41,27 @@ export function useOrbitCamera({ size, params, onCommit, active, reduceMotion })
   useEffect(() => { reduceRef.current = reduceMotion; }, [reduceMotion]);
   useEffect(() => { onCommitRef.current = onCommit; }, [onCommit]);
 
-  // The single place the camera changes: clamp, keep the ref in step with state.
+  // The single place the camera changes: clamp, keep the ref in step with state. The pan is
+  // clamped to the plot only once the plot has been measured - against ExploreMap's placeholder
+  // size a valid shared link would be narrowed on load (the one-way ratchet useMapTransform
+  // documents).
   const apply = useCallback((next) => {
-    const c = clampCamera(next);
+    const measured = !hasMeasuredRef || hasMeasuredRef.current;
+    const c = clampCamera(next, measured ? sizeRef.current : undefined);
     cameraRef.current = c;
     setCamera(c);
     return c;
-  }, []);
+  }, [hasMeasuredRef]);
+
+  // A saved camera can be out of bounds on a smaller screen: re-clamp when the plot is resized
+  // (and on its first real measurement). Only writes when the pan actually changes, so the
+  // ResizeObserver's fresh `size` objects cannot cause a render loop.
+  useEffect(() => {
+    if (hasMeasuredRef && !hasMeasuredRef.current) return;
+    const cur = cameraRef.current;
+    const next = clampCamera(cur, size);
+    if (next.panX !== cur.panX || next.panY !== cur.panY) apply(next);
+  }, [size, hasMeasuredRef, apply]);
 
   // A URL change from outside (pasted link, Back) resyncs; our own writes do not loop.
   useEffect(() => {

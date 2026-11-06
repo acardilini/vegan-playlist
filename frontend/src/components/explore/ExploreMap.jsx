@@ -140,7 +140,7 @@ function ExploreMap() {
   const transform = useMapTransform({ size, params, onCommit: commitView, hasMeasuredRef });
   const commitCam = useCallback((serialised) => setParam('cam', serialised), [setParam]);
   const orbit = useOrbitCamera({
-    size, params, onCommit: commitCam, active: dim === '3d', reduceMotion,
+    size, params, onCommit: commitCam, active: dim === '3d', reduceMotion, hasMeasuredRef,
   });
   // Whichever hook owns the pointer right now; both are always called (hooks cannot be
   // conditional) but only one is wired to the canvas.
@@ -329,7 +329,10 @@ function ExploreMap() {
 
       if (is3d) drawGizmo();
 
-      positionsRef.current = points;
+      // What a click can hit: each dot's drawn radius and whether it is lit, so picking agrees
+      // with what is painted (a dimmed dot never steals a click from a lit one under it).
+      const litIds = new Set(lit.map(p => p.id));
+      positionsRef.current = points.map(p => ({ ...p, r: radiusOf(p), lit: litIds.has(p.id) }));
       lastFrameRef.current = new Map(points.map(p => [p.id, { x: p.x, y: p.y }]));
     };
 
@@ -527,6 +530,8 @@ function ExploreMap() {
               );
             })}
           </ul>
+
+          {legend && legend.note && <p className="explore-legend-note">{legend.note}</p>}
 
           {matches && (
             <div className="explore-matches">
