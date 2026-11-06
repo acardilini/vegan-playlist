@@ -220,3 +220,12 @@ backend + frontend, load `/explore`, check 2D unchanged against a pre-change sha
 orbit/pan/zoom, each preset, drift, Colour by each theme dimension and spotlight a sub-dimension, switch
 space in 3D, reload with the URL and confirm the view restores. The curator smoke steps are written out
 in the chat at the end of each round.
+
+## Round 2 revisions (2026-11-06, author's calls, written with the Round 2 plan)
+
+- **No per-song code lists in the payload.** Labels are named on the server from the rows it already holds, so the payload only grows by the label arrays (`spaces[i].labels2d` / `labels3d`, each `{ label, centre, count }`; 2D centres in raw 2D units, 3D centres in the normalised units of `coords3`). This replaces the earlier sentence that round 2 adds code lists to the payload.
+- **k-means is deterministic without a seed** (farthest-point start, then Lloyd's iterations), `k = 12`, regions under 15 songs unlabelled; a label is the most over-represented term (any of the four theme columns) plus the most over-represented parent genre, joined by ` · `; duplicate label text keeps the larger region. Thresholds are exported constants tuned once against the live data.
+- **Labels that collide are dropped, smaller regions first**, so zooming in reveals more labels; labels are hidden during a tween.
+- **Year scrubber is a single cutoff**, `yr=<year>` ("up to this year"), written only while a cutoff is active. Later songs dim like a spotlight miss and are not pickable; songs with no release year draw at half strength while a cutoff is set and stay pickable; with no cutoff nothing changes. **Play** steps one year per ~350ms.
+- **Toggles** `Labels` and `Lines` sit in the first toolbar pill (URL `labels=0`, `lines=0`; default on).
+- **Guided walk centres the camera only when the next song is near or beyond the edge of the plot** (an unzoomed map already shows everything, so the camera would never need to move); Back retraces; the path resets whenever the selection is not the end of the path.
