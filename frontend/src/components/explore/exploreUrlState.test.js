@@ -17,6 +17,7 @@ import {
   formatYear,
   songPassesSpotlight,
   withParam,
+  withParams,
   yearBounds,
   yearState,
 } from './exploreUrlState.js';
@@ -211,4 +212,13 @@ test('deriveFlag is on unless the param is exactly 0', () => {
   assert.equal(deriveFlag(p('labels=1'), 'labels'), true);
   assert.equal(deriveFlag(p('labels=off'), 'labels'), true);
   assert.equal(deriveFlag(p('labels=0'), 'lines'), true, 'a different key is unaffected');
+});
+
+test('withParams writes several keys in one go and deletes empty ones', () => {
+  const next = withParams(p('space=audio&song=1&view=2,0,0'), [['song', '2'], ['view', ''], ['cam', 'top']]);
+  assert.equal(next.get('space'), 'audio');
+  assert.equal(next.get('song'), '2');
+  assert.equal(next.has('view'), false);
+  assert.equal(next.get('cam'), 'top');
+  assert.equal(withParams(p('q=x'), []).get('q'), 'x');
 });

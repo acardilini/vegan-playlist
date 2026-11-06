@@ -56,6 +56,14 @@ export function withParam(params, key, value) {
   return next;
 }
 
+// Several params in ONE write. Two separate setParams calls in the same tick each start from the
+// same stale params, so the second silently undoes the first.
+export function withParams(params, pairs) {
+  let next = params;
+  for (const [key, value] of pairs) next = withParam(next, key, value);
+  return next === params ? new URLSearchParams(params) : next;
+}
+
 // The viewport travels as one `view=k,tx,ty` param. Anything unparseable falls back to fit
 // rather than to a blank plot — the same guard `space` and `colour` carry, and for the same
 // reason: this page's whole contract is that the view lives in the URL.

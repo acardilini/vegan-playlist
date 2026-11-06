@@ -88,13 +88,16 @@ export function useMapTransform({ size, params, onCommit, hasMeasuredRef, reduce
 
   // Eases the view to `target` (snaps under reduced motion). Any new gesture cancels it, and the
   // final view is committed to the URL once, like the end of a drag.
-  const moveTo = useCallback((target) => {
+  // A caller also writing other URL params passes { commit: false } and folds the returned
+  // serialised view into its own single write (a snap returns it; an eased move commits itself
+  // later and returns null).
+  const moveTo = useCallback((target, { commit: write = true } = {}) => {
     cancelMove();
     const next = clampView(target, sizeRef.current);
     if (reduceRef.current) {
       setView(next);
-      commit(next);
-      return;
+      if (write) commit(next);
+      return formatView(next);
     }
     const from = viewRef.current;
     const start = performance.now();
@@ -110,6 +113,7 @@ export function useMapTransform({ size, params, onCommit, hasMeasuredRef, reduce
       else { moveRafRef.current = 0; commit(next); }
     };
     moveRafRef.current = requestAnimationFrame(frame);
+    return null;
   }, [cancelMove, commit]);
 
   const zoomBy = useCallback((factor) => {

@@ -25,3 +25,10 @@ export function walkBack(path, selectedId) {
   const trimmed = base.slice(0, -1);
   return { path: trimmed, id: trimmed[trimmed.length - 1] };
 }
+
+// The path as it should be held after the selection changes: kept only while it still ends at the
+// selected song, otherwise forgotten (Escape, the card's x, or picking any other song), so
+// reselecting the song a long-abandoned walk ended on starts fresh instead of reviving it.
+export function walkPrune(path, selectedId) {
+  return path.length > 0 && path[path.length - 1] === selectedId ? path : [];
+}

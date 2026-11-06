@@ -11,7 +11,7 @@ import { useOrbitCamera } from './useOrbitCamera';
 import MapToolbar from './MapToolbar';
 import { placeLabels, truncateLabel } from './mapLabels';
 import { nearestSongs } from './neighbours';
-import { walkBack, walkBase, walkNext } from './walk';
+import { walkBack, walkBase, walkNext, walkPrune } from './walk';
 import YearStrip from './YearStrip';
 import {
   activePreset as presetOf, dotAlpha, dotRadius, gizmoAxes, panCentredOn, pickPoint, projectCloud,
@@ -19,7 +19,7 @@ import {
 } from './camera3d';
 import {
   deriveColour, deriveDim, deriveFlag, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit,
-  deriveYear, formatYear, songPassesSpotlight, withParam, yearBounds, yearState,
+  deriveYear, formatYear, songPassesSpotlight, withParam, withParams, yearBounds, yearState,
 } from './exploreUrlState';
 
 const DOT_RADIUS = 4;
@@ -216,6 +216,10 @@ function ExploreMap() {
   // the selection restarts the walk with no extra code.
   const [walkPath, setWalkPath] = useState([]);
   const walkLength = walkBase(walkPath, selectedId).length;
+  // Escape, the card's x or picking any other song forgets the walk.
+  useEffect(() => {
+    setWalkPath(p => (p.length === 0 ? p : walkPrune(p, selectedId)));
+  }, [selectedId]);
   const canWalkNext = useMemo(
     () => !!data && !!space && walkNext(data.songs, space, dim, walkPath, selectedId) !== null,
     [data, space, dim, walkPath, selectedId]);
@@ -462,12 +466,17 @@ function ExploreMap() {
   const stepTo = (step) => {
     if (!step) return;
     setWalkPath(step.path);
-    setParam('song', String(step.id));
+    // One URL write for the song AND any snapped camera/view: separate writes in one tick would
+    // each start from the same stale params and the later one would undo the song change.
+    const writes = [['song', String(step.id)]];
     const point = positionsRef.current.find(p => p.id === step.id);
     if (point && outsideCore(point, size)) {
-      if (dim === '3d') orbit.moveTo(panCentredOn(orbit.camera, point, size));
-      else transform.moveTo(viewCentredOn(transform.view, point, size));
+      const serialised = dim === '3d'
+        ? orbit.moveTo(panCentredOn(orbit.camera, point, size), { commit: false })
+        : transform.moveTo(viewCentredOn(transform.view, point, size), { commit: false });
+      if (serialised != null) writes.push([dim === '3d' ? 'cam' : 'view', serialised]);
     }
+    setParams(withParams(params, writes), { replace: true });
   };
   const onWalkNext = () => stepTo(walkNext(data.songs, space, dim, walkPath, selectedId));
   const onWalkBack = () => stepTo(walkBack(walkPath, selectedId));

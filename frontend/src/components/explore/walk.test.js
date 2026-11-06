@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { walkBack, walkBase, walkNext } from './walk.js';
+import { walkBack, walkBase, walkNext, walkPrune } from './walk.js';
 
 // Thirty songs on a line, one unit apart: the nearest unvisited song is always an adjacent one.
 const SONGS = Array.from({ length: 30 }, (_, i) => ({
@@ -52,4 +52,11 @@ test('walkBack retraces and is null at the start', () => {
   assert.equal(walkBack([10], 10), null);
   assert.equal(walkBack([10, 9], 77), null, 'a selection off the path restarts, so there is nothing to go back to');
   assert.equal(walkBack([], null), null);
+});
+
+test('walkPrune keeps a path that ends at the selection and drops it otherwise', () => {
+  assert.deepEqual(walkPrune([10, 9, 8], 8), [10, 9, 8]);
+  assert.deepEqual(walkPrune([10, 9, 8], null), [], 'Escape / clear forgets the walk');
+  assert.deepEqual(walkPrune([10, 9, 8], 3), [], 'selecting another song forgets the walk');
+  assert.deepEqual(walkPrune([], 3), []);
 });

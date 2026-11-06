@@ -86,12 +86,16 @@ export function useOrbitCamera({
     moveRafRef.current = 0;
   }, []);
 
-  // Eases to a target camera (snaps under reduced motion). A new gesture cancels it.
-  const moveTo = useCallback((target) => {
+  // Eases to a target camera (snaps under reduced motion). A new gesture cancels it. A caller that
+  // is also writing other URL params passes { commit: false } and folds the returned serialised
+  // camera into its own single write (a snap returns it; an eased move commits itself later and
+  // returns null).
+  const moveTo = useCallback((target, { commit: write = true } = {}) => {
     cancelMove();
     if (reduceRef.current) {
-      commit(apply(target));
-      return;
+      const snapped = apply(target);
+      if (write) commit(snapped);
+      return formatCamera(snapped);
     }
     const from = cameraRef.current;
     const start = performance.now();
@@ -102,6 +106,7 @@ export function useOrbitCamera({
       else { moveRafRef.current = 0; commit(c); }
     };
     moveRafRef.current = requestAnimationFrame(frame);
+    return null;
   }, [apply, cancelMove, commit]);
 
   const goToPreset = useCallback((name) => {
