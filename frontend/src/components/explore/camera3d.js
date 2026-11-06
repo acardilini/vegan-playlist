@@ -20,10 +20,13 @@ export const MAX_ZOOM = 8;
 
 // The camera sits CAM_DIST in front of the origin. Zoom scales the focal length, NOT the
 // distance: dividing the distance by zoom would carry dots behind the camera at high zoom.
-// FOCAL is tuned so the server-normalised cloud (|v| <= 1/1.15 on its longest axis) clears a 5%
-// margin in every preset on a landscape plot, while still filling most of it.
+// FOCAL is tuned on the live clouds (measured 2026-11-06 on a 900x600 plot): at 1.2 they spanned
+// only ~45% of the plot height; at 1.56 the presets span ~50-80% and a full Drift turn peaks at
+// ~97%, so the odd outlier may brush the edge for a moment. The axis ends of the server-normalised
+// cloud (|v| <= 1/1.15) still clear a 5% margin in every preset (tested); the unreachable cube
+// corners do not, by design.
 const CAM_DIST = 4.2;
-const FOCAL = 1.2;
+const FOCAL = 1.56;
 
 const RAD = Math.PI / 180;
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));

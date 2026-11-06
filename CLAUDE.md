@@ -269,7 +269,7 @@ Run before ending every working session:
   `useExplorePoints`, the **3D view** (`camera3d.js` pure perspective maths - projection, presets, interpolation,
   depth cues, gizmo, depth-aware `pickPoint`, zoom scales the focal length not the camera distance;
   `useOrbitCamera.js` the gesture/preset/drift hook, left-drag orbits, right- or Shift-drag pans, arrow keys orbit;
-  `MapToolbar.jsx` the floating 2D|3D, Iso/Top/Front/Side and Drift pill; URL params `dim=3d` and
+  `MapToolbar.jsx` the floating 2D|3D pill with the camera pill (Iso/Top/Front/Side, Drift) stacked under it in 3D; URL params `dim=3d` and
   `cam=<preset>|yaw,pitch,zoom,panX,panY`, both falling back to the default view when invalid, and `dim=3d` falling
   back to 2D for a space with no 3D data; default view stays 2D), `palette.js` (categorical colours live in
   CSS as `--explore-cat-*` so theming stays in the token layer; JS only reads them) — plus the

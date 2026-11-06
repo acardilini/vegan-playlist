@@ -2096,6 +2096,8 @@ Newest first. Each entry: date · decision · why.
 
 Newest first. What actually happened each session.
 
+- **2026-11-06 (Explorer round 1, curator feedback after first look)** - same branch. Default 3D view zoomed in: `FOCAL` 1.2 -> 1.56 in `camera3d.js`, measured on the live clouds (were ~45% of plot height; presets now ~50-80%, a full Drift turn peaks ~97% on the Sound space). The camera tests now guard the axis ends of the normalised cloud instead of the unreachable cube corners. The Iso/Top/Front/Side presets and Drift moved into a second pill stacked under the 2D | 3D pill (which no longer changes width). Frontend node tests 78/78, lint 0 errors, build clean, live Chrome look.
+
 - **2026-11-06 (Explorer round 1: 3D map + Themes colouring, built, awaiting smoke)** - branch `session-explorer-3d`. Brainstormed with the curator (visual companion: control layout A, floating toolbar), spec + plan written, built inline: normalised 3D coordinates and theme sub-dimension colour-by in `services/explore.js`; `camera3d.js`, `useOrbitCamera.js`, `MapToolbar.jsx`, 3D drawing in `ExploreMap.jsx`; URL params `dim` and `cam`. Backend 541/541, frontend node tests 74/74, lint 0 errors, build clean, live Chrome check. Round 2 and the artist location map follow.
 
 - **2026-10-31 (Bandcamp label pages, smoked and merged)** - branch `session-leads-queue`. Catalogue read keeps only releases credited to the band on a label page (reads the grid and the embedded client list), with a visible note; nothing read when the label has none of the band. 533/533 backend tests.
