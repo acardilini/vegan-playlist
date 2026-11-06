@@ -29,6 +29,12 @@ export function extentsFor(songs, spaceKey) {
   return { minX, maxX, minY, maxY };
 }
 
+// Decelerating: the arrival is the informative part of a move, so it gets the time. Shared by
+// the dot tween (ExploreMap) and the camera moves (useOrbitCamera).
+export function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 // Screen position = base x k + translate. Keeping this one line separate is what lets the
 // gesture maths and the draw loop agree by construction.
 export function applyView({ x, y }, view) {

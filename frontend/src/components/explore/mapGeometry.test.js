@@ -2,10 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   FIT_VIEW, MAX_K, PAD,
-  applyView, clampView, extentsFor, layout, zoomAtPoint,
+  applyView, clampView, easeOutCubic, extentsFor, layout, zoomAtPoint,
 } from './mapGeometry.js';
 
 const SIZE = { w: 800, h: 520 };
+
+test('easeOutCubic runs 0 to 1 and decelerates', () => {
+  assert.equal(easeOutCubic(0), 0);
+  assert.equal(easeOutCubic(1), 1);
+  assert.ok(easeOutCubic(0.5) > 0.5, 'front-loaded: more than half done at the midpoint');
+});
 const songs = (coords) => coords.map(([x, y], i) => ({ id: i + 1, coords: { audio: [x, y] } }));
 
 test('extentsFor spans the real coordinates of one space', () => {
