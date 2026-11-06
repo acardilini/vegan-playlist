@@ -2515,6 +2515,50 @@
   z-index: 1;
 }
 
+/* The floating 2D/3D + camera pill, centred over the plot. It leaves room on the right for the
+   zoom buttons and wraps rather than overflowing on a narrow plot. */
+.explore-maptools {
+  position: absolute;
+  top: var(--space-2);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 190px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-pill);
+  z-index: 1;
+}
+
+.explore-maptools-group { display: flex; gap: var(--space-1); }
+
+.explore-maptool {
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 2px var(--space-3);
+  font: var(--text-label);
+  cursor: pointer;
+}
+
+.explore-maptool:hover:not(:disabled) { color: var(--text-primary); }
+
+.explore-maptool.on {
+  background: var(--accent-moss-60);
+  border-color: var(--accent-moss-60);
+  color: var(--text-on-accent);
+}
+
+.explore-maptool:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.explore-maptool:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+
 .explore-zoom button {
   min-width: 28px;
   height: 28px;

@@ -3,10 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import { useExplorePoints } from './useExplorePoints';
 import { colourScale, dimColour } from './palette';
 import SelectedSongCard from './SelectedSongCard';
-import { layout } from './mapGeometry';
+import { easeOutCubic, layout } from './mapGeometry';
 import { useMapTransform } from './useMapTransform';
+import { useOrbitCamera } from './useOrbitCamera';
+import MapToolbar from './MapToolbar';
 import {
-  deriveColour, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit, withParam,
+  activePreset as presetOf, dotAlpha, dotRadius, gizmoAxes, pickPoint, projectCloud,
+  sortBackToFront,
+} from './camera3d';
+import {
+  deriveColour, deriveDim, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit,
+  songPassesSpotlight, withParam,
 } from './exploreUrlState';
 
 const DOT_RADIUS = 4;
@@ -79,10 +86,9 @@ function usePrefersReducedMotion() {
 const TWEEN_MS = 450;
 const HOVER_GROWTH = 3;   // px added to the hovered dot's radius
 
-// Decelerating: the arrival is the informative part of the motion, so it gets the time.
-function easeOutCubic(t) {
-  return 1 - Math.pow(1 - t, 3);
-}
+// Length (px) of the orientation gizmo's axes, and its inset from the plot's bottom-right corner.
+const GIZMO_LEN = 22;
+const GIZMO_INSET = 44;
 
 function ExploreMap() {
   const { data, loading, error, reload } = useExplorePoints();
@@ -120,6 +126,9 @@ function ExploreMap() {
   const query = deriveQuery(params);
   const selectedId = deriveSelectedId(params);
   const spotlit = useMemo(() => deriveSpotlit(params), [params]);
+  // 3D only where the current space has 3D positions; a stale `dim=3d` link degrades to 2D.
+  const has3d = !!(data && data.spaces.some(s => s.key === space && s.has3d));
+  const dim = deriveDim(params, has3d);
 
   const setParam = useCallback((key, value) => {
     setParams(withParam(params, key, value), { replace: true });
@@ -129,6 +138,13 @@ function ExploreMap() {
   // writing 60 history entries would make Back useless.
   const commitView = useCallback((serialised) => setParam('view', serialised), [setParam]);
   const transform = useMapTransform({ size, params, onCommit: commitView, hasMeasuredRef });
+  const commitCam = useCallback((serialised) => setParam('cam', serialised), [setParam]);
+  const orbit = useOrbitCamera({
+    size, params, onCommit: commitCam, active: dim === '3d', reduceMotion,
+  });
+  // Whichever hook owns the pointer right now; both are always called (hooks cannot be
+  // conditional) but only one is wired to the canvas.
+  const gesture = dim === '3d' ? orbit : transform;
 
   // Track the plot box so the canvas can be backing-store accurate. Depends on `plotEl`, not
   // just an empty array: on first load the plot wrapper is unmounted (the loading-state early
@@ -193,17 +209,19 @@ function ExploreMap() {
   // (the loading-state early return below fires instead), so the effect commit that runs
   // while `attachWheel`'s identity is fresh would otherwise attach to `null` and never
   // re-run once the canvas actually appears, leaving the wheel permanently unbound.
-  const { attachWheel } = transform;
+  const attachWheel = gesture.attachWheel;
   useEffect(() => attachWheel(canvasEl), [attachWheel, canvasEl]);
 
   // Switching space tweens every dot from where it is to where it belongs — that motion is
   // the answer to "which songs travel together between Thematic and Sound", which is the
   // question the map exists to raise. `from` is the last frame DRAWN, not the last space's
   // final layout, so interrupting mid-tween resumes from the current position.
+  // Switching 2D <-> 3D is the same motion: every dot glides from where it is drawn to where it
+  // belongs. Camera movement (orbit, drift, presets) must NOT start a tween - only these two do.
   useEffect(() => {
     if (!lastFrameRef.current || reduceMotion) return;
     tweenRef.current = { from: lastFrameRef.current, start: performance.now() };
-  }, [space, reduceMotion]);
+  }, [space, dim, reduceMotion]);
 
   useEffect(() => {
     const canvas = canvasEl;
@@ -218,29 +236,65 @@ function ExploreMap() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
 
-    const target = layout(data.songs, space, size, transform.view);
-    const dim = dimColour();
-    const ringColour = getComputedStyle(document.documentElement)
-      .getPropertyValue('--text-primary').trim() || '#fff';
+    const is3d = dim === '3d';
+    // Every point carries `depth` and `k` (depth factor); in 2D they are constants, so the
+    // drawing and picking code below is one path for both views.
+    let target;
+    if (is3d) {
+      const mapped = data.songs.filter(s => s.coords3 && s.coords3[space]);
+      const projected = projectCloud(mapped.map(s => s.coords3[space]), orbit.camera, size);
+      target = sortBackToFront(projected.map((p, i) => ({ id: mapped[i].id, song: mapped[i], ...p })));
+    } else {
+      target = layout(data.songs, space, size, transform.view)
+        .map(p => ({ ...p, depth: 0, k: 1 }));
+    }
+    const dimmed = dimColour();
+    const rootStyle = getComputedStyle(document.documentElement);
+    const ringColour = rootStyle.getPropertyValue('--text-primary').trim() || '#fff';
+    const gizmoColour = rootStyle.getPropertyValue('--text-secondary').trim() || '#aaa';
+    const radiusOf = (p) => (is3d ? dotRadius(DOT_RADIUS, p.k) : DOT_RADIUS);
+
+    const drawGizmo = () => {
+      const cx = size.w - GIZMO_INSET;
+      const cy = size.h - GIZMO_INSET;
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 1.5;
+      // Far axes first so the near ones overlap them; nearer = more opaque.
+      for (const a of gizmoAxes(orbit.camera).sort((u, v) => v.depth - u.depth)) {
+        const ex = cx + a.x * GIZMO_LEN;
+        const ey = cy + a.y * GIZMO_LEN;
+        ctx.globalAlpha = 0.9 - 0.45 * ((a.depth + 1) / 2);
+        ctx.strokeStyle = gizmoColour;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        ctx.fillStyle = ringColour;
+        ctx.fillText(a.axis.toUpperCase(), cx + a.x * (GIZMO_LEN + 9), cy + a.y * (GIZMO_LEN + 9));
+      }
+      ctx.globalAlpha = 1;
+    };
 
     const drawFrame = (points) => {
       ctx.clearRect(0, 0, size.w, size.h);
       const lit = [];
       for (const p of points) {
-        const passesSpotlight = spotlit.size === 0 || spotlit.has(p.song.codes[colour]);
+        const passesSpotlight = songPassesSpotlight(p.song, colour, spotlit);
         const passesSearch = !matchIds || matchIds.has(p.id);
         if (passesSpotlight && passesSearch) lit.push(p);
         else {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, DOT_RADIUS, 0, Math.PI * 2);
-          ctx.fillStyle = dim;
+          ctx.arc(p.x, p.y, radiusOf(p), 0, Math.PI * 2);
+          ctx.fillStyle = dimmed;
           ctx.fill();
         }
       }
-      ctx.globalAlpha = 0.85;
       for (const p of lit) {
+        ctx.globalAlpha = is3d ? dotAlpha(p.k) : 0.85;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.id === hoverId ? DOT_RADIUS + HOVER_GROWTH : DOT_RADIUS,
+        ctx.arc(p.x, p.y, p.id === hoverId ? radiusOf(p) + HOVER_GROWTH : radiusOf(p),
           0, Math.PI * 2);
         ctx.fillStyle = scale(p.song.codes[colour]);
         ctx.fill();
@@ -253,7 +307,7 @@ function ExploreMap() {
         const h = lit.find(p => p.id === hoverId);
         if (h) {
           ctx.beginPath();
-          ctx.arc(h.x, h.y, DOT_RADIUS + HOVER_GROWTH + 3, 0, Math.PI * 2);
+          ctx.arc(h.x, h.y, radiusOf(h) + HOVER_GROWTH + 3, 0, Math.PI * 2);
           ctx.globalAlpha = 0.35;
           ctx.strokeStyle = scale(h.song.codes[colour]);
           ctx.lineWidth = 2;
@@ -266,12 +320,14 @@ function ExploreMap() {
         const hit = points.find(p => p.id === selectedId);
         if (hit) {
           ctx.beginPath();
-          ctx.arc(hit.x, hit.y, DOT_RADIUS + 4, 0, Math.PI * 2);
+          ctx.arc(hit.x, hit.y, radiusOf(hit) + 4, 0, Math.PI * 2);
           ctx.strokeStyle = ringColour;
           ctx.lineWidth = 2;
           ctx.stroke();
         }
       }
+
+      if (is3d) drawGizmo();
 
       positionsRef.current = points;
       lastFrameRef.current = new Map(points.map(p => [p.id, { x: p.x, y: p.y }]));
@@ -294,23 +350,16 @@ function ExploreMap() {
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
   }, [
-    canvasEl, data, space, colour, scale, size, spotlit, matchIds, selectedId, transform.view,
-    hoverId,
+    canvasEl, data, space, dim, colour, scale, size, spotlit, matchIds, selectedId,
+    transform.view, orbit.camera, hoverId,
   ]);
 
-  const nearest = (mx, my) => {
-    let best = null, bestD = 12 * 12;   // 12px grab radius, squared
-    for (const p of positionsRef.current) {
-      const dx = p.x - mx, dy = p.y - my;
-      const d = dx * dx + dy * dy;
-      if (d < bestD) { bestD = d; best = p; }
-    }
-    return best;
-  };
+  // 12px grab radius; in 3D, of the dots inside it the one nearest the camera wins.
+  const nearest = (mx, my) => pickPoint(positionsRef.current, mx, my, 12);
 
   const onMove = (e) => {
     // A pan owns the pointer; showing a hover card mid-drag is noise.
-    if (transform.onPointerMove(e)) { setHover(null); return; }
+    if (gesture.onPointerMove(e)) { setHover(null); return; }
     const r = e.currentTarget.getBoundingClientRect();
     const hit = nearest(e.clientX - r.left, e.clientY - r.top);
     setHover(hit ? { song: hit.song, x: hit.x, y: hit.y } : null);
@@ -319,7 +368,7 @@ function ExploreMap() {
   const onClick = (e) => {
     // `click` fires after the pointer-up that ended a pan; without this every drag would
     // also select a song.
-    if (transform.didDrag()) return;
+    if (gesture.didDrag()) return;
     const r = e.currentTarget.getBoundingClientRect();
     const hit = nearest(e.clientX - r.left, e.clientY - r.top);
     if (hit) setParam('song', String(hit.id));
@@ -386,21 +435,34 @@ function ExploreMap() {
           <canvas
             ref={setCanvasEl}
             role="img"
-            className={transform.isDragging ? 'explore-canvas grabbing' : 'explore-canvas'}
-            aria-label={`Map of ${data.coverage.mapped} songs positioned by ${
+            className={gesture.isDragging ? 'explore-canvas grabbing' : 'explore-canvas'}
+            aria-label={`${dim === '3d' ? '3D map' : 'Map'} of ${data.coverage.mapped} songs positioned by ${
               (data.spaces.find(s => s.key === space) || {}).label} similarity, coloured by ${
               (legend || {}).label}.`}
-            onPointerDown={transform.onPointerDown}
+            tabIndex={dim === '3d' ? 0 : undefined}
+            onPointerDown={gesture.onPointerDown}
             onPointerMove={onMove}
-            onPointerUp={transform.onPointerUp}
-            onPointerLeave={() => { transform.onPointerUp(); setHover(null); }}
-            onPointerCancel={() => { transform.onPointerCancel(); setHover(null); }}
+            onPointerUp={gesture.onPointerUp}
+            onPointerLeave={() => { gesture.onPointerUp(); setHover(null); }}
+            onPointerCancel={() => { gesture.onPointerCancel(); setHover(null); }}
+            onContextMenu={dim === '3d' ? orbit.onContextMenu : undefined}
+            onKeyDown={dim === '3d' ? orbit.onKeyDown : undefined}
             onClick={onClick}
           />
+          <MapToolbar
+            dim={dim}
+            has3d={has3d}
+            onDim={(d) => setParam('dim', d === '3d' ? '3d' : null)}
+            activePreset={presetOf(orbit.camera)}
+            onPreset={orbit.goToPreset}
+            drift={orbit.drift}
+            onDrift={orbit.setDrift}
+            reduceMotion={reduceMotion}
+          />
           <div className="explore-zoom">
-            <button type="button" aria-label="Zoom in" onClick={transform.zoomIn}>+</button>
-            <button type="button" aria-label="Zoom out" onClick={transform.zoomOut}>−</button>
-            <button type="button" className="explore-zoom-reset" onClick={transform.reset}>
+            <button type="button" aria-label="Zoom in" onClick={gesture.zoomIn}>+</button>
+            <button type="button" aria-label="Zoom out" onClick={gesture.zoomOut}>−</button>
+            <button type="button" className="explore-zoom-reset" onClick={gesture.reset}>
               Reset
             </button>
           </div>
