@@ -125,6 +125,7 @@ async function mapRows(db, spaces) {
             ${genres.EFFECTIVE_GENRE_EXPR} AS genre,
             sla.sonic_energy, sla.emotional_mood, sla.rhythmic_style,
             sla.acoustic_type, sla.vocal_delivery, sla.focus_amount,
+            sla.themes, sla.topics, sla.advocacy, sla.moral_frames,
             ${coordCols}
        FROM songs s
        JOIN song_coordinates sc ON sc.song_id = s.id
@@ -154,11 +155,58 @@ const OTHER_GENRES_LABEL = 'Other genres';
 // The curated, low-cardinality colour-by menu: five acoustic dimensions (3–4 codes each),
 // one scalar component, and parent genre. Deliberately NOT all seven scalar components —
 // `lyrical_tone` has 16 codes and a legend that long stops being a key.
+// The four lyric-analysis dimensions, coloured by SUB-dimension (3-4 per dimension, so each legend
+// fits the palette). `key` is the public dimension name (also the taxonomy hierarchy key), `col`
+// the song_lyric_analysis column. `tactics` is a mirror of advocacy and is deliberately not read,
+// so the map agrees with the browse sidebar.
+const THEME_DIMENSIONS = [
+  { key: 'themes', label: 'Themes', col: 'themes' },
+  { key: 'targets', label: 'Targets & species', col: 'topics' },
+  { key: 'actions', label: 'Actions & advocacy', col: 'advocacy' },
+  { key: 'moral_frames', label: 'Moral frames', col: 'moral_frames' },
+];
+
 const COLOUR_DIMENSIONS = [
   ...acoustic.COMPONENTS.map(c => ({ key: c.key, label: c.heading, source: 'acoustic' })),
   { key: 'focus_amount', label: 'Focus', source: 'scalar' },
   { key: 'genre', label: 'Genre', source: 'genre' },
+  ...THEME_DIMENSIONS.map(d => ({ ...d, source: 'theme' })),
 ];
+
+// A song with codes in several sub-dimensions tied for most is neither one nor another.
+const MIXED = 'MIXED';
+const MIXED_LABEL = 'Mixed';
+
+// Distinct codebook-known codes the song carries per sub-dimension (the same codebook gate every
+// public read uses; unknown codes, blanks and non-arrays are ignored).
+function themeSubCounts(col, codes) {
+  const out = new Map();
+  if (!Array.isArray(codes)) return out;
+  const seen = new Set();
+  for (const row of codes) {
+    const code = row && row.code;
+    if (!code || seen.has(code)) continue;
+    const sd = analysis.SUBDIM[col] && analysis.SUBDIM[col].get(code);
+    if (!sd || !sd.sub_dimension) continue;
+    seen.add(code);
+    out.set(sd.sub_dimension, (out.get(sd.sub_dimension) || 0) + 1);
+  }
+  return out;
+}
+
+// Codes carry no weights, so "most codes" is the only strength signal: the sub-dimension with the
+// strictly highest count; a tie is MIXED; no finding is NOT_CODED.
+function themeBucket(counts) {
+  let best = null;
+  let bestN = 0;
+  let tied = false;
+  for (const [sub, n] of counts) {
+    if (n > bestN) { best = sub; bestN = n; tied = false; }
+    else if (n === bestN) tied = true;
+  }
+  if (best === null) return NOT_CODED;
+  return tied ? MIXED : best;
+}
 
 const DIMENSION_BY_KEY = Object.fromEntries(COLOUR_DIMENSIONS.map(d => [d.key, d]));
 
@@ -169,6 +217,7 @@ function codeFor(dimensionKey, row) {
   if (dim.source === 'genre') {
     return getParentGenre(row.genre) || NOT_CODED;
   }
+  if (dim.source === 'theme') return themeBucket(themeSubCounts(dim.col, row[dim.col]));
   const v = row[dimensionKey];
   if (!v) return NOT_CODED;
   if (dim.source === 'scalar' && codebook.isSuppressed(v)) return NOT_CODED;
@@ -178,6 +227,9 @@ function codeFor(dimensionKey, row) {
 function labelFor(dim, code) {
   if (code === NOT_CODED) return NOT_CODED_LABEL;
   if (code === OTHER_GENRES) return OTHER_GENRES_LABEL;
+  if (dim.source === 'theme') {
+    return code === MIXED ? MIXED_LABEL : analysis.subDimensionLabel(dim.col, code);
+  }
   // getParentGenre returns the literal 'other' for a genre string it does not recognise —
   // the song HAS a genre, it just is not one we map. That is a different claim from
   // "Not coded", and naming it "Other" inside "Other genres" would blur both.
@@ -223,7 +275,14 @@ function legendFor(dim, rows, top) {
   const seen = new Set([NOT_CODED]);
   const known = dim.source === 'acoustic' ? acoustic.optionsFor(dim.key)
     : dim.source === 'scalar' ? codebook.optionsFor(dim.key)
-    : [];
+    // Sub-dimensions in taxonomy order, then Mixed; the shared tail adds Not coded last.
+    : dim.source === 'theme'
+      ? [
+        ...Object.entries(analysis.taxonomy.hierarchy[dim.key].sub_dimensions)
+          .map(([code, sub]) => ({ code, label: sub.label })),
+        { code: MIXED, label: MIXED_LABEL },
+      ]
+      : [];
   for (const o of known) {
     seen.add(o.code);
     if (counts.has(o.code)) ordered.push({ code: o.code, label: o.label, count: counts.get(o.code) });
@@ -299,6 +358,13 @@ async function mapPayload(db) {
     // Raw codes, deliberately unfolded: the spotlight targets an exact genre, and the
     // frontend derives a dot's COLOUR from the legend's nesting instead.
     for (const d of COLOUR_DIMENSIONS) codes[d.key] = codeFor(d.key, r);
+    // A song's colour is single-valued, but a spotlight must light every song that TOUCHES a
+    // sub-dimension, so the full set rides along (omitted when empty).
+    const subs = {};
+    for (const d of THEME_DIMENSIONS) {
+      const found = [...themeSubCounts(d.col, r[d.col]).keys()].sort();
+      if (found.length) subs[d.key] = found;
+    }
     return {
       id: r.id,
       title: r.title,
@@ -308,6 +374,7 @@ async function mapPayload(db) {
       coords,
       coords3,
       codes,
+      subs,
     };
   });
 
@@ -473,7 +540,7 @@ async function similarFor(db, songId, limit = 6) {
 
 module.exports = {
   SPACE_LABELS, spaceLabel, SPACE_DESCRIPTIONS, spaceDescription, discoverSpaces, mapRows,
-  normaliseCloud, column3dFor,
+  normaliseCloud, column3dFor, MIXED, THEME_DIMENSIONS, themeSubCounts, themeBucket,
   NOT_CODED, COLOUR_DIMENSIONS, codeFor, mapPayload,
   GENRE_TOP_N, OTHER_GENRES, OTHER_GENRES_LABEL, genreTopSet, legendFor,
   SIMILARITY, similarByEmbedding, genreFallback, similarFor,

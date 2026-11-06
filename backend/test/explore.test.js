@@ -74,16 +74,27 @@ async function makeEligible(songId) {
 }
 
 async function addAnalysis(songId, fields = {}) {
-  const f = { sonic_energy: null, focus_amount: null, ...fields };
+  const f = {
+    sonic_energy: null, focus_amount: null,
+    themes: [], topics: [], advocacy: [], tactics: [], moral_frames: [],
+    ...fields,
+  };
+  const j = v => JSON.stringify(v);
   await pool.query(
     `INSERT INTO song_lyric_analysis
        (song_id, model_used, analyzed_at, themes, topics, advocacy, tactics, moral_frames,
         sonic_energy, focus_amount)
      VALUES ($1,'zzzexp-model','2026-07-27 10:00:00',
-             '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,$2,$3)
-     ON CONFLICT (song_id, model_used) DO UPDATE SET sonic_energy = EXCLUDED.sonic_energy, focus_amount = EXCLUDED.focus_amount`,
-    [songId, f.sonic_energy, f.focus_amount]);
+             $4::jsonb,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$2,$3)
+     ON CONFLICT (song_id, model_used) DO UPDATE SET
+       sonic_energy = EXCLUDED.sonic_energy, focus_amount = EXCLUDED.focus_amount,
+       themes = EXCLUDED.themes, topics = EXCLUDED.topics, advocacy = EXCLUDED.advocacy,
+       tactics = EXCLUDED.tactics, moral_frames = EXCLUDED.moral_frames`,
+    [songId, f.sonic_energy, f.focus_amount,
+      j(f.themes), j(f.topics), j(f.advocacy), j(f.tactics), j(f.moral_frames)]);
 }
+
+const codes = (...ids) => ids.map(code => ({ code, evidence: 'zzzexp' }));
 
 test('mapRows returns live mapped songs only', async () => {
   const spaces = await explore.discoverSpaces(pool);
@@ -200,6 +211,64 @@ test('mapPayload serves normalised coords3 and has3d', async () => {
     assert.ok(Number.isFinite(v) && Math.abs(v) <= 1, 'finite and normalised');
   }
   assert.ok(!('semantic' in song.coords3), 'no 3D coordinates for a hidden space');
+});
+
+test('themeSubCounts counts distinct codebook codes per sub-dimension', () => {
+  const m = explore.themeSubCounts('themes', [
+    { code: 'captivity' }, { code: 'captivity' }, { code: 'slaughter' }, { code: 'speciesism' },
+    { code: 'not_a_code' }, {}, null,
+  ]);
+  assert.equal(m.get('cruelty_suffering'), 2);
+  assert.equal(m.get('psychology_barriers'), 1);
+  assert.equal(m.size, 2);
+  assert.equal(explore.themeSubCounts('themes', null).size, 0);
+  assert.equal(explore.themeSubCounts('themes', 'junk').size, 0);
+});
+
+test('themeBucket: unique maximum wins, a tie is MIXED, nothing is NOT_CODED', () => {
+  assert.equal(explore.themeBucket(new Map([['a', 3], ['b', 1]])), 'a');
+  assert.equal(explore.themeBucket(new Map([['a', 2], ['b', 2]])), explore.MIXED);
+  assert.equal(explore.themeBucket(new Map()), explore.NOT_CODED);
+  assert.equal(explore.themeBucket(new Map([['a', 1]])), 'a');
+});
+
+test('theme colour-by via mapPayload: bucket, subs, legend order and palette fit', async () => {
+  const a = await mkSong('ZZZEXP Theme A');
+  await addCoords(a);
+  await addAnalysis(a, { themes: codes('captivity', 'slaughter', 'speciesism') });
+  const b = await mkSong('ZZZEXP Theme B');
+  await addCoords(b);
+  await addAnalysis(b, { themes: codes('captivity', 'speciesism') });
+  const c = await mkSong('ZZZEXP Theme C');
+  await addCoords(c);
+  // tactics mirrors advocacy and is never read: a tactics-only song has no theme finding
+  await addAnalysis(c, { tactics: codes('underground_rescue') });
+
+  const p = await explore.mapPayload(pool);
+  const sa = p.songs.find(s => s.id === a);
+  const sb = p.songs.find(s => s.id === b);
+  const sc = p.songs.find(s => s.id === c);
+  assert.equal(sa.codes.themes, 'cruelty_suffering');
+  assert.deepEqual(sa.subs.themes, ['cruelty_suffering', 'psychology_barriers']);
+  assert.equal(sb.codes.themes, 'MIXED');
+  assert.equal(sc.codes.themes, explore.NOT_CODED);
+  assert.ok(!sc.subs || !('themes' in sc.subs), 'no theme finding -> no subs entry');
+  assert.equal(sc.codes.actions, explore.NOT_CODED, 'tactics is never read for actions');
+
+  const legend = p.colourBy.find(l => l.key === 'themes');
+  assert.equal(legend.label, 'Themes');
+  assert.ok(legend.codes.every(e => e.count > 0), 'only present buckets are listed');
+  const cruelty = legend.codes.find(e => e.code === 'cruelty_suffering');
+  assert.equal(cruelty.label, 'Bodily Harm, Confinement & Suffering');
+  const mixed = legend.codes.find(e => e.code === 'MIXED');
+  assert.equal(mixed.label, 'Mixed');
+  assert.equal(legend.codes[legend.codes.length - 1].code, explore.NOT_CODED, 'Not coded last');
+  assert.ok(legend.codes.indexOf(mixed) > legend.codes.indexOf(cruelty), 'Mixed after sub-dimensions');
+  for (const key of ['themes', 'targets', 'actions', 'moral_frames']) {
+    const l = p.colourBy.find(x => x.key === key);
+    assert.ok(l, `${key} is in the colour-by menu`);
+    assert.ok(l.codes.length <= 6, `${key} legend fits the palette`);
+  }
 });
 
 test('genreTopSet picks the top-N named parents and never the literal other', () => {
