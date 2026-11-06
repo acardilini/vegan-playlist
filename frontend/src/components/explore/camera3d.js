@@ -30,6 +30,7 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // Wraps an angle to [-180, 180).
 function wrapDeg(d) {
+  if (d >= -180 && d < 180) return d;   // already in range: do not perturb it with float error
   return ((((d + 180) % 360) + 360) % 360) - 180;
 }
 

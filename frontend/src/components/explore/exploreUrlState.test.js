@@ -2,15 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_COLOUR,
+  deriveCamera,
   deriveColour,
+  deriveDim,
   deriveQuery,
   deriveSelectedId,
   deriveSpace,
   deriveSpotlit,
   deriveView,
+  formatCamera,
   formatView,
+  songPassesSpotlight,
   withParam,
 } from './exploreUrlState.js';
+import { DEFAULT_CAMERA, PRESETS } from './camera3d.js';
 
 // Shapes match what GET /api/analysis/explore/points serves: spaces and colourBy are
 // arrays of objects keyed by `key`. Only `key` matters to these functions.
@@ -106,4 +111,43 @@ test('formatView rounds, and writes nothing at fit', () => {
 test('a formatted view round-trips back through deriveView', () => {
   const v = { k: 3.25, tx: -240, ty: -96 };
   assert.deepEqual(deriveView(p(`view=${formatView(v)}`)), v);
+});
+
+test('deriveDim honours 3d only where the space has 3D data', () => {
+  assert.equal(deriveDim(p('dim=3d'), true), '3d');
+  assert.equal(deriveDim(p('dim=3d'), false), '2d');
+  assert.equal(deriveDim(p(''), true), '2d');
+  assert.equal(deriveDim(p('dim=4d'), true), '2d');
+});
+
+test('deriveCamera reads a preset name or five numbers, and nothing else', () => {
+  assert.deepEqual(deriveCamera(p('')), DEFAULT_CAMERA);
+  assert.deepEqual(deriveCamera(p('cam=top')), { ...DEFAULT_CAMERA, ...PRESETS.top });
+  assert.deepEqual(deriveCamera(p('cam=10,45,2,30,-20')),
+    { yaw: 10, pitch: 45, zoom: 2, panX: 30, panY: -20 });
+});
+
+test('deriveCamera falls back to the default for any invalid value, never a partial repair', () => {
+  for (const bad of ['banana', '1,2,3', 'NaN,0,1,0,0', '0,120,1,0,0', '0,0,99,0,0', '0,0,0.1,0,0', '']) {
+    assert.deepEqual(deriveCamera(p('cam=' + bad)), DEFAULT_CAMERA, bad);
+  }
+});
+
+test('formatCamera: default is empty, a preset is its name, a free camera round-trips', () => {
+  assert.equal(formatCamera(DEFAULT_CAMERA), '');
+  assert.equal(formatCamera({ ...DEFAULT_CAMERA, ...PRESETS.top }), 'top');
+  const free = { yaw: 12.3, pitch: -40.5, zoom: 2.25, panX: 31, panY: -8 };
+  assert.deepEqual(deriveCamera(p('cam=' + formatCamera(free))), free);
+});
+
+test('songPassesSpotlight: empty passes all, plain codes match, themes match any sub-dimension', () => {
+  assert.equal(songPassesSpotlight({ codes: { genre: 'metal' } }, 'genre', new Set()), true);
+  assert.equal(songPassesSpotlight({ codes: { genre: 'metal' } }, 'genre', new Set(['metal'])), true);
+  assert.equal(songPassesSpotlight({ codes: { genre: 'metal' } }, 'genre', new Set(['punk'])), false);
+  const mixed = { codes: { themes: 'MIXED' }, subs: { themes: ['cruelty_suffering', 'psychology_barriers'] } };
+  assert.equal(songPassesSpotlight(mixed, 'themes', new Set(['psychology_barriers'])), true);
+  assert.equal(songPassesSpotlight(mixed, 'themes', new Set(['MIXED'])), true);
+  assert.equal(songPassesSpotlight(mixed, 'themes', new Set(['commercial_ecological'])), false);
+  // a song with no subs entry still answers on its bucket
+  assert.equal(songPassesSpotlight({ codes: { themes: 'NOT_CODED' } }, 'themes', new Set(['NOT_CODED'])), true);
 });
