@@ -326,6 +326,10 @@ keep/rebuild/drop/defer decisions are recorded in
   "Speaking to" rename + latest-pass source, 2026-07-25.)_
 - **Browse state in the URL:** filters, sort, direction, search and page are all query params, with a
   sessionStorage layer so a param-less return to `/` restores the last browse. ✅ _(Triage 2.)_
+- **Explore map 3D view and theme colouring (2026-11-06):** every space also has a **3D view** (orbit, pan,
+  zoom, camera presets, optional drift, depth cues, axis gizmo) beside the 2D view, switched by a floating
+  2D|3D control and shareable through the `dim` and `cam` URL params; Colour by also offers the four lyric-analysis
+  dimensions (Themes, Targets & species, Actions & advocacy, Moral frames) coloured by sub-dimension.
 - **Explore map:** a hand-rolled **canvas scatter** (no charting dependency) over the **640 live songs the
   analysis has mapped**, in four projected spaces — Semantic · Thematic · Sound · Holistic — rescaled per
   space. Colour-by is a curated low-cardinality menu (five acoustic dimensions, Focus, and parent genre

@@ -188,7 +188,17 @@ Run before ending every working session:
   **Every query touching `audio_embedding` MUST carry `array_length(audio_embedding,1)=6`** — the column
   still holds 1,041 old 1024-dim rows. A tab is omitted when its embedding is missing; only when no tab
   has anything does the honest **"More in this genre"** fallback fire (692 of 1,333 live songs, 52%, have
-  no embeddings). Read-only — never writes to any analysis table
+  no embeddings). Read-only — never writes to any analysis table. **3D (explorer round 1, 2026-11-06):**
+  `discoverSpaces` also pairs each `*_2d` column with its `*_3d` sibling (`column3dFor`; `has3d` per space in the
+  payload) and `mapPayload` serves `songs[i].coords3[space]`, each space's cloud normalised once on the server by
+  the pure `normaliseCloud` (centre on the bbox midpoint, divide by the largest half-span x 1.15, so it lies in
+  [-1,1]^3 with uniform scale; degenerate clouds collapse to the origin). **Theme colour-by:** four more
+  `COLOUR_DIMENSIONS` (`themes`, `targets`, `actions`, `moral_frames`, `source: 'theme'`, columns `themes` / `topics` /
+  `advocacy` / `moral_frames`; **never `tactics`**, a mirror of advocacy) colour a song by its **sub-dimension with the
+  most distinct codes** (`themeSubCounts` + `themeBucket`; a tie is `MIXED`, no finding `NOT_CODED`). The single
+  colour bucket is in `codes[key]`; the full set of touched sub-dimensions rides in `subs[key]` so a spotlight lights
+  every song that touches a lit sub-dimension (`songPassesSpotlight` on the frontend). Legends are sub-dimensions in
+  taxonomy order, then Mixed, then Not coded (<= 6 entries, inside the 7 palette slots)
 - **services/referenceCodebook.js**: the read behind the About section's Reference tab
   (`GET /api/analysis/codebook`). **Composes** `metadataCodebook.js`, `acousticCodebook.js` and the
   taxonomy rather than re-reading their JSON, so label rules and suppression stay owned in one place
@@ -256,7 +266,12 @@ Run before ending every working session:
   wheel listener zooming toward the cursor, drag-pan with a 4px click-vs-drag threshold, the
   `+`/`−`/Reset buttons, and a 300ms debounced URL commit — kept out of `ExploreMap.jsx` because
   it is imperative pointer/wheel-event plumbing, not rendering), `SelectedSongCard`,
-  `useExplorePoints`, `palette.js` (categorical colours live in
+  `useExplorePoints`, the **3D view** (`camera3d.js` pure perspective maths - projection, presets, interpolation,
+  depth cues, gizmo, depth-aware `pickPoint`, zoom scales the focal length not the camera distance;
+  `useOrbitCamera.js` the gesture/preset/drift hook, left-drag orbits, right- or Shift-drag pans, arrow keys orbit;
+  `MapToolbar.jsx` the floating 2D|3D, Iso/Top/Front/Side and Drift pill; URL params `dim=3d` and
+  `cam=<preset>|yaw,pitch,zoom,panX,panY`, both falling back to the default view when invalid, and `dim=3d` falling
+  back to 2D for a space with no 3D data; default view stays 2D), `palette.js` (categorical colours live in
   CSS as `--explore-cat-*` so theming stays in the token layer; JS only reads them) — plus the
   shared NavigationMenu, SongCard, PaginationControls) and admin
   (AdminInterface is a
