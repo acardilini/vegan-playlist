@@ -2553,6 +2553,49 @@
 
 .explore-maptools-group { display: flex; gap: var(--space-1); }
 
+/* The year strip along the bottom edge of the plot. It stops short of the right-hand corner,
+   where the orientation gizmo is drawn. */
+.explore-yearstrip {
+  position: absolute;
+  left: var(--space-2);
+  right: 120px;
+  bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  /* translucent, so the dots at the very bottom of the cloud stay visible behind it */
+  background: color-mix(in oklch, var(--bg-surface) 82%, transparent);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-pill);
+  z-index: 1;
+  font: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.explore-yearstrip-play {
+  border: 1px solid var(--border-hairline);
+  background: none;
+  color: var(--text-primary);
+  border-radius: var(--radius-pill);
+  padding: 2px var(--space-3);
+  font: var(--text-label);
+  cursor: pointer;
+}
+
+.explore-yearstrip-play:disabled { opacity: 0.4; cursor: not-allowed; }
+.explore-yearstrip-play:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+
+.explore-yearstrip-range {
+  flex: 1 1 140px;
+  min-width: 100px;
+  accent-color: var(--accent-moss-60);
+}
+
+.explore-yearstrip-label { color: var(--text-primary); min-width: 5.5em; }
+.explore-yearstrip-note { color: var(--text-secondary); }
+
 .explore-maptool {
   border: 1px solid transparent;
   background: none;

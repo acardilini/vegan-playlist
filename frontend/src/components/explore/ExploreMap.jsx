@@ -9,13 +9,14 @@ import { useOrbitCamera } from './useOrbitCamera';
 import MapToolbar from './MapToolbar';
 import { placeLabels, truncateLabel } from './mapLabels';
 import { nearestSongs } from './neighbours';
+import YearStrip from './YearStrip';
 import {
   activePreset as presetOf, dotAlpha, dotRadius, gizmoAxes, pickPoint, projectCloud,
   sortBackToFront,
 } from './camera3d';
 import {
   deriveColour, deriveDim, deriveFlag, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit,
-  songPassesSpotlight, withParam,
+  deriveYear, formatYear, songPassesSpotlight, withParam, yearBounds, yearState,
 } from './exploreUrlState';
 
 const DOT_RADIUS = 4;
@@ -194,6 +195,10 @@ function ExploreMap() {
     () => (data && selectedId ? data.songs.find(s => s.id === selectedId) || null : null),
     [data, selectedId]);
 
+  // Release-year cutoff: null = all years. Bounds come from the songs themselves.
+  const bounds = useMemo(() => (data ? yearBounds(data.songs) : null), [data]);
+  const year = deriveYear(params, bounds);
+
   // The 8 songs nearest the selected one in the map's own coordinates. Recomputed only when the
   // selection, space or view dimension changes - never per camera frame.
   const neighbourIds = useMemo(() => {
@@ -311,7 +316,9 @@ function ExploreMap() {
       ctx.textBaseline = 'middle';
       ctx.lineJoin = 'round';
       ctx.lineWidth = 3;
-      for (const p of placeLabels(items, t => ctx.measureText(t).width, size)) {
+      for (const p of placeLabels(items, t => ctx.measureText(t).width,
+        // keep labels clear of the year strip along the bottom edge
+        { w: size.w, h: size.h - (bounds ? 40 : 0) })) {
         ctx.globalAlpha = is3d ? Math.min(1, dotAlpha(p.k) + 0.15) : 0.9;
         ctx.strokeStyle = haloColour;
         ctx.strokeText(p.text, p.x, p.y);
@@ -324,10 +331,13 @@ function ExploreMap() {
     const drawFrame = (points, withLabels = true) => {
       ctx.clearRect(0, 0, size.w, size.h);
       const lit = [];
+      const faint = new Set();   // no release year while a cutoff is set: drawn at half strength
       for (const p of points) {
         const passesSpotlight = songPassesSpotlight(p.song, colour, spotlit);
         const passesSearch = !matchIds || matchIds.has(p.id);
-        if (passesSpotlight && passesSearch) lit.push(p);
+        const yState = yearState(p.song, year);
+        if (yState === 'unknown') faint.add(p.id);
+        if (passesSpotlight && passesSearch && yState !== 'out') lit.push(p);
         else {
           ctx.beginPath();
           ctx.arc(p.x, p.y, radiusOf(p), 0, Math.PI * 2);
@@ -354,7 +364,7 @@ function ExploreMap() {
         }
       }
       for (const p of lit) {
-        ctx.globalAlpha = is3d ? dotAlpha(p.k) : 0.85;
+        ctx.globalAlpha = (is3d ? dotAlpha(p.k) : 0.85) * (faint.has(p.id) ? 0.5 : 1);
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.id === hoverId ? radiusOf(p) + HOVER_GROWTH : radiusOf(p),
           0, Math.PI * 2);
@@ -419,7 +429,7 @@ function ExploreMap() {
     return () => cancelAnimationFrame(raf);
   }, [
     canvasEl, data, space, dim, colour, scale, size, spotlit, matchIds, selectedId,
-    transform.view, orbit.camera, hoverId, spaceMeta, showLabels, neighbourIds,
+    transform.view, orbit.camera, hoverId, spaceMeta, showLabels, neighbourIds, year,
   ]);
 
   // 12px grab radius; in 3D, of the dots inside it the one nearest the camera wins.
@@ -538,6 +548,11 @@ function ExploreMap() {
               Reset
             </button>
           </div>
+          <YearStrip
+            bounds={bounds}
+            year={year}
+            onYear={(y) => setParam('yr', formatYear(y, bounds))}
+          />
           {hover && (
             <div
               className="explore-hovercard"
