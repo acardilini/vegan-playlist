@@ -533,6 +533,52 @@ test('similarFor omits a tab with no embedding and falls back to genre when both
   assert.equal(one.fallback, null, 'no fallback when at least one tab exists');
 });
 
+test('mapPayload serves labels2d and labels3d per space', async () => {
+  const p = await explore.mapPayload(pool);
+  for (const s of p.spaces) {
+    assert.ok(Array.isArray(s.labels2d), `${s.key} labels2d`);
+    assert.ok(Array.isArray(s.labels3d), `${s.key} labels3d`);
+    for (const l of s.labels2d) {
+      assert.ok(typeof l.label === 'string' && l.label.length > 0);
+      assert.equal(l.centre.length, 2);
+      assert.ok(l.centre.every(Number.isFinite));
+      assert.ok(Number.isInteger(l.count) && l.count >= 15);
+    }
+    if (!s.has3d) assert.deepEqual(s.labels3d, []);
+    for (const l of s.labels3d) {
+      assert.equal(l.centre.length, 3);
+      assert.ok(l.centre.every(v => Number.isFinite(v) && Math.abs(v) <= 1), '3D centre is normalised');
+    }
+  }
+});
+
+test('labels are stable between payload builds', async () => {
+  const a = await explore.mapPayload(pool);
+  const b = await explore.mapPayload(pool);
+  for (let i = 0; i < a.spaces.length; i++) {
+    assert.ok(Array.isArray(a.spaces[i].labels2d), 'labels exist, so equality is not vacuous');
+    assert.deepEqual(a.spaces[i].labels2d, b.spaces[i].labels2d);
+    assert.deepEqual(a.spaces[i].labels3d, b.spaces[i].labels3d);
+  }
+});
+
+test('labelItems keeps only mapped songs and codebook-known terms', () => {
+  const rows = [
+    { thematic_2d: [1, 2], genre: 'folk', themes: [{ code: 'captivity' }, { code: 'not_a_real_code' }], topics: [], advocacy: [], moral_frames: [] },
+    { thematic_2d: null, genre: 'folk', themes: [{ code: 'captivity' }], topics: [], advocacy: [], moral_frames: [] },
+    { thematic_2d: [3, 4], genre: null, themes: [], topics: [], advocacy: [], moral_frames: [] },
+  ];
+  const items = explore.labelItems(rows, { column: 'thematic_2d' }, '2d', null);
+  assert.equal(items.length, 2, 'the unmapped row is absent');
+  assert.deepEqual(items[0].terms, ['themes:captivity'], 'unknown codes are dropped');
+  assert.equal(items[0].genre, 'folk');
+  assert.equal(items[1].genre, null);
+  const other = explore.labelItems(
+    [{ thematic_2d: [1, 1], genre: 'zzzexp-unmapped-genre', themes: [], topics: [], advocacy: [], moral_frames: [] }],
+    { column: 'thematic_2d' }, '2d', null);
+  assert.equal(other[0].genre, null, 'a genre the site does not classify (other) is not a label term');
+});
+
 after(async () => {
   if (made.songs.length) {
     await pool.query('DELETE FROM song_coordinates WHERE song_id = ANY($1::int[])', [made.songs]);

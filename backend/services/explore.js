@@ -6,6 +6,7 @@ const genres = require('./genres');
 const acoustic = require('./acousticCodebook');
 const codebook = require('./metadataCodebook');
 const { getParentGenre } = require('../utils/genreMapping');
+const { buildRegionLabels } = require('./exploreRegions');
 
 // Friendly names for the projected spaces. `audio` is shown as "Sound" — the site's word
 // for the acoustic dimensions everywhere else. Unknown spaces title-case rather than
@@ -351,6 +352,49 @@ function legendFor(dim, rows, top) {
   return ordered;
 }
 
+// Region labelling input for one space and dimension. 2D uses the raw 2D column; 3D uses the
+// already-normalised cloud (aligned with `rows`), so a label centre is in the units the client
+// draws. Terms are the codebook-known theme codes (same gate as themeSubCounts), keyed
+// `<column>:<code>`; a genre the site does not classify (the literal 'other') is not a term.
+function labelItems(rows, space, dim, cloud3d) {
+  const items = [];
+  rows.forEach((r, i) => {
+    let point = null;
+    if (dim === '3d') {
+      point = cloud3d && cloud3d[space.key] ? cloud3d[space.key][i] : null;
+    } else {
+      const v = r[space.column];
+      point = Array.isArray(v) && v.length >= 2 && v.slice(0, 2).every(Number.isFinite)
+        ? v.slice(0, 2) : null;
+    }
+    if (!point) return;
+    const terms = [];
+    for (const d of THEME_DIMENSIONS) {
+      const seen = new Set();
+      for (const row of Array.isArray(r[d.col]) ? r[d.col] : []) {
+        const code = row && row.code;
+        if (!code || seen.has(code) || !analysis.SUBDIM[d.col].has(code)) continue;
+        seen.add(code);
+        terms.push(`${d.col}:${code}`);
+      }
+    }
+    const parent = getParentGenre(r.genre);
+    items.push({ point, terms, genre: parent && parent !== 'other' ? parent : null });
+  });
+  return items;
+}
+
+const termLabel = (term) => {
+  const at = term.indexOf(':');
+  return analysis.label(term.slice(0, at), term.slice(at + 1));
+};
+
+function labelsFor(rows, space, dim, cloud3d) {
+  return buildRegionLabels(labelItems(rows, space, dim, cloud3d), {
+    labelOf: termLabel, genreLabelOf: titleCase,
+  });
+}
+
 // Everything the Explore page needs, in one response: switching space, switching colour-by,
 // spotlighting and searching then need no further request, and the selected-song card needs
 // no second fetch.
@@ -411,6 +455,8 @@ async function mapPayload(db) {
   return {
     spaces: spaces.map(s => ({
       key: s.key, label: s.label, description: s.description, has3d: !!s.column3d,
+      labels2d: labelsFor(rows, s, '2d', cloud3d),
+      labels3d: s.column3d ? labelsFor(rows, s, '3d', cloud3d) : [],
     })),
     colourBy: COLOUR_DIMENSIONS.map(d => ({
       key: d.key, label: d.label, codes: legendFor(d, rows, top),
@@ -573,7 +619,7 @@ async function similarFor(db, songId, limit = 6) {
 
 module.exports = {
   SPACE_LABELS, spaceLabel, SPACE_DESCRIPTIONS, spaceDescription, discoverSpaces, mapRows,
-  normaliseCloud, column3dFor, THEME_DIMENSIONS, themeSubCounts, themeBucket,
+  normaliseCloud, column3dFor, labelItems, THEME_DIMENSIONS, themeSubCounts, themeBucket,
   NOT_CODED, COLOUR_DIMENSIONS, codeFor, mapPayload,
   GENRE_TOP_N, OTHER_GENRES, OTHER_GENRES_LABEL, genreTopSet, legendFor,
   SIMILARITY, similarByEmbedding, genreFallback, similarFor,
