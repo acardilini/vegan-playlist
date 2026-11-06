@@ -50,19 +50,57 @@ function spaceDescription(key) {
 // SQL as identifiers.
 const SPACE_COLUMN = /^[a-z][a-z0-9_]*_2d$/;
 
+// The 3D sibling of a space's 2D column, or null when the catalogue has none (that space is then
+// 2D-only). The key is re-checked against the same strict identifier pattern before it can be
+// spliced into SQL.
+function column3dFor(key, allColumns) {
+  if (!/^[a-z][a-z0-9_]*$/.test(key)) return null;
+  const c = `${key}_3d`;
+  return allColumns.includes(c) ? c : null;
+}
+
 async function discoverSpaces(db) {
   const r = await db.query(
     `SELECT column_name FROM information_schema.columns
       WHERE table_name = 'song_coordinates'
       ORDER BY ordinal_position`);
-  return r.rows
-    .map(x => x.column_name)
+  const all = r.rows.map(x => x.column_name);
+  return all
     .filter(c => SPACE_COLUMN.test(c))
     .map(c => {
       const key = c.slice(0, -3);
-      return { key, column: c, label: spaceLabel(key), description: spaceDescription(key) };
+      return {
+        key, column: c, column3d: column3dFor(key, all),
+        label: spaceLabel(key), description: spaceDescription(key),
+      };
     })
     .filter(s => !HIDDEN_SPACES.has(s.key));
+}
+
+// Centres a cloud on its bounding-box midpoint and scales ALL axes by the same factor so it
+// fits [-1, 1]^3 with ~15% breathing room (R = largest half-span x 1.15). A uniform scale keeps
+// the cloud's proportions; per-axis scaling would stretch it. Nulls pass through. A cloud with
+// no extent (empty, one point, all identical) collapses to the origin rather than dividing by
+// zero. Rounded to 4 dp to keep the payload small.
+function normaliseCloud(points) {
+  const present = points.filter(Boolean);
+  if (present.length === 0) return points.map(() => null);
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (const p of present) {
+    for (let i = 0; i < 3; i++) {
+      if (p[i] < min[i]) min[i] = p[i];
+      if (p[i] > max[i]) max[i] = p[i];
+    }
+  }
+  const half = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2;
+  const R = half * 1.15;
+  const round = v => Math.round(v * 1e4) / 1e4;
+  return points.map(p => {
+    if (!p) return null;
+    if (R === 0) return [0, 0, 0];
+    return [0, 1, 2].map(i => round((p[i] - (min[i] + max[i]) / 2) / R));
+  });
 }
 
 // One row per live, mapped song. Artists come from a scalar subquery rather than an
@@ -73,7 +111,9 @@ async function discoverSpaces(db) {
 const ELIGIBLE = (alias) => `${analysis.hasRealLyricsExists(alias)} AND ${analysis.hasAnalysisExists(alias)}`;
 
 async function mapRows(db, spaces) {
-  const coordCols = spaces.map(s => `sc.${s.column}`).join(',\n           ');
+  const coordCols = spaces
+    .flatMap(s => (s.column3d ? [s.column, s.column3d] : [s.column]))
+    .map(c => `sc.${c}`).join(',\n           ');
   const r = await db.query(
     `SELECT s.id,
             s.title,
@@ -235,9 +275,26 @@ async function mapPayload(db) {
   // agree on which genres own a slot, or a dot could take a colour its legend never explains.
   const top = genreTopSet(rows);
 
-  const songs = rows.map(r => {
+  // 3D is normalised per space over the whole served cloud, once, here (not per client).
+  const cloud3d = {};
+  for (const s of spaces) {
+    if (!s.column3d) continue;
+    const raw = rows.map(r => {
+      const v = r[s.column3d];
+      return Array.isArray(v) && v.length >= 3 && v.slice(0, 3).every(Number.isFinite)
+        ? v.slice(0, 3) : null;
+    });
+    cloud3d[s.key] = normaliseCloud(raw);
+  }
+
+  const songs = rows.map((r, idx) => {
     const coords = {};
     for (const s of spaces) coords[s.key] = r[s.column];
+    const coords3 = {};
+    for (const s of spaces) {
+      const p = cloud3d[s.key] && cloud3d[s.key][idx];
+      if (p) coords3[s.key] = p;
+    }
     const codes = {};
     // Raw codes, deliberately unfolded: the spotlight targets an exact genre, and the
     // frontend derives a dot's COLOUR from the legend's nesting instead.
@@ -249,12 +306,15 @@ async function mapPayload(db) {
       year: r.year,
       art: r.art,
       coords,
+      coords3,
       codes,
     };
   });
 
   return {
-    spaces: spaces.map(s => ({ key: s.key, label: s.label, description: s.description })),
+    spaces: spaces.map(s => ({
+      key: s.key, label: s.label, description: s.description, has3d: !!s.column3d,
+    })),
     colourBy: COLOUR_DIMENSIONS.map(d => ({ key: d.key, label: d.label, codes: legendFor(d, rows, top) })),
     coverage: { mapped: songs.length, live: live.rows[0].n },
     songs,
@@ -413,6 +473,7 @@ async function similarFor(db, songId, limit = 6) {
 
 module.exports = {
   SPACE_LABELS, spaceLabel, SPACE_DESCRIPTIONS, spaceDescription, discoverSpaces, mapRows,
+  normaliseCloud, column3dFor,
   NOT_CODED, COLOUR_DIMENSIONS, codeFor, mapPayload,
   GENRE_TOP_N, OTHER_GENRES, OTHER_GENRES_LABEL, genreTopSet, legendFor,
   SIMILARITY, similarByEmbedding, genreFallback, similarFor,

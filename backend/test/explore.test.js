@@ -161,6 +161,47 @@ test('mapPayload assembles spaces, legends, coverage and songs', async () => {
   assert.equal(song.artist, '', 'a song with no artist rows serves an empty artist string');
 });
 
+test('normaliseCloud centres, scales uniformly and keeps nulls', () => {
+  const out = explore.normaliseCloud([[0, 0, 0], [10, 0, 0], [0, 4, 0], null]);
+  // R = max(10, 4, 0) / 2 * 1.15 = 5.75 on EVERY axis (uniform scale, no distortion)
+  assert.equal(out[1][0], Math.round(((10 - 5) / 5.75) * 1e4) / 1e4);
+  assert.equal(out[2][1], Math.round(((4 - 2) / 5.75) * 1e4) / 1e4);
+  assert.equal(out[3], null);
+  for (const p of out.filter(Boolean)) {
+    for (const v of p) {
+      assert.ok(Math.abs(v) <= 1, 'inside the unit cube');
+      assert.equal(v, Math.round(v * 1e4) / 1e4, 'rounded to 4 dp');
+    }
+  }
+});
+
+test('normaliseCloud survives degenerate input', () => {
+  assert.deepEqual(explore.normaliseCloud([]), []);
+  assert.deepEqual(explore.normaliseCloud([[3, 3, 3]]), [[0, 0, 0]]);
+  assert.deepEqual(explore.normaliseCloud([[1, 2, 3], [1, 2, 3], [1, 2, 3]]),
+    [[0, 0, 0], [0, 0, 0], [0, 0, 0]]);
+  assert.deepEqual(explore.normaliseCloud([null, null]), [null, null]);
+});
+
+test('column3dFor pairs a 2d column with its 3d sibling', () => {
+  assert.equal(explore.column3dFor('thematic', ['thematic_2d', 'thematic_3d']), 'thematic_3d');
+  assert.equal(explore.column3dFor('foo', ['foo_2d']), null);
+  assert.equal(explore.column3dFor('Bad-Name', ['Bad-Name_3d']), null);
+});
+
+test('mapPayload serves normalised coords3 and has3d', async () => {
+  const id = await mkSong('ZZZEXP Coords3');
+  await addCoords(id);
+  const p = await explore.mapPayload(pool);
+  assert.equal(p.spaces.find(s => s.key === 'thematic').has3d, true);
+  const song = p.songs.find(s => s.id === id);
+  assert.equal(song.coords3.thematic.length, 3);
+  for (const v of song.coords3.thematic) {
+    assert.ok(Number.isFinite(v) && Math.abs(v) <= 1, 'finite and normalised');
+  }
+  assert.ok(!('semantic' in song.coords3), 'no 3D coordinates for a hidden space');
+});
+
 test('genreTopSet picks the top-N named parents and never the literal other', () => {
   // Synthetic rows, independent of the live catalogue: metal(4) > hardcore(3) > punk(2) >
   // folk(1). 'christian' maps to the literal 'other' parent and is given the highest count
