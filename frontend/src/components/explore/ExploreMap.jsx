@@ -3,16 +3,18 @@ import { useSearchParams } from 'react-router-dom';
 import { useExplorePoints } from './useExplorePoints';
 import { colourScale, dimColour } from './palette';
 import SelectedSongCard from './SelectedSongCard';
-import { easeOutCubic, layout } from './mapGeometry';
+import { easeOutCubic, extentsFor, layout, projectPoint } from './mapGeometry';
 import { useMapTransform } from './useMapTransform';
 import { useOrbitCamera } from './useOrbitCamera';
 import MapToolbar from './MapToolbar';
+import { placeLabels, truncateLabel } from './mapLabels';
+import { nearestSongs } from './neighbours';
 import {
   activePreset as presetOf, dotAlpha, dotRadius, gizmoAxes, pickPoint, projectCloud,
   sortBackToFront,
 } from './camera3d';
 import {
-  deriveColour, deriveDim, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit,
+  deriveColour, deriveDim, deriveFlag, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit,
   songPassesSpotlight, withParam,
 } from './exploreUrlState';
 
@@ -129,6 +131,9 @@ function ExploreMap() {
   // 3D only where the current space has 3D positions; a stale `dim=3d` link degrades to 2D.
   const has3d = !!(data && data.spaces.some(s => s.key === space && s.has3d));
   const dim = deriveDim(params, has3d);
+  // Both on by default; only an explicit `=0` turns them off.
+  const showLabels = deriveFlag(params, 'labels');
+  const showLines = deriveFlag(params, 'lines');
 
   const setParam = useCallback((key, value) => {
     setParams(withParam(params, key, value), { replace: true });
@@ -188,6 +193,13 @@ function ExploreMap() {
   const selected = useMemo(
     () => (data && selectedId ? data.songs.find(s => s.id === selectedId) || null : null),
     [data, selectedId]);
+
+  // The 8 songs nearest the selected one in the map's own coordinates. Recomputed only when the
+  // selection, space or view dimension changes - never per camera frame.
+  const neighbourIds = useMemo(() => {
+    if (!data || !selectedId || !space || !showLines) return null;
+    return new Set(nearestSongs(data.songs, selectedId, space, dim, 8).map(n => n.id));
+  }, [data, selectedId, space, dim, showLines]);
 
   // The id, not the hover object: `hover` is rebuilt on every mousemove even while the
   // pointer stays on one dot, and it is a draw dependency now.
@@ -252,6 +264,10 @@ function ExploreMap() {
     const rootStyle = getComputedStyle(document.documentElement);
     const ringColour = rootStyle.getPropertyValue('--text-primary').trim() || '#fff';
     const gizmoColour = rootStyle.getPropertyValue('--text-secondary').trim() || '#aaa';
+    const haloColour = rootStyle.getPropertyValue('--bg-canvas').trim() || '#000';
+    const labelFont = `600 12px ${rootStyle.getPropertyValue('--font-body').trim() || 'sans-serif'}`;
+    const labelSet = (spaceMeta && (is3d ? spaceMeta.labels3d : spaceMeta.labels2d)) || [];
+    const extents = is3d ? null : extentsFor(data.songs, space);
     const radiusOf = (p) => (is3d ? dotRadius(DOT_RADIUS, p.k) : DOT_RADIUS);
 
     const drawGizmo = () => {
@@ -277,7 +293,35 @@ function ExploreMap() {
       ctx.globalAlpha = 1;
     };
 
-    const drawFrame = (points) => {
+    // Cluster labels: each region's centre goes through the same projection as the dots, then
+    // only the ones that fit without colliding are drawn (larger regions win, so zooming in
+    // reveals more). Drawn text carries a halo in the page colour so it reads over dots.
+    const drawLabels = () => {
+      if (!showLabels || labelSet.length === 0) return;
+      const items = labelSet.map((l) => {
+        if (is3d) {
+          const q = projectCloud([l.centre], orbit.camera, size)[0];
+          return { text: truncateLabel(l.label), x: q.x, y: q.y, count: l.count, k: q.k };
+        }
+        const q = projectPoint(l.centre, extents, size, transform.view);
+        return { text: truncateLabel(l.label), x: q.x, y: q.y, count: l.count, k: 1 };
+      });
+      ctx.font = labelFont;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 3;
+      for (const p of placeLabels(items, t => ctx.measureText(t).width, size)) {
+        ctx.globalAlpha = is3d ? Math.min(1, dotAlpha(p.k) + 0.15) : 0.9;
+        ctx.strokeStyle = haloColour;
+        ctx.strokeText(p.text, p.x, p.y);
+        ctx.fillStyle = ringColour;
+        ctx.fillText(p.text, p.x, p.y);
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    const drawFrame = (points, withLabels = true) => {
       ctx.clearRect(0, 0, size.w, size.h);
       const lit = [];
       for (const p of points) {
@@ -289,6 +333,24 @@ function ExploreMap() {
           ctx.arc(p.x, p.y, radiusOf(p), 0, Math.PI * 2);
           ctx.fillStyle = dimmed;
           ctx.fill();
+        }
+      }
+      // Thin lines from the selected song to its nearest neighbours, under the lit dots so the
+      // dots stay readable; fading with depth in 3D.
+      if (neighbourIds && selectedId) {
+        const from = points.find(p => p.id === selectedId);
+        if (from) {
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = gizmoColour;
+          for (const p of points) {
+            if (!neighbourIds.has(p.id)) continue;
+            ctx.globalAlpha = (is3d ? dotAlpha((from.k + p.k) / 2) : 0.85) * 0.75;
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
         }
       }
       for (const p of lit) {
@@ -327,6 +389,7 @@ function ExploreMap() {
         }
       }
 
+      if (withLabels) drawLabels();
       if (is3d) drawGizmo();
 
       // What a click can hit: each dot's drawn radius and whether it is lit, so picking agrees
@@ -342,11 +405,13 @@ function ExploreMap() {
       if (!tween) { drawFrame(target); return; }
       const t = Math.min(1, (now - tween.start) / TWEEN_MS);
       const e = easeOutCubic(t);
+      // Labels wait for the dots to land: during the glide they would sit at the destination
+      // while their region is still travelling. The last frame (t = 1) draws them.
       drawFrame(target.map(p => {
         const from = tween.from.get(p.id);
         if (!from) return p;   // a song with no coordinates in the old space simply appears
         return { ...p, x: from.x + (p.x - from.x) * e, y: from.y + (p.y - from.y) * e };
-      }));
+      }), t >= 1);
       if (t < 1) raf = requestAnimationFrame(frame);
       else tweenRef.current = null;
     };
@@ -354,7 +419,7 @@ function ExploreMap() {
     return () => cancelAnimationFrame(raf);
   }, [
     canvasEl, data, space, dim, colour, scale, size, spotlit, matchIds, selectedId,
-    transform.view, orbit.camera, hoverId,
+    transform.view, orbit.camera, hoverId, spaceMeta, showLabels, neighbourIds,
   ]);
 
   // 12px grab radius; in 3D, of the dots inside it the one nearest the camera wins.
@@ -456,6 +521,10 @@ function ExploreMap() {
             dim={dim}
             has3d={has3d}
             onDim={(d) => setParam('dim', d === '3d' ? '3d' : null)}
+            labels={showLabels}
+            onLabels={(on) => setParam('labels', on ? null : '0')}
+            lines={showLines}
+            onLines={(on) => setParam('lines', on ? null : '0')}
             activePreset={presetOf(orbit.camera)}
             onPreset={orbit.goToPreset}
             drift={orbit.drift}

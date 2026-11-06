@@ -1,10 +1,11 @@
-// The floating controls over the map: a pill with 2D | 3D, and (in 3D) a second pill under it
+// The floating controls over the map: a pill with 2D | 3D and the Labels / Lines toggles, and (in 3D) a second pill under it
 // with the camera presets and drift. Two pills so the 2D|3D switch never changes width.
 // Presentational only - ExploreMap owns the state and passes it down.
 const PRESET_LABELS = [['iso', 'Iso'], ['top', 'Top'], ['front', 'Front'], ['side', 'Side']];
 
 function MapToolbar({
   dim, has3d, onDim, activePreset, onPreset, drift, onDrift, reduceMotion,
+  labels, onLabels, lines, onLines,
 }) {
   return (
     <div className="explore-maptools">
@@ -27,6 +28,24 @@ function MapToolbar({
             onClick={() => onDim('3d')}
           >
             3D
+          </button>
+        </div>
+        <div className="explore-maptools-group" role="group" aria-label="Overlays">
+          <button
+            type="button"
+            className={`explore-maptool ${labels ? 'on' : ''}`}
+            aria-pressed={labels}
+            onClick={() => onLabels(!labels)}
+          >
+            Labels
+          </button>
+          <button
+            type="button"
+            className={`explore-maptool ${lines ? 'on' : ''}`}
+            aria-pressed={lines}
+            onClick={() => onLines(!lines)}
+          >
+            Lines
           </button>
         </div>
       </div>
