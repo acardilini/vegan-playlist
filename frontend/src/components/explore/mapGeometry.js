@@ -9,6 +9,9 @@ export const PAD = 18;
 export const MIN_K = 1;
 export const MAX_K = 12;
 export const FIT_VIEW = { k: 1, tx: 0, ty: 0 };
+// How far past the plot edge the map may be pushed, as a fraction of the plot, so dots under an
+// overlay (the year strip, the toolbar) can always be moved clear of it.
+export const PAN_SLACK = 0.3;
 
 // Each space is projected on its own scale (audio_2d x spans -2.9..12.3 where
 // holistic_2d spans -4.7..5.1), so extents are recomputed per space — never assume a
@@ -87,20 +90,23 @@ export function viewCentredOn(view, point, size) {
     k: view.k,
     tx: view.tx + (size.w / 2 - point.x),
     ty: view.ty + (size.h / 2 - point.y),
-  }, size);
+  }, size, 0);   // no slack: the walk centres within the plot, it never pushes the map off it
 }
 
-// The plot must stay covered: at k the content is size x k, so the translate may run from
-// (size - size x k) — the far edge flush — to 0. At k = 1 that collapses to exactly 0, which
-// is why 1x is fit and not "zoomed out with slack".
-export function clampView(view, size) {
+// At k the content is size x k, so with no slack the translate runs from (size - size x k) — the
+// far edge flush — to 0, which at k = 1 collapses to exactly 0. `slack` (a fraction of the plot,
+// PAN_SLACK by default) widens both ends so the map can be pushed that far past the edge; 1x is
+// then "fit" only when the translate is 0, which is what Reset restores.
+export function clampView(view, size, slack = PAN_SLACK) {
   const k = Math.min(MAX_K, Math.max(MIN_K, view.k));
-  const minTx = size.w - size.w * k;
-  const minTy = size.h - size.h * k;
+  const sx = size.w * slack;
+  const sy = size.h * slack;
+  const minTx = size.w - size.w * k - sx;
+  const minTy = size.h - size.h * k - sy;
   return {
     k,
-    tx: Math.min(0, Math.max(minTx, view.tx)),
-    ty: Math.min(0, Math.max(minTy, view.ty)),
+    tx: Math.min(sx, Math.max(minTx, view.tx)),
+    ty: Math.min(sy, Math.max(minTy, view.ty)),
   };
 }
 

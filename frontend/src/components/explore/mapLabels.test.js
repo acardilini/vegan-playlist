@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { placeLabels, truncateLabel } from './mapLabels.js';
+import { FINE_ZOOM, labelsAtZoom, placeLabels, truncateLabel } from './mapLabels.js';
 
 const measure = (t) => t.length * 7;
 const BOUNDS = { w: 800, h: 520 };
@@ -54,4 +54,19 @@ test('placeLabels is deterministic and ignores input order for priority', () => 
   const reversed = placeLabels([...items].reverse(), measure, BOUNDS).map(p => p.text);
   assert.deepEqual(forward, reversed);
   assert.deepEqual(forward, ['B', 'C']);
+});
+
+test('placeLabels lets a coarse label beat a larger fine one, so zooming never displaces it', () => {
+  const placed = placeLabels([
+    { text: 'Fine big', x: 400, y: 200, count: 60, level: 2 },
+    { text: 'Coarse', x: 410, y: 200, count: 20, level: 1 },
+  ], measure, BOUNDS);
+  assert.deepEqual(placed.map(p => p.text), ['Coarse']);
+});
+
+test('labelsAtZoom offers fine labels only once zoomed in', () => {
+  const labels = [{ label: 'a', level: 1 }, { label: 'b', level: 2 }, { label: 'c' }];
+  assert.deepEqual(labelsAtZoom(labels, 1).map(l => l.label), ['a', 'c']);
+  assert.deepEqual(labelsAtZoom(labels, FINE_ZOOM - 0.01).map(l => l.label), ['a', 'c']);
+  assert.deepEqual(labelsAtZoom(labels, FINE_ZOOM).map(l => l.label), ['a', 'b', 'c']);
 });

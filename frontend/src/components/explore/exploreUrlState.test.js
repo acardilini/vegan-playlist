@@ -12,9 +12,12 @@ import {
   deriveFlag,
   deriveView,
   deriveYear,
+  deriveYearFrom,
   formatCamera,
   formatView,
   formatYear,
+  formatYearFrom,
+  yearRangeLabel,
   songPassesSpotlight,
   withParam,
   withParams,
@@ -111,6 +114,7 @@ test('deriveView falls back to fit for an out-of-range zoom', () => {
 
 test('formatView rounds, and writes nothing at fit', () => {
   assert.equal(formatView({ k: 1, tx: 0, ty: 0 }), '');
+  assert.equal(formatView({ k: 1, tx: 40.4, ty: -30 }), '1,40,-30', 'an unzoomed but panned map is not "fit"');
   assert.equal(formatView({ k: 2.4567, tx: -120.7, ty: -64.2 }), '2.46,-121,-64');
 });
 
@@ -221,4 +225,49 @@ test('withParams writes several keys in one go and deletes empty ones', () => {
   assert.equal(next.has('view'), false);
   assert.equal(next.get('cam'), 'top');
   assert.equal(withParams(p('q=x'), []).get('q'), 'x');
+});
+
+// --- year range: an optional start year (`yf`) alongside the end cutoff (`yr`) ---------------
+
+test('deriveYearFrom accepts a start year after the first year and no later than the end', () => {
+  assert.equal(deriveYearFrom(p('yf=1995'), BOUNDS, null), 1995);
+  assert.equal(deriveYearFrom(p('yf=2005'), BOUNDS, null), 2005, 'a single final year is a real range');
+  assert.equal(deriveYearFrom(p('yf=1995'), BOUNDS, 1995), 1995, 'start may equal the end');
+  assert.equal(deriveYearFrom(p('yf=1995'), BOUNDS, 2000), 1995);
+});
+
+test('deriveYearFrom is null (no start) for every invalid value', () => {
+  for (const bad of ['', 'abc', '1990', '1989', '2006', '1995.5', '-1995', '1e3']) {
+    assert.equal(deriveYearFrom(p('yf=' + bad), BOUNDS, null), null, bad);
+  }
+  assert.equal(deriveYearFrom(p('yf=2001'), BOUNDS, 2000), null, 'start after the end');
+  assert.equal(deriveYearFrom(p(''), BOUNDS, null), null);
+  assert.equal(deriveYearFrom(p('yf=1995'), null, null), null);
+});
+
+test('formatYearFrom writes nothing when there is no start or it is the first year', () => {
+  assert.equal(formatYearFrom(null, BOUNDS), '');
+  assert.equal(formatYearFrom(1990, BOUNDS), '');
+  assert.equal(formatYearFrom(1980, BOUNDS), '');
+  assert.equal(formatYearFrom(1995, BOUNDS), '1995');
+  assert.equal(formatYearFrom(1995, null), '');
+});
+
+test('yearState with a start year splits before, within and after the range', () => {
+  assert.equal(yearState({ year: 1994 }, 2000, 1995), 'out', 'before the start');
+  assert.equal(yearState({ year: 1995 }, 2000, 1995), 'in', 'the start year is included');
+  assert.equal(yearState({ year: 2000 }, 2000, 1995), 'in');
+  assert.equal(yearState({ year: 2001 }, 2000, 1995), 'out');
+  assert.equal(yearState({ year: 2003 }, null, 1995), 'in', 'start only: open-ended');
+  assert.equal(yearState({ year: 1990 }, null, 1995), 'out');
+  assert.equal(yearState({ year: null }, null, 1995), 'unknown', 'no year while a range is set');
+  assert.equal(yearState({ year: 1990 }, null, null), 'in', 'no range at all shows everything');
+});
+
+test('yearRangeLabel reads naturally for every combination', () => {
+  assert.equal(yearRangeLabel(null, null, BOUNDS), 'All years');
+  assert.equal(yearRangeLabel(null, 2000, BOUNDS), 'Up to 2000');
+  assert.equal(yearRangeLabel(1995, null, BOUNDS), '1995 to 2005');
+  assert.equal(yearRangeLabel(1995, 2000, BOUNDS), '1995 to 2000');
+  assert.equal(yearRangeLabel(1995, 1995, BOUNDS), '1995 only');
 });

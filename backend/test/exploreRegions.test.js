@@ -131,3 +131,32 @@ test('default region count is small enough to read (8)', () => {
   const { REGION_K } = require('../services/exploreRegions');
   assert.equal(REGION_K, 8);
 });
+
+test('buildTieredLabels adds a finer level and drops fine labels that repeat a coarse one', () => {
+  const { buildTieredLabels } = require('../services/exploreRegions');
+  // Four tight groups; groups 1+2 sit close together and 3+4 close together, so the coarse
+  // cut (k=2) merges each pair while the fine cut (k=4) separates all four.
+  const items = [];
+  const add = (cx, cy, term) => blob(cx, cy, 20)
+    .forEach(p => items.push({ point: p, terms: [term], genre: null }));
+  add(0, 0, 'themes:a'); add(6, 0, 'themes:b'); add(100, 0, 'themes:c'); add(106, 0, 'themes:d');
+  const labels = buildTieredLabels(items, {
+    coarseK: 2, fineK: 4, fineMinRegion: 10, labelOf, genreLabelOf,
+  });
+  const text = (level) => labels.filter(l => l.level === level).map(l => l.label).sort();
+  assert.deepStrictEqual(text(1), ['L:a', 'L:c']);
+  assert.deepStrictEqual(text(2), ['L:b', 'L:d'], 'the fine copies of L:a and L:c are dropped');
+  for (const l of labels) assert.ok(l.centre.every(Number.isFinite) && Number.isInteger(l.count));
+});
+
+test('buildTieredLabels is deterministic and its defaults are 8 coarse / more fine', () => {
+  const { buildTieredLabels, REGION_K, FINE_K, FINE_MIN_REGION } = require('../services/exploreRegions');
+  assert.equal(REGION_K, 8);
+  assert.ok(FINE_K > REGION_K);
+  assert.ok(FINE_MIN_REGION < 15);
+  const items = [];
+  blob(0, 0, 40).forEach(p => items.push({ point: p, terms: ['themes:a'], genre: null }));
+  blob(80, 0, 40).forEach(p => items.push({ point: p, terms: ['themes:b'], genre: null }));
+  const a = buildTieredLabels(items, { labelOf, genreLabelOf });
+  assert.deepStrictEqual(a, buildTieredLabels(items, { labelOf, genreLabelOf }));
+});

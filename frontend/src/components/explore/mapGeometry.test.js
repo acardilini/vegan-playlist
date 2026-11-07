@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  FIT_VIEW, MAX_K, PAD,
+  FIT_VIEW, MAX_K, PAD, PAN_SLACK,
   applyView, clampView, easeOutCubic, extentsFor, layout, outsideCore, projectPoint, viewCentredOn,
   zoomAtPoint,
 } from './mapGeometry.js';
@@ -91,21 +91,37 @@ test('zoomAtPoint clamps k to the 1x-12x range', () => {
   assert.equal(zoomAtPoint({ k: 4, tx: 0, ty: 0 }, 0.2, 0, 0).k, 1);
 });
 
-test('clampView pins the view to fit at 1x', () => {
+test('clampView with no slack pins the view to fit at 1x', () => {
   // At 1x the content exactly fills the plot, so any translate would show empty space.
-  assert.deepEqual(clampView({ k: 1, tx: 300, ty: -80 }, SIZE), FIT_VIEW);
+  assert.deepEqual(clampView({ k: 1, tx: 300, ty: -80 }, SIZE, 0), FIT_VIEW);
+});
+
+test('clampView by default lets the map be pushed a margin past the plot edge, even at 1x', () => {
+  // Curator smoke 2026-11-07: the map could not be moved at all, so dots under the year strip
+  // (or any overlay) could never be panned clear of it.
+  assert.equal(PAN_SLACK, 0.3);
+  const v = clampView({ k: 1, tx: 300, ty: 400 }, { w: 800, h: 520 });
+  assert.equal(v.tx, 240, '30% of the width');
+  assert.equal(v.ty, 156, '30% of the height');
+  const w = clampView({ k: 1, tx: -300, ty: -400 }, { w: 800, h: 520 });
+  assert.equal(w.tx, -240);
+  assert.equal(w.ty, -156);
+  assert.equal(clampView({ k: 1, tx: 40, ty: -30 }, { w: 800, h: 520 }).tx, 40, 'a small pan is untouched');
 });
 
 test('clampView keeps the plot covered when panned at zoom', () => {
   const size = { w: 800, h: 520 };
   // At 2x the content is 1600 wide, so tx may run from -800 (right edge flush) to 0.
-  assert.equal(clampView({ k: 2, tx: 50, ty: 0 }, size).tx, 0);
-  assert.equal(clampView({ k: 2, tx: -5000, ty: 0 }, size).tx, -800);
+  assert.equal(clampView({ k: 2, tx: 50, ty: 0 }, size, 0).tx, 0);
+  assert.equal(clampView({ k: 2, tx: -5000, ty: 0 }, size, 0).tx, -800);
+  assert.equal(clampView({ k: 2, tx: 5000, ty: 0 }, size).tx, 240, 'default slack past the left edge');
+  assert.equal(clampView({ k: 2, tx: -5000, ty: 0 }, size).tx, -1040, 'default slack past the right edge');
   assert.equal(clampView({ k: 2, tx: -400, ty: -100 }, size).tx, -400);
   // ty is never asserted above — both bounds collapse to 0 at 1x, so this is the only case
   // that can catch a minTy formula that (e.g.) reused size.w instead of size.h. Same
   // axis-confusion class already caught once in zoomAtPoint, swept here too.
-  assert.equal(clampView({ k: 2, tx: 0, ty: -5000 }, size).ty, -520);
+  assert.equal(clampView({ k: 2, tx: 0, ty: -5000 }, size, 0).ty, -520);
+  assert.equal(clampView({ k: 2, tx: 0, ty: -5000 }, size).ty, -520 - 156);
 });
 
 test('projectPoint matches layout for the same coordinate', () => {

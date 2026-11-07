@@ -1,11 +1,11 @@
-// The floating controls over the map: a pill with 2D | 3D and the Labels / Lines toggles, and (in 3D) a second pill under it
-// with the camera presets and drift. Two pills so the 2D|3D switch never changes width.
+// The floating controls over the map: a pill with 2D | 3D (the top-level switch) and, in 3D, a smaller
+// pill under it with the camera presets and drift. Two pills so the 2D|3D switch never changes width.
+// The Labels / Lines toggles live with the zoom buttons (OverlayToggles), apart from this switch.
 // Presentational only - ExploreMap owns the state and passes it down.
 const PRESET_LABELS = [['iso', 'Iso'], ['top', 'Top'], ['front', 'Front'], ['side', 'Side']];
 
 function MapToolbar({
   dim, has3d, onDim, activePreset, onPreset, drift, onDrift, reduceMotion,
-  labels, onLabels, lines, onLines,
 }) {
   return (
     <div className="explore-maptools">
@@ -30,27 +30,9 @@ function MapToolbar({
             3D
           </button>
         </div>
-        <div className="explore-maptools-group" role="group" aria-label="Overlays">
-          <button
-            type="button"
-            className={`explore-maptool ${labels ? 'on' : ''}`}
-            aria-pressed={labels}
-            onClick={() => onLabels(!labels)}
-          >
-            Labels
-          </button>
-          <button
-            type="button"
-            className={`explore-maptool ${lines ? 'on' : ''}`}
-            aria-pressed={lines}
-            onClick={() => onLines(!lines)}
-          >
-            Lines
-          </button>
-        </div>
       </div>
       {dim === '3d' && (
-        <div className="explore-maptools-pill" role="toolbar" aria-label="Camera">
+        <div className="explore-maptools-pill explore-maptools-pill--sub" role="toolbar" aria-label="Camera">
           <div className="explore-maptools-group" role="group" aria-label="Camera angle">
             {PRESET_LABELS.map(([key, label]) => (
               <button
@@ -76,6 +58,30 @@ function MapToolbar({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Labels / Lines on-off switches: a small pill under the zoom buttons.
+export function OverlayToggles({ labels, onLabels, lines, onLines }) {
+  return (
+    <div className="explore-maptools-pill explore-maptools-pill--sub" role="group" aria-label="Overlays">
+      <button
+        type="button"
+        className={`explore-maptool ${labels ? 'on' : ''}`}
+        aria-pressed={labels}
+        onClick={() => onLabels(!labels)}
+      >
+        Labels
+      </button>
+      <button
+        type="button"
+        className={`explore-maptool ${lines ? 'on' : ''}`}
+        aria-pressed={lines}
+        onClick={() => onLines(!lines)}
+      >
+        Lines
+      </button>
     </div>
   );
 }

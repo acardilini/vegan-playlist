@@ -8,8 +8,8 @@ import {
 } from './mapGeometry';
 import { useMapTransform } from './useMapTransform';
 import { useOrbitCamera } from './useOrbitCamera';
-import MapToolbar from './MapToolbar';
-import { placeLabels, truncateLabel } from './mapLabels';
+import MapToolbar, { OverlayToggles } from './MapToolbar';
+import { labelsAtZoom, placeLabels, truncateLabel } from './mapLabels';
 import { nearestSongs } from './neighbours';
 import { walkBack, walkBase, walkNext, walkPrune } from './walk';
 import YearStrip from './YearStrip';
@@ -19,7 +19,7 @@ import {
 } from './camera3d';
 import {
   deriveColour, deriveDim, deriveFlag, deriveQuery, deriveSelectedId, deriveSpace, deriveSpotlit,
-  deriveYear, formatYear, songPassesSpotlight, withParam, withParams, yearBounds, yearState,
+  deriveYear, deriveYearFrom, formatYear, formatYearFrom, songPassesSpotlight, withParam, withParams, yearBounds, yearState,
 } from './exploreUrlState';
 
 const DOT_RADIUS = 4;
@@ -203,6 +203,7 @@ function ExploreMap() {
   // Release-year cutoff: null = all years. Bounds come from the songs themselves.
   const bounds = useMemo(() => (data ? yearBounds(data.songs) : null), [data]);
   const year = deriveYear(params, bounds);
+  const yearFrom = deriveYearFrom(params, bounds, year);
 
   // The 8 songs nearest the selected one in the map's own coordinates. Recomputed only when the
   // selection, space or view dimension changes - never per camera frame.
@@ -321,13 +322,13 @@ function ExploreMap() {
     // reveals more). Drawn text carries a halo in the page colour so it reads over dots.
     const drawLabels = () => {
       if (!showLabels || labelSet.length === 0) return;
-      const items = labelSet.map((l) => {
+      const items = labelsAtZoom(labelSet, is3d ? orbit.camera.zoom : transform.view.k).map((l) => {
         if (is3d) {
           const q = projectCloud([l.centre], orbit.camera, size)[0];
-          return { text: truncateLabel(l.label), x: q.x, y: q.y, count: l.count, k: q.k };
+          return { text: truncateLabel(l.label), x: q.x, y: q.y, count: l.count, level: l.level, k: q.k };
         }
         const q = projectPoint(l.centre, extents, size, transform.view);
-        return { text: truncateLabel(l.label), x: q.x, y: q.y, count: l.count, k: 1 };
+        return { text: truncateLabel(l.label), x: q.x, y: q.y, count: l.count, level: l.level, k: 1 };
       });
       ctx.font = labelFont;
       ctx.textAlign = 'center';
@@ -353,7 +354,7 @@ function ExploreMap() {
       for (const p of points) {
         const passesSpotlight = songPassesSpotlight(p.song, colour, spotlit);
         const passesSearch = !matchIds || matchIds.has(p.id);
-        const yState = yearState(p.song, year);
+        const yState = yearState(p.song, year, yearFrom);
         if (yState === 'unknown') faint.add(p.id);
         if (passesSpotlight && passesSearch && yState !== 'out') lit.push(p);
         else {
@@ -447,7 +448,7 @@ function ExploreMap() {
     return () => cancelAnimationFrame(raf);
   }, [
     canvasEl, data, space, dim, colour, scale, size, spotlit, matchIds, selectedId,
-    transform.view, orbit.camera, hoverId, spaceMeta, showLabels, neighbourIds, year, bounds,
+    transform.view, orbit.camera, hoverId, spaceMeta, showLabels, neighbourIds, year, yearFrom, bounds,
   ]);
 
   // 12px grab radius; in 3D, of the dots inside it the one nearest the camera wins.
@@ -569,27 +570,33 @@ function ExploreMap() {
             dim={dim}
             has3d={has3d}
             onDim={(d) => setParam('dim', d === '3d' ? '3d' : null)}
-            labels={showLabels}
-            onLabels={(on) => setParam('labels', on ? null : '0')}
-            lines={showLines}
-            onLines={(on) => setParam('lines', on ? null : '0')}
             activePreset={presetOf(orbit.camera)}
             onPreset={orbit.goToPreset}
             drift={orbit.drift}
             onDrift={orbit.setDrift}
             reduceMotion={reduceMotion}
           />
-          <div className="explore-zoom">
-            <button type="button" aria-label="Zoom in" onClick={gesture.zoomIn}>+</button>
-            <button type="button" aria-label="Zoom out" onClick={gesture.zoomOut}>−</button>
-            <button type="button" className="explore-zoom-reset" onClick={gesture.reset}>
-              Reset
-            </button>
+          <div className="explore-sidetools">
+            <div className="explore-zoom">
+              <button type="button" aria-label="Zoom in" onClick={gesture.zoomIn}>+</button>
+              <button type="button" aria-label="Zoom out" onClick={gesture.zoomOut}>−</button>
+              <button type="button" className="explore-zoom-reset" onClick={gesture.reset}>
+                Reset
+              </button>
+            </div>
+            <OverlayToggles
+              labels={showLabels}
+              onLabels={(on) => setParam('labels', on ? null : '0')}
+              lines={showLines}
+              onLines={(on) => setParam('lines', on ? null : '0')}
+            />
           </div>
           <YearStrip
             bounds={bounds}
             year={year}
+            from={yearFrom}
             onYear={(y) => setParam('yr', formatYear(y, bounds))}
+            onFrom={(f) => setParam('yf', formatYearFrom(f, bounds))}
           />
           {hover && (
             <div

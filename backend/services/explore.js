@@ -6,7 +6,7 @@ const genres = require('./genres');
 const acoustic = require('./acousticCodebook');
 const codebook = require('./metadataCodebook');
 const { getParentGenre } = require('../utils/genreMapping');
-const { buildRegionLabels } = require('./exploreRegions');
+const { buildTieredLabels } = require('./exploreRegions');
 
 // Friendly names for the projected spaces. `audio` is shown as "Sound" — the site's word
 // for the acoustic dimensions everywhere else. Unknown spaces title-case rather than
@@ -390,7 +390,7 @@ const termLabel = (term) => {
 };
 
 function labelsFor(rows, space, dim, cloud3d) {
-  return buildRegionLabels(labelItems(rows, space, dim, cloud3d), {
+  return buildTieredLabels(labelItems(rows, space, dim, cloud3d), {
     labelOf: termLabel, genreLabelOf: titleCase,
   });
 }

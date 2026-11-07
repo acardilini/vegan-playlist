@@ -155,12 +155,36 @@ export function formatYear(year, bounds) {
   return String(year);
 }
 
-// How one song relates to the cutoff. With no cutoff every song is 'in' (songs with no year
-// included); with one, a song with no year is 'unknown' rather than lost.
-export function yearState(song, year) {
-  if (year == null) return 'in';
+// `yf=<year>` is the optional start of the range ("released from this year"). Valid only as a
+// whole year after the first year (the first year would filter nothing) and no later than the end
+// (`year`, or the last year when the end is open); anything else is null = no start.
+export function deriveYearFrom(params, bounds, year) {
+  const raw = params.get('yf');
+  if (!bounds || !raw || !/^\d+$/.test(raw)) return null;
+  const from = Number(raw);
+  return from > bounds.min && from <= (year == null ? bounds.max : year) ? from : null;
+}
+
+export function formatYearFrom(from, bounds) {
+  if (!bounds || from == null || from <= bounds.min) return '';
+  return String(from);
+}
+
+// How one song relates to the range [from, year]. With neither end set every song is 'in' (songs
+// with no year included); with either set, a song with no year is 'unknown' rather than lost.
+export function yearState(song, year, from = null) {
+  if (year == null && from == null) return 'in';
   if (!Number.isInteger(song.year)) return 'unknown';
-  return song.year <= year ? 'in' : 'out';
+  if (from != null && song.year < from) return 'out';
+  if (year != null && song.year > year) return 'out';
+  return 'in';
+}
+
+// The words for the year strip.
+export function yearRangeLabel(from, year, bounds) {
+  if (from == null) return year == null ? 'All years' : `Up to ${year}`;
+  const end = year == null ? bounds.max : year;
+  return from === end ? `${from} only` : `${from} to ${end}`;
 }
 
 // A toggle that is on by default and written to the URL only when switched off (`key=0`).
@@ -172,6 +196,6 @@ export function deriveFlag(params, key) {
 // unzoomed map should share as a clean URL. Translates round to whole pixels; nobody can see
 // a hundredth of one, and it keeps shared links short.
 export function formatView(view) {
-  if (view.k <= MIN_K) return '';
+  if (view.k <= MIN_K && Math.round(view.tx) === 0 && Math.round(view.ty) === 0) return '';
   return `${Math.round(view.k * 100) / 100},${Math.round(view.tx)},${Math.round(view.ty)}`;
 }

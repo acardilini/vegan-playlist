@@ -7,6 +7,10 @@
 const REGION_K = 8;
 // A region smaller than this is too small to name honestly.
 const MIN_REGION = 15;
+// The second, finer level: shown only once the viewer has zoomed in, so it adds detail without
+// crowding the first look (curator smoke 2026-11-07: zooming revealed nothing with 8 labels).
+const FINE_K = 24;
+const FINE_MIN_REGION = 10;
 
 // A term must appear this many times in the region, in this share of it, and this many times
 // more often than across the catalogue. Starting values; tuned once on the live data.
@@ -139,7 +143,23 @@ function buildRegionLabels(items, opts) {
   return kept.map(({ label, centre, count }) => ({ label, centre, count }));
 }
 
+// Two levels in one list: level 1 is the coarse cut (always eligible to draw), level 2 a finer
+// cut whose labels the map only considers when zoomed in. A fine label that repeats a coarse
+// one's text is dropped, since it would only restate the region it sits inside.
+function buildTieredLabels(items, opts) {
+  const {
+    coarseK = REGION_K, fineK = FINE_K, fineMinRegion = FINE_MIN_REGION, labelOf, genreLabelOf,
+  } = opts;
+  const coarse = buildRegionLabels(items, { k: coarseK, labelOf, genreLabelOf })
+    .map(l => ({ ...l, level: 1 }));
+  const used = new Set(coarse.map(l => l.label));
+  const fine = buildRegionLabels(items, {
+    k: fineK, minRegion: fineMinRegion, labelOf, genreLabelOf,
+  }).filter(l => !used.has(l.label)).map(l => ({ ...l, level: 2 }));
+  return [...coarse, ...fine];
+}
+
 module.exports = {
-  kmeans, buildRegionLabels, REGION_K, MIN_REGION,
+  kmeans, buildRegionLabels, buildTieredLabels, REGION_K, MIN_REGION, FINE_K, FINE_MIN_REGION,
   MIN_TERM_COUNT, MIN_TERM_SHARE, MIN_TERM_LIFT, MIN_GENRE_COUNT, MIN_GENRE_SHARE, MIN_GENRE_LIFT,
 };

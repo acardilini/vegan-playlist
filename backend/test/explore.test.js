@@ -542,7 +542,8 @@ test('mapPayload serves labels2d and labels3d per space', async () => {
       assert.ok(typeof l.label === 'string' && l.label.length > 0);
       assert.equal(l.centre.length, 2);
       assert.ok(l.centre.every(Number.isFinite));
-      assert.ok(Number.isInteger(l.count) && l.count >= 15);
+      assert.ok([1, 2].includes(l.level), 'level 1 coarse or 2 fine');
+      assert.ok(Number.isInteger(l.count) && l.count >= (l.level === 1 ? 15 : 10));
     }
     if (!s.has3d) assert.deepEqual(s.labels3d, []);
     for (const l of s.labels3d) {
