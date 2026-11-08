@@ -103,7 +103,7 @@ function mapDim(dimension, arr) {
 async function getSongAnalysis(db, songId) {
   const r = await db.query(
     `SELECT sla.themes, sla.topics, sla.advocacy, sla.moral_frames, sla.lyric_summary,
-            sla.perspective, sla.lyrical_tone, sla.intensity, sla.clarity, sla.focus_amount,
+            sla.perspective, sla.lyrical_tone, sla.clarity, sla.focus_amount,
             sla.target_audience, sla.emotions,
             sla.sonic_energy, sla.emotional_mood, sla.rhythmic_style,
             sla.acoustic_type, sla.vocal_delivery, sla.tempo_bpm
@@ -169,7 +169,7 @@ async function getSongAnalysis(db, songId) {
   if (!hasContent) return null;
 
   return {
-    perspective: a.perspective, intensity: a.intensity, clarity: a.clarity,
+    perspective: a.perspective, clarity: a.clarity,
     focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone,
     target_audience: a.target_audience,
     emotions, summary: a.lyric_summary,

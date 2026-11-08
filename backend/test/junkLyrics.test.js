@@ -101,7 +101,7 @@ const analysis = require('../services/analysis');
 async function addAnalysis(id, model = 'zzzjunk-model') {
   await pool.query(
     `INSERT INTO song_lyric_analysis (song_id, model_used, perspective, themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, $2, 'MORAL_JUDGEMENT', '[{"code":"captivity","evidence":"x"}]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`, [id, model]);
+     VALUES ($1, $2, 'CRITIC_PHILOSOPHER', '[{"code":"captivity","evidence":"x"}]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`, [id, model]);
 }
 
 test('a flagged song loses its analysis in every shared read, and gets it back on dismiss', async () => {

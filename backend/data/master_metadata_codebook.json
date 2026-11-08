@@ -1,92 +1,71 @@
 {
   "perspective": {
-    "component_name": "Narrative Perspective",
-    "description": "The narrative voice or speaker identity through which the song is delivered.",
-    "parsimony_rule": "Select 1 primary dominant code. Only select a 2nd code if an equally prominent dual perspective exists.",
+    "component_name": "Narrative Point of View",
+    "description": "The physical speaker identity or narrative voice delivering the lyrics (who is holding the microphone).",
+    "parsimony_rule": "Select 1 primary dominant voice. Only select a 2nd code if an equally prominent dual perspective exists (e.g., role-play dialogue between animal and farmer).",
     "codes": [
-      {
-        "code": "MORAL_JUDGEMENT",
-        "label": "Moral Judgement",
-        "short_tag": "⚖️ Moral Judgement",
-        "definition": "Voice holding humans and society ethically accountable, identifying injustice, and passing moral verdict.",
-        "inclusion": "Ethical indictment, attributing guilt, demanding moral accountability or societal reckoning."
-      },
-      {
-        "code": "SYSTEMIC_CRITIQUE",
-        "label": "Systemic Critique",
-        "short_tag": "🏭 Systemic Critique",
-        "definition": "Focuses on structural systems of oppression (capitalism, state subsidies, institutional industry).",
-        "inclusion": "Critiques of subsidies, consumer culture, corporate greed, and institutionalized exploitation."
-      },
-      {
-        "code": "ANIMAL_ADVOCATE",
-        "label": "Animal Advocate",
-        "short_tag": "🕊️ Animal Advocate",
-        "definition": "Voice of conscience, empathy, and moral appeal on behalf of non-human animals.",
-        "inclusion": "Appeals to empathy, calls for changes in animal treatment, universal compassion, peaceful vegan advocacy."
-      },
-      {
-        "code": "DIRECT_ACTION",
-        "label": "Direct Action",
-        "short_tag": "💥 Direct Action",
-        "definition": "Activist voice documenting or urging liberation raids, cage breaking, sabotage, or underground resistance.",
-        "inclusion": "References to breaking cages, burning labs, underground ALF networks, militant rescue."
-      },
-      {
-        "code": "WITNESS",
-        "label": "Witness",
-        "short_tag": "👁️ Witness",
-        "definition": "First-hand observation and documentation of slaughter, trauma, and suffering.",
-        "inclusion": "Descriptions of watching slaughter/atrocities, feeling haunted by witnessed suffering."
-      },
       {
         "code": "CAPTIVE_ANIMAL",
         "label": "Captive Animal",
         "short_tag": "🐾 Captive Animal",
-        "definition": "First-person voice of the caged, farmed, lab, or slaughtered animal.",
-        "inclusion": "First-person accounts of being caged, commodified, processed, or killed."
+        "definition": "First-person voice of the caged, farmed, lab-tested, or slaughtered non-human animal.",
+        "inclusion": "First-person accounts of being caged, commodified, processed, mutilated, or killed."
       },
       {
         "code": "ANIMAL_REVOLUTIONARY",
         "label": "Animal Revolutionary",
         "short_tag": "🐺 Animal Revolutionary",
-        "definition": "First-person animal voice expressing active resistance, defiance, or retaliation against humans.",
-        "inclusion": "Animals threatening retaliation, expressing pride in wild nature, organizing animal rebellion."
+        "definition": "First-person animal voice expressing active rebellion, physical defiance, or retaliation against humans.",
+        "inclusion": "Animals threatening retaliation, reclaiming wild freedom, organizing rebellion, or fighting back."
       },
       {
-        "code": "ECO_ADVOCATE",
-        "label": "Eco-advocate",
-        "short_tag": "⚠️ Eco-advocate",
-        "definition": "Warning of ecological collapse, planetary devastation, and species extinction.",
-        "inclusion": "Warnings of deforestation, resource depletion, climate collapse, and planetary breakdown."
-      },
-      {
-        "code": "ANALYST",
-        "label": "Analyst",
-        "short_tag": "🔬 Analyst",
-        "definition": "Objective, detached, scientific or matter-of-fact description of biology or slaughter.",
-        "inclusion": "Scientific descriptions of biology or cold, factual descriptions of dissection/slaughter."
+        "code": "WITNESS",
+        "label": "Eyewitness",
+        "short_tag": "👁️ Eyewitness",
+        "definition": "First-person human observer documenting slaughterhouse atrocities, transport, or suffering firsthand.",
+        "inclusion": "Direct testimony of watching slaughter, undercover documentation, or being haunted by witnessed trauma."
       },
       {
         "code": "STORYTELLER",
-        "label": "Storyteller",
-        "short_tag": "👤 Storyteller",
-        "definition": "Grounded in personal journey, daily choices, dietary reflection, or interpersonal narrative.",
-        "inclusion": "Descriptions of personal transition, daily encounters, meal reflections, casual storytelling."
+        "label": "Personal Storyteller",
+        "short_tag": "📖 Personal Storyteller",
+        "definition": "First-person autobiographical narrator recounting personal ethical transition, daily choices, and reflections.",
+        "inclusion": "Personal accounts of going vegan, interpersonal dialogues, dining experiences, kitchen reflections, or personal journey."
       },
       {
         "code": "OPPRESSOR",
-        "label": "Oppressor",
-        "short_tag": "👑 Oppressor",
-        "definition": "Adopts the voice or persona of the slaughterer, hunter, or human supremacist.",
-        "inclusion": "First-person expressions of human superiority, right to exploit, or execution of slaughter."
+        "label": "Oppressor Persona",
+        "short_tag": "🔪 Oppressor Persona",
+        "definition": "Dramatic persona or role-play adopting the voice of the slaughterer, hunter, consumer, or human supremacist.",
+        "inclusion": "First-person expressions of human superiority, right to exploit, hunter pride, or execution of slaughter."
+      },
+      {
+        "code": "ACTIVIST_LIBERATOR",
+        "label": "Activist / Liberator",
+        "short_tag": "🔥 Activist / Liberator",
+        "definition": "First-person or collective ('we') activist voice documenting or urging liberation raids, rescue, or direct intervention.",
+        "inclusion": "References to cutting fences, breaking cages, burning laboratories, underground networks, or direct action rescue."
+      },
+      {
+        "code": "CRITIC_PHILOSOPHER",
+        "label": "Third-Person Critic",
+        "short_tag": "⚖️ Third-Person Critic",
+        "definition": "External third-person narrator delivering ethical critique, moral indictment, or societal reckoning to the listener.",
+        "inclusion": "Third-person indictment of human society, ethical interrogation, moral verdicts, or systemic analysis of exploitation."
+      },
+      {
+        "code": "DETACHED_ANALYST",
+        "label": "Clinical Analyst",
+        "short_tag": "🔬 Clinical Analyst",
+        "definition": "Objective, detached, scientific, or forensic narrator describing biology or slaughter without explicit emotional inflection.",
+        "inclusion": "Scientific description of biology, mechanical slaughterhouse processes, or medical vivisection dissection."
       }
     ]
   },
   "lyrical_tone": {
     "component_name": "Lyrical Tone",
     "description": "The rhetorical posture, artistic attitude, and delivery style of the lyrics.",
-    "parsimony_rule": "Select 1 primary dominant code. Only select a 2nd code if an equally prominent secondary posture exists.",
+    "parsimony_rule": "Select 1 primary dominant tone. Only select a 2nd code if an equally prominent secondary posture exists.",
     "codes": [
       {
         "code": "INDICTMENT",
@@ -95,119 +74,64 @@
         "definition": "Accusatory, righteous posture framing actions as severe moral crimes."
       },
       {
-        "code": "SYSTEMIC",
-        "label": "Systemic",
-        "short_tag": "🏛️ Systemic",
-        "definition": "Tone targeting institutional power, state enforcement, corporate greed, and capitalism."
+        "code": "MOBILIZING",
+        "label": "Mobilizing",
+        "short_tag": "📢 Mobilizing",
+        "definition": "Urgent, rallying posture designed to mobilize listeners to immediate collective resistance or action."
       },
       {
         "code": "RESISTANCE",
         "label": "Resistance",
         "short_tag": "✊ Resistance",
-        "definition": "Unyielding, rebellious posture of active resistance and readiness to fight back."
-      },
-      {
-        "code": "VENGEANCE",
-        "label": "Vengeance",
-        "short_tag": "🔥 Vengeance",
-        "definition": "Hostile, confrontational tone with direct threats, violent imagery, or vengeance."
-      },
-      {
-        "code": "CYNICISM",
-        "label": "Cynicism",
-        "short_tag": "🌧️ Cynicism",
-        "definition": "Weary, exhausted, or deeply cynical tone reflecting hopelessness and broken trust."
-      },
-      {
-        "code": "MOBILIZING",
-        "label": "Mobilizing",
-        "short_tag": "📢 Mobilizing",
-        "definition": "Urgent, rallying tone designed to mobilize listeners to immediate collective action."
+        "definition": "Unyielding, rebellious posture of active defiance, militant resolve, and readiness to fight back."
       },
       {
         "code": "FATALISM",
         "label": "Fatalism",
-        "short_tag": "🌋 Fatalism",
-        "definition": "Prophetic, doom-laden tone warning of inevitable ecological collapse or cosmic retribution."
+        "short_tag": "⏳ Fatalism",
+        "definition": "Prophetic, doom-laden posture warning of inevitable planetary ruin, ecological collapse, or cosmic retribution."
       },
       {
         "code": "SATIRICAL",
         "label": "Satirical",
-        "short_tag": "😏 Satirical",
-        "definition": "Sarcastic, mocking, or humorous tone using snark or parody against meat culture."
+        "short_tag": "🎭 Satirical",
+        "definition": "Sarcastic, mocking, or humorous posture using snark, irony, or parody against meat culture and carnism."
       },
       {
         "code": "PHILOSOPHICAL",
         "label": "Philosophical",
-        "short_tag": "📘 Philosophical",
-        "definition": "Educational, rational tone using logical arguments, health facts, or ethical discourse."
+        "short_tag": "💡 Philosophical",
+        "definition": "Reasoned, educational, didactic posture presenting logical ethical discourse, health facts, or moral argument."
       },
       {
         "code": "INTROSPECTIVE",
         "label": "Introspective",
         "short_tag": "🪞 Introspective",
-        "definition": "Deeply personal, introspective tone focusing on self-guilt, personal struggle, or grief."
+        "definition": "Deeply personal, vulnerable posture focusing on self-reckoning, personal guilt, conscience, or grief."
       },
       {
-        "code": "OUTRAGE",
-        "label": "Outrage",
-        "short_tag": "💔 Outrage",
-        "definition": "Highly emotional, raw, visceral grief, distress, and horror at suffering."
+        "code": "LAMENTATION",
+        "label": "Lamentation",
+        "short_tag": "🥀 Lamentation",
+        "definition": "Mournful, sorrowful, elegiac posture expressing deep grief, heartbreak, and despair for animal victims."
       },
       {
         "code": "DETACHMENT",
         "label": "Detachment",
-        "short_tag": "🩺 Detachment",
-        "definition": "Cold, sterile, objective tone describing violent or surgical acts with technical precision."
+        "short_tag": "🧊 Detachment",
+        "definition": "Cold, sterile, clinical, objective posture describing violent, surgical, or industrial acts with detached precision."
       },
       {
         "code": "QUESTIONING",
         "label": "Questioning",
         "short_tag": "❓ Questioning",
-        "definition": "Questioning tone challenging cultural assumptions or interrogating listener beliefs."
-      },
-      {
-        "code": "EQUIVALENCE",
-        "label": "Equivalence",
-        "short_tag": "🧬 Equivalence",
-        "definition": "Philosophical tone leveling human and animal biology ('flesh and blood is you and me')."
+        "definition": "Skeptical, interrogative posture challenging cultural assumptions and asking listeners to examine their habits."
       },
       {
         "code": "CONFLICTED",
         "label": "Conflicted",
-        "short_tag": "⚡ Conflicted",
-        "definition": "Self-aware, pragmatic tone acknowledging gaps between ideals and personal habits/society."
-      }
-    ]
-  },
-  "intensity": {
-    "component_name": "Rhetorical Intensity",
-    "description": "The energy level, emotional extremity, and urgency of the lyrical delivery.",
-    "parsimony_rule": "Select 1 primary dominant code.",
-    "codes": [
-      {
-        "code": "EXTREME",
-        "label": "Extreme",
-        "short_tag": "💥 Extreme",
-        "definition": "Explosive, furious, or unhinged; violent breakdown, screaming rage, visceral horror, or death threats."
-      },
-      {
-        "code": "FORCEFUL",
-        "label": "Forceful",
-        "short_tag": "⚡ Forceful",
-        "definition": "Urgent, assertive, impassioned; high conviction and rallying calls without explosive chaos."
-      },
-      {
-        "code": "MODERATE",
-        "label": "Moderate",
-        "short_tag": "⚖️ Moderate",
-        "definition": "Measured, conversational, didactic; steady rhythm and clear delivery without aggressive pressure."
-      },
-      {
-        "code": "SUBDUED",
-        "label": "Subdued",
-        "short_tag": "🍃 Subdued",
-        "definition": "Quiet, introspective, melancholic, or ambient; understated delivery, whisper, or gentle acoustic reflection."
+        "short_tag": "⚖️ Conflicted",
+        "definition": "Self-aware, ambivalent, pragmatic posture acknowledging contradictions between ideals and societal reality."
       }
     ]
   },
@@ -281,8 +205,8 @@
   },
   "target_audience": {
     "component_name": "Target Audience",
-    "description": "The specific individuals, groups, institutions, or societal entities addressed or criticized.",
-    "parsimony_rule": "Select 1 primary dominant code. Only select a 2nd code if an equally prominent secondary target exists.",
+    "description": "The specific listener, entity, or group directly addressed ('you') in the lyrics.",
+    "parsimony_rule": "Select 1 primary addressee. Only select a 2nd code if dual addressees are explicitly addressed.",
     "codes": [
       {
         "code": "CONSUMERS_OF_ANIMAL_PRODUCTS",

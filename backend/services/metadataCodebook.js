@@ -1,4 +1,4 @@
-// Codebook service over the curator's master_metadata_codebook.json — the seven scalar
+// Codebook service over the curator's master_metadata_codebook.json — the six scalar
 // metadata components of the lyric analysis (perspective … emotions).
 // Pure: no DB access, no writes. Mirrors how services/analysis.js owns taxonomy.json.
 const codebook = require('../data/master_metadata_codebook.json');
@@ -14,13 +14,12 @@ const SUPPRESSED = new Set([
 // SQL identifier whitelist — user input never reaches an identifier. `heading` is the short
 // UI label (not the codebook's long component_name). `multi` = TEXT[] column.
 const COMPONENTS = [
-  { key: 'perspective',     column: 'perspective',     heading: 'Perspective', multi: false },
-  { key: 'lyrical_tone',    column: 'lyrical_tone',    heading: 'Tone',        multi: false },
-  { key: 'intensity',       column: 'intensity',       heading: 'Intensity',   multi: false },
-  { key: 'clarity',         column: 'clarity',         heading: 'Clarity',     multi: false },
-  { key: 'focus_amount',    column: 'focus_amount',    heading: 'Focus',       multi: false },
-  { key: 'target_audience', column: 'target_audience', heading: 'Speaking to',    multi: false },
-  { key: 'emotions',        column: 'emotions',        heading: 'Emotions',    multi: true  },
+  { key: 'perspective',     column: 'perspective',     heading: 'Point of view', multi: false },
+  { key: 'lyrical_tone',    column: 'lyrical_tone',    heading: 'Tone',          multi: false },
+  { key: 'clarity',         column: 'clarity',         heading: 'Clarity',       multi: false },
+  { key: 'focus_amount',    column: 'focus_amount',    heading: 'Focus',         multi: false },
+  { key: 'target_audience', column: 'target_audience', heading: 'Speaking to',   multi: false },
+  { key: 'emotions',        column: 'emotions',        heading: 'Emotions',      multi: true  },
 ];
 
 const COMPONENT_KEYS = COMPONENTS.map(c => c.key);

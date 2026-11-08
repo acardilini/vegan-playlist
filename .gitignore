@@ -158,3 +158,6 @@ backups/
 # Superpowers brainstorming visual companion (local mockups)
 .superpowers/
 backend/.spotify-token.json
+
+# Retired: a static copy bypasses the publish filter and leaks unpublished songs (see CLAUDE.md, B4)
+frontend/public/vector_space.json

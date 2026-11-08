@@ -64,7 +64,7 @@ test('joinSql emits only the needed joins', () => {
 });
 
 test('buildWhere scalar components set the scalar join and one clause each', () => {
-  const r = b.buildWhere({ perspective: ['MORAL_JUDGEMENT'], emotions: ['OUTRAGE'] });
+  const r = b.buildWhere({ perspective: ['CRITIC_PHILOSOPHER'], emotions: ['OUTRAGE'] });
   assert.ok(r.joins.scalarAnalysis);
   assert.ok(!r.joins.analysis, 'code-tier join not needed for scalar filters');
   assert.ok(r.where.includes('sca.perspective = ANY($1::text[])'));
@@ -74,7 +74,7 @@ test('buildWhere scalar components set the scalar join and one clause each', () 
 
 test('buildWhere excludes one scalar component but keeps its siblings', () => {
   const r = b.buildWhere(
-    { perspective: ['MORAL_JUDGEMENT'], clarity: ['CONTEXTUAL'] },
+    { perspective: ['CRITIC_PHILOSOPHER'], clarity: ['CONTEXTUAL'] },
     { exclude: 'scalar:perspective' });
   assert.ok(!r.where.some(c => c.includes('sca.perspective')), 'own group excluded');
   assert.ok(r.where.some(c => c.includes('sca.clarity')), 'sibling kept');
@@ -82,7 +82,7 @@ test('buildWhere excludes one scalar component but keeps its siblings', () => {
 });
 
 test('buildWhere scalar params continue the shared index sequence', () => {
-  const r = b.buildWhere({ q: 'x', perspective: ['MORAL_JUDGEMENT'] });
+  const r = b.buildWhere({ q: 'x', perspective: ['CRITIC_PHILOSOPHER'] });
   assert.ok(r.where[0].includes('$1'), 'q takes $1');
   assert.ok(r.where.some(c => c.includes('sca.perspective = ANY($2::text[])')));
   assert.equal(r.nextIndex, 3);
@@ -95,7 +95,7 @@ test('joinSql emits the scalar-tier join under a distinct alias', () => {
 });
 
 test('buildWhere scalar clauses respect a non-1 startIndex', () => {
-  const r = b.buildWhere({ themes: ['killing'], perspective: ['MORAL_JUDGEMENT'] },
+  const r = b.buildWhere({ themes: ['killing'], perspective: ['CRITIC_PHILOSOPHER'] },
                          { exclude: 'analysis', startIndex: 2 });
   assert.ok(r.where.some(c => c.includes('sca.perspective = ANY($2::text[])')));
   assert.equal(r.nextIndex, 3);
@@ -177,7 +177,7 @@ test('buildWhere ignores a non-numeric tempo bound instead of binding NaN', () =
 
 test('buildWhere numbers acoustic params after the scalar ones', () => {
   const r = b.buildWhere({
-    perspective: ['MORAL_JUDGEMENT'],
+    perspective: ['CRITIC_PHILOSOPHER'],
     sonic_energy: ['ENERGETIC'],
   });
   assert.ok(r.where.includes('sca.perspective = ANY($1::text[])'));

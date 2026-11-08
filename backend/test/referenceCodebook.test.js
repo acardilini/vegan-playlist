@@ -51,10 +51,10 @@ test('catalogue keeps every taxonomy term, including ones no song carries', () =
   }
 });
 
-test('catalogue lists the seven metadata components and hides the four absence codes', () => {
+test('catalogue lists the six metadata components and hides the four absence codes', () => {
   const c = ref.catalogue();
   assert.deepEqual(c.metadata.map(m => m.key), [
-    'perspective', 'lyrical_tone', 'intensity', 'clarity',
+    'perspective', 'lyrical_tone', 'clarity',
     'focus_amount', 'target_audience', 'emotions',
   ]);
   assert.equal(c.metadata.find(m => m.key === 'target_audience').heading, 'Speaking to');
@@ -192,7 +192,7 @@ test('GET /api/analysis/codebook serves the whole reference payload', async () =
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.thematic.length, 4);
-    assert.equal(body.metadata.length, 7);
+    assert.equal(body.metadata.length, 6);
     assert.equal(body.acoustic.length, 6);
     assert.ok(body.coverage.live_songs > 1000);
     const codes = body.metadata.flatMap(m => m.codes.map(c => c.code));

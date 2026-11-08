@@ -205,11 +205,11 @@ Run before ending every working session:
   taxonomy rather than re-reading their JSON, so label rules and suppression stay owned in one place
   each. Deliberately a **different** shape from `analysis.facetTree`: the facet tree drops any code
   with a zero count and carries no definition (right for a filter sidebar), while the reference lists
-  **all 107 thematic terms including zero-count ones**, all 7 lyric-metadata components and all 6
+  **all 107 thematic terms including zero-count ones**, all 6 lyric-metadata components and all 6
   acoustic dimensions — a term nobody's song currently carries is itself information on a glossary
   page. Two small getters were added to `acousticCodebook.js` for this (`derivationSource(key)`,
   `codeThreshold(key, code)`), following the existing `componentDescription`/`codeDefinition` shape.
-  Counts are **16 count queries** — one per family member (4 thematic dimensions + 7 metadata
+  Counts are **15 count queries** — one per family member (4 thematic dimensions + 6 metadata
   components + 5 acoustic dimensions) — **plus 5 coverage queries**, all reusing the shared
   `LATEST_ANALYSIS` fragment and the `status='included' AND published=true` gate, exactly like every
   other public read — this is
@@ -283,7 +283,7 @@ Run before ending every working session:
   card; queue rows carry an `origin` tag ("From Spotify" / "From submit form"); Duplicate Manager is
   data-quality only. **Two shared presentation primitives:** `FilterSection` — every
   browse-sidebar group is one, so they all collapse identically; it nests, which is how the
-  five theme dimensions, seven metadata components and five acoustic dimensions read as the
+  five theme dimensions, six metadata components and five acoustic dimensions read as the
   same unit. `ScalarFacetGroups` is generic over `{key: {heading, options}}` and renders both
   the "Lyric metadata" and the "Sound" families — don't fork it for a third. Its `note` is
   **usage help only** (caveats, what the options mean): the curator twice rejected

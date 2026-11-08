@@ -4,23 +4,23 @@ const cb = require('../services/metadataCodebook');
 
 // Pure-function tests — no DB, no sentinel.
 
-test('COMPONENTS lists the seven components in order with short headings', () => {
+test('COMPONENTS lists the six components in order with short headings', () => {
   assert.deepEqual(cb.COMPONENT_KEYS, [
-    'perspective', 'lyrical_tone', 'intensity', 'clarity',
+    'perspective', 'lyrical_tone', 'clarity',
     'focus_amount', 'target_audience', 'emotions',
   ]);
   assert.deepEqual(cb.COMPONENTS.map(c => c.heading), [
-    'Perspective', 'Tone', 'Intensity', 'Clarity', 'Focus', 'Speaking to', 'Emotions',
+    'Point of view', 'Tone', 'Clarity', 'Focus', 'Speaking to', 'Emotions',
   ]);
-  // emotions is the only multi-valued component; column === key for all seven
+  // emotions is the only multi-valued component; column === key for all six
   assert.deepEqual(cb.COMPONENTS.filter(c => c.multi).map(c => c.key), ['emotions']);
   assert.ok(cb.COMPONENTS.every(c => c.column === c.key));
 });
 
 test('codeLabel and codeDefinition resolve from the codebook', () => {
-  assert.equal(cb.codeLabel('perspective', 'MORAL_JUDGEMENT'), 'Moral Judgement');
+  assert.equal(cb.codeLabel('perspective', 'CRITIC_PHILOSOPHER'), 'Third-Person Critic');
   assert.equal(cb.codeLabel('emotions', 'OUTRAGE'), 'Outrage');
-  assert.ok(cb.codeDefinition('perspective', 'MORAL_JUDGEMENT').length > 0);
+  assert.ok(cb.codeDefinition('perspective', 'CRITIC_PHILOSOPHER').length > 0);
 });
 
 test('unknown codes fall back to Title Case, null stays null', () => {
@@ -52,16 +52,16 @@ test('cleanSelection strips unknown and suppressed codes', () => {
   assert.deepEqual(
     cb.cleanSelection('clarity', ['EXPLICIT', 'ABSENT', 'NOT_A_CODE']),
     ['EXPLICIT']);
-  assert.deepEqual(cb.cleanSelection('perspective', 'MORAL_JUDGEMENT'), ['MORAL_JUDGEMENT']);
+  assert.deepEqual(cb.cleanSelection('perspective', 'CRITIC_PHILOSOPHER'), ['CRITIC_PHILOSOPHER']);
   assert.deepEqual(cb.cleanSelection('perspective', undefined), []);
 });
 
 test('scalarSelectionClauses: single-valued component uses = ANY, one param array', () => {
   const r = cb.scalarSelectionClauses(
-    { perspective: ['MORAL_JUDGEMENT', 'SYSTEMIC_CRITIQUE'] }, 1);
+    { perspective: ['CRITIC_PHILOSOPHER', 'CAPTIVE_ANIMAL'] }, 1);
   assert.equal(r.needsJoin, true);
   assert.deepEqual(r.clauses, ['sca.perspective = ANY($1::text[])']);
-  assert.deepEqual(r.params, [['MORAL_JUDGEMENT', 'SYSTEMIC_CRITIQUE']]);
+  assert.deepEqual(r.params, [['CRITIC_PHILOSOPHER', 'CAPTIVE_ANIMAL']]);
   assert.equal(r.nextIndex, 2);
 });
 
@@ -73,7 +73,7 @@ test('scalarSelectionClauses: emotions uses array overlap', () => {
 
 test('scalarSelectionClauses: components AND together in COMPONENTS order', () => {
   const r = cb.scalarSelectionClauses(
-    { emotions: ['OUTRAGE'], perspective: ['MORAL_JUDGEMENT'] }, 1);
+    { emotions: ['OUTRAGE'], perspective: ['CRITIC_PHILOSOPHER'] }, 1);
   assert.equal(r.clauses.length, 2);
   assert.equal(r.clauses[0], 'sca.perspective = ANY($1::text[])', 'perspective first');
   assert.equal(r.clauses[1], 'sca.emotions && $2::text[]');

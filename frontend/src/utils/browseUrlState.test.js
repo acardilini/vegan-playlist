@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFilterState, termHref } from './browseUrlState.js';
 
-// Every key the Reference page can link on: the five thematic dimensions, the seven scalar
+// Every key the Reference page can link on: the five thematic dimensions, the six scalar
 // components and the five acoustic ones.
 const KEYS = [
   'themes', 'targets', 'actions', 'moral_frames',
-  'perspective', 'lyrical_tone', 'intensity', 'clarity', 'focus_amount',
+  'perspective', 'lyrical_tone', 'clarity', 'focus_amount',
   'target_audience', 'emotions',
   'sonic_energy', 'emotional_mood', 'rhythmic_style', 'acoustic_type', 'vocal_delivery',
 ];

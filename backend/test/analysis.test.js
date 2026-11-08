@@ -58,8 +58,8 @@ const CODED = {
   lyric_summary: 'Test summary.',
   themes: JSON.stringify([{ code: 'slaughter', evidence: 'ground beef' }]),
   topics: JSON.stringify([{ code: 'cows', evidence: 'Run cows run' }]),
-  perspective: 'MORAL_JUDGEMENT', lyrical_tone: 'SATIRICAL',
-  intensity: 'FORCEFUL', clarity: 'CONTEXTUAL',
+  perspective: 'CRITIC_PHILOSOPHER', lyrical_tone: 'SATIRICAL',
+  clarity: 'CONTEXTUAL',
   focus_amount: 'PRIMARY', target_audience: 'HYPOCRITES_AND_SELF_DECEIVERS',
   emotions: ['OUTRAGE', 'DISGUST'],
 };
@@ -81,7 +81,7 @@ const ACOUSTIC = {
 test('getSongAnalysis returns the full coding with display labels', async () => {
   const id = await mkCodedSong();
   const a = await analysis.getSongAnalysis(pool, id);
-  assert.equal(a.perspective, 'MORAL_JUDGEMENT'); // raw code still exposed
+  assert.equal(a.perspective, 'CRITIC_PHILOSOPHER'); // raw code still exposed
   assert.equal(a.themes[0].code, 'slaughter');
   assert.equal(a.themes[0].label, 'Slaughter & Killing');
   assert.equal(a.themes[0].evidence, 'ground beef');
@@ -109,12 +109,12 @@ test('getSongAnalysis resolves scalar attributes to codebook labels with definit
   const id = await mkCodedSong();
   const a = await analysis.getSongAnalysis(pool, id);
   const byLabel = Object.fromEntries(a.attributes.map(x => [x.label, x.value]));
-  assert.equal(byLabel['Perspective'], 'Moral Judgement');
+  assert.equal(byLabel['Point of view'], 'Third-Person Critic');
   assert.equal(byLabel['Tone'], 'Satirical');
   assert.equal(byLabel['Focus'], 'Primary');
   assert.equal(byLabel['Speaking to'], 'Hypocritical Animal Lovers');
   assert.ok(a.attributes.every(x => x.value), 'no null/empty attributes leak in');
-  const persp = a.attributes.find(x => x.label === 'Perspective');
+  const persp = a.attributes.find(x => x.label === 'Point of view');
   assert.ok(persp.definition.length > 0, 'definition carried for the tooltip');
   // emotions arrive as display labels, not raw codes
   assert.deepEqual(a.emotions, ['Outrage', 'Disgust']);
@@ -140,7 +140,7 @@ test('getSongAnalysis returns chips only when the latest row has only thematic c
 test('getSongAnalysis returns attributes only when the latest row has only scalars', async () => {
   const id = await mkSong('ZZZANL ScalarOnly');
   await addAnalysis(id, {
-    perspective: CODED.perspective, lyrical_tone: CODED.lyrical_tone, intensity: CODED.intensity,
+    perspective: CODED.perspective, lyrical_tone: CODED.lyrical_tone,
     clarity: CODED.clarity, focus_amount: CODED.focus_amount, target_audience: CODED.target_audience,
     emotions: CODED.emotions,
   });
@@ -148,7 +148,7 @@ test('getSongAnalysis returns attributes only when the latest row has only scala
   assert.ok(a, 'scalar-only song still has an analysis');
   assert.deepEqual(a.themes, [], 'no code row -> no chips');
   assert.ok(!a.summary, 'no summary on a scalar-only pass');
-  assert.equal(a.attributes.length, 6, 'all six single-valued components present');
+  assert.equal(a.attributes.length, 5, 'all five single-valued components present');
 });
 
 test('getSongAnalysis drops suppressed scalar values', async () => {
@@ -157,12 +157,12 @@ test('getSongAnalysis drops suppressed scalar values', async () => {
     `INSERT INTO song_lyric_analysis
        (song_id, model_used, perspective, clarity, target_audience, emotions,
         themes, topics, advocacy, tactics, moral_frames)
-     VALUES ($1, $2, 'MORAL_JUDGEMENT', 'ABSENT', 'UNSPECIFIED', ARRAY[]::text[],
+     VALUES ($1, $2, 'CRITIC_PHILOSOPHER', 'ABSENT', 'UNSPECIFIED', ARRAY[]::text[],
              '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)`,
     [id, MODEL]);
   const a = await analysis.getSongAnalysis(pool, id);
   const labels = a.attributes.map(x => x.label);
-  assert.ok(labels.includes('Perspective'));
+  assert.ok(labels.includes('Point of view'));
   assert.ok(!labels.includes('Clarity'), 'ABSENT suppressed');
   assert.ok(!labels.includes('Speaking to'), 'UNSPECIFIED suppressed');
 });
@@ -173,7 +173,7 @@ test('getSongAnalysis drops off-codebook scalar values instead of showing them',
   const id = await mkSong('ZZZANL OffCodebook');
   await pool.query(
     `INSERT INTO song_lyric_analysis
-       (song_id, model_used, perspective, intensity, clarity, emotions,
+       (song_id, model_used, perspective, lyrical_tone, clarity, emotions,
         themes, topics, advocacy, tactics, moral_frames)
      VALUES ($1, $2, 'EXACT_ENUM_CODE_KEY', 'VISVERAL_HORROR_AND_ABJECTION',
              'CONTEXTUAL', ARRAY['OUTRAGE','NOT_A_REAL_EMOTION'],
@@ -181,8 +181,8 @@ test('getSongAnalysis drops off-codebook scalar values instead of showing them',
     [id, MODEL]);
   const a = await analysis.getSongAnalysis(pool, id);
   const labels = a.attributes.map(x => x.label);
-  assert.ok(!labels.includes('Perspective'), 'template artifact dropped, not title-cased');
-  assert.ok(!labels.includes('Intensity'), 'typo code dropped');
+  assert.ok(!labels.includes('Point of view'), 'template artifact dropped, not title-cased');
+  assert.ok(!labels.includes('Tone'), 'typo code dropped');
   assert.ok(labels.includes('Clarity'), 'the valid sibling still renders');
   assert.deepEqual(a.emotions, ['Outrage'], 'unknown emotion dropped, valid one kept');
   // nothing rendered may be raw or invented text
@@ -347,16 +347,16 @@ test('facetSelectionClauses: empty selection needs no join', () => {
 
 test('scalarFacets counts distinct live songs per code, in codebook order', async () => {
   const id = await mkSong('ZZZANL Facet');
-  // perspective MORAL_JUDGEMENT, emotions [MORAL_OUTRAGE, DISGUST]
+  // perspective CRITIC_PHILOSOPHER, emotions [OUTRAGE, DISGUST]
   await addAnalysis(id, {
-    perspective: CODED.perspective, lyrical_tone: CODED.lyrical_tone, intensity: CODED.intensity,
+    perspective: CODED.perspective, lyrical_tone: CODED.lyrical_tone,
     clarity: CODED.clarity, focus_amount: CODED.focus_amount, target_audience: CODED.target_audience,
     emotions: CODED.emotions,
   });
   const f = await analysis.scalarFacets(pool, {});
-  assert.equal(f.perspective.heading, 'Perspective');
+  assert.equal(f.perspective.heading, 'Point of view');
   assert.equal(f.emotions.multi, true);
-  const persp = f.perspective.options.find(o => o.code === 'MORAL_JUDGEMENT');
+  const persp = f.perspective.options.find(o => o.code === 'CRITIC_PHILOSOPHER');
   assert.ok(persp && persp.count >= 1);
   const emo = f.emotions.options.find(o => o.code === 'DISGUST');
   assert.ok(emo && emo.count >= 1, 'array column is unnested for counting');
@@ -369,7 +369,7 @@ test('scalarFacets counts distinct live songs per code, in codebook order', asyn
 test('scalarFacets applies a per-component constraint', async () => {
   const id = await mkSong('ZZZANL FacetConstrained');
   await addAnalysis(id, {
-    perspective: CODED.perspective, lyrical_tone: CODED.lyrical_tone, intensity: CODED.intensity,
+    perspective: CODED.perspective, lyrical_tone: CODED.lyrical_tone,
     clarity: CODED.clarity, focus_amount: CODED.focus_amount, target_audience: CODED.target_audience,
     emotions: CODED.emotions,
   });
@@ -377,7 +377,7 @@ test('scalarFacets applies a per-component constraint', async () => {
   const constrained = await analysis.scalarFacets(pool, {
     perspective: { joinSql: '', where: [`s.language && $1::text[]`], params: [['ZZZ-NoSuchLang']] },
   });
-  const only = constrained.perspective.options.find(o => o.code === 'MORAL_JUDGEMENT');
+  const only = constrained.perspective.options.find(o => o.code === 'CRITIC_PHILOSOPHER');
   assert.equal(only.count, 1, 'only the constrained song counts');
 });
 
@@ -401,7 +401,7 @@ test('scalarFacets carries a description for every component', async () => {
 test('getSongAnalysis exposes component and dimension descriptions for tooltips', async () => {
   const id = await mkCodedSong();
   const a = await analysis.getSongAnalysis(pool, id);
-  const persp = a.attributes.find(x => x.label === 'Perspective');
+  const persp = a.attributes.find(x => x.label === 'Point of view');
   assert.ok(persp.component_description.length > 20, 'component description for the label tooltip');
   assert.notEqual(persp.component_description, persp.definition, 'component text differs from the code definition');
   assert.equal(typeof a.dimension_descriptions.themes, 'string');

@@ -1,10 +1,10 @@
 // Serialize/deserialize homepage browse state to/from the URL query string.
 // Pure (no React). The URL is the single source of truth for browse state.
 
-// The seven scalar analysis components (song_lyric_analysis columns) — filterable since
+// The six scalar analysis components (song_lyric_analysis columns) — filterable since
 // triage 1b. Same URL/sessionStorage treatment as every other array filter.
 export const SCALAR_KEYS = [
-  'perspective', 'lyrical_tone', 'intensity', 'clarity',
+  'perspective', 'lyrical_tone', 'clarity',
   'focus_amount', 'target_audience', 'emotions',
 ];
 
@@ -22,7 +22,7 @@ export const EMPTY_FILTERS = {
   languages: [],
   themes: [], targets: [], actions: [], moral_frames: [],
   facet_groups: [], facet_subdims: [],
-  perspective: [], lyrical_tone: [], intensity: [], clarity: [],
+  perspective: [], lyrical_tone: [], clarity: [],
   focus_amount: [], target_audience: [], emotions: [],
   sonic_energy: [], emotional_mood: [], rhythmic_style: [], acoustic_type: [], vocal_delivery: [],
   tempo_from: '', tempo_to: '',

@@ -320,8 +320,8 @@ keep/rebuild/drop/defer decisions are recorded in
   **with a direction toggle**; pagination. ✅ _(B3, 2026-07-20; sort direction + independently
   scrolling sidebar, triage 4, 2026-07-22.)_
   _(Sidebar flattened 2026-10-27: no nested boxes, hairline dividers, group labels, Song length as toggle pills, Genre collapsed to 6 + "Show more"; every filter kept. Home hero stats show exact live songs / artists / hours.)_
-- **Lyric-metadata filters:** the seven scalar analysis components (Perspective, Tone, Intensity,
-  Clarity, Focus, Speaking to, Emotions) as browse filters — **OR within a component, AND across** —
+- **Lyric-metadata filters:** the six scalar analysis components (Point of view, Tone,
+  Clarity, Focus, Speaking to, Emotions; Codebook V2.1 dropped Intensity and re-based Perspective on narrative voice) as browse filters — **OR within a component, AND across** —
   with exclude-self counts, read from each song's latest analysis pass. ✅ _(Triage 1b, 2026-07-22;
   "Speaking to" rename + latest-pass source, 2026-07-25.)_
 - **Browse state in the URL:** filters, sort, direction, search and page are all query params, with a
@@ -354,14 +354,14 @@ keep/rebuild/drop/defer decisions are recorded in
   panel replaces the tabs. Supersedes the old genre-or-energy query, half of which was dead
   (`songs.energy` is NULL catalogue-wide). ✅ _(B4, 2026-07-27.)_
 - **Sidebar presentation:** every filter group is a uniform collapsible section (only Genre & style
-  open by default), with the five theme dimensions and seven metadata components nested as the same
+  open by default), with the five theme dimensions and six metadata components nested as the same
   visual unit; visible help is usage-only (caveats, what the options mean). The definitional copy for
   each dimension/component is served by the API but **deliberately not shown in the sidebar** — it is
   destined for the About pages. ✅ _(Presentation batch, 2026-07-22.)_
 - **Featured songs:** curated highlighting on the homepage (`featured` field). ✅
 - **Song detail:** coding categories, platform links, similar-songs navigation. ✅
 - **Lyrical analysis on the song page (Option C):** a conditional **"In short"** summary (from
-  `lyric_summary`, shown only when present) above two labelled sections — **"Style & tone"** (the seven
+  `lyric_summary`, shown only when present) above two labelled sections — **"Style & tone"** (the six
   metadata components incl. **"Speaking to"** + Emotions) and **"What it's about"** (five thematic
   dimensions incl. **"Subjects"**, codebook-gated to match the browse filters) — with a per-section
   **"Show quotes"** toggle placing each code's evidence under its dimension. Read from each song's
