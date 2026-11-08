@@ -494,6 +494,11 @@ year scrubber, neighbour lines, guided walk) ◐ built on `session-explorer-roun
 Items intentionally deferred until needed (from the PRD and the Session 0.1
 [Feature Inventory](./FEATURE_INVENTORY.md)). Nothing here is built until it earns its place.
 
+- **Next / Back on the song page (parked 2026-11-09).** A "next closest song" button (and back) on each song page, like the
+  Explore map's guided walk. Needs its own brainstorm first: what "closest" means (the page's Message / Sound similarity tabs
+  vs the map's own coordinates), what to do for the ~half of live songs with no embeddings (the page falls back to "More in
+  this genre"), and how it relates to the existing "You might also like" block.
+
 - **Reddit / forum thread song-suggestion finder (tool 2 of the playlist-building pair).** Link or share a thread, have an
   LLM extract suggested songs, and cross-check them against the catalogue. Needs its own brainstorm (Playlist cross-check,
   tool 1, is built — see `PROJECT_STATE.md`).

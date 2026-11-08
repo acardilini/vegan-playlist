@@ -23,15 +23,10 @@ function getAnimalFocusLevel(focus, clarity) {
   return { label: f || 'General Focus', desc: '' };
 }
 
-// Codes grouped by sub-dimension, in order of first appearance, so each group can carry a caption.
-function bySubDimension(codes) {
-  const groups = new Map();
-  for (const c of codes) {
-    const key = c.sub_dimension || '';
-    if (!groups.has(key)) groups.set(key, { key, label: c.sub_dimension_label || '', codes: [] });
-    groups.get(key).codes.push(c);
-  }
-  return [...groups.values()];
+// A term's tooltip: the sub-dimension it sits under (context that used to be a caption above it),
+// then the code's definition.
+function termTip(c) {
+  return [c.sub_dimension_label, c.definition].filter(Boolean).join(': ');
 }
 
 function LyricalAnalysis({ analysis }) {
@@ -83,59 +78,53 @@ function LyricalAnalysis({ analysis }) {
                 </button>
               )}
             </div>
-            <p className="la-section-desc">The ideas, subjects, and calls to action in the lyrics.</p>
 
-            {animalFocus && (
-              <div className="la-dimension" style={{ marginBottom: '1.25rem' }}>
-                <h4 className="la-dim-heading">Lvl of Animal Focus</h4>
-                <div className="la-terms" style={{ marginTop: '0.25rem' }}>
-                  <InfoTip text={animalFocus.desc}>
-                    <span className="la-term" style={{ fontWeight: 600 }}>{animalFocus.label}</span>
-                  </InfoTip>
-                </div>
-              </div>
-            )}
+            <div className="la-group">
+              <h4 className="la-group-title">Subject matter</h4>
+              <div className="la-rows">
+                {animalFocus && (
+                  <div className="la-row">
+                    <span className="la-attr-label">Lvl of Animal Focus</span>
+                    <span className="la-attr-value">
+                      <InfoTip text={animalFocus.desc}>{animalFocus.label}</InfoTip>
+                    </span>
+                  </div>
+                )}
 
-            {dims.map(([key, heading, codes]) => {
-              const quoted = codes.filter(c => c.evidence);
-              return (
-                <div key={key} className="la-dimension">
-                  <h4 className="la-dim-heading">{heading}</h4>
-                  {bySubDimension(codes).map((g) => (
-                    <div key={g.key} className="la-subdim">
-                      {g.label && <div className="la-subdim-caption">{g.label}</div>}
-                      <p className="la-terms">
-                        {g.codes.map((c, i) => (
+                {dims.map(([key, heading, codes]) => {
+                  const quoted = codes.filter(c => c.evidence);
+                  return (
+                    <div key={key} className="la-row">
+                      <span className="la-attr-label">{heading}</span>
+                      <span className="la-attr-value">
+                        {codes.map((c, i) => (
                           <span key={`${c.code}-${i}`}>
-                            {i > 0 && <span className="la-terms-sep" aria-hidden="true">·</span>}
-                            <InfoTip text={c.definition}>
-                              <span className="la-term">{c.label}</span>
-                            </InfoTip>
+                            {i > 0 && '; '}
+                            <InfoTip text={termTip(c)}>{c.label}</InfoTip>
                           </span>
                         ))}
-                      </p>
+                      </span>
+                      {showQuotes && quoted.length > 0 && (
+                        <ul className="la-quotes">
+                          {quoted.map((c, i) => (
+                            <li key={`${c.code}-${i}`}>
+                              <span className="la-quote-tag">{c.label}</span>
+                              <span className="la-quote-text">&ldquo;{c.evidence}&rdquo;</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                  ))}
-                  {showQuotes && quoted.length > 0 && (
-                    <ul className="la-quotes">
-                      {quoted.map((c, i) => (
-                        <li key={`${c.code}-${i}`}>
-                          <span className="la-quote-tag">{c.label}</span>
-                          <span className="la-quote-text">&ldquo;{c.evidence}&rdquo;</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </section>
         )}
 
         {hasStyle && (
           <section className="la-section">
             <h3 className="la-section-title">Style &amp; tone</h3>
-            <p className="la-section-desc">The voice and mood of the lyrics, and how the recording sounds.</p>
 
             {hasLyricStyle && (
               <div className="la-group">

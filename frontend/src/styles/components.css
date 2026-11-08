@@ -1263,23 +1263,41 @@
   margin: 0;
 }
 
-.lyrics-quote {
-  padding: 20px 24px;
+/* Each highlighted passage is its own quote: a card with an ember rule and real quotation marks. */
+.lyrics-quotes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lyrics-passage {
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-md);
   background: var(--bg-surface);
   border: 1px solid var(--border-hairline);
   border-left: 3px solid var(--accent-ember-60);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
 }
 
-.lyrics-highlight-line {
-  font: italic 400 1.05rem/1.6 var(--font-body);
-  color: var(--text-secondary);
+.lyrics-passage p {
+  font: italic 400 1.1rem/1.65 var(--font-body);
+  color: var(--text-primary);
   margin: 0;
   white-space: pre-line;
 }
+
+/* The marks sit inside the text so they open and close the whole passage, however many lines. */
+.lyrics-passage p::before,
+.lyrics-passage p::after {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: normal;
+  font-size: 2em;
+  line-height: 0;
+  vertical-align: -0.28em;
+  color: var(--accent-ember-60);
+}
+.lyrics-passage p::before { content: '\201C'; margin-right: 0.12em; }
+.lyrics-passage p::after { content: '\201D'; margin-left: 0.12em; }
 
 .section-note {
   font: var(--text-meta);
@@ -2215,8 +2233,7 @@
 .la-section { display: flex; flex-direction: column; gap: var(--space-2); }
 .la-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
 .la-section-title { margin: 0; color: var(--text-primary); }
-.la-section-desc { margin: 0 0 var(--space-2); font-size: 0.85rem; color: var(--text-muted); }
-.la-quotes-toggle { align-self: baseline; flex: none; }
+.la-quotes-toggle { align-self: baseline; flex: none; margin-block: -4px; }  /* so the button does not make this column's header taller than its neighbour's */
 
 .la-attributes {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -2240,15 +2257,14 @@
   text-transform: uppercase; color: var(--text-muted);
 }
 
-.la-dimension { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-2); }
-.la-dim-heading { margin: 0; font-size: 0.8rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); }
-.la-subdim { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-1); }
-.la-subdim-caption { font-size: 0.75rem; color: var(--text-muted); }
-.la-terms { margin: 0; color: var(--text-primary); }
-.la-terms-sep { padding: 0 var(--space-2); color: var(--text-muted); }
-.la-term { border-bottom: 1px dotted var(--text-muted); cursor: help; }
+/* "What it's about": one card of label / value rows, the same surface and value style as the Style & tone cards. */
+.la-rows {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm);
+}
+.la-row { display: flex; flex-direction: column; gap: var(--space-1); }
 
-/* Per-code quotes, revealed under each dimension by the section "Show quotes" toggle. */
+/* Per-code quotes, revealed under each row by the section "Show quotes" toggle. */
 .la-quotes { list-style: none; margin: var(--space-1) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .la-quotes li { display: flex; flex-direction: column; gap: 2px; padding-left: var(--space-2); border-left: 2px solid var(--border-hairline); }
 .la-quote-tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--accent-ember-60); }
