@@ -1263,19 +1263,17 @@
   margin: 0;
 }
 
-/* Each highlighted passage is its own quote: a card with an ember rule and real quotation marks. */
+/* Each highlighted passage is its own open pull-quote: no box, just an ember rule beside the text,
+   space between passages, and real quotation marks. */
 .lyrics-quotes {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-5);
 }
 
 .lyrics-passage {
   margin: 0;
-  padding: var(--space-4) var(--space-5);
-  border-radius: var(--radius-md);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-hairline);
+  padding: 0 0 0 var(--space-5);
   border-left: 3px solid var(--accent-ember-60);
 }
 
@@ -1284,6 +1282,7 @@
   color: var(--text-primary);
   margin: 0;
   white-space: pre-line;
+  position: relative;
 }
 
 /* The marks sit inside the text so they open and close the whole passage, however many lines. */
@@ -1296,7 +1295,15 @@
   vertical-align: -0.28em;
   color: var(--accent-ember-60);
 }
-.lyrics-passage p::before { content: '\201C'; margin-right: 0.12em; }
+/* The opening mark hangs in the card's left padding, so every line of text starts at the same left edge. */
+.lyrics-passage p::before {
+  content: '\201C';
+  position: absolute;
+  right: 100%;
+  margin-right: 0.1em;
+  top: -0.05em;
+  line-height: 1;
+}
 .lyrics-passage p::after { content: '\201D'; margin-left: 0.12em; }
 
 .section-note {
