@@ -623,17 +623,21 @@ router.get('/artists/search', async (req, res) => {
       year_to,
       page = 1,
       limit = 20,
-      sort_by = 'song_count'
+      sort_by = 'song_count',
+      name_only
     } = req.query;
 
     let whereConditions = [];
     let queryParams = [];
     let paramIndex = 1;
 
-    // Text search
+    // Text search. `name_only=1` (the homepage Artists strip) matches the name alone, so a
+    // topic search like "vivisection" does not surface artists whose bio merely mentions it.
     if (query && query.trim()) {
       const searchTerm = `%${query.trim()}%`;
-      whereConditions.push(`(
+      whereConditions.push(name_only === '1'
+        ? `LOWER(a.name) LIKE LOWER($${paramIndex})`
+        : `(
         LOWER(a.name) LIKE LOWER($${paramIndex}) OR
         LOWER(a.bio) LIKE LOWER($${paramIndex}) OR
         LOWER(a.vegan_advocacy_notes) LIKE LOWER($${paramIndex})

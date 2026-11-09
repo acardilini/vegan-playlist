@@ -4,6 +4,7 @@ import { spotifyService } from '../api/spotifyService';
 import { readBrowseState } from '../utils/browseUrlState';
 import SearchAndFilter from '../components/SearchAndFilter';
 import SongCard from '../components/SongCard';
+import ArtistsStrip from '../components/ArtistsStrip';
 import PaginationControls from '../components/PaginationControls';
 
 // Exact live figure; '…' while loading
@@ -179,6 +180,9 @@ function SearchSection({ initialSearchQuery = '' }) {
               {error && <div className="error-message">{error}</div>}
               {!loading && !error && (!searchResults || searchResults.songs?.length === 0) && (
                 <div className="no-results">No songs found. Try different filters or search terms.</div>
+              )}
+              {!loading && !error && searchResults && (
+                <ArtistsStrip query={searchResults.filters_applied?.query} />
               )}
               {!loading && !error && searchResults && searchResults.songs?.length > 0 && (
                 <div className="search-results-container">

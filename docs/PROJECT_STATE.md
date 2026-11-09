@@ -1,6 +1,8 @@
 # The Vegan Playlist — Project State
 
-_This is the **living document**. Read it at the start of every session; update it at the end._
+_This is th- **2026-11-09 (Artist links + homepage Artists strip)** - song page: each credited artist now links to `/artist/:id` (`SongDetailPage.jsx`). Homepage: when the search text matches artist names, an "Artists" strip of up to 5 chips (name + song count) shows above the song results with a "See all artists" link to `/artists?q=`; nothing shows for topic searches. `/api/spotify/artists/search` gained `name_only=1` (the artist page still searches bios and notes). Live-checked `?q=kold` (1 chip), `?q=vivisection` (none), `?q=the` (5 chips). Data note: two artist rows are both named "xapothecaryx" (9 and 8 songs), a likely duplicate to merge in the admin. Not committed yet.
+
+e **living document**. Read it at the start of every session; update it at the end._
 _See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) for the full roadmap._
 
 ---

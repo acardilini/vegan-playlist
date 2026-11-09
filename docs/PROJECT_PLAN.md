@@ -494,6 +494,30 @@ year scrubber, neighbour lines, guided walk) ☑ merged to `main` 2026-11-09 (`b
 Items intentionally deferred until needed (from the PRD and the Session 0.1
 [Feature Inventory](./FEATURE_INVENTORY.md)). Nothing here is built until it earns its place.
 
+### To implement (curator, 2026-11-09)
+
+- ☑ **Link the artist name on the song page to the artist page** - built 2026-11-09 (`SongDetailPage.jsx`; each credited artist
+  links separately to `/artist/:id`; the song payload already carried the ids).
+- ☑ **Artists strip on the homepage song search** - built 2026-11-09 (chips layout, curator-chosen over small cards). Songs and
+  Artists stay separate (no mode toggle). When the typed search text matches artist **names**, an "Artists" row of up to 5 chips
+  (name + song count, most songs first) links to `/artist/:id`, with "See all artists" to `/artists?q=`. Hidden for an empty query
+  or no name match, so topic searches are unchanged. `GET /api/spotify/artists/search` gained `name_only=1`; `ArtistsStrip.jsx`.
+
+### To consider (curator ideas, 2026-11-09 - each needs its own brainstorm before any build)
+
+- **Better artist search and filters.** As the artist page gains facts (country, years active, members, status - migration 016)
+  and notes, make artists searchable and filterable by them, the way songs are.
+- **Artist analysis section.** An overview built from an artist's details plus their songs' coding: common themes, animal
+  focus, tone, etc. (read-only, from the existing analysis rows). Open: how to summarise honestly when an artist has few
+  analysed songs.
+- **Conversational / semantic search ("ask the catalogue").** Open questions answered from the song data, using embeddings and
+  retrieval, so people can reach songs by meaning beyond the fixed coding (which necessarily simplifies each song). Open:
+  retrieval over what (lyric embeddings exist for only ~half the live songs; lyrics themselves are local-only for copyright, so
+  answers could use the analysis fields and summaries but must never expose lyrics), hosting and per-query cost (the curator
+  rejects paid APIs), and guardrails against invented songs.
+
+### Deferred
+
 - **Next / Back on the song page (parked 2026-11-09).** A "next closest song" button (and back) on each song page, like the
   Explore map's guided walk. Needs its own brainstorm first: what "closest" means (the page's Message / Sound similarity tabs
   vs the map's own coordinates), what to do for the ~half of live songs with no embeddings (the page falls back to "More in

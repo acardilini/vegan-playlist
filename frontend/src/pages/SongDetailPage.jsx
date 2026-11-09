@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
 import YouTubeEmbed from '../components/YouTubeEmbed';
 import LyricalAnalysis from '../components/LyricalAnalysis';
@@ -113,9 +113,11 @@ function SongDetailPage() {
     );
   }
 
-  const artistNames = Array.isArray(song.artists)
-    ? song.artists.map(artist => (artist && artist.name) || artist).join(', ')
-    : song.artists;
+  // Each artist links to their page when we have an id (a song can have several).
+  const artistList = (Array.isArray(song.artists) ? song.artists : [song.artists])
+    .filter(Boolean)
+    .map(a => (typeof a === 'object' ? { id: a.id, name: a.name } : { id: null, name: String(a) }));
+  const artistNames = artistList.map(a => a.name).join(', ');
   const showSpotify = !!song.spotify_url && !song.spotify_dormant;
   // The route lists the primary video first, so it is the default; the visitor can pick another.
   const youtubeVideo = youtubeVideos.find((v) => v.id === selectedVideoId) || youtubeVideos[0] || null;
@@ -148,7 +150,16 @@ function SongDetailPage() {
         <div className="song-hero-scrim">
           <div className="song-hero-titles">
             <h1>{song.title}</h1>
-            <span className="song-hero-artist">{artistNames}</span>
+            <span className="song-hero-artist">
+              {artistList.map((a, i) => (
+                <span key={a.id ?? `${a.name}-${i}`}>
+                  {i > 0 && ', '}
+                  {a.id != null
+                    ? <Link to={`/artist/${a.id}`} className="song-hero-artist-link">{a.name}</Link>
+                    : a.name}
+                </span>
+              ))}
+            </span>
             {song.album_name && (
               <span className="song-hero-album">{song.album_name}</span>
             )}

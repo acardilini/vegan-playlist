@@ -623,6 +623,55 @@
   margin-top: var(--space-5);
 }
 
+/* Homepage Artists strip: artists whose name matches the search, above the song results */
+.artists-strip {
+  margin: 0 0 var(--space-5);
+}
+.artists-strip-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 var(--space-2);
+}
+.artists-strip-head h4 {
+  margin: 0;
+  font: var(--text-body-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.artists-strip-head a {
+  font: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--accent-ember-60);
+  text-decoration: none;
+}
+.artists-strip-head a:hover { text-decoration: underline; }
+.artists-strip-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.artists-strip-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.artists-strip-chip small {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.artists-strip-chip:hover { border-color: var(--accent-ember-60); }
+.artists-strip-chip:focus-visible { outline: 2px solid var(--accent-ember-60); outline-offset: 2px; }
+
 .search-results-container h3 {
   font: var(--text-body-sm);
   color: var(--text-secondary);
@@ -1208,6 +1257,10 @@
   font: 600 1.05rem/1.3 var(--font-body);
   color: var(--accent-ember-60);
 }
+
+.song-hero-artist-link { color: inherit; text-decoration: none; }
+.song-hero-artist-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.song-hero-artist-link:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; border-radius: 2px; }
 
 .song-hero-album {
   font: italic 400 0.9rem/1.3 var(--font-body);
