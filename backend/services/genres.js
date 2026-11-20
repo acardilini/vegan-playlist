@@ -41,6 +41,29 @@ function buildGenreTree(rows) {
   return { parents: out, uncovered_count: uncovered };
 }
 
+// Artist filter sidebar: parent-genre counts. rows = [{artist_id, genre}] (one per artist/genre pair);
+// an artist counts once under each parent any of their genres files under. Same getParentGenre as the
+// song tree, so there is no second copy of the hierarchy to drift.
+function artistParentCounts(rows) {
+  const byParent = new Map(); // parent -> Set(artist_id)
+  for (const { artist_id, genre } of rows) {
+    const parent = getParentGenre(genre);
+    if (!parent) continue;
+    if (!byParent.has(parent)) byParent.set(parent, new Set());
+    byParent.get(parent).add(artist_id);
+  }
+  return [...byParent.entries()]
+    .map(([value, ids]) => ({ value, count: ids.size }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+}
+
+// The stored genre strings (as the artists table holds them) that file under any of the parents. Filtering
+// on these, not on the hierarchy's lists, keeps 'other' honest: its count includes unlisted strings.
+function genresForParents(allGenres, parents) {
+  const want = new Set((parents || []).map(p => String(p).toLowerCase()));
+  return allGenres.filter(g => want.has(getParentGenre(g)));
+}
+
 function genreFilterClause(genres, startIndex) {
   const list = (Array.isArray(genres) ? genres : [genres])
     .filter(Boolean).map(x => String(x).toLowerCase());
@@ -70,5 +93,5 @@ function lengthFilterClause(lengths) {
 
 module.exports = {
   EFFECTIVE_GENRE_JOIN, EFFECTIVE_GENRE_EXPR,
-  buildGenreTree, genreFilterClause, LENGTH_BUCKETS, lengthFilterClause,
+  buildGenreTree, artistParentCounts, genresForParents, genreFilterClause, LENGTH_BUCKETS, lengthFilterClause,
 };

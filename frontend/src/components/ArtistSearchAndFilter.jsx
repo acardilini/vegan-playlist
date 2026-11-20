@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { spotifyService } from '../api/spotifyService';
+import GENRE_HIERARCHY from '../../../backend/data/genre_hierarchy.json';
 
 // Simple Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -50,22 +51,6 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
   const [expandedParents, setExpandedParents] = useState(new Set());
   const [genreSearchTerm, setGenreSearchTerm] = useState('');
 
-  // Genre hierarchy mapping (moved to top level to prevent recreation)
-  const GENRE_HIERARCHY = useMemo(() => ({
-    'metal': ['metalcore', 'deathcore', 'mathcore', 'groove metal', 'death metal', 'black metal', 'thrash metal', 'doom metal', 'progressive metal', 'nu metal', 'melodic death metal', 'sludge metal', 'stoner metal', 'grindcore', 'heavy metal', 'alternative metal', 'industrial metal', 'speed metal', 'rap metal', 'djent'],
-    'rock': ['blues rock', 'hard rock', 'alternative rock', 'indie rock', 'classic rock', 'progressive rock', 'psychedelic rock', 'garage rock', 'gothic rock', 'industrial rock', 'art rock', 'acid rock', 'grunge', 'post-grunge', 'britpop', 'madchester', 'krautrock', 'noise rock', 'neo-psychedelic', 'folk rock', 'celtic rock', 'brazilian rock'],
-    'punk': ['punk', 'hardcore punk', 'skate punk', 'ska punk', 'folk punk', 'pop punk', 'post-punk', 'anarcho-punk', 'street punk', 'queercore', 'riot grrrl', 'indie punk', 'celtic punk', 'proto-punk', 'egg punk'],
-    'hardcore': ['hardcore', 'melodic hardcore', 'post-hardcore', 'crossover hardcore', 'screamo', 'midwest emo'],
-    'folk': ['folk punk', 'anti-folk', 'indie folk', 'folk rock', 'acoustic folk', 'contemporary folk', 'folk', 'traditional folk', 'americana', 'celtic', 'singer-songwriter', 'country blues'],
-    'blues': ['blues', 'blues rock', 'electric blues', 'acoustic blues', 'delta blues'],
-    'pop': ['pop', 'indie pop', 'electropop', 'synthpop', 'power pop', 'dream pop', 'jangle pop', 'swedish pop', 'german pop', 'new wave', 'pop soul'],
-    'electronic': ['electronic', 'ambient', 'techno', 'house', 'drum and bass', 'dubstep', 'edm', 'industrial', 'ebm', 'darkwave', 'coldwave', 'cold wave', 'downtempo', 'trip hop', 'glitch', 'witch house', 'footwork', 'bassline', 'riddim', 'minimalism', 'neoclassical'],
-    'hip-hop': ['hip hop', 'rap', 'conscious hip hop', 'alternative hip hop', 'underground hip hop', 'east coast hip hop', 'experimental hip hop', 'hardcore hip hop', 'old school hip hop', 'gangster rap', 'horrorcore', 'grime', 'uk grime'],
-    'reggae': ['reggae', 'ska', 'dub', 'roots reggae', 'nz reggae', 'lovers rock', 'ragga', 'dancehall', 'rocksteady'],
-    'jazz': ['free jazz', 'hard bop'],
-    'soul': ['philly soul', 'pop soul', 'gospel', 'gospel r&b'],
-    'other': ['christian', 'worship', 'children\'s music', 'musicals', 'soundtrack', 'comedy', 'spoken word', 'lullaby', 'deathrock', 'avant-garde', 'experimental', 'aor']
-  }), []);
 
   // Update search query when initialQuery changes
   useEffect(() => {
@@ -322,7 +307,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
       console.error('Error in handleParentGenreChange:', error);
       onError('Error updating parent genre selection');
     }
-  }, [GENRE_HIERARCHY, onError]);
+  }, [onError]);
 
   // FIXED: Stable subgenre change handler with extensive logging and error handling
   const handleSubgenreChange = useCallback((subgenre, checked) => {
@@ -421,7 +406,7 @@ function ArtistSearchAndFilter({ onResults, onLoading, onError, initialQuery = '
       console.error('Current filters:', filters);
       onError(`Error updating subgenre selection: ${error.message}`);
     }
-  }, [GENRE_HIERARCHY, onError]);
+  }, [onError]);
 
   // Memoized count functions
   const getParentGenreCount = useCallback((parentGenre) => {

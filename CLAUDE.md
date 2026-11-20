@@ -235,7 +235,7 @@ Run before ending every working session:
   `backend/data/genre_hierarchy.json` (shared with the analysis project, which reads the same file): every subgenre under exactly
   one of 17 parents (test-enforced), `getParentGenre` resolves a bare parent to itself and anything unknown to `other`. `songs.genre_source`
   (migration 019: `manual` | `audio_gemini` | `audio_local_mir`, NULL = legacy/unknown, no CHECK) records who set a song's genre; only
-  curator writes stamp it today. Still-duplicated copies of the hierarchy: `routes/spotify.js` artist filter SQL, `ArtistSearchAndFilter.jsx`, `SongCard.jsx`
+  curator writes stamp it today. **No other copy of the hierarchy may exist:** the artist filter counts/filter (`services/genres.artistParentCounts` / `genresForParents`, used by `routes/spotify.js`) go through `getParentGenre`, and the frontend (`ArtistSearchAndFilter.jsx`, `SongCard.jsx` via `utils/genreHierarchy.js`) imports the same JSON
 - **utils/playlistSync.js**: truth-source-safe Spotify helpers (import-only playlist diff,
   add-as-pending, album/artist upserts) shared by `scripts/enrichFromSpotify.js` and the
   admin sync endpoints

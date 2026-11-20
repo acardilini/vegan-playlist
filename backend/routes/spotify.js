@@ -1,7 +1,6 @@
 const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const pool = require('../database/db');
-const { getSubgenres } = require('../utils/genreMapping');
 const analysis = require('../services/analysis');
 const artistFacts = require('../services/artistFacts');
 const genres_svc = require('../services/genres');
@@ -556,48 +555,27 @@ router.get('/artist-filter-options', async (req, res) => {
       ORDER BY count DESC, value ASC
     `;
 
-    // Calculate artist parent genres based on the genre hierarchy
-    const artistParentGenresQuery = `
-      SELECT 
-        parent_genre as value,
-        COUNT(*) as count
-      FROM (
-        SELECT DISTINCT a.id, 
-          CASE 
-            WHEN genre = ANY('{metalcore,deathcore,mathcore,groove metal,death metal,black metal,thrash metal,doom metal,progressive metal,nu metal,melodic death metal,sludge metal,stoner metal,grindcore,heavy metal,alternative metal,industrial metal,speed metal,rap metal,djent}') THEN 'metal'
-            WHEN genre = ANY('{blues rock,hard rock,alternative rock,indie rock,classic rock,progressive rock,psychedelic rock,garage rock,gothic rock,industrial rock,art rock,acid rock,grunge,post-grunge,britpop,madchester,krautrock,noise rock,neo-psychedelic,folk rock,celtic rock,brazilian rock}') THEN 'rock'
-            WHEN genre = ANY('{punk,hardcore punk,skate punk,ska punk,folk punk,pop punk,post-punk,anarcho-punk,street punk,queercore,riot grrrl,indie punk,celtic punk,proto-punk,egg punk}') THEN 'punk'
-            WHEN genre = ANY('{hardcore,melodic hardcore,post-hardcore,crossover hardcore,screamo,midwest emo}') THEN 'hardcore'
-            WHEN genre = ANY('{folk punk,anti-folk,indie folk,folk rock,acoustic folk,contemporary folk,folk,traditional folk,americana,celtic,singer-songwriter,country blues}') THEN 'folk'
-            WHEN genre = ANY('{blues,blues rock,electric blues,acoustic blues,delta blues}') THEN 'blues'
-            WHEN genre = ANY('{pop,indie pop,electropop,synthpop,power pop,dream pop,jangle pop,swedish pop,german pop,new wave,pop soul}') THEN 'pop'
-            WHEN genre = ANY('{electronic,ambient,techno,house,drum and bass,dubstep,edm,industrial,ebm,darkwave,coldwave,cold wave,downtempo,trip hop,glitch,witch house,footwork,bassline,riddim,minimalism,neoclassical}') THEN 'electronic'
-            WHEN genre = ANY('{hip hop,rap,conscious hip hop,alternative hip hop,underground hip hop,east coast hip hop,experimental hip hop,hardcore hip hop,old school hip hop,gangster rap,horrorcore,grime,uk grime}') THEN 'hip-hop'
-            WHEN genre = ANY('{reggae,ska,dub,roots reggae,nz reggae,lovers rock,ragga,dancehall,rocksteady}') THEN 'reggae'
-            WHEN genre = ANY('{free jazz,hard bop}') THEN 'jazz'
-            WHEN genre = ANY('{philly soul,pop soul,gospel,gospel r&b}') THEN 'soul'
-            ELSE 'other'
-          END as parent_genre
-        FROM artists a, UNNEST(a.genres) as genre
-        WHERE a.genres IS NOT NULL AND array_length(a.genres, 1) > 0
-          AND EXISTS (SELECT 1 FROM song_artists sa JOIN songs s ON s.id = sa.song_id
-                      WHERE sa.artist_id = a.id AND s.status = 'included' AND s.published = true)
-      ) parent_calc
-      GROUP BY parent_genre
-      ORDER BY count DESC, parent_genre ASC
+    // One row per live artist/genre pair; the parent buckets are computed from the shared hierarchy
+    // (services/genres.artistParentCounts), not from a second copy of it in SQL.
+    const artistGenrePairsQuery = `
+      SELECT a.id AS artist_id, genre
+      FROM artists a, UNNEST(a.genres) AS genre
+      WHERE a.genres IS NOT NULL AND array_length(a.genres, 1) > 0
+        AND EXISTS (SELECT 1 FROM song_artists sa JOIN songs s ON s.id = sa.song_id
+                    WHERE sa.artist_id = a.id AND s.status = 'included' AND s.published = true)
     `;
 
     const [
       artistGenres,
-      artistParentGenres
+      artistGenrePairs
     ] = await Promise.all([
       pool.query(artistGenresQuery),
-      pool.query(artistParentGenresQuery)
+      pool.query(artistGenrePairsQuery)
     ]);
 
     res.json({
       genres: artistGenres.rows,
-      parent_genres: artistParentGenres.rows,
+      parent_genres: genres_svc.artistParentCounts(artistGenrePairs.rows),
       subgenres: artistGenres.rows // For compatibility with the hierarchical component
     });
   } catch (error) {
@@ -657,17 +635,18 @@ router.get('/artists/search', async (req, res) => {
     // Parent genres filter - expand to include all subgenres
     if (parent_genres) {
       const parentGenreList = Array.isArray(parent_genres) ? parent_genres : [parent_genres];
-      const allSubgenres = [];
-      
-      parentGenreList.forEach(parentGenre => {
-        const subgenres = getSubgenres(parentGenre);
-        allSubgenres.push(...subgenres);
-      });
-      
+      // Every stored genre string that files under a chosen parent (not just the hierarchy's listed
+      // ones), so the count shown beside a parent equals what ticking it returns - 'other' included.
+      const stored = (await pool.query(
+        `SELECT DISTINCT g AS genre FROM artists a, UNNEST(a.genres) AS g WHERE a.genres IS NOT NULL`)).rows;
+      const allSubgenres = genres_svc.genresForParents(stored.map(r => r.genre), parentGenreList);
+
       if (allSubgenres.length > 0) {
         whereConditions.push(`a.genres && $${paramIndex}::text[]`);
         queryParams.push(allSubgenres);
         paramIndex++;
+      } else {
+        whereConditions.push('FALSE'); // a parent nobody's genres file under matches no artist (it used to match all)
       }
     }
 
