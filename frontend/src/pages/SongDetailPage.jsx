@@ -178,6 +178,12 @@ function SongDetailPage() {
               <span className="stat-cell-label">Duration</span>
               <span className="stat-cell-value">{formatDuration(song.duration_ms)}</span>
             </div>
+            {song.genre && (
+              <div className="stat-cell">
+                <span className="stat-cell-label">Genre</span>
+                <span className="stat-cell-value">{song.genre}</span>
+              </div>
+            )}
             {song.language?.length > 0 && (
               <div className="stat-cell">
                 <span className="stat-cell-label">Sung in</span>

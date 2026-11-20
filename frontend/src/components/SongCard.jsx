@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import MoodBadge from './MoodBadge';
 import GENRE_HIERARCHY from '../../../backend/data/genre_hierarchy.json';
-import { cardParentGenre } from '../utils/genreHierarchy';
+import { parentGenreOf } from '../utils/genreHierarchy';
 
 function SongCard({ song, songId }) {
   const navigate = useNavigate();
@@ -26,19 +26,10 @@ function SongCard({ song, songId }) {
     return null;
   };
 
-  // Get primary genre for display
-  const getPrimaryGenre = () => {
-    // SIMPLIFIED: Use artist genres only
-    if (song.artist_genres && song.artist_genres.length > 0) {
-      const flatGenres = song.artist_genres.flat();
-      return flatGenres[0] || null;
-    }
-
-    return null;
-  };
-
-  // Parent genre from the artist's genres, against the shared hierarchy.
-  const getParentGenre = () => cardParentGenre(GENRE_HIERARCHY, song.artist_genres);
+  // The song's effective genre (served by the API: its own genre, else its artist's first - the same
+  // value the browse Genre filter uses) and the parent it files under in the shared hierarchy.
+  const getPrimaryGenre = () => song.genre || null;
+  const getParentGenre = () => parentGenreOf(GENRE_HIERARCHY, song.genre);
 
   return (
     <div
@@ -84,7 +75,7 @@ function SongCard({ song, songId }) {
             {getParentGenre() && (
               <span className="song-parent-genre">{getParentGenre()}</span>
             )}
-            {getPrimaryGenre() && (
+            {getPrimaryGenre() && getPrimaryGenre() !== getParentGenre() && (
               <span className="song-genre">{getPrimaryGenre()}</span>
             )}
           </div>

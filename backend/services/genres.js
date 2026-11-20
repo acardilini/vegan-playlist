@@ -16,7 +16,14 @@ const EFFECTIVE_GENRE_JOIN = `
     LIMIT 1
   ) efg ON true`;
 
-const EFFECTIVE_GENRE_EXPR = `LOWER(TRIM(COALESCE(NULLIF(s.genre, ''), efg.g)))`;
+const EFFECTIVE_GENRE_EXPR = `LOWER(TRIM(COALESCE(NULLIF(BTRIM(s.genre), ''), efg.g)))`;
+
+// The same effective genre as EFFECTIVE_GENRE_EXPR, as a self-contained scalar subquery for a song aliased
+// `s`: it needs no join, so it can be added to any list/detail query (song page, cards) whatever else that
+// query joins. Keep the two in step - both are "the song's own genre, else its primary artist's first".
+const EFFECTIVE_GENRE_SUBQUERY = `(SELECT LOWER(TRIM(COALESCE(NULLIF(BTRIM(s.genre), ''), (
+    SELECT (a2.genres)[1] FROM song_artists sa2 JOIN artists a2 ON a2.id = sa2.artist_id
+    WHERE sa2.song_id = s.id AND array_length(a2.genres, 1) > 0 ORDER BY sa2.id LIMIT 1)))))`;
 
 function buildGenreTree(rows) {
   const parents = new Map(); // parent -> Map(subgenre -> count)
@@ -92,6 +99,6 @@ function lengthFilterClause(lengths) {
 }
 
 module.exports = {
-  EFFECTIVE_GENRE_JOIN, EFFECTIVE_GENRE_EXPR,
+  EFFECTIVE_GENRE_JOIN, EFFECTIVE_GENRE_EXPR, EFFECTIVE_GENRE_SUBQUERY,
   buildGenreTree, artistParentCounts, genresForParents, genreFilterClause, LENGTH_BUCKETS, lengthFilterClause,
 };

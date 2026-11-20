@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../database/db');
+const genres_svc = require('../services/genres');
 const router = express.Router();
 
 // Get all playlists
@@ -86,7 +87,8 @@ router.get('/:id', async (req, res) => {
         al.release_date,
         al.images as album_images,
         ARRAY_AGG(DISTINCT a.name) as artists,
-        ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
+        ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres,
+        ${genres_svc.EFFECTIVE_GENRE_SUBQUERY} AS genre
       FROM playlist_songs ps
       JOIN songs s ON ps.song_id = s.id
       LEFT JOIN albums al ON s.album_id = al.id

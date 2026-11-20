@@ -140,7 +140,8 @@ router.get('/songs/featured', async (req, res) => {
         s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
         al.name as album_name, al.release_date, al.images as album_images,
         ARRAY_AGG(DISTINCT a.name) as artists,
-        ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
+        ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres,
+        ${genres_svc.EFFECTIVE_GENRE_SUBQUERY} AS genre
       FROM songs s
       LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
@@ -167,7 +168,8 @@ router.get('/songs/featured', async (req, res) => {
           s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
           al.name as album_name, al.release_date, al.images as album_images,
           ARRAY_AGG(DISTINCT a.name) as artists,
-          ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
+          ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres,
+          ${genres_svc.EFFECTIVE_GENRE_SUBQUERY} AS genre
         FROM songs s
         LEFT JOIN albums al ON s.album_id = al.id
         JOIN song_artists sa ON s.id = sa.song_id
@@ -257,7 +259,8 @@ router.get('/songs/:id', async (req, res) => {
           'genres', a.genres,
           'popularity', a.popularity,
           'followers', a.followers
-        )) as artists
+        )) as artists,
+        ${genres_svc.EFFECTIVE_GENRE_SUBQUERY} AS genre
       FROM songs s
       LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
@@ -324,7 +327,8 @@ router.get('/search', async (req, res) => {
         al.release_date,
         al.images as album_images,
         ARRAY_AGG(DISTINCT a.name) as artists,
-        ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres
+        ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres,
+        ${genres_svc.EFFECTIVE_GENRE_SUBQUERY} AS genre
       FROM songs s
       LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sart ON s.id = sart.song_id
