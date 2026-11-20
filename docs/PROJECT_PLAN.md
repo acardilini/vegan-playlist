@@ -525,9 +525,8 @@ Items intentionally deferred until needed (from the PRD and the Session 0.1
   (nothing writes them until the audio pipeline does); (3) a **genre-from-audio** curation queue (songs whose `genre_source` is
   `audio_gemini` / `audio_local_mir`, to spot-check or promote to `manual`); (4) **Phase 2 audio changes** (`song_audio_analysis`
   table, 8-dimension acoustic codebook with multi-value array filters, Explore "Sound" similarity on neural embeddings) - wait
-  for the analysis pilot sign-off and a second handoff; (5) three more hard-coded copies of the hierarchy that still drift from
-  the JSON: `routes/spotify.js` (artist filter-options SQL `CASE`), `ArtistSearchAndFilter.jsx` and `SongCard.jsx` - the artist
-  filter and the card's genre tag do not know the new parents (country, classical, world, spoken-word) or the new subgenres.
+  for the analysis pilot sign-off and a second handoff. (The three leftover hard-coded copies of the hierarchy were removed on
+  2026-11-20, branch `session-genre-copies`.)
 
 - **Next / Back on the song page (parked 2026-11-09).** A "next closest song" button (and back) on each song page, like the
   Explore map's guided walk. Needs its own brainstorm first: what "closest" means (the page's Message / Sound similarity tabs
