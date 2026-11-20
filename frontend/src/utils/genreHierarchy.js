@@ -11,14 +11,3 @@ export function parentGenreOf(hierarchy, genre) {
   }
   return 'other';
 }
-
-// The first of an artist's genres that files under a real parent, else 'other' (null with no genres).
-// artist_genres can arrive nested (an array of arrays), hence the flat().
-export function cardParentGenre(hierarchy, artistGenres) {
-  if (!artistGenres || artistGenres.length === 0) return null;
-  for (const genre of artistGenres.flat()) {
-    const parent = parentGenreOf(hierarchy, genre);
-    if (parent && parent !== 'other') return parent;
-  }
-  return 'other';
-}

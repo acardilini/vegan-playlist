@@ -119,3 +119,19 @@ test('saveDetails rejects an over-long genre', async () => {
   const id = await mkSong({ title: 'ZZZGEN Long' });
   await assert.rejects(curation.saveDetails(pool, id, { genre: 'x'.repeat(101) }), { code: 'BAD_INPUT' });
 });
+
+test('EFFECTIVE_GENRE_SUBQUERY: the song genre wins, else the first artist genre, else null (same rule as the filter)', async () => {
+  const genres = require('../services/genres');
+  const fromArtist = await mkArtist('ZZZGEN SubA', ['Skate Punk', 'hardcore']);
+  const none = await mkArtist('ZZZGEN SubNone');
+  const own = await mkSong({ title: 'ZZZGEN SubOwn', genre: ' Death Metal ', artists: [fromArtist] });
+  const inherited = await mkSong({ title: 'ZZZGEN SubInh', artists: [fromArtist] });
+  const blankOwn = await mkSong({ title: 'ZZZGEN SubBlank', genre: '  ', artists: [fromArtist] });
+  const bare = await mkSong({ title: 'ZZZGEN SubBare', artists: [none] });
+  const get = async (id) => (await pool.query(
+    `SELECT ${genres.EFFECTIVE_GENRE_SUBQUERY} AS genre FROM songs s WHERE s.id=$1`, [id])).rows[0].genre;
+  assert.equal(await get(own), 'death metal');
+  assert.equal(await get(inherited), 'skate punk');
+  assert.equal(await get(blankOwn), 'skate punk');
+  assert.equal(await get(bare), null);
+});
