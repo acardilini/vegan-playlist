@@ -1,0 +1,19 @@
+{
+  "metal": ["metal", "metalcore", "deathcore", "mathcore", "groove metal", "death metal", "melodic death metal", "deathgrind", "goregrind", "grindcore", "mincecore", "black metal", "blackened crust", "thrash metal", "crossover thrash", "speed metal", "doom metal", "sludge metal", "stoner metal", "drone metal", "post-metal", "progressive metal", "nu metal", "heavy metal", "alternative metal", "industrial metal", "gothic metal", "folk metal", "medieval metal", "symphonic metal", "rap metal", "djent"],
+  "hardcore": ["hardcore", "melodic hardcore", "post-hardcore", "crossover hardcore", "beatdown hardcore", "powerviolence", "screamo", "emo", "midwest emo"],
+  "punk": ["punk", "hardcore punk", "crust punk", "d-beat", "anarcho-punk", "skate punk", "ska punk", "pop punk", "post-punk", "street punk", "horror punk", "deathrock", "psychobilly", "queercore", "riot grrrl", "indie punk", "celtic punk", "proto-punk", "egg punk"],
+  "rock": ["rock", "hard rock", "alternative rock", "indie rock", "classic rock", "progressive rock", "psychedelic rock", "garage rock", "gothic rock", "industrial rock", "art rock", "acid rock", "stoner rock", "post-rock", "shoegaze", "grunge", "post-grunge", "britpop", "madchester", "krautrock", "noise rock", "neo-psychedelic", "pop rock", "acoustic rock", "funk rock", "rap rock", "reggae rock", "rockabilly", "southern gothic", "celtic rock", "brazilian rock", "norsk rock", "german indie", "aor"],
+  "folk": ["folk", "acoustic folk", "contemporary folk", "traditional folk", "indie folk", "anti-folk", "folk punk", "folk rock", "folk pop", "neofolk", "americana", "celtic", "singer-songwriter"],
+  "country": ["country", "alt-country", "country rock", "bluegrass"],
+  "blues": ["blues", "blues rock", "electric blues", "acoustic blues", "delta blues", "country blues"],
+  "pop": ["pop", "indie pop", "electropop", "synthpop", "power pop", "dream pop", "jangle pop", "art pop", "bedroom pop", "new wave", "swedish pop", "german pop", "malay pop"],
+  "electronic": ["electronic", "ambient", "drone", "techno", "house", "chicago house", "french house", "disco house", "drum and bass", "dubstep", "edm", "industrial", "ebm", "darkwave", "coldwave", "cold wave", "synthwave", "downtempo", "trip hop", "glitch", "witch house", "footwork", "bassline", "riddim", "psytrance", "italo disco", "nu disco", "hi-nrg", "ballroom vogue"],
+  "hip-hop": ["hip-hop", "hip hop", "rap", "conscious hip hop", "alternative hip hop", "underground hip hop", "east coast hip hop", "experimental hip hop", "hardcore hip hop", "old school hip hop", "boom bap", "trap", "gangster rap", "horrorcore", "grime", "uk grime", "chicago drill", "latin hip hop", "french rap", "german hip hop"],
+  "reggae": ["reggae", "ska", "dub", "roots reggae", "nz reggae", "reggae en español", "lovers rock", "ragga", "dancehall", "rocksteady"],
+  "soul": ["soul", "r&b", "uk r&b", "funk", "philly soul", "pop soul", "disco", "post-disco", "gospel", "gospel r&b"],
+  "jazz": ["jazz", "free jazz", "hard bop", "soul jazz", "jazz pop"],
+  "classical": ["classical", "baroque", "opera", "neoclassical", "minimalism", "medieval"],
+  "world": ["world", "zouk", "kizomba", "neoperreo", "funkot", "native american music", "latin", "afrobeat"],
+  "spoken-word": ["spoken word", "comedy"],
+  "other": ["christian", "worship", "children's music", "musicals", "soundtrack", "lullaby", "avant-garde", "experimental"]
+}

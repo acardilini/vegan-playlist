@@ -231,17 +231,17 @@ router.post('/manual-songs', async (req, res) => {
           custom_mood, genre, parent_genre, data_source, manual_song_id, your_review,
           audio_review_url, inclusion_notes, rating, energy, danceability, valence,
           acousticness, instrumentalness, liveness, speechiness, tempo, loudness,
-          key, mode, time_signature, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, CURRENT_TIMESTAMP)
+          key, mode, time_signature, genre_source, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, CURRENT_TIMESTAMP)
         RETURNING id
       `, [
         title, albumId, duration_ms, popularity, explicit, track_number, disc_number,
         custom_mood, genre, finalParentGenre, 'manual', manualSongId, your_review,
         audio_review_url, inclusion_notes, rating, energy, danceability, valence,
         acousticness, instrumentalness, liveness, speechiness, tempo, loudness,
-        key, mode, time_signature
+        key, mode, time_signature, genre && String(genre).trim() ? 'manual' : null
       ]);
-      
+
       const songId = songResult.rows[0].id;
       
       // 5. Link artists to song
@@ -534,6 +534,9 @@ router.put('/songs/:id/categorize', async (req, res) => {
       if (genre !== undefined) {
         updateFields.push(`genre = $${paramIndex++}`);
         values.push(genre);
+        // A curator edit owns the genre (replaces any audio-inferred source); a blank one clears it.
+        updateFields.push(`genre_source = $${paramIndex++}`);
+        values.push(genre && String(genre).trim() ? 'manual' : null);
       }
       if (parent_genre !== undefined) {
         updateFields.push(`parent_genre = $${paramIndex++}`);

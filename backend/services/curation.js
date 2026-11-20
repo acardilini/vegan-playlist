@@ -2,7 +2,7 @@
 // Mirrors services/staging.js conventions.
 const { hasAnalysisExists, getSongAnalysis } = require('./analysis');
 const junkLyrics = require('./junkLyrics');
-const { GENRE_HIERARCHY, getParentGenre } = require('../utils/genreMapping');
+const { getParentGenre } = require('../utils/genreMapping');
 const PARK_REASONS = ['awaiting_community', 'needs_transcription', 'listened_unclear'];
 
 async function getProcessing(db, songId) {
@@ -131,7 +131,8 @@ function mapQueueRow(r) {
     has_play_link, play_link_kinds: kinds, snooze_until: r.snooze_until, park_reason: r.park_reason, missing,
     origin: r.origin, no_video_display: r.no_video_display,
     genre: r.song_genre || r.artist_genre || null,
-    genre_source: r.song_genre ? 'song' : (r.artist_genre ? 'artist' : null),
+    // The stored source when there is one ('manual', 'audio_*'); a legacy song genre has none and reads 'song'.
+    genre_source: r.song_genre ? (r.song_genre_source || 'song') : (r.artist_genre ? 'artist' : null),
   };
 }
 
@@ -147,7 +148,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
   }
   let sql = `
     SELECT s.id, s.title, s.status, s.published, s.featured, s.language, s.no_video_display, s.spotify_dormant,
-           ${SONG_GENRE_SQL} AS song_genre, ${ARTIST_GENRE_SQL} AS artist_genre,
+           ${SONG_GENRE_SQL} AS song_genre, s.genre_source AS song_genre_source, ${ARTIST_GENRE_SQL} AS artist_genre,
            s.spotify_url, s.bandcamp_url, s.soundcloud_url,
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
@@ -266,6 +267,7 @@ async function getWorkbench(db, id) {
     id: s.id, title: s.title, status: s.status, published: s.published, featured: s.featured, language: s.language, no_video_display: s.no_video_display,
     spotify_dormant: s.spotify_dormant,
     genre: (s.genre && s.genre.trim()) || null, parent_genre: s.parent_genre || null,
+    genre_source: (s.genre && s.genre.trim()) ? (s.genre_source || 'song') : null,
     artist_genre: artistGenre ? { value: artistGenre.genre, artist: artistGenre.name } : null,
     spotify_id: s.spotify_id, spotify_url: s.spotify_url, bandcamp_url: s.bandcamp_url, soundcloud_url: s.soundcloud_url,
     lyrics_status: s.lyrics_status, lyrics_url: s.lyrics_url, lyrics_source: s.lyrics_source,
@@ -319,7 +321,7 @@ function normGenre(v) {
   const g = v == null ? '' : String(v).trim().toLowerCase();
   if (g.length > 100) { const e = new Error('genre is too long'); e.code = 'BAD_INPUT'; throw e; }
   if (!g) return { genre: null, parent_genre: null };
-  return { genre: g, parent_genre: Object.prototype.hasOwnProperty.call(GENRE_HIERARCHY, g) ? g : getParentGenre(g) };
+  return { genre: g, parent_genre: getParentGenre(g) };
 }
 
 async function saveDetails(db, id, { title, language, status_notes, genre } = {}) {
@@ -328,7 +330,8 @@ async function saveDetails(db, id, { title, language, status_notes, genre } = {}
   const add = (col, val) => { if (val !== undefined) { params.push(val === '' ? null : val); sets.push(`${col}=$${params.length}`); } };
   add('title', title); add('language', normLanguages(language)); add('status_notes', status_notes);
   const g = normGenre(genre);
-  if (g) { add('genre', g.genre); add('parent_genre', g.parent_genre); }
+  // A curator write owns the genre: stamp it 'manual' (replacing any audio-inferred source); clearing it clears the source.
+  if (g) { add('genre', g.genre); add('parent_genre', g.parent_genre); add('genre_source', g.genre ? 'manual' : null); }
   if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
   return getWorkbench(db, id);
 }

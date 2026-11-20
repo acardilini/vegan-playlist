@@ -231,7 +231,11 @@ Run before ending every working session:
 - **database/db.js**: PostgreSQL connection pool; **database/schema.sql** + 6 add-on SQL files
 - **scripts/**: 4 documented maintenance scripts (see `backend/scripts/README.md`);
   the ~37 one-off scripts were deleted in Session 2.3 (git history preserves them)
-- **utils/genreMapping.js**: parent-genre mapping used by admin + search
+- **utils/genreMapping.js**: parent-genre mapping used by admin + search. The hierarchy lives in
+  `backend/data/genre_hierarchy.json` (shared with the analysis project, which reads the same file): every subgenre under exactly
+  one of 17 parents (test-enforced), `getParentGenre` resolves a bare parent to itself and anything unknown to `other`. `songs.genre_source`
+  (migration 019: `manual` | `audio_gemini` | `audio_local_mir`, NULL = legacy/unknown, no CHECK) records who set a song's genre; only
+  curator writes stamp it today. Still-duplicated copies of the hierarchy: `routes/spotify.js` artist filter SQL, `ArtistSearchAndFilter.jsx`, `SongCard.jsx`
 - **utils/playlistSync.js**: truth-source-safe Spotify helpers (import-only playlist diff,
   add-as-pending, album/artist upserts) shared by `scripts/enrichFromSpotify.js` and the
   admin sync endpoints

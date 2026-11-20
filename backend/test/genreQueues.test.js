@@ -57,11 +57,38 @@ test('genre-from-artist: only songs covered purely by the artist, tagged with th
   assert.ok(!(await row('genre-from-artist', own)));
 });
 
-test('queue rows report a song genre as source "song"', async () => {
+test('queue rows report a legacy song genre (no stored source) as source "song"', async () => {
   const id = await mkSong({ title: 'ZZZGEN RowSong', genre: 'metal' });
   const r = await row('all', id);
   assert.equal(r.genre, 'metal');
   assert.equal(r.genre_source, 'song');
+});
+
+test('queue rows report the stored genre_source when there is one', async () => {
+  const id = await mkSong({ title: 'ZZZGEN RowStored', genre: 'metal' });
+  await pool.query(`UPDATE songs SET genre_source='audio_gemini' WHERE id=$1`, [id]);
+  assert.equal((await row('all', id)).genre_source, 'audio_gemini');
+});
+
+test('saveDetails stamps genre_source manual, and clearing the genre clears it', async () => {
+  const id = await mkSong({ title: 'ZZZGEN Prov' });
+  await pool.query(`UPDATE songs SET genre='metal', genre_source='audio_gemini' WHERE id=$1`, [id]);
+  let wb = await curation.saveDetails(pool, id, { title: 'ZZZGEN Prov' });
+  assert.equal((await pool.query('SELECT genre_source FROM songs WHERE id=$1', [id])).rows[0].genre_source,
+    'audio_gemini', 'saving another field leaves the source alone');
+  wb = await curation.saveDetails(pool, id, { genre: 'punk' });
+  assert.equal(wb.genre_source, 'manual');
+  assert.equal((await row('all', id)).genre_source, 'manual');
+  wb = await curation.saveDetails(pool, id, { genre: '' });
+  assert.equal(wb.genre, null);
+  assert.equal(wb.genre_source, null);
+  assert.equal((await pool.query('SELECT genre_source FROM songs WHERE id=$1', [id])).rows[0].genre_source, null);
+});
+
+test('a parent genre saved by the curator files under itself (rock and metal)', async () => {
+  const id = await mkSong({ title: 'ZZZGEN Parent' });
+  assert.equal((await curation.saveDetails(pool, id, { genre: 'rock' })).parent_genre, 'rock');
+  assert.equal((await curation.saveDetails(pool, id, { genre: 'country' })).parent_genre, 'country');
 });
 
 test('getWorkbench serves the song genre and the artist genre with its artist', async () => {
