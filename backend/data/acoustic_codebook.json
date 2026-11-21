@@ -1,203 +1,503 @@
 {
-  "sonic_energy": {
-    "component_name": "Sonic Energy & Intensity",
-    "description": "Perceptual measure of musical intensity, dynamic volume, distortion, and sound pressure level.",
-    "derivation_source": "Root-Mean-Square (RMS) Energy & Spectral Centroid Brightness via Librosa / Spotify Energy",
-    "codes": [
-      {
-        "code": "EXPLOSIVE",
-        "label": "Explosive",
-        "short_tag": "💥 Explosive",
-        "definition": "High-octane, heavy distortion, loud production, and maximum dynamic force (e.g. Hardcore, Grindcore, Metalcore).",
-        "threshold": "Librosa RMS > 0.12 or Spotify Energy > 0.82"
-      },
-      {
-        "code": "ENERGETIC",
-        "label": "Energetic",
-        "short_tag": "⚡ Energetic",
-        "definition": "Upbeat, energetic rhythm, punchy instrumentation, and lively production (e.g. Punk Rock, Fast Ska, Upbeat Rock).",
-        "threshold": "Librosa RMS 0.055 - 0.12 or Spotify Energy 0.60 - 0.82"
-      },
-      {
-        "code": "MODERATE",
-        "label": "Moderate",
-        "short_tag": "⚖️ Moderate",
-        "definition": "Mid-tempo, balanced volume, steady acoustic/electric arrangement (e.g. Indie Rock, Mid-tempo Alternative).",
-        "threshold": "Librosa RMS 0.025 - 0.055 or Spotify Energy 0.38 - 0.60"
-      },
-      {
-        "code": "SUBDUED",
-        "label": "Subdued",
-        "short_tag": "🌿 Subdued",
-        "definition": "Gentle, quiet production, intimate acoustic instruments, and subdued dynamics (e.g. Folk Ballads, Acoustic Solos, Ambient).",
-        "threshold": "Librosa RMS < 0.025 or Spotify Energy < 0.38"
-      }
-    ]
+  "version": "2.1",
+  "description": "8-dimension plain-English audio codebook for the Vegan Playlist musicology project. Keeps immutable uppercase DB keys paired with concise, listener-friendly UI labels (zero emojis) and calibrated AI definitions.",
+  "dimensions": {
+    "musical_mood": {
+      "name": "Mood",
+      "selection_mode": "multi_select",
+      "min_select": 1,
+      "max_select": 2,
+      "description": "The emotional feel of the music itself (harmony, tone, rhythm, vocal delivery), independent of lyrical meaning.",
+      "codes": [
+        {
+          "code": "FEROCIOUS_AGGRESSIVE",
+          "label": "Aggressive",
+          "listener_description": "Furious, visceral, confrontational musical intensity",
+          "ai_definition": "Visceral musical fury, hostile tension, chaotic violence, or relentless sonic rage conveyed by harsh timbres and intense performance."
+        },
+        {
+          "code": "DARK_OMINOUS",
+          "label": "Dark",
+          "listener_description": "Foreboding, eerie, bleak, or doom-laden atmosphere",
+          "ai_definition": "Sinister, ominous, menacing, gloomy, or oppressive sonic atmosphere (minor/dissonant harmony, dark synths, heavy brooding riffs)."
+        },
+        {
+          "code": "MELANCHOLIC_MOURNFUL",
+          "label": "Mournful",
+          "listener_description": "Sad, heartbroken, or grieving musical mood",
+          "ai_definition": "Sorrowful, elegiac, plaintive, heartbroken, or grieving musical mood (wistful melodies, slow minor progressions, weeping vocals)."
+        },
+        {
+          "code": "URGENT_TENSE",
+          "label": "Urgent",
+          "listener_description": "Anxious, restless, high-alert tension",
+          "ai_definition": "Pressing, anxious, restless, alarm-like momentum or edgy suspense without full extreme-metal brutality."
+        },
+        {
+          "code": "DEFIANT_ANTHEMIC",
+          "label": "Empowering",
+          "listener_description": "Empowering, rallying, fist-raising protest energy",
+          "ai_definition": "Defiant, rallying, triumphant, resolute, or fist-raising anthemic energy (chorus hooks, gang shouts, uplifting drive)."
+        },
+        {
+          "code": "PLAYFUL_IRONIC",
+          "label": "Playful",
+          "listener_description": "Cheeky, quirky, comedic, or satirical musical feel",
+          "ai_definition": "Quirky, cheeky, comedic, bouncy, theatrical, or lighthearted satirical musical feel."
+        },
+        {
+          "code": "UPBEAT_JOYFUL",
+          "label": "Upbeat",
+          "listener_description": "Warm, sunny, celebratory, feel-good positivity",
+          "ai_definition": "Warm, sunny, bright, cheerful, celebratory, or feel-good major-key musical positivity."
+        },
+        {
+          "code": "SERENE_CONTEMPLATIVE",
+          "label": "Calm",
+          "listener_description": "Gentle, peaceful, tender, or reflective",
+          "ai_definition": "Gentle, peaceful, tender, soft, serene, or meditative musical atmosphere."
+        },
+        {
+          "code": "HYPNOTIC_BROODING",
+          "label": "Hypnotic",
+          "listener_description": "Repetitive, nocturnal, atmospheric, trance-like tension",
+          "ai_definition": "Trance-like, repetitive, moody, nocturnal, dub/electronic-pulsing, or meditative atmospheric tension."
+        }
+      ]
+    },
+    "sonic_intensity": {
+      "name": "Intensity",
+      "selection_mode": "single_select",
+      "min_select": 1,
+      "max_select": 1,
+      "description": "Overall physical weight, loudness density, distortion saturation, and kinetic force. Calibrated with objective loudness (LUFS) and tempo.",
+      "codes": [
+        {
+          "code": "INTIMATE_SPARSE",
+          "label": "Quiet",
+          "listener_description": "Soft, stripped-back, solo acoustic, piano, or unaccompanied voice",
+          "ai_definition": "Quiet, minimal arrangement, soft dynamics, solo acoustic instrument, ambient wash, or unaccompanied spoken voice (typically below -16 LUFS or very sparse without full rhythm section)."
+        },
+        {
+          "code": "MODERATE_BALANCED",
+          "label": "Moderate",
+          "listener_description": "Mid-level volume and fullness (indie, folk-rock, dub, laid-back hip-hop)",
+          "ai_definition": "Conversational volume and balanced density; steady mid-level indie, folk-rock, dub reggae, post-punk ballad, or laid-back hip-hop arrangement."
+        },
+        {
+          "code": "ENERGETIC_DRIVING",
+          "label": "Energetic",
+          "listener_description": "Lively, punchy, danceable, or fast melodic energy without extreme distortion",
+          "ai_definition": "Lively, punchy, upbeat energy (ska-punk, pop-punk, energetic folk-punk, danceable rock, upbeat hip-hop/grime) without crushing distortion saturation."
+        },
+        {
+          "code": "HEAVY_INTENSE",
+          "label": "Heavy",
+          "listener_description": "Thick distorted guitars, pounding drums, loud rock, hardcore, or metalcore",
+          "ai_definition": "Thick high-gain distorted guitars, pounding drums, loud dense hardcore, crust punk, metalcore, or heavy industrial rock (typically high LUFS and saturated mid-band)."
+        },
+        {
+          "code": "EXTREME_ASSAULT",
+          "label": "Extreme",
+          "listener_description": "Maximum heaviness: blast beats, brutal death metal, or grindcore wall of sound",
+          "ai_definition": "Maximum sonic saturation and extremity: relentless blast beats, brutal death metal, grindcore, deathcore, powerviolence wall of sound, or punishingly harsh extreme noise/screams."
+        }
+      ]
+    },
+    "production_texture": {
+      "name": "Sound",
+      "selection_mode": "single_select",
+      "min_select": 1,
+      "max_select": 1,
+      "description": "Recording and timbral aesthetic: acoustic purity, live band warmth, DIY grit, heavy distortion, studio polish, or electronics.",
+      "codes": [
+        {
+          "code": "UNPLUGGED_ACOUSTIC",
+          "label": "Acoustic",
+          "listener_description": "Unamplified acoustic guitar, piano, strings, and natural room sound",
+          "ai_definition": "Primarily unamplified acoustic instruments (acoustic guitar, piano, strings, hand percussion) and natural room sound without heavy drums or distortion."
+        },
+        {
+          "code": "ORGANIC_BAND",
+          "label": "Live Band",
+          "listener_description": "Natural full-band mix with clean/light-crunch electric instruments and live drums",
+          "ai_definition": "Natural, warm full-band sound with clean or lightly overdriven electric instruments, bass, and live drums (indie, rock, folk-rock, reggae, blues, soul)."
+        },
+        {
+          "code": "RAW_DIY_LOFI",
+          "label": "Raw DIY",
+          "listener_description": "Gritty, unpolished basement, garage, or underground punk production",
+          "ai_definition": "Gritty, unpolished, basement/garage/anarcho-punk or underground demo production with audible room bleed, tape hiss, or raw live-room fidelity."
+        },
+        {
+          "code": "HEAVY_DISTORTED",
+          "label": "Distorted",
+          "listener_description": "High-gain amplified guitars, heavy fuzz, and saturated metal/hardcore mix",
+          "ai_definition": "Saturated high-gain amplified guitars, heavy fuzz, aggressive bass distortion, and loud rock, hardcore, or metal mix."
+        },
+        {
+          "code": "POLISHED_MODERN",
+          "label": "Polished",
+          "listener_description": "Crisp, studio-engineered modern pop, hip-hop, rock, or metal production",
+          "ai_definition": "Crisp, wide, radio-ready, tightly compressed commercial pop, modern metalcore, or slick studio hip-hop production."
+        },
+        {
+          "code": "ELECTRONIC_SYNTHETIC",
+          "label": "Electronic",
+          "listener_description": "Built mainly around synthesizers, drum machines, samplers, or programmed beats",
+          "ai_definition": "Driven primarily by synthesizers, drum machines, samplers, turntables, programmed hip-hop/dub beats, or industrial electronics."
+        },
+        {
+          "code": "AMBIENT_EXPERIMENTAL",
+          "label": "Experimental",
+          "listener_description": "Sound collage, avant-garde textures, drone, or sparse spoken soundscape",
+          "ai_definition": "Sound-collage, unaccompanied spoken-word/poetry recording, avant-garde noise, drone, or field-recording soundscape."
+        }
+      ]
+    },
+    "vocal_style": {
+      "name": "Vocals",
+      "selection_mode": "multi_select",
+      "min_select": 1,
+      "max_select": 2,
+      "description": "Dominant vocal delivery techniques audible in the recording (select 2 when distinct styles coexist, e.g., harsh verses + melodic chorus or shouted lead + group chants).",
+      "codes": [
+        {
+          "code": "CLEAN_MELODIC",
+          "label": "Melodic",
+          "listener_description": "Standard pitched singing",
+          "ai_definition": "Pitched singing voice—ranging from smooth pop/folk/soul to gritty melodic rock or reggae singing."
+        },
+        {
+          "code": "RAW_SHOUTED",
+          "label": "Shouted",
+          "listener_description": "Urgent punk yelling or hardcore shouting without full metal growls",
+          "ai_definition": "Unpitched or semi-pitched urgent punk yelling, hardcore barking, or strained shouting without extreme guttural growls or fry shrieks."
+        },
+        {
+          "code": "HARSH_SCREAMED_GROWL",
+          "label": "Screamed / Growled",
+          "listener_description": "Heavy metalcore shrieks, screams, or guttural death-metal growls",
+          "ai_definition": "Extreme distorted vocal fry, metalcore/screamo shrieking, guttural death-metal growls, or pig squeals."
+        },
+        {
+          "code": "GANG_CHANT",
+          "label": "Group Chants",
+          "listener_description": "Multiple voices shouting or singing together in a collective chorus",
+          "ai_definition": "Multiple voices shouting, chanting, or singing together in unison or call-and-response chorus."
+        },
+        {
+          "code": "RAP_TOASTING",
+          "label": "Rap / Flow",
+          "listener_description": "Hip-hop rapping, grime MCing, or reggae/dub rhythmic vocal flow",
+          "ai_definition": "Rhythmic rhyming hip-hop cadence, grime MCing, or Jamaican reggae/dub rhythmic vocal deejay toasting."
+        },
+        {
+          "code": "SPOKEN_WORD",
+          "label": "Spoken Word",
+          "listener_description": "Spoken poetry, monologue, stand-up comedy, or narration",
+          "ai_definition": "Unpitched conversational speech, dub poetry, stand-up comedy, dramatic narration, or activist recitation."
+        },
+        {
+          "code": "INSTRUMENTAL",
+          "label": "Instrumental",
+          "listener_description": "Purely musical track with no lead vocals",
+          "ai_definition": "Purely instrumental track with no lead singing, rapping, or spoken narrative (minor incidental samples allowed)."
+        }
+      ]
+    },
+    "rhythmic_feel": {
+      "name": "Rhythm",
+      "selection_mode": "single_select",
+      "min_select": 1,
+      "max_select": 1,
+      "description": "Primary rhythmic engine, beat pattern, and kinetic groove.",
+      "codes": [
+        {
+          "code": "BLAST_THRASH",
+          "label": "Blast Beats",
+          "listener_description": "Hyper-speed double-kick drums, blast beats, or frantic thrash/grind pace",
+          "ai_definition": "Blistering double-kick drums, blast beats, or hyper-speed grindcore/death-metal/thrash rhythmic velocity."
+        },
+        {
+          "code": "PUNK_DBEAT_DRIVE",
+          "label": "Punk Drive",
+          "listener_description": "Relentless fast punk gallop and urgent snare drive",
+          "ai_definition": "Relentless fast punk gallop, d-beat snare drive, or urgent hardcore forward momentum."
+        },
+        {
+          "code": "BREAKDOWN_STOMP",
+          "label": "Breakdowns",
+          "listener_description": "Heavy chugging riffs and half-time mosh breakdowns",
+          "ai_definition": "Syncopated heavy chugging riffs, half-time mosh breakdowns, or groove-metal/metalcore stomp."
+        },
+        {
+          "code": "STEADY_ROCK_PULSE",
+          "label": "Steady Rock",
+          "listener_description": "Straight-ahead 4/4 rock, indie, pop, or post-punk backbeat",
+          "ai_definition": "Straight-ahead 4/4 backbeat typical of indie rock, alternative, classic rock, pop, or post-punk."
+        },
+        {
+          "code": "SYNCOPATED_GROOVE",
+          "label": "Groove",
+          "listener_description": "Bouncy hip-hop head-nod, reggae one-drop, ska offbeat, or funk pocket",
+          "ai_definition": "Hip-hop head-nod swing, reggae one-drop, ska offbeat skank, funk/soul pocket, or Latin/Caribbean bounce."
+        },
+        {
+          "code": "ACOUSTIC_STRUM_SWAY",
+          "label": "Acoustic Strum",
+          "listener_description": "Acoustic guitar strumming, waltz sway, or light folk/blues shuffle",
+          "ai_definition": "Acoustic guitar/ukulele strumming pulse, waltz sway, or light blues/folk shuffle without heavy rock drums."
+        },
+        {
+          "code": "ELECTRONIC_MECHANICAL",
+          "label": "Electronic Beat",
+          "listener_description": "Drum-machine pulse, club beat, industrial stomp, or breakbeat",
+          "ai_definition": "Quantized drum-machine four-on-the-floor, industrial stomp, breakbeat, drum-and-bass, or programmed synth pulse."
+        },
+        {
+          "code": "FREEFORM_UNMETERED",
+          "label": "Beatless",
+          "listener_description": "No steady drum beat: spoken word, ambient drift, or loose ballad",
+          "ai_definition": "No steady drum beat: unaccompanied spoken word, ambient drift, drone, rubato ballad, or experimental collage."
+        }
+      ]
+    },
+    "instrumentation": {
+      "name": "Instruments",
+      "selection_mode": "multi_select",
+      "min_select": 0,
+      "max_select": 4,
+      "description": "Primary audible instruments forming the track's sonic palette (leave empty [] only for unaccompanied a cappella or solo spoken-word tracks).",
+      "codes": [
+        {
+          "code": "DISTORTED_GUITAR",
+          "label": "Distorted Guitar",
+          "listener_description": "Overdriven, fuzz, or high-gain metal/punk electric guitars",
+          "ai_definition": "Overdriven, fuzz, or high-gain metal/punk/rock electric guitars."
+        },
+        {
+          "code": "CLEAN_ELECTRIC_GUITAR",
+          "label": "Clean Guitar",
+          "listener_description": "Clean, jangly, reverb-soaked, or ska-skank electric guitars",
+          "ai_definition": "Clean, chorus, reverb-soaked, ska-skank, or lightly crunchy electric guitars."
+        },
+        {
+          "code": "ACOUSTIC_GUITAR",
+          "label": "Acoustic Guitar",
+          "listener_description": "Acoustic guitar, banjo, ukulele, or mandolin",
+          "ai_definition": "Steel/nylon acoustic guitar, banjo, ukulele, or mandolin."
+        },
+        {
+          "code": "LIVE_DRUMS",
+          "label": "Live Drums",
+          "listener_description": "Acoustic drum kit",
+          "ai_definition": "Acoustic snare, kick, toms, and cymbals played as a live drum kit."
+        },
+        {
+          "code": "DRUM_MACHINE_BEATS",
+          "label": "Drum Machine",
+          "listener_description": "Electronic drums, 808s, or sampled hip-hop/industrial beats",
+          "ai_definition": "Electronic kicks, 808s, industrial percussion loops, or sampled breakbeats."
+        },
+        {
+          "code": "SYNTHS_ELECTRONICS",
+          "label": "Synths",
+          "listener_description": "Synthesizers, electronic pads, or turntables",
+          "ai_definition": "Synth leads, pads, electronic basslines, turntables/scratches, or noise electronics."
+        },
+        {
+          "code": "PIANO_KEYS",
+          "label": "Piano / Keys",
+          "listener_description": "Piano, electric piano, organ, or accordion",
+          "ai_definition": "Acoustic/electric piano, Rhodes, Hammond organ, or accordion."
+        },
+        {
+          "code": "STRINGS",
+          "label": "Strings",
+          "listener_description": "Violin, fiddle, cello, or orchestral strings",
+          "ai_definition": "Violin, cello, fiddle, viola, or orchestral string sections."
+        },
+        {
+          "code": "BRASS_HORNS",
+          "label": "Horns",
+          "listener_description": "Trumpet, saxophone, trombone, or brass section",
+          "ai_definition": "Trumpet, trombone, saxophone (common in ska-punk, jazz, soul), or flute."
+        },
+        {
+          "code": "PROMINENT_DUB_BASS",
+          "label": "Dub / Lead Bass",
+          "listener_description": "Prominent dub/reggae sub-bass or lead/slap bass hook",
+          "ai_definition": "ONLY select for deep reggae/dub sub-bass or a prominent slap/melodic lead bassline carrying the main musical hook. NEVER select for ordinary rock, punk, or metal rhythm bass guitar."
+        }
+      ]
+    },
+    "audio_samples": {
+      "name": "Audio Samples",
+      "selection_mode": "multi_select",
+      "min_select": 0,
+      "max_select": 2,
+      "description": "Non-musical or archival sound insertions embedded anywhere in the track (including intro and outro soundscapes).",
+      "codes": [
+        {
+          "code": "NONE",
+          "label": "No Samples",
+          "hidden_in_ui": true,
+          "listener_description": "Pure musical performance with no embedded clips or sound effects",
+          "ai_definition": "Purely musical performance with ZERO archival speech clips, news excerpts, animal sounds, sirens, or non-musical sound effects—not even in the intro or outro."
+        },
+        {
+          "code": "ADVOCATE_SPEECH_CLIP",
+          "label": "Advocate Speech",
+          "listener_description": "Embedded speech, lecture, interview, or rally quote",
+          "ai_definition": "Sampled excerpts from speeches, lectures, interviews, activist monologues, or protest rallies embedded in the music (do NOT confuse live stage banter by the band itself unless it is an embedded external speech/sample)."
+        },
+        {
+          "code": "DOCUMENTARY_NEWS_CLIP",
+          "label": "Documentary / News",
+          "listener_description": "TV/radio broadcast, documentary narration, or film dialogue clip",
+          "ai_definition": "TV/radio news broadcasts, investigative documentary narration, PSA clips, or film dialogue samples."
+        },
+        {
+          "code": "ANIMAL_SLAUGHTER_SFX",
+          "label": "Slaughterhouse Sounds",
+          "listener_description": "Captive/distressed animal sounds, factory machinery, chains, or gunshots",
+          "ai_definition": "Sounds of captive/slaughtered animals (mooing, squealing, distress cries), factory-farm/abattoir machinery, saw/industrial drones, chains, or gunshots—including intro or outro SFX."
+        },
+        {
+          "code": "NATURE_ANIMAL_SOUNDSCAPE",
+          "label": "Wildlife / Nature",
+          "listener_description": "Birdsong, whale/wolf calls, forest, or ocean field recordings",
+          "ai_definition": "Birdsong, whale/wolf calls, forest/ocean ambience, or peaceful free-living animal field recordings."
+        },
+        {
+          "code": "FOUND_SOUND_OTHER",
+          "label": "Sound FX / Crowds",
+          "listener_description": "Protest crowds, sirens, static, or environmental sound effects",
+          "ai_definition": "Police sirens, protest crowd chants, radio static, telephone rings, or other environmental/foley sound effects."
+        }
+      ]
+    },
+    "dynamic_arc": {
+      "name": "Dynamics",
+      "selection_mode": "single_select",
+      "min_select": 1,
+      "max_select": 1,
+      "description": "Temporal energy trajectory across the full song from intro to outro.",
+      "codes": [
+        {
+          "code": "RELENTLESS_WALL",
+          "label": "Relentless",
+          "listener_description": "Full intensity from start to finish with little let-up",
+          "ai_definition": "High intensity from start to finish with minimal dynamic drop-off."
+        },
+        {
+          "code": "STEADY_GROOVE",
+          "label": "Steady",
+          "listener_description": "Even groove and consistent volume across the whole track",
+          "ai_definition": "Consistent, even dynamics and steady groove maintained throughout (typical of dub, hip-hop, folk, steady pop)."
+        },
+        {
+          "code": "VERSE_CHORUS_CONTRAST",
+          "label": "Verse–Chorus Shifts",
+          "listener_description": "Pulls back in verses and swells into bigger choruses",
+          "ai_definition": "Clear cyclical pull-back in verses alternating with fuller, louder choruses."
+        },
+        {
+          "code": "QUIET_LOUD_EXPLOSION",
+          "label": "Quiet Intro, Loud Drop",
+          "listener_description": "Opens softly (spoken, acoustic, or sample) then detonates into full intensity",
+          "ai_definition": "Starts quiet/spoken/acoustic or sampled and suddenly detonates into heavy full-band intensity."
+        },
+        {
+          "code": "BUILDING_CRESCENDO",
+          "label": "Slow Build",
+          "listener_description": "Gradually layers instruments and rises toward a late peak",
+          "ai_definition": "Layers instruments or rises steadily in tension toward a late climax."
+        },
+        {
+          "code": "BREAKDOWN_SHIFTING",
+          "label": "Tempo Shifts",
+          "listener_description": "Sharp gear changes between fast passages, stops, and heavy breakdowns",
+          "ai_definition": "Sharp structural shifts between fast sections, half-time breakdowns, stops, or tempo transitions."
+        },
+        {
+          "code": "SPARSE_INTIMATE",
+          "label": "Stripped-Back",
+          "listener_description": "Delicate, minimal, and quiet from beginning to end",
+          "ai_definition": "Remains delicate, stripped-back, and low-dynamic across the entire track."
+        }
+      ]
+    }
   },
-  "emotional_mood": {
-    "component_name": "Emotional Mood (Valence)",
-    "description": "Harmonic and emotional positivity conveyed by the musical arrangement and chord structures.",
-    "derivation_source": "Harmonic Chromagram & Tonnetz Major/Minor Key Ratios via Librosa / Spotify Valence",
-    "codes": [
-      {
-        "code": "SOMBER",
-        "label": "Somber",
-        "short_tag": "🖤 Somber",
-        "definition": "Low positivity: minor-key, mournful, sad, elegiac, or desolate harmonic mood (e.g. Captivity Elegies, Slaughterhouse Laments).",
-        "threshold": "Librosa Major/Minor Ratio < 0.85 or Spotify Valence < 0.30"
-      },
-      {
-        "code": "TENSE",
-        "label": "Tense",
-        "short_tag": "🪞 Tense",
-        "definition": "Mid-low positivity: serious, urgent, tense, or confrontational harmonic tone.",
-        "threshold": "Librosa Major/Minor Ratio 0.85 - 1.05 or Spotify Valence 0.30 - 0.50"
-      },
-      {
-        "code": "NEUTRAL",
-        "label": "Neutral",
-        "short_tag": "⚖️ Neutral",
-        "definition": "Moderate positivity: neutral, storytelling, or reflective harmonic background.",
-        "threshold": "Librosa Major/Minor Ratio 1.05 - 1.30 or Spotify Valence 0.50 - 0.68"
-      },
-      {
-        "code": "UPLIFTING",
-        "label": "Uplifting",
-        "short_tag": "🌱 Uplifting",
-        "definition": "High positivity: major-key, cheerful, bright, encouraging, or triumphant feel (e.g. Celebration of Vegan Life).",
-        "threshold": "Librosa Major/Minor Ratio > 1.30 or Spotify Valence > 0.68"
-      }
-    ]
+  "objective_metrics": {
+    "tempo_bpm": {
+      "type": "integer",
+      "source": "beat_this (CUDA)",
+      "description": "Median beat tempo in beats per minute."
+    },
+    "tempo_stability": {
+      "type": "enum",
+      "values": [
+        "STEADY",
+        "SHIFTING",
+        "UNMETERED"
+      ],
+      "description": "Beat interval regularity across the track."
+    },
+    "loudness_lufs": {
+      "type": "float",
+      "source": "pyloudnorm (EBU R128)",
+      "description": "Integrated perceptual loudness in LUFS."
+    },
+    "dynamic_range_lra": {
+      "type": "float",
+      "source": "pyloudnorm 3s sliding window",
+      "description": "Loudness range (P95 minus P10 in LU)."
+    },
+    "crest_factor_db": {
+      "type": "float",
+      "source": "DSP",
+      "description": "Peak-to-RMS amplitude ratio in dB."
+    },
+    "musical_key": {
+      "type": "string",
+      "source": "chroma_cqt + 24-key Temperley profiles",
+      "description": "Estimated tonic pitch and mode, e.g. E minor."
+    },
+    "musical_mode": {
+      "type": "enum",
+      "values": [
+        "major",
+        "minor"
+      ],
+      "description": "Estimated harmonic mode."
+    },
+    "key_confidence": {
+      "type": "float",
+      "description": "Correlation margin between top-1 and top-2 key candidates."
+    }
   },
-  "rhythmic_style": {
-    "component_name": "Rhythmic Style",
-    "description": "Rhythmic regularity, danceability, beat strength, and tempo momentum.",
-    "derivation_source": "Onset Strength Envelope Variance, Beat Tracking, and Genre Metadata",
-    "codes": [
-      {
-        "code": "AGGRESSIVE",
-        "label": "Aggressive",
-        "short_tag": "🔥 Aggressive",
-        "definition": "Rapid blast beats, relentless double-kick barrage, thrash beats, and heavy breakdowns (e.g. Death Metal, Grindcore, Hardcore Punk).",
-        "threshold": "Metal/Hardcore genre with Tempo > 140 or Librosa Onset Variance > 2.2"
-      },
-      {
-        "code": "DRIVING",
-        "label": "Driving",
-        "short_tag": "🥁 Driving",
-        "definition": "Driving rock/punk beat, punchy 4/4 forward momentum, and steady rhythmic pulse.",
-        "threshold": "Rock/Punk genre or Spotify Danceability 0.40 - 0.68 with Energy > 0.55"
-      },
-      {
-        "code": "GROOVE",
-        "label": "Groove",
-        "short_tag": "🕺 Groove",
-        "definition": "Syncopated beat, danceable rhythm, swing, reggae skank, and hip-hop bounce (e.g. Reggae, Ska, Hip-Hop, Funk, Pop).",
-        "threshold": "Spotify Danceability > 0.68 or Reggae/Ska/Hip-Hop/Funk genres"
-      },
-      {
-        "code": "ATMOSPHERIC",
-        "label": "Atmospheric",
-        "short_tag": "🌊 Atmospheric",
-        "definition": "Loose beat structure, unmetered ambient passages, drone, spoken monologues, or non-rhythmic soundscapes.",
-        "threshold": "Spotify Danceability < 0.40 and Energy < 0.40, or Librosa Onset Variance < 1.2"
-      }
-    ]
+  "sample_details_schema": {
+    "description": "Structured array populated whenever audio_samples != [\"NONE\"].",
+    "fields": {
+      "type": "Exact non-NONE audio_samples enum code",
+      "timestamp": "Start-end time range, e.g. 5:53-6:04",
+      "transcript_excerpt": "Verbatim 1-2 short sentences heard, or null if non-speech/unintelligible",
+      "speaker_or_source": "Speaker, documentary, or broadcast name ONLY if unmistakably certain; otherwise null",
+      "identification_confidence": "HIGH | MEDIUM | UNIDENTIFIED",
+      "description": "Plain-English description of what is heard"
+    }
   },
-  "acoustic_type": {
-    "component_name": "Acoustic Type",
-    "description": "Primary instrumentation setup and acoustic vs electric/electronic sound spectrum.",
-    "derivation_source": "Spectral Flatness & Harmonic-Percussive Source Separation via Librosa / Spotify Acousticness",
-    "codes": [
-      {
-        "code": "ACOUSTIC",
-        "label": "Acoustic",
-        "short_tag": "🪕 Acoustic",
-        "definition": "Unamplified acoustic instruments, acoustic guitar, piano, strings, and organic folk production.",
-        "threshold": "Spotify Acousticness > 0.70 or Librosa Flatness < 0.003"
-      },
-      {
-        "code": "HYBRID",
-        "label": "Hybrid",
-        "short_tag": "🎸 Hybrid",
-        "definition": "Blend of acoustic and electric/electronic instruments (e.g. acoustic guitar with electric drums/bass).",
-        "threshold": "Spotify Acousticness 0.30 - 0.70 or Librosa Flatness 0.003 - 0.012"
-      },
-      {
-        "code": "ELECTRIC",
-        "label": "Electric",
-        "short_tag": "⚡ Electric",
-        "definition": "Electric guitars, bass, synthesizers, distorted amplifiers, and heavy studio production.",
-        "threshold": "Spotify Acousticness < 0.30 or Librosa Flatness > 0.012"
-      }
-    ]
-  },
-  "vocal_delivery": {
-    "component_name": "Vocal Delivery",
-    "description": "Style of vocal presentation, ratio of spoken vs sung, and vocal technique.",
-    "derivation_source": "Genre Metadata, Vocal Audio Analysis (ZCR / Speechiness), and Lyric Presentation",
-    "codes": [
-      {
-        "code": "HARSH",
-        "label": "Harsh / Screamed",
-        "short_tag": "🗣️ Harsh / Screamed",
-        "definition": "Screaming, death growls, hardcore shouting, and guttural barking (e.g. Earth Crisis, Cattle Decapitation, Architects).",
-        "threshold": "Metal, Death Metal, Grindcore, Hardcore Punk genres with High Energy"
-      },
-      {
-        "code": "MELODIC",
-        "label": "Melodic / Clean",
-        "short_tag": "🎵 Melodic / Clean",
-        "definition": "Standard melodic singing, clean vocal lines, and harmonies (e.g. Folk, Pop, Melodic Punk, Indie).",
-        "threshold": "Folk, Pop, Blues, Indie genres or low speechiness with melodic vocal lines"
-      },
-      {
-        "code": "MIXED",
-        "label": "Mixed Delivery",
-        "short_tag": "🎭 Mixed Delivery",
-        "definition": "Dynamic combination of clean singing and harsh screaming (e.g. Metalcore, Post-Hardcore) or singing with rap verses.",
-        "threshold": "Metalcore, Post-Hardcore, Alternative Rock with dynamic vocal shifts"
-      },
-      {
-        "code": "RAP",
-        "label": "Rap / Flow",
-        "short_tag": "🎤 Rap / Flow",
-        "definition": "Rhythmic hip-hop cadence, rhyming flow, and rap delivery (e.g. Vegan Hip-Hop, Grime).",
-        "threshold": "Hip-Hop / Rap genres with high speechiness / rhythmic delivery"
-      },
-      {
-        "code": "SPOKEN",
-        "label": "Spoken Word",
-        "short_tag": "📜 Spoken Word",
-        "definition": "Spoken word poetry, activist monologues, speeches, and dramatic readings.",
-        "threshold": "Speechiness > 0.60 or spoken-word poetry metadata without rap cadence"
-      },
-      {
-        "code": "SAMPLE",
-        "label": "Documentary Sample",
-        "short_tag": "📻 Documentary Sample",
-        "definition": "Audio samples from slaughterhouses, documentaries, speeches, or undercover footage embedded into the song.",
-        "threshold": "Tracks with prominent speech/documentary audio samples"
-      },
-      {
-        "code": "INSTRUMENTAL",
-        "label": "Instrumental",
-        "short_tag": "🎼 Instrumental",
-        "definition": "Purely musical arrangement without vocal performance.",
-        "threshold": "Instrumentalness > 0.70 or absence of vocal tracks"
-      }
-    ]
-  },
-  "tempo_bpm": {
-    "component_name": "Tempo (BPM)",
-    "description": "Exact musical speed and pace measured in Beats Per Minute.",
-    "derivation_source": "Onset Autocorrelation Beat Tracking via Librosa / Spotify Tempo",
-    "value_type": "INTEGER_BPM",
-    "example_values": [
-      "88 BPM (Slow / Downtempo)",
-      "120 BPM (Mid-Tempo Groove)",
-      "142 BPM (Fast Driving Rock)",
-      "178 BPM (Rapid Hardcore Punk / Blast Beats)"
+  "audio_inferred_genre_schema": {
+    "description": "Option B audio-only genre predictions stored in song_audio_analysis without overwriting songs.genre.",
+    "vocabulary_source": "genre_hierarchy.json",
+    "fields": [
+      "inferred_parent_genre",
+      "inferred_subgenre",
+      "inferred_secondary_genre",
+      "genre_confidence",
+      "genre_rationale"
     ]
   }
 }
