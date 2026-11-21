@@ -4,7 +4,7 @@
 // Functions take `db` (pool or client) first, mirroring services/curation.js.
 const taxonomy = require('../data/taxonomy.json');
 const codebook = require('./metadataCodebook');
-const acoustic = require('./acousticCodebook');
+const audioAnalysis = require('./audioAnalysis');
 const { unpackConstraint, countByCode } = require('./facetSql');
 
 // The site shows each song's latest analysis pass (see LATEST_ANALYSIS below).
@@ -105,14 +105,13 @@ async function getSongAnalysis(db, songId) {
   const r = await db.query(
     `SELECT sla.themes, sla.topics, sla.advocacy, sla.moral_frames, sla.lyric_summary,
             sla.perspective, sla.lyrical_tone, sla.clarity, sla.focus_amount,
-            sla.target_audience, sla.emotions,
-            sla.sonic_energy, sla.emotional_mood, sla.rhythmic_style,
-            sla.acoustic_type, sla.vocal_delivery, sla.tempo_bpm
+            sla.target_audience, sla.emotions
      FROM ${LATEST_ANALYSIS} sla
      WHERE sla.song_id = $1`,
     [songId]);
-  const a = r.rows[0];
-  if (!a) return null;
+  // No lyric analysis (or one hidden as junk-derived) is not the end: the song's audio analysis is
+  // independent of its lyrics, so the page can still have a Sound section to show.
+  const a = r.rows[0] || {};
 
   // Compact attributes card: the six single-valued components. cleanSelection drops null,
   // suppressed and off-codebook values — the same gate the filters use, so the page can only
@@ -139,44 +138,24 @@ async function getSongAnalysis(db, songId) {
     moral_frames: mapDim('moral_frames', a.moral_frames),
   };
 
-  // Acoustic dimensions, derived from the audio. UNGATED by design (spec 2026-07-26 §4.3):
-  // whatever the pipeline emits is shown, title-cased when off-codebook. The tooltip carries
-  // "<Component name> — <definition>" so the long name stays out of the narrow grid cell.
-  const acousticCells = [];
-  for (const c of acoustic.COMPONENTS) {
-    const v = a[c.column];
-    if (!v) continue;
-    const def = acoustic.codeDefinition(c.key, v);
-    acousticCells.push({
-      label: c.heading,
-      value: acoustic.codeLabel(c.key, v),
-      definition: def
-        ? `${acoustic.componentName(c.key)} — ${def}`
-        : acoustic.componentDescription(c.key),
-    });
-  }
-  if (a.tempo_bpm != null) {
-    acousticCells.push({
-      label: acoustic.TEMPO.heading,
-      value: `${a.tempo_bpm} BPM`,
-      definition: acoustic.componentDescription(acoustic.TEMPO.key),
-    });
-  }
+  // The audio analysis (the song's latest OK audio row): its own block, with its own gates (codebook-known
+  // codes only; sample data only once the curator has approved it). Null when the song has none.
+  const audio = await audioAnalysis.getSongAudio(db, songId);
 
-  // Nothing displayable (e.g. a lyrics-less pass with empty codes and empty scalars) -> null,
+  // Nothing displayable (e.g. a lyrics-less pass with empty codes and empty scalars, and no audio) -> null,
   // so the route 404s and the page shows no empty "Lyrical analysis" heading.
-  const hasContent = attributes.length > 0 || emotions.length > 0 || acousticCells.length > 0 ||
+  const hasContent = attributes.length > 0 || emotions.length > 0 || !!audio ||
     Object.values(dims).some(d => d.length > 0) || !!(a.lyric_summary && a.lyric_summary.trim());
   if (!hasContent) return null;
 
   return {
-    perspective: a.perspective, clarity: a.clarity,
-    focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone,
-    target_audience: a.target_audience,
-    emotions, summary: a.lyric_summary,
+    perspective: a.perspective ?? null, clarity: a.clarity ?? null,
+    focus_amount: a.focus_amount ?? null, lyrical_tone: a.lyrical_tone ?? null,
+    target_audience: a.target_audience ?? null,
+    emotions, summary: a.lyric_summary ?? null,
     ...dims,
     attributes,
-    acoustic: acousticCells,
+    audio,
     dimension_descriptions: DIM_DESCRIPTIONS,
   };
 }

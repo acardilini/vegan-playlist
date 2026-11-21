@@ -138,7 +138,7 @@ router.get('/songs/featured', async (req, res) => {
     const pinnedResult = await pool.query(`
       SELECT 
         s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
-        s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
+        s.playlist_added_at, ${audioAnalysis.MOOD_SUBQUERY()} AS mood_code,
         al.name as album_name, al.release_date, al.images as album_images,
         ARRAY_AGG(DISTINCT a.name) as artists,
         ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres,
@@ -150,13 +150,13 @@ router.get('/songs/featured', async (req, res) => {
       LEFT JOIN LATERAL UNNEST(COALESCE(a.genres, ARRAY[]::text[])) AS genre_elem ON true
       WHERE s.featured = true AND s.status = 'included' AND s.published = true
       GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
-               s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
+               s.playlist_added_at,
                al.name, al.release_date, al.images
       ORDER BY RANDOM()
       LIMIT $1
     `, [limit]);
 
-    featuredSongs = pinnedResult.rows;
+    featuredSongs = audioAnalysis.attachMood(pinnedResult.rows);
     
     // 2. If we need more songs, fill with random ones
     if (featuredSongs.length < limit) {
@@ -166,7 +166,7 @@ router.get('/songs/featured', async (req, res) => {
       let randomQuery = `
         SELECT 
           s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
-          s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
+          s.playlist_added_at, ${audioAnalysis.MOOD_SUBQUERY()} AS mood_code,
           al.name as album_name, al.release_date, al.images as album_images,
           ARRAY_AGG(DISTINCT a.name) as artists,
           ARRAY_AGG(DISTINCT genre_elem) FILTER (WHERE genre_elem IS NOT NULL) as artist_genres,
@@ -188,7 +188,7 @@ router.get('/songs/featured', async (req, res) => {
       
       randomQuery += `
         GROUP BY s.id, s.spotify_id, s.title, s.duration_ms, s.popularity, s.spotify_url,
-                 s.playlist_added_at, s.energy, s.danceability, s.valence, s.tempo, s.custom_mood,
+                 s.playlist_added_at,
                  al.name, al.release_date, al.images
         ORDER BY COALESCE(s.playlist_added_at, s.date_added) DESC NULLS LAST
         LIMIT $${queryParams.length + 1}
@@ -197,7 +197,7 @@ router.get('/songs/featured', async (req, res) => {
       queryParams.push(remainingSlots);
       
       const randomResult = await pool.query(randomQuery, queryParams);
-      featuredSongs.push(...randomResult.rows);
+      featuredSongs.push(...audioAnalysis.attachMood(randomResult.rows));
     }
     
     res.json(featuredSongs);
@@ -228,18 +228,7 @@ router.get('/songs/:id', async (req, res) => {
         s.track_number,
         s.disc_number,
         s.playlist_added_at,
-        s.energy,
-        s.danceability,
-        s.valence,
-        s.acousticness,
-        s.instrumentalness,
-        s.liveness,
-        s.speechiness,
-        s.tempo,
-        s.loudness,
-        s.key,
-        s.mode,
-        s.time_signature,
+        ${audioAnalysis.MOOD_SUBQUERY()} AS mood_code,
         s.lyrics_url,
         s.lyrics_source,
         s.lyrics_highlights,
@@ -274,7 +263,7 @@ router.get('/songs/:id', async (req, res) => {
       return res.status(404).json({ error: 'Song not found' });
     }
     
-    res.json(result.rows[0]);
+    res.json(audioAnalysis.attachMood(result.rows)[0]);
   } catch (error) {
     console.error('Error fetching song:', error);
     res.status(500).json({ error: 'Failed to fetch song' });
@@ -322,9 +311,7 @@ router.get('/search', async (req, res) => {
         s.duration_ms,
         s.popularity,
         s.spotify_url,
-        s.energy,
-        s.danceability,
-        s.valence,
+        ${audioAnalysis.MOOD_SUBQUERY()} AS mood_code,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
@@ -362,7 +349,7 @@ router.get('/search', async (req, res) => {
     const total = parseInt(countResult.rows[0].total);
 
     res.json({
-      songs: result.rows,
+      songs: audioAnalysis.attachMood(result.rows),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -843,9 +830,7 @@ router.get('/artists/:id', async (req, res) => {
         s.popularity,
         s.spotify_url,
         s.preview_url,
-        s.energy,
-        s.danceability,
-        s.valence,
+        ${audioAnalysis.MOOD_SUBQUERY()} AS mood_code,
         al.name as album_name,
         al.release_date,
         al.images as album_images,
@@ -865,10 +850,7 @@ router.get('/artists/:id', async (req, res) => {
       SELECT 
         COUNT(DISTINCT s.id) as total_songs,
         COUNT(DISTINCT al.id) as total_albums,
-        AVG(s.popularity) as avg_popularity,
-        AVG(s.energy) as avg_energy,
-        AVG(s.danceability) as avg_danceability,
-        AVG(s.valence) as avg_valence
+        AVG(s.popularity) as avg_popularity
       FROM songs s
       LEFT JOIN albums al ON s.album_id = al.id
       JOIN song_artists sa ON s.id = sa.song_id
@@ -878,7 +860,7 @@ router.get('/artists/:id', async (req, res) => {
     artist.facts = await artistFacts.publicFacts(pool, artist.id); // accepted facts only; null when there are none
     res.json({
       artist,
-      songs: songsResult.rows,
+      songs: audioAnalysis.attachMood(songsResult.rows),
       stats: statsResult.rows[0]
     });
   } catch (error) {

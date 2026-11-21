@@ -2,7 +2,6 @@ const { test, after } = require('node:test');
 const assert = require('node:assert');
 const pool = require('../database/db');
 const analysis = require('../services/analysis');
-const { componentDescription } = require('../services/acousticCodebook');
 
 // Unique fixture sentinel per test file: ZZZANL.
 
@@ -38,20 +37,15 @@ async function addAnalysis(songId, fields = {}, { model = MODEL, analyzedAt = '2
   const f = {
     lyric_summary: null, themes: '[]', topics: '[]', advocacy: '[]', tactics: '[]', moral_frames: '[]',
     perspective: null, lyrical_tone: null, intensity: null, clarity: null, focus_amount: null,
-    target_audience: null, emotions: [],
-    sonic_energy: null, emotional_mood: null, rhythmic_style: null,
-    acoustic_type: null, vocal_delivery: null, tempo_bpm: null, ...fields,
+    target_audience: null, emotions: [], ...fields,
   };
   await pool.query(
     `INSERT INTO song_lyric_analysis
        (song_id, model_used, analyzed_at, lyric_summary, themes, topics, advocacy, tactics, moral_frames,
-        perspective, lyrical_tone, intensity, clarity, focus_amount, target_audience, emotions,
-        sonic_energy, emotional_mood, rhythmic_style, acoustic_type, vocal_delivery, tempo_bpm)
-     VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11,$12,$13,$14,$15,$16::text[],
-             $17,$18,$19,$20,$21,$22)`,
+        perspective, lyrical_tone, intensity, clarity, focus_amount, target_audience, emotions)
+     VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11,$12,$13,$14,$15,$16::text[])`,
     [songId, model, analyzedAt, f.lyric_summary, f.themes, f.topics, f.advocacy, f.tactics, f.moral_frames,
-     f.perspective, f.lyrical_tone, f.intensity, f.clarity, f.focus_amount, f.target_audience, f.emotions,
-     f.sonic_energy, f.emotional_mood, f.rhythmic_style, f.acoustic_type, f.vocal_delivery, f.tempo_bpm]);
+     f.perspective, f.lyrical_tone, f.intensity, f.clarity, f.focus_amount, f.target_audience, f.emotions]);
 }
 
 const CODED = {
@@ -70,13 +64,21 @@ async function mkCodedSong() {
   return id;
 }
 
-// Deliberately varied acoustic values — fixed, known values chosen so the assertions are
-// exact and independent of whatever the live catalogue happens to contain.
-const ACOUSTIC = {
-  sonic_energy: 'EXPLOSIVE', emotional_mood: 'SOMBER',
-  rhythmic_style: 'GROOVE', acoustic_type: 'ACOUSTIC',
-  vocal_delivery: 'SPOKEN', tempo_bpm: 142,
-};
+// One audio-analysis row (the new analysis; the song page reads the latest OK row).
+async function addAudio(songId, fields = {}, { model = 'zzzanl-audio', status = 'OK', analyzedAt = '2026-11-01 10:00:00' } = {}) {
+  const f = {
+    musical_mood: ['DARK_OMINOUS'], sonic_intensity: 'HEAVY_INTENSE', production_texture: null,
+    vocal_style: [], rhythmic_feel: null, instrumentation: [], audio_samples: [], dynamic_arc: null,
+    sonic_summary: 'A heavy track.', tempo_bpm: 142, ...fields,
+  };
+  await pool.query(
+    `INSERT INTO song_audio_analysis
+       (song_id, model_used, audio_status, analyzed_at, musical_mood, sonic_intensity, production_texture,
+        vocal_style, rhythmic_feel, instrumentation, audio_samples, dynamic_arc, sonic_summary, tempo_bpm)
+     VALUES ($1,$2,$3,$4,$5::text[],$6,$7,$8::text[],$9,$10::text[],$11::text[],$12,$13,$14)`,
+    [songId, model, status, analyzedAt, f.musical_mood, f.sonic_intensity, f.production_texture,
+     f.vocal_style, f.rhythmic_feel, f.instrumentation, f.audio_samples, f.dynamic_arc, f.sonic_summary, f.tempo_bpm]);
+}
 
 test('getSongAnalysis returns the full coding with display labels', async () => {
   const id = await mkCodedSong();
@@ -408,48 +410,51 @@ test('getSongAnalysis exposes component and dimension descriptions for tooltips'
   assert.ok(a.dimension_descriptions.moral_frames.length > 20);
 });
 
-test('getSongAnalysis returns the six acoustic cells, tempo formatted as BPM', async () => {
-  const id = await mkSong('ZZZANL Acoustic');
-  await addAnalysis(id, ACOUSTIC);
+test('getSongAnalysis carries the audio block and no longer an acoustic array', async () => {
+  const id = await mkCodedSong();
+  await addAudio(id);
   const a = await analysis.getSongAnalysis(pool, id);
-  assert.deepEqual(a.acoustic.map(x => x.label),
-    ['Energy', 'Mood', 'Rhythm', 'Instruments', 'Vocals', 'Tempo']);
-  const byLabel = Object.fromEntries(a.acoustic.map(x => [x.label, x.value]));
-  assert.equal(byLabel['Energy'], 'Explosive');
-  assert.equal(byLabel['Vocals'], 'Spoken Word');
-  assert.equal(byLabel['Tempo'], '142 BPM');
-  const energy = a.acoustic.find(x => x.label === 'Energy');
-  assert.ok(energy.definition.startsWith('Sonic Energy & Intensity — '),
-    'the component name leads the tooltip so it stays out of the cell');
-  assert.ok(energy.definition.length > 'Sonic Energy & Intensity — '.length,
-    'the code definition follows it');
+  assert.ok(a.audio, 'the audio block is attached');
+  assert.equal(a.audio.summary, 'A heavy track.');
+  assert.equal(a.audio.tempo_bpm, 142);
+  assert.ok(!('acoustic' in a), 'the retired acoustic cells are gone');
+  assert.equal(a.themes[0].code, 'slaughter', 'lyric fields are unaffected');
 });
 
-test('an acoustic-only pass still yields an analysis (no lyric coding needed)', async () => {
-  const id = await mkSong('ZZZANL AcousticOnly');
-  await addAnalysis(id, { sonic_energy: 'SUBDUED' });
+test('a song with only an OK audio row still yields an analysis: audio set, lyric arrays empty, not null', async () => {
+  const id = await mkSong('ZZZANL AudioOnly');
+  await addAudio(id);
   const a = await analysis.getSongAnalysis(pool, id);
-  assert.ok(a, 'sound data alone counts as content');
-  assert.equal(a.acoustic.length, 1, 'null acoustic columns are skipped');
-  assert.equal(a.acoustic[0].value, 'Subdued');
+  assert.ok(a, 'audio alone counts as content');
+  assert.ok(a.audio);
   assert.deepEqual(a.attributes, []);
   assert.deepEqual(a.themes, []);
+  assert.deepEqual(a.emotions, []);
 });
 
-test('acoustic display is ungated: an off-codebook value title-cases instead of vanishing', async () => {
-  const id = await mkSong('ZZZANL AcousticUnknown');
-  await addAnalysis(id, { sonic_energy: 'BRAND_NEW_CODE' });
+test('a song with neither lyric analysis nor a usable audio row is null', async () => {
+  const none = await mkSong('ZZZANL NeitherAnalysis');
+  assert.equal(await analysis.getSongAnalysis(pool, none), null);
+  // an audio row that is not OK is not content either
+  const failed = await mkSong('ZZZANL AudioUnavailable');
+  await addAudio(failed, {}, { status: 'UNAVAILABLE' });
+  assert.equal(await analysis.getSongAnalysis(pool, failed), null);
+});
+
+test('getSongAnalysis keeps the audio block when the lyric analysis is hidden as junk-derived', async () => {
+  const id = await mkSong('ZZZANL JunkLyricsAudioStays');
+  await addAnalysis(id, CODED);
+  await addAudio(id);
+  await pool.query(`INSERT INTO song_lyrics (song_id, lyrics, junk_kind) VALUES ($1, 'junk', 'error')
+                    ON CONFLICT (song_id) DO UPDATE SET junk_kind = 'error'`, [id]);
   const a = await analysis.getSongAnalysis(pool, id);
-  assert.equal(a.acoustic.length, 1);
-  assert.equal(a.acoustic[0].value, 'Brand New Code');
-  // No code definition exists for an unknown code, so the tooltip falls back to the
-  // component's own description rather than showing "Name — " with nothing after it.
-  assert.equal(a.acoustic[0].definition, componentDescription('sonic_energy'),
-    'falls back to the component\'s own description, not a dangling "Name — " prefix');
-  assert.ok(a.acoustic[0].definition.length > 20, 'component description stands alone');
+  assert.ok(a && a.audio, 'the audio analysis does not depend on the lyrics');
+  assert.deepEqual(a.themes, [], 'the junk-derived lyric analysis stays hidden');
 });
 
 after(async () => {
+  await pool.query(`DELETE FROM song_lyrics WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
+  await pool.query(`DELETE FROM song_audio_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM song_lyric_analysis WHERE song_id IN (SELECT id FROM songs WHERE title LIKE 'ZZZANL%')`);
   await pool.query(`DELETE FROM songs WHERE title LIKE 'ZZZANL%'`);
   await pool.end();
