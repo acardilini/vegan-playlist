@@ -5,6 +5,7 @@
 const taxonomy = require('../data/taxonomy.json');
 const codebook = require('./metadataCodebook');
 const acoustic = require('./acousticCodebook');
+const { unpackConstraint, countByCode } = require('./facetSql');
 
 // The site shows each song's latest analysis pass (see LATEST_ANALYSIS below).
 
@@ -192,18 +193,6 @@ const DIM_DESCRIPTIONS = Object.fromEntries(
   })
 );
 
-// Unpack a per-component constraint {joinSql, where, params} into ready-to-splice SQL
-// fragments. A missing/null constraint degrades to no extra join, where or params — shared
-// by facetTree (one constraint per call) and scalarFacets/acousticFacets (one per component).
-function unpackConstraint(cn) {
-  cn = cn || {};
-  return {
-    joinSql: cn.joinSql || '',
-    whereSql: (cn.where && cn.where.length) ? ' AND ' + cn.where.join(' AND ') : '',
-    params: cn.params || [],
-  };
-}
-
 // Parameter base: constraint.where/params must be built with startIndex: 1 — this function no
 // longer prepends a model param.
 async function facetTree(db, constraint = null) {
@@ -252,16 +241,6 @@ async function facetTree(db, constraint = null) {
     out[pub] = { label: h.label, description: h.description || '', count: dimSongs.size, sub_dimensions: subDimensions };
   }
   return out;
-}
-
-// Count distinct live songs per code. `inner` is a SELECT yielding (song_id, code) rows;
-// each caller owns its own inner query because the scalar tier must unnest an array column
-// while the acoustic tier reads a plain one. Shared by scalarFacets and acousticFacets.
-async function countByCode(db, inner, params) {
-  const rows = (await db.query(
-    `SELECT code, COUNT(DISTINCT song_id)::int AS count FROM (${inner}) t
-     WHERE code IS NOT NULL GROUP BY code`, params)).rows;
-  return new Map(rows.map(r => [r.code, r.count]));
 }
 
 // Per-component option counts for the sidebar. `constraints` is keyed by component:
