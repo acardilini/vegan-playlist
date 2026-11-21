@@ -1873,15 +1873,25 @@ router.post('/curation/inbox/:id/dismiss', async (req, res) => {
 
 router.get('/curation/queue', async (req, res) => {
   try {
-    const { queue, q, limit, offset } = req.query;
+    const { queue, q, limit, offset, pair } = req.query;
     const out = await curation.listCurationQueue(pool, {
       queue, q: q || '', limit: limit ? parseInt(limit) : null, offset: offset ? parseInt(offset) : 0,
+      pair: pair || null,
     });
     res.json(out);
   } catch (e) {
     if (e.code === 'BAD_QUEUE') return res.status(400).json({ error: 'Unknown queue' });
     console.error('curation queue error:', e);
     res.status(500).json({ error: 'Failed to list queue', details: e.message });
+  }
+});
+
+router.get('/curation/genre-conflict-pairs', async (req, res) => {
+  try {
+    res.json({ pairs: await curation.genreConflictPairs(pool) });
+  } catch (e) {
+    console.error('genre conflict pairs error:', e);
+    res.status(500).json({ error: 'Failed to load genre conflicts', details: e.message });
   }
 });
 
@@ -2027,6 +2037,7 @@ router.put('/workbench/:id/lyrics',     panelSave(curation.saveLyrics));
 router.put('/workbench/:id/highlights', panelSave(curation.saveHighlights));
 router.put('/workbench/:id/links',      panelSave(curation.saveLinks));
 router.put('/workbench/:id/album',      panelSave(curation.saveAlbum));
+router.put('/workbench/:id/genre-choice', panelSave(curation.chooseGenre));
 router.put('/workbench/:id/cover',      panelSave(curation.setCover));
 router.put('/workbench/:id/no-video',   panelSave(curation.setNoVideo));
 

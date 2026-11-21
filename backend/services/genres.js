@@ -2,7 +2,18 @@
 // else its primary artist's first Spotify genre — computed at query time, never stored.
 // Both /filter-options (counts) and /search (filtering) use the same expression so a
 // genre's count always equals what clicking it returns.
-const { getParentGenre } = require('../utils/genreMapping');
+const { getParentGenre, GENRE_HIERARCHY } = require('../utils/genreMapping');
+
+// getParentGenre as SQL, for queue predicates that must compare parents inside a query. Generated from the
+// one shared hierarchy (a parent maps to itself, each subgenre to its parent, anything else 'other'), so it
+// cannot drift from getParentGenre. The VALUES list is static data from our own JSON, not user input.
+const sqlLit = (s) => `'${String(s).replace(/'/g, "''")}'`;
+const PARENT_VALUES_SQL = Object.entries(GENRE_HIERARCHY)
+  .flatMap(([parent, subs]) => [[parent, parent], ...subs.map((s) => [s, parent])])
+  .map(([g, p]) => `(${sqlLit(g)}, ${sqlLit(p)})`).join(', ');
+function parentSql(expr) {
+  return `COALESCE((SELECT m.pg_parent FROM (VALUES ${PARENT_VALUES_SQL}) AS m(pg_genre, pg_parent) WHERE m.pg_genre = LOWER(TRIM(${expr})) LIMIT 1), 'other')`;
+}
 
 // Primary artist's first genre for a song aliased `s`, exposed as efg.g.
 // "Primary" = the linked artist with the lowest song_artists.id that has genres.
@@ -99,6 +110,6 @@ function lengthFilterClause(lengths) {
 }
 
 module.exports = {
-  EFFECTIVE_GENRE_JOIN, EFFECTIVE_GENRE_EXPR, EFFECTIVE_GENRE_SUBQUERY,
+  EFFECTIVE_GENRE_JOIN, EFFECTIVE_GENRE_EXPR, EFFECTIVE_GENRE_SUBQUERY, parentSql,
   buildGenreTree, artistParentCounts, genresForParents, genreFilterClause, LENGTH_BUCKETS, lengthFilterClause,
 };

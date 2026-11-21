@@ -8,6 +8,7 @@ const ORIGIN_LABELS = { spotify: 'From Spotify', submission: 'From submit form',
 const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
   'needs-album': 'Needs album', 'needs-released': 'Needs released', 'needs-language': 'Needs language', 'needs-genre': 'Needs genre', 'genre-from-artist': 'Genre from artist',
+  'genre-from-audio': 'Genre from audio', 'genre-conflicts': 'Genre conflicts',
   'needs-video': 'Needs video', 'no-video': 'No video available', 'junk-lyrics': 'Junk lyrics', 'to-transcribe': 'To transcribe', 'lyrics-on-hold': 'Lyrics on hold',
   'remind-later': 'Remind me later', 'to-finalise': 'To finalise',
   'live': 'Live', 'all': 'All songs', 'featured': 'Featured',
@@ -33,19 +34,32 @@ function SongQueueList({ queue, refreshKey }) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [pair, setPair] = useState('');     // genre-conflicts only: 'existingParent>audioParent', '' = all
+  const [pairs, setPairs] = useState([]);
 
   // Reset paging/search whenever the queue changes.
-  useEffect(() => { setPage(0); setSearch(''); }, [queue]);
+  useEffect(() => { setPage(0); setSearch(''); setPair(''); }, [queue]);
+
+  // The genre-conflicts queue is mostly neighbouring genres (hardcore vs metal...); a pair filter lets the
+  // curator take one kind of disagreement at a time. Counts reload with the list so they track decisions.
+  useEffect(() => {
+    if (queue !== 'genre-conflicts') { setPairs([]); return; }
+    adminFetch('/api/admin/curation/genre-conflict-pairs')
+      .then(r => (r.ok ? r.json() : { pairs: [] }))
+      .then(d => setPairs(d.pairs || []))
+      .catch(() => setPairs([]));
+  }, [queue, refreshKey]);
 
   const load = useCallback(() => {
     setLoading(true);
     const qs = new URLSearchParams({ queue, q: search, limit: String(PAGE_SIZE), offset: String(page * PAGE_SIZE) });
+    if (queue === 'genre-conflicts' && pair) qs.set('pair', pair);
     adminFetch(`/api/admin/curation/queue?${qs.toString()}`)
       .then(r => r.ok ? r.json() : { rows: [] })
       .then(d => setRows(d.rows || []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  }, [queue, search, page]);
+  }, [queue, search, page, pair]);
 
   const unfeature = useCallback(async (id) => {
     try {
@@ -69,6 +83,15 @@ function SongQueueList({ queue, refreshKey }) {
         <input className="input input-pill" placeholder={queue === 'all' ? 'Search all songs…' : 'Search this queue…'}
           value={search} onChange={(e) => { setPage(0); setSearch(e.target.value); }}
           style={{ width: 220 }} />
+        {queue === 'genre-conflicts' && pairs.length > 0 && (
+          <select className="input" aria-label="Kind of disagreement" value={pair}
+            onChange={(e) => { setPage(0); setPair(e.target.value); }}>
+            <option value="">All disagreements ({pairs.reduce((n, p) => n + p.count, 0)})</option>
+            {pairs.map((p) => (
+              <option key={`${p.from}>${p.to}`} value={`${p.from}>${p.to}`}>{p.from} → {p.to} ({p.count})</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {loading && rows.length === 0 ? (
@@ -90,6 +113,12 @@ function SongQueueList({ queue, refreshKey }) {
               {row.featured && <span className="featured-badge">Featured</span>}
               {ORIGIN_LABELS[row.origin] && <span className="origin-tag">{ORIGIN_LABELS[row.origin]}</span>}
               {row.genre && queue === 'genre-from-artist' && <span className="origin-tag" title={row.genre_source === 'artist' ? 'Genre comes from the artist' : 'Genre set on the song'}>{row.genre}{row.genre_source === 'artist' ? ' (artist)' : ''}</span>}
+              {row.audio_subgenre && queue === 'genre-from-audio' && (
+                <span className="origin-tag" title="Genre inferred from the audio">{row.audio_subgenre}{row.audio_confidence ? ` (${row.audio_confidence.toLowerCase()})` : ''}</span>
+              )}
+              {row.audio_subgenre && queue === 'genre-conflicts' && (
+                <span className="origin-tag" title="Genre the site shows now → genre inferred from the audio">{row.genre} → {row.audio_subgenre}</span>
+              )}
               <span className="miss-chips">
                 {(row.missing || []).map(m => (
                   <span key={m} className="miss-chip warn">no {m}</span>
