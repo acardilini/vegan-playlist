@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import InfoTip from './InfoTip';
+import TheSound from './TheSound';
 
 // Right-hand "What it's about" dimensions: [data key, display heading].
 const DIMENSIONS = [
@@ -40,16 +41,14 @@ function LyricalAnalysis({ analysis }) {
   const animalFocus = getAnimalFocusLevel(analysis.focus_amount, analysis.clarity);
   const emotions = analysis.emotions || [];
   const summary = (analysis.summary || '').trim();
-  const acoustic = analysis.acoustic || [];
   const dims = DIMENSIONS
     .map(([key, heading]) => [key, heading, analysis[key] || []])
     .filter(([, , codes]) => codes.length > 0);
 
   const hasLyricStyle = attributes.length > 0 || emotions.length > 0;
-  const hasSound = acoustic.length > 0;
-  const hasStyle = hasLyricStyle || hasSound;
+  const hasStyle = hasLyricStyle;
   const hasThemes = dims.length > 0 || !!animalFocus;
-  if (!hasStyle && !hasThemes && !summary) return null;
+  if (!hasStyle && !hasThemes && !summary && !analysis.audio) return null;
 
   const hasQuotes = dims.some(([, , codes]) => codes.some(c => c.evidence));
 
@@ -147,24 +146,10 @@ function LyricalAnalysis({ analysis }) {
                 </div>
               </div>
             )}
-
-            {hasSound && (
-              <div className="la-group">
-                <h4 className="la-group-title">In the sound</h4>
-                <div className="la-attributes">
-                  {acoustic.map(a => (
-                    <div key={a.label} className="la-attr">
-                      <span className="la-attr-label">{a.label}</span>
-                      <InfoTip text={a.definition}>
-                        <span className="la-attr-value">{a.value}</span>
-                      </InfoTip>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </section>
         )}
+
+        <TheSound audio={analysis.audio} />
       </div>
     </div>
   );
