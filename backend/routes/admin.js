@@ -139,27 +139,13 @@ router.post('/manual-songs', async (req, res) => {
       explicit,
       track_number,
       disc_number,
-      custom_mood,
       // Genre
       genre,
       parent_genre,
       your_review,
       audio_review_url,
       inclusion_notes,
-      rating,
-      // Audio features
-      energy,
-      danceability,
-      valence,
-      acousticness,
-      instrumentalness,
-      liveness,
-      speechiness,
-      tempo,
-      loudness,
-      key,
-      mode,
-      time_signature
+      rating
     } = req.body;
 
     const client = await pool.connect();
@@ -228,18 +214,14 @@ router.post('/manual-songs', async (req, res) => {
       const songResult = await client.query(`
         INSERT INTO songs (
           title, album_id, duration_ms, popularity, explicit, track_number, disc_number,
-          custom_mood, genre, parent_genre, data_source, manual_song_id, your_review,
-          audio_review_url, inclusion_notes, rating, energy, danceability, valence,
-          acousticness, instrumentalness, liveness, speechiness, tempo, loudness,
-          key, mode, time_signature, genre_source, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, CURRENT_TIMESTAMP)
+          genre, parent_genre, data_source, manual_song_id, your_review,
+          audio_review_url, inclusion_notes, rating, genre_source, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP)
         RETURNING id
       `, [
         title, albumId, duration_ms, popularity, explicit, track_number, disc_number,
-        custom_mood, genre, finalParentGenre, 'manual', manualSongId, your_review,
-        audio_review_url, inclusion_notes, rating, energy, danceability, valence,
-        acousticness, instrumentalness, liveness, speechiness, tempo, loudness,
-        key, mode, time_signature, genre && String(genre).trim() ? 'manual' : null
+        genre, finalParentGenre, 'manual', manualSongId, your_review,
+        audio_review_url, inclusion_notes, rating, genre && String(genre).trim() ? 'manual' : null
       ]);
 
       const songId = songResult.rows[0].id;
@@ -327,11 +309,9 @@ router.put('/manual-songs/:id', async (req, res) => {
         
         // Update all song fields
         const categoryFields = [
-          'popularity', 'explicit', 'track_number', 'disc_number', 'custom_mood',
+          'popularity', 'explicit', 'track_number', 'disc_number',
           'genre', 'parent_genre', 'your_review', 'audio_review_url', 'inclusion_notes',
-          'rating', 'energy', 'danceability', 'valence', 'acousticness', 
-          'instrumentalness', 'liveness', 'speechiness', 'tempo', 'loudness', 
-          'key', 'mode', 'time_signature'
+          'rating'
         ];
         
         const categoryUpdates = [];
@@ -455,7 +435,6 @@ router.put('/songs/:id/categorize', async (req, res) => {
       explicit,
       track_number,
       disc_number,
-      custom_mood,
       external_url,
       audio_file_path,
       lyrics,
@@ -466,20 +445,7 @@ router.put('/songs/:id/categorize', async (req, res) => {
       your_review,
       audio_review_url,
       inclusion_notes,
-      rating,
-      // Audio features
-      energy,
-      danceability,
-      valence,
-      acousticness,
-      instrumentalness,
-      liveness,
-      speechiness,
-      tempo,
-      loudness,
-      key,
-      mode,
-      time_signature
+      rating
     } = req.body;
 
     const client = await pool.connect();
@@ -517,10 +483,6 @@ router.put('/songs/:id/categorize', async (req, res) => {
         updateFields.push(`disc_number = $${paramIndex++}`);
         values.push(disc_number);
       }
-      if (custom_mood !== undefined) {
-        updateFields.push(`custom_mood = $${paramIndex++}`);
-        values.push(custom_mood);
-      }
       if (audio_review_url !== undefined) {
         updateFields.push(`audio_review_url = $${paramIndex++}`);
         values.push(audio_review_url);
@@ -555,56 +517,6 @@ router.put('/songs/:id/categorize', async (req, res) => {
       if (rating !== undefined) {
         updateFields.push(`rating = $${paramIndex++}`);
         values.push(rating ? parseInt(rating) : null);
-      }
-      
-      // Audio features
-      if (energy !== undefined) {
-        updateFields.push(`energy = $${paramIndex++}`);
-        values.push(energy);
-      }
-      if (danceability !== undefined) {
-        updateFields.push(`danceability = $${paramIndex++}`);
-        values.push(danceability);
-      }
-      if (valence !== undefined) {
-        updateFields.push(`valence = $${paramIndex++}`);
-        values.push(valence);
-      }
-      if (acousticness !== undefined) {
-        updateFields.push(`acousticness = $${paramIndex++}`);
-        values.push(acousticness);
-      }
-      if (instrumentalness !== undefined) {
-        updateFields.push(`instrumentalness = $${paramIndex++}`);
-        values.push(instrumentalness);
-      }
-      if (liveness !== undefined) {
-        updateFields.push(`liveness = $${paramIndex++}`);
-        values.push(liveness);
-      }
-      if (speechiness !== undefined) {
-        updateFields.push(`speechiness = $${paramIndex++}`);
-        values.push(speechiness);
-      }
-      if (tempo !== undefined) {
-        updateFields.push(`tempo = $${paramIndex++}`);
-        values.push(tempo);
-      }
-      if (loudness !== undefined) {
-        updateFields.push(`loudness = $${paramIndex++}`);
-        values.push(loudness);
-      }
-      if (key !== undefined) {
-        updateFields.push(`key = $${paramIndex++}`);
-        values.push(key);
-      }
-      if (mode !== undefined) {
-        updateFields.push(`mode = $${paramIndex++}`);
-        values.push(mode);
-      }
-      if (time_signature !== undefined) {
-        updateFields.push(`time_signature = $${paramIndex++}`);
-        values.push(time_signature);
       }
       
       if (updateFields.length > 0) {
@@ -2040,6 +1952,7 @@ router.put('/workbench/:id/album',      panelSave(curation.saveAlbum));
 router.put('/workbench/:id/genre-choice', panelSave(curation.chooseGenre));
 router.put('/workbench/:id/cover',      panelSave(curation.setCover));
 router.put('/workbench/:id/no-video',   panelSave(curation.setNoVideo));
+router.put('/workbench/:id/audio-samples', panelSave(curation.setAudioSamples));
 
 router.post('/workbench/:id/videos', async (req, res) => {
   try {

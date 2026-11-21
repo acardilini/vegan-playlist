@@ -543,8 +543,8 @@ async function similarByEmbedding(db, songId, entry, limit = 6) {
 }
 
 // The honest fallback for the 692 of 1,333 live songs (52%) with no embeddings. This is the
-// old /songs/:id/similar query with its dead audio-feature clause removed (songs.energy is
-// NULL catalogue-wide, so that half never matched) and its RANDOM() removed. It uses the
+// old /songs/:id/similar query with its dead Spotify-audio-feature clause removed (that
+// half never matched) and its RANDOM() removed. It uses the
 // EFFECTIVE genre — the artist's genre when the song has none — the same expression browse
 // uses, which is why its coverage is ~1,003 songs rather than 492.
 async function genreFallback(db, songId, limit = 6) {
