@@ -148,17 +148,26 @@ Run before ending every working session:
   `hasCodesExists` are the shared has-analysis/has-codes EXISTS helpers. `metadataCodebook.js` is pure (no
   DB) and owns `data/master_metadata_codebook.json` — labels, definitions, the hidden absence codes, and
   the scalar filter clauses (the `target_audience` heading is **"Speaking to"**)
-- **services/acousticCodebook.js**: the sibling codebook service for the **six acoustic dimensions**
-  (`sonic_energy`, `emotional_mood`, `rhythmic_style`, `acoustic_type`, `vocal_delivery`, `tempo_bpm`) —
-  audio-derived, stored on the same `song_lyric_analysis` row. Pure (no DB); owns
-  `data/acoustic_codebook.json`. Headings are Energy · Mood · Rhythm · Instruments · Vocals · Tempo
-  (`tempo_bpm` is an integer, so it lives in `TEMPO` **outside** `COMPONENTS` and filters as a range).
-  **Its gating rule is the reverse of the lyrical one, deliberately:** display is *ungated* — `codeLabel`
-  title-cases an off-codebook value instead of dropping it, so the page shows what the pipeline emitted —
-  while filter selections *are* gated through `cleanSelection`. `analysis.js` adds `acousticFacets`
-  (exclude-self sidebar counts) and `tempoRange`; `getSongAnalysis` returns an `acoustic` array in the
-  **same cell shape as `attributes`**, which is what lets the song page render both with one loop.
-  Acoustic filters reuse the existing `sca` latest-analysis join — **they add no new SQL join**
+- **services/acousticCodebook.js + services/audioAnalysis.js** (Step B, 2026-11-22 — the site reads the analysis project's
+  **`song_audio_analysis`** table; the Spotify-era audio features and the first six-dimension acoustic analysis are gone, and
+  `backend/test/legacyAudio.test.js` fails if a retired name creeps back into routes/services/utils/frontend source).
+  `acousticCodebook` is pure over `data/acoustic_codebook.json` (**the analysis project's file, mirrored by its export; never
+  hand-edit**): eight dimensions — `musical_mood`, `vocal_style`, `instrumentation`, `audio_samples` are multi-value (TEXT[]),
+  `sonic_intensity`, `production_texture`, `rhythmic_feel`, `dynamic_arc` single — plus objective metrics (tempo, key, loudness).
+  Exports `DIMENSIONS` (page order; `production_texture` is headed **Production** on the site via one `HEADINGS` constant, the
+  codebook calls it "Sound"), `SAMPLES`, `FILTER_KEYS`, `SINGLE_KEYS`, `COLOUR_KEYS` (single AND <= 7 codes: the palette limit),
+  `selectionClauses` (multi `&&`, single `= ANY`; OR within a dimension, AND across), `cleanSelection` (hidden codes such as
+  `NONE` and invented codes are dropped), `objectiveMetrics`. `audioAnalysis` owns every read: **a song's audio is its OK row
+  with the latest `analyzed_at`** (`LATEST_AUDIO`, alias `sau`; a newer non-OK row never hides an older OK one), `getSongAudio`
+  (public block on `GET /api/analysis/song/:id` as `audio`), `getAdminAudio` (the curator's view), `audioFacets` (exclude-self
+  sidebar counts, group `audio:<key>`), `tempoRange` (UNMETERED tempo is hidden; key is an *estimate*), `coverage`,
+  `MOOD_SUBQUERY` / `attachMood` (cards carry `mood` = the first-listed `musical_mood` label), `SAMPLES_PENDING_SQL`.
+  **The samples gate:** `songs.show_audio_samples` (migration 021; NULL unreviewed = hidden, TRUE show, FALSE reviewed-hidden).
+  **The server withholds** sample details, types, the `audio_samples` filter membership and reference counts unless TRUE —
+  never trust the page to hide them. The curator decides in the workbench **Audio** panel (`PUT /api/admin/workbench/:id/audio-samples`,
+  `curation.setAudioSamples`, returns the reassembled workbench) and the **Needs sample approval** rail lists included songs with
+  real samples and no decision. The song page's **The Sound** section (`TheSound.jsx`, pure layout in `utils/soundLayout.js`)
+  replaced "In the sound". `facetSql.js` holds the shared constraint/count helpers (`unpackConstraint`, `countByCode`)
 - **services/explore.js**: the read-only consumer of `song_coordinates` + `song_embeddings` behind the
   Explore map and the song page's "You might also like". Two halves. **The map:** space discovery is
   *data-driven* — it reads whichever `*_2d` columns the catalogue holds, so a space the pipeline adds
@@ -176,17 +185,16 @@ Run before ending every working session:
   was designed when **four simultaneous categorical colours was the measured ceiling** (the `dataviz` skill's
   documented 8 hues score 9.8 for 5 colours on the all-pairs normal-vision gate against a floor of 15). On
   2026-10-01 the palette was replaced by a **searched 7-colour set that passes every gate in both modes** (worst
-  CVD 9.5, normal 18.3; `components.css` holds the values and validator command) so the Vocals dimension (5 live
-  codes, 7 in the codebook) keeps all its codes; genre keeps the top-3 + Other split, now a choice and not a
+  CVD 9.5, normal 18.3; `components.css` holds the values and validator command) so every colour-by legend keeps all its codes (the audio colour-by menu is `acoustic.COLOUR_KEYS`: Intensity, Production,
+  Dynamics; the default is Intensity; Not coded is neutral grey and takes no palette slot); genre keeps the top-3 + Other split, now a choice and not a
   limit. The top-N set
   is computed **once** and shared by the legend builder and the colour assignment, so a point can never carry
   a bucket its own legend doesn't explain. Spotlight state holds raw codes, and a group toggle is tri-state
   (`aria-pressed="mixed"` when only some members are lit). **Similarity is a REGISTRY, not discovery** (`SIMILARITY`) — coordinates are
   interchangeable, but each embedding needs a metric and a normalisation judgement code must not guess:
-  `message` is cosine over the full 768-dim `lyric_embedding`, `sound` is Euclidean **after per-dimension
-  z-scoring** (without it the tab is a danceability ranking in disguise — sd 0.66 vs acousticness' 0.023).
-  **Every query touching `audio_embedding` MUST carry `array_length(audio_embedding,1)=6`** — the column
-  still holds 1,041 old 1024-dim rows. A tab is omitted when its embedding is missing; only when no tab
+  `message` is cosine over the full 768-dim `lyric_embedding`, `sound` is cosine over the 574-dim
+  **`audio_hybrid_embedding`** (Step B replaced the z-scored 6-dim `audio_embedding`, which is ignored now; `dims: 574` is enforced
+  on the target AND every candidate in `cosineSql`, so a vector of any other length never enters a comparison). A tab is omitted when its embedding is missing; only when no tab
   has anything does the honest **"More in this genre"** fallback fire (692 of 1,333 live songs, 52%, have
   no embeddings). Read-only — never writes to any analysis table. **3D (explorer round 1, 2026-11-06):**
   `discoverSpaces` also pairs each `*_2d` column with its `*_3d` sibling (`column3dFor`; `has3d` per space in the
@@ -205,12 +213,13 @@ Run before ending every working session:
   taxonomy rather than re-reading their JSON, so label rules and suppression stay owned in one place
   each. Deliberately a **different** shape from `analysis.facetTree`: the facet tree drops any code
   with a zero count and carries no definition (right for a filter sidebar), while the reference lists
-  **all 107 thematic terms including zero-count ones**, all 6 lyric-metadata components and all 6
-  acoustic dimensions — a term nobody's song currently carries is itself information on a glossary
-  page. Two small getters were added to `acousticCodebook.js` for this (`derivationSource(key)`,
-  `codeThreshold(key, code)`), following the existing `componentDescription`/`codeDefinition` shape.
-  Counts are **15 count queries** — one per family member (4 thematic dimensions + 6 metadata
-  components + 5 acoustic dimensions) — **plus 5 coverage queries**, all reusing the shared
+  **all 107 thematic terms including zero-count ones**, all 6 lyric-metadata components and the audio
+  dimensions (7 + the sample types, each code with its listener description and the AI definition, plus a "Measured by
+  software" `objective` list) — a term nobody's song currently carries is itself information on a glossary
+  page. **Audio counts come from `audioAnalysis.audioFacets`**, the same function as the browse sidebar, so they agree by
+  construction and the sample counts honour the approval gate; `coverage.audio` carries the sound analysis' own coverage
+  (explainer tokens `audioAnalysed`, `audioAnalysedPct`, `audioModels`, `audioDate`).
+  Thematic and metadata counts are **10 count queries**, **plus 5 coverage queries**, all reusing the shared
   `LATEST_ANALYSIS` fragment and the `status='included' AND published=true` gate, exactly like every
   other public read — this is
   the one invariant a future change here must not drift from, or the reference page will disagree
@@ -290,9 +299,9 @@ Run before ending every working session:
   card; queue rows carry an `origin` tag ("From Spotify" / "From submit form"); Duplicate Manager is
   data-quality only. **Two shared presentation primitives:** `FilterSection` — every
   browse-sidebar group is one, so they all collapse identically; it nests, which is how the
-  five theme dimensions, six metadata components and five acoustic dimensions read as the
+  five theme dimensions, six metadata components and eight audio dimensions read as the
   same unit. `ScalarFacetGroups` is generic over `{key: {heading, options}}` and renders both
-  the "Lyric metadata" and the "Sound" families — don't fork it for a third. Its `note` is
+  the "Lyric metadata" and the "Sound" (`audio_facets`) families — don't fork it for a third. Its `note` is
   **usage help only** (caveats, what the options mean): the curator twice rejected
   definitional copy in the sidebar, so "what this filter is" text belongs on the About
   pages, not here — the API serves it (`scalarFacets`/`facetTree` `description`) but the
@@ -340,9 +349,10 @@ Run before ending every working session:
   it from production dumps (`pg_dump --exclude-table-data=song_lyrics`)
 - **Analysis-service tables** (written by the curator's separate analysis project; the web app is a
   **read-only** consumer): `song_lyric_analysis` (see `services/analysis.js`), `song_embeddings`
-  (`lyric_embedding` 768-dim `float8[]`; `audio_embedding` — **careful: 6-dim
-  `[energy, valence, danceability, acousticness, speechiness, normalized_bpm]` on newer rows but still
-  1024-dim on ~1,041 older ones, so any distance query must constrain `array_length(...)=6`**), and
+  (`lyric_embedding` 768-dim `float8[]`; `audio_hybrid_embedding` — **574-dim, the only audio vector the site reads; the legacy
+  `audio_embedding` column (6-dim on some rows, 1024-dim on others) is ignored, and any distance query must constrain
+  `array_length(audio_hybrid_embedding,1)=574`**), `song_audio_analysis` (the audio analysis, PK `song_id, model_used`,
+  `audio_status` OK / UNAVAILABLE / TOO_LONG / ERROR / PENDING; see `services/audioAnalysis.js`), and
   `song_coordinates` (one row per song; eight `float8[]` UMAP projections —
   `{semantic,thematic,audio,holistic}_{2d,3d}`). Only ~640 live songs have coordinates/embeddings, and
   some rows belong to unpublished songs, so **public reads must still filter

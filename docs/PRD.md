@@ -337,7 +337,7 @@ keep/rebuild/drop/defer decisions are recorded in
   the `yr`, `labels` and `lines` URL params.
 - **Explore map:** a hand-rolled **canvas scatter** (no charting dependency) over the **640 live songs the
   analysis has mapped**, in four projected spaces — Semantic · Thematic · Sound · Holistic — rescaled per
-  space. Colour-by is a curated low-cardinality menu (five acoustic dimensions, Focus, and parent genre
+  space. Colour-by is a curated low-cardinality menu (Intensity, Production, Dynamics, Focus, the four theme dimensions and parent genre
   **folded to top 3 + "Other genres"** against a 5-slot palette), with absence codes drawn as neutral grey
   "Not coded". Hover card follows the cursor; **clicking a point pins the song's card in the rail rather
   than navigating** (the card carries the link — navigating on click would destroy the exploration in
@@ -368,15 +368,20 @@ keep/rebuild/drop/defer decisions are recorded in
   **latest analysis pass** (`MAX(analyzed_at)`; the two-tier model constants retired). ✅ _(B2; two-tier
   read + Audience row, triage 1a, 2026-07-22; Option C + latest-pass + renames + `lyric_summary` summary,
   2026-07-25.)_ **Renamed 2026-07-26 to "Song analysis"** now that the page carries audio analysis too.
-- **Acoustic dimensions on the song page:** the "Style & tone" section splits into **"In the lyrics"**
-  (the metadata components) and **"In the sound"** — six audio-derived cells, **Energy · Mood · Rhythm ·
-  Instruments · Vocals · Tempo** (tempo as `N BPM`), each with a hover definition led by its full
-  component name. Read from the same latest analysis pass; **display is ungated** (an off-codebook value
-  title-cases rather than disappearing), unlike the lyrical half. ✅ _(2026-07-26.)_
-- **Acoustic browse filters:** a **"Sound"** sidebar group nesting the five categorical dimensions as
-  checkbox facets with exclude-self counts (OR within a component, AND across) plus a nested **"Tempo"**
-  From/To BPM range. Rides the same URL + sessionStorage browse state and chip row as every other filter.
-  ✅ _(2026-07-26.)_
+- **The Sound (song page):** a full-width **The Sound** section from the audio analysis (`song_audio_analysis`): a
+  sound summary, then two columns - **Mood · Intensity · Production · Dynamics** and **Vocals · Rhythm · Instruments ·
+  Tempo · Key** (tempo and key marked as software estimates) - with a hover definition on each value, and a fold for the
+  **sample moments** (speech clips, sound effects) that appears only once the curator has approved them for that song.
+  Replaced the old "In the sound" group. ✅ _(2026-11-22, Step B; supersedes the 2026-07-26 six-cell version.)_
+- **Sound browse filters:** a **"Sound"** sidebar group nesting eight dimensions (Mood, Intensity, Production, Dynamics,
+  Vocals, Rhythm, Instruments, Audio samples) as checkbox facets with exclude-self counts (OR within a dimension, AND
+  across; multi-value dimensions match any listed value) plus a nested **"Tempo"** From/To BPM range. The Audio samples
+  filter lists only songs the curator approved. Rides the same URL + sessionStorage browse state and chip row as every
+  other filter. ✅ _(2026-11-22, Step B.)_
+- **Card mood badge:** the first mood the AI hears in the recording (replaces the hand-entered `custom_mood`). ✅ _(2026-11-22.)_
+- **Audio samples approval (admin):** the workbench **Audio** panel shows the analysis and its sample moments and lets the
+  curator Show / Hide / leave unreviewed per song; **Needs sample approval** lists songs with samples and no decision.
+  ✅ _(2026-11-22.)_
 - **YouTube integration:** per-song video embeds with a primary-video concept. ✅
 - **Lyrics links:** lyrics lookup/links per song. ✅
 - **Artist pages:** stats, discography tracking, advocacy notes. ✅
