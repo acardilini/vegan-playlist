@@ -33,8 +33,8 @@ the old Sound code is broken on this branch (10 tests fail) until this work land
 
 ## Non-goals (not in this step)
 
-- The Explore map: wider point set (audio-only songs), region labels from audio, new colour dimensions
-  (Step C). In this step the map only loses its old colour options (see Explore below).
+- The Explore map: wider point set (audio-only songs), region labels from audio, and the multi-value colour
+  dimensions such as mood (Step C). This step only swaps the three single-value colour options (see Explore below).
 - The broken-YouTube-link queue and oEmbed checker (its own small step, Step D, built after this).
 - Per-sample (rather than per-song) visibility; editing or correcting AI codes from the admin.
 - Any write to `song_audio_analysis` or `song_embeddings` (the web app stays a read-only consumer).
@@ -100,9 +100,12 @@ tooltip says both are estimated by software. Tempo filters on the audio table's 
 to `audio_hybrid_embedding` (574-D, cosine, rows where `array_length(audio_hybrid_embedding,1)=574`); "More in this
 genre" fallback unchanged. (my call: moved into this step from Step C so no old audio connection survives)
 
-**Explore (this step only).** The five old Sound colour-by dimensions are removed from the menu and the default
-colour becomes `genre` (`DEFAULT_COLOUR` in `exploreUrlState.js`); stale `colour=` links already fall back to the
-default. The new colour dimensions come in Step C. (my call)
+**Explore (this step only).** The five old Sound colour-by dimensions are replaced by the three new single-value
+ones that fit the 7-colour palette (`sonic_intensity` 5 codes, `production_texture` 7, `dynamic_arc` 7), read from the
+song's audio row; the default colour becomes `sonic_intensity` (`DEFAULT_COLOUR` in `exploreUrlState.js`); stale
+`colour=` links already fall back to the default. Mood (9 codes, multi-value) and the other multi-value dimensions
+come in Step C with the wider point set. (my call; revised during planning from "remove now, add in Step C",
+because the existing colour code handles single-value columns and the swap avoids a gap)
 
 **Public API cleanup.** `energy`, `danceability`, `valence`, `acousticness`, `tempo`, `instrumentalness`,
 `liveness`, `speechiness`, `loudness`, `custom_mood` are removed from every public select
@@ -165,13 +168,20 @@ in the real component for a song with samples shown, hidden and absent audio. Th
 3. Tempo hidden when unmetered; key shown as an estimate.
 4. Card badge = first-listed mood.
 5. Similar sound switched to the hybrid embedding here (not Step C).
-6. Explore loses its old colour options now; new ones arrive in Step C.
+6. Explore swaps its old Sound colour options for intensity / sound / dynamics now; mood and the multi-value ones
+   arrive in Step C.
 7. Samples gate stored as one nullable column on `songs` (tri-state), not a new table.
 8. Legacy admin writers for the old fields are removed, not hidden.
 
-## Questions for the curator (answers change what gets built)
+## Curator answers (2026-11-22)
 
-See the end-of-design message; each has a recommended answer.
+1. Samples are hidden until the curator approves them per song; the queue is named **Needs sample approval**
+   (rail entry and Dashboard tile) and lives beside the Audio panel's control. (Replaces the working name
+   "Audio samples to review" above.)
+2. The Audio samples filter is built, gated by the same approval.
+3. The production row is labelled **Production** on the site (a one-constant override of the codebook name "Sound").
+4. The draft About copy in the appendix is approved (applied in the plan's copy task; the Holistic sentence is
+   adjusted to what the map actually does).
 
 ---
 
