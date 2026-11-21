@@ -4,6 +4,7 @@
 const analysis = require('./analysis');
 const genres = require('./genres');
 const acoustic = require('./acousticCodebook');
+const audioAnalysis = require('./audioAnalysis');
 const codebook = require('./metadataCodebook');
 const { getParentGenre } = require('../utils/genreMapping');
 const { buildTieredLabels } = require('./exploreRegions');
@@ -124,8 +125,8 @@ async function mapRows(db, spaces) {
                FROM song_artists sa JOIN artists a ON a.id = sa.artist_id
               WHERE sa.song_id = s.id) AS artists,
             ${genres.EFFECTIVE_GENRE_EXPR} AS genre,
-            sla.sonic_energy, sla.emotional_mood, sla.rhythmic_style,
-            sla.acoustic_type, sla.vocal_delivery, sla.focus_amount,
+            sau.sonic_intensity, sau.production_texture, sau.dynamic_arc,
+            sla.focus_amount,
             sla.themes, sla.topics, sla.advocacy, sla.moral_frames,
             ${coordCols}
        FROM songs s
@@ -133,6 +134,7 @@ async function mapRows(db, spaces) {
        LEFT JOIN albums al ON al.id = s.album_id
        ${genres.EFFECTIVE_GENRE_JOIN}
        LEFT JOIN ${analysis.LATEST_ANALYSIS} sla ON sla.song_id = s.id
+       LEFT JOIN ${audioAnalysis.LATEST_AUDIO} sau ON sau.song_id = s.id
       WHERE s.status = 'included' AND s.published = true
         AND ${ELIGIBLE('s')}
       ORDER BY s.id`);
@@ -153,8 +155,8 @@ const GENRE_TOP_N = 3;
 const OTHER_GENRES = 'OTHER_GENRES';
 const OTHER_GENRES_LABEL = 'Other genres';
 
-// The curated, low-cardinality colour-by menu: five acoustic dimensions (3–4 codes each),
-// one scalar component, and parent genre. Deliberately NOT all seven scalar components —
+// The curated, low-cardinality colour-by menu: the audio dimensions that pick ONE code per song
+// and fit the palette (`acoustic.COLOUR_KEYS`), one scalar component, and parent genre. Deliberately NOT all seven scalar components —
 // `lyrical_tone` has 16 codes and a legend that long stops being a key.
 // The four lyric-analysis dimensions, coloured by SUB-dimension (3-4 per dimension, so each legend
 // fits the palette). `key` is the public dimension name (also the taxonomy hierarchy key), `col`
@@ -168,7 +170,9 @@ const THEME_DIMENSIONS = [
 ];
 
 const COLOUR_DIMENSIONS = [
-  ...acoustic.COMPONENTS.map(c => ({ key: c.key, label: c.heading, source: 'acoustic' })),
+  ...acoustic.COLOUR_KEYS.map(key => ({
+    key, label: acoustic.DIMENSIONS.find(d => d.key === key).heading, source: 'acoustic',
+  })),
   { key: 'focus_amount', label: 'Focus', source: 'scalar' },
   { key: 'genre', label: 'Genre', source: 'genre' },
   ...THEME_DIMENSIONS.map(d => ({ ...d, source: 'theme' })),
@@ -473,8 +477,10 @@ async function mapPayload(db) {
 const SIMILARITY = [
   { key: 'message', label: 'Similar message', column: 'lyric_embedding',
     dims: null, metric: 'cosine', lyricDerived: true },
-  { key: 'sound', label: 'Similar sound', column: 'audio_embedding',
-    dims: 6, metric: 'zeuclidean' },
+  // The analysis project's hybrid audio vector (574 dims). `dims` is enforced on the target AND
+  // every candidate, so a row of any other length can never enter a comparison.
+  { key: 'sound', label: 'Similar sound', column: 'audio_hybrid_embedding',
+    dims: 574, metric: 'cosine' },
 ];
 
 // The card fields the song page already renders. LEFT JOIN albums: non-Spotify songs have
@@ -487,7 +493,8 @@ const SIMILAR_SELECT = `
     WHERE sa.song_id = s.id) AS artists`;
 
 // Cosine over the full embedding. Candidates are matched on the TARGET's dimensionality, so
-// a mixed-width column can never compare vectors of different lengths.
+// a mixed-width column can never compare vectors of different lengths; an entry with a fixed
+// `dims` additionally requires that length of the target itself.
 function cosineSql(entry) {
   return `
     WITH target AS (
@@ -495,6 +502,7 @@ function cosineSql(entry) {
     ),
     t AS (
       SELECT u.ord, u.val FROM target, unnest(target.v) WITH ORDINALITY AS u(val, ord)
+       ${entry.dims ? `WHERE array_length(target.v, 1) = ${entry.dims}` : ''}
     ),
     cand AS (
       SELECT se.song_id, u.ord, u.val
@@ -506,6 +514,7 @@ function cosineSql(entry) {
          AND ${entry.lyricDerived ? ELIGIBLE('s2') : 'TRUE'}
          AND array_length(se.${entry.column}, 1)
              = (SELECT array_length(v, 1) FROM target)
+         ${entry.dims ? `AND array_length(se.${entry.column}, 1) = ${entry.dims}` : ''}
     ),
     sim AS (
       SELECT c.song_id,
@@ -523,54 +532,12 @@ function cosineSql(entry) {
      LIMIT $2`;
 }
 
-// Euclidean distance AFTER per-dimension z-scoring over the live set. Without this the
-// result is a danceability ranking wearing a disguise: danceability's sd is 0.67 where
-// acousticness's is 0.02, a 30x spread (these are Librosa proxies, not Spotify's 0-1
-// features). The array_length constraint is not optional — the column still holds 1,041
-// rows of the old 1024-dim vectors.
-function zEuclideanSql(entry) {
-  return `
-    WITH live AS (
-      SELECT se.song_id, se.${entry.column} AS v
-        FROM song_embeddings se
-        JOIN songs s2 ON s2.id = se.song_id
-       WHERE s2.status = 'included' AND s2.published = true
-         AND array_length(se.${entry.column}, 1) = ${entry.dims}
-    ),
-    stats AS (
-      SELECT u.ord, avg(u.val) AS mu, stddev_pop(u.val) AS sd
-        FROM live, unnest(live.v) WITH ORDINALITY AS u(val, ord)
-       GROUP BY u.ord
-    ),
-    z AS (
-      SELECT l.song_id, u.ord,
-             (u.val - st.mu) / NULLIF(st.sd, 0) AS zv
-        FROM live l
-        CROSS JOIN LATERAL unnest(l.v) WITH ORDINALITY AS u(val, ord)
-        JOIN stats st ON st.ord = u.ord
-    ),
-    tgt AS (SELECT ord, zv FROM z WHERE song_id = $1),
-    d AS (
-      SELECT z.song_id,
-             sqrt(SUM(power(COALESCE(z.zv, 0) - COALESCE(tgt.zv, 0), 2))) AS dist
-        FROM z JOIN tgt ON tgt.ord = z.ord
-       WHERE z.song_id <> $1
-       GROUP BY z.song_id
-    )
-    SELECT ${SIMILAR_SELECT}
-      FROM d
-      JOIN songs s ON s.id = d.song_id
-      LEFT JOIN albums al ON al.id = s.album_id
-     ORDER BY d.dist ASC, s.id
-     LIMIT $2`;
-}
-
 async function similarByEmbedding(db, songId, entry, limit = 6) {
   if (!entry) return [];
   // A lyric-derived embedding of a song with junk / cleared / stale lyrics is itself junk: offer nothing for it.
   if (entry.lyricDerived && !(await db.query(
     `SELECT 1 FROM songs s WHERE s.id = $1 AND ${ELIGIBLE('s')}`, [songId])).rows.length) return [];
-  const sql = entry.metric === 'cosine' ? cosineSql(entry) : zEuclideanSql(entry);
+  const sql = cosineSql(entry);
   const r = await db.query(sql, [songId, limit]);
   return r.rows;
 }

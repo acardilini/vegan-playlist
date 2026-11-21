@@ -13,7 +13,7 @@ import {
   DEFAULT_CAMERA, MAX_PAN, MAX_ZOOM, MIN_ZOOM, PRESETS, activePreset, clampCamera,
 } from './camera3d.js';
 
-export const DEFAULT_COLOUR = 'sonic_energy';
+export const DEFAULT_COLOUR = 'sonic_intensity';
 
 export function deriveSpace(params, spaces = []) {
   const requested = params.get('space');
