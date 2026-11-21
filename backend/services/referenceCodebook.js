@@ -12,6 +12,7 @@
 const analysis = require('./analysis');
 const metadata = require('./metadataCodebook');
 const acoustic = require('./acousticCodebook');
+const audioAnalysis = require('./audioAnalysis');
 // Read directly for one field only: the codebook's long `component_name` ("Narrative
 // Perspective"), which is distinct from the short UI heading ("Perspective") and for which
 // metadataCodebook exposes no getter. Nothing else here reads a JSON file — everything else
@@ -76,21 +77,25 @@ function catalogue() {
       })),
     })),
 
-    acoustic: [...acoustic.COMPONENTS, acoustic.TEMPO].map(c => ({
+    // The audio analysis vocabulary: seven dimensions plus the sample types, each code with the codebook's AI
+    // definition (what the model is told) and the listener description (what it means to a reader). The hidden
+    // NONE code is dropped by optionsFor.
+    acoustic: [...acoustic.DIMENSIONS, acoustic.SAMPLES].map(c => ({
       key: c.key,
       heading: c.heading,
       name: acoustic.componentName(c.key),
       description: acoustic.componentDescription(c.key),
-      derivation_source: acoustic.derivationSource(c.key),
-      // tempo_bpm is an integer range, so it has no codes — an empty array, not a missing key.
-      codes: (c.key === acoustic.TEMPO.key ? [] : acoustic.optionsFor(c.key)).map(o => ({
+      codes: acoustic.optionsFor(c.key).map(o => ({
         code: o.code,
         label: o.label,
-        definition: acoustic.codeDefinition(c.key, o.code),
-        threshold: acoustic.codeThreshold(c.key, o.code),
+        definition: acoustic.aiDefinition(c.key, o.code),
+        listener: acoustic.codeDefinition(c.key, o.code),
         count: 0,
       })),
     })),
+
+    // What software measures rather than judges.
+    objective: acoustic.objectiveMetrics(),
   };
 }
 
@@ -172,6 +177,8 @@ async function coverage(db) {
     live_songs, artists, analysed_songs, mapped_songs,
     latest_pass_models: models.map(m => ({ model: m.model, songs: m.songs })),
     latest_pass_at: latest ? new Date(latest).toISOString() : null,
+    // The sound analysis is a separate pass over a separate table, so it has its own coverage.
+    audio: await audioAnalysis.coverage(db),
   };
 }
 
@@ -207,11 +214,12 @@ async function payload(db) {
     }
   }
 
-  for (const c of acoustic.COMPONENTS) {
-    const byCode = countByCode(await scalarPairs(db, c.column, false));
-    for (const code of out.acoustic.find(a => a.key === c.key).codes) {
-      code.count = (byCode.get(code.code) || new Set()).size;
-    }
+  // Audio counts come from the same function that fills the browse sidebar, so the two can never disagree - and the
+  // samples counts are therefore gated by the curator's approval, exactly as the filter is.
+  const audioFacets = await audioAnalysis.audioFacets(db, {});
+  for (const dim of out.acoustic) {
+    const byCode = new Map(((audioFacets[dim.key] || {}).options || []).map(o => [o.code, o.count]));
+    for (const code of dim.codes) code.count = byCode.get(code.code) || 0;
   }
 
   out.coverage = await coverage(db);

@@ -22,35 +22,45 @@ narrative perspective, its tone, how direct it is, who it seems to be addressing
 Each song shows its **most recent** coding pass. When the codebook improves and the songs
 are coded again, what a song carries can change.
 
-## Measuring the sound
+## Listening to the sound
 
-Six further dimensions come from the recording itself rather than from the words: its
-energy, its harmonic mood, its rhythm, its instrumentation, its vocal delivery, and its
-tempo. These are measured by audio-analysis software, not judged — each one is a number
-taken from the waveform and compared against a threshold. The [Reference](/about/reference)
-page lists what is measured for each dimension and exactly where the thresholds fall.
+The sound of each song is described by an AI model that listens to the recording itself. It
+applies a second codebook, written by hand like the first, covering the mood of the music, its
+intensity, its production style, its vocal delivery, its rhythm, its instruments, how it moves
+from start to finish, and any non-musical audio samples in it (a speech clip, a news report,
+animal sounds). It also writes a one-sentence summary of how the track sounds. The
+[Reference](/about/reference) page lists every code with its definition.
+
+Alongside that, audio-analysis software measures the things that can be measured directly: the
+tempo, the loudness and an estimate of the musical key. Those are numbers taken from the
+waveform, not judgements, although a key estimate in particular can be wrong.
+
+Where a song contains audio samples, whether their details appear on its page is the curator's
+decision.
 
 ## Placing songs next to each other
 
 Each song's lyrics are turned into an *embedding* — a long list of numbers that puts songs
 saying similar things near one another. That embedding is what positions a song on the
-[Explore map](/explore)'s Thematic space. Its Sound space is positioned by the measured audio
-dimensions described above instead, and its Holistic space by both together. The map is a
+[Explore map](/explore)'s Thematic space. Its Sound space is positioned by an audio model's
+reading of the recording together with the sound codes, and its Holistic space using both the
+lyric reading and the audio reading. The map is a
 flattened picture of whichever space you're looking at, and the "You might also like"
 suggestions on a song page read from the same sources directly.
 
 There are two of those, and they measure different things. One compares what songs *say*,
-using the lyric embedding; the other compares what they *sound like*, using the measured
-audio dimensions. A song can be a close match on one and nowhere near on the other, which is
+using the lyric embedding; the other compares what they *sound like*, using that audio
+reading. A song can be a close match on one and nowhere near on the other, which is
 usually the interesting case.
 
 ## Where the rest of the information comes from
 
-Genre, album and release date all come from Spotify.
+A song's genre starts from Spotify's genre for the artist; the curator can set it by hand or
+accept the genre the AI hears in the audio, and the choice is recorded. Album and release date
+come from Spotify.
 
-The mood badge on a song card is entered by hand. That's different from the Mood shown on
-the [Reference](/about/reference) page, which is measured from the audio. Languages and the
-highlighted lyrics on a song page are entered by hand too.
+The mood badge on a song card is the first mood the AI hears in the recording. Languages and the
+highlighted lyrics on a song page are entered by hand.
 
 ## Where AI is used
 
@@ -58,18 +68,18 @@ Plainly, so there is no guessing:
 
 - **The codebooks — human.** Designed and revised by a person over multiple rounds.
 - **The per-song lyric coding — AI.** A language model applies the codebook to each song.
-- **The sound dimensions — measured.** Signal analysis of the full audio, read alongside
-  Spotify's audio measures and each song's genre, and turned into codes by fixed rules; no AI
-  model judgement. The same measurements place a song on the Explore map's Sound space and drive the "Similar
-  sound" tab on a song page.
+- **The per-song sound coding — AI.** A Gemini model listens to the audio and applies the
+  sound codebook, and writes the sound summary. **Tempo, loudness and key — measured** by
+  software. The audio reading also places a song on the Explore map's Sound space and drives the
+  "Similar sound" tab on a song page.
 - **The song positions and similarity everywhere else — AI.** An embedding model reading the
   lyrics; it drives the "Similar message" tab and the Explore map's Thematic space. The
-  Holistic space mixes that model's reading with the measured sound, so it is part AI and
-  part measurement.
+  Holistic space is positioned using both that lyric reading and the audio reading.
 - **Curation — human.** Which songs are here at all, and whether a song belongs, is always
   a person's decision.
 
-As of {{codingDate}}, each song's most recent coding pass came from {{codingModels}}.
+As of {{codingDate}}, each song's most recent coding pass came from {{codingModels}}. The sound
+analysis dates from {{audioDate}} and came from {{audioModels}}.
 
 ## What this doesn't tell you
 
@@ -77,9 +87,16 @@ As of {{codingDate}}, each song's most recent coding pass came from {{codingMode
 coding pass ({{analysedPct}}), and {{mapped}} appear on the Explore map. The rest are in
 the collection and searchable, but have no codes yet.
 
+**Not every song has been listened to.** {{audioAnalysed}} of {{songs}} songs have a sound
+analysis ({{audioAnalysedPct}}). Some recordings could not be fetched, so those songs have no
+sound description yet.
+
 **The per-song coding is machine-generated and currently unchecked.** The codebooks were
 built and refined by hand, but no one has gone through song by song to confirm that the
 model applied them correctly. Human checking — and human coding — may follow.
+
+**The sound coding is machine-generated and unchecked**, like the lyric coding. The key
+estimate is the least reliable number on a song page.
 
 **The codes describe what a song says, not whether it is any good.** Nothing here is a
 rating.

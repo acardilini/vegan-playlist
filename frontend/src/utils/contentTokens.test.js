@@ -12,6 +12,7 @@ const COVERAGE = {
     { model: 'gemma4:deep_pipeline', songs: 1 },
   ],
   latest_pass_at: '2026-07-26T02:00:52.446Z',
+  audio: { analysed: 640, models: [{ model: 'gemini-audio-x', songs: 640 }], latest: '2026-11-18T09:30:00.000Z' },
 };
 
 test('known tokens substitute', () => {
@@ -56,6 +57,26 @@ test('one model reads as one name, three read as a list', () => {
     latest_pass_models: [{ model: 'a', songs: 5 }, { model: 'b', songs: 3 }, { model: 'c', songs: 1 }],
   });
   assert.equal(three.codingModels, 'a, b and c');
+});
+
+test('tokenValues formats the four audio tokens from coverage.audio', () => {
+  const v = tokenValues(COVERAGE);
+  assert.equal(v.audioAnalysed, '640');
+  assert.equal(v.audioAnalysedPct, '48%');
+  assert.equal(v.audioModels, 'gemini-audio-x');
+  assert.equal(v.audioDate, 'November 2026');
+});
+
+test('the audio tokens read as a dash when there is no audio coverage', () => {
+  for (const c of [null, {}, { ...COVERAGE, audio: undefined }, { ...COVERAGE, audio: { analysed: 0, models: [], latest: null } }]) {
+    const v = tokenValues(c);
+    if (c && c.audio) assert.equal(v.audioAnalysed, '0');
+    else assert.equal(v.audioAnalysed, '—');
+    assert.equal(v.audioModels, '—');
+    assert.equal(v.audioDate, '—');
+  }
+  assert.equal(tokenValues({ live_songs: 0, audio: { analysed: 5, models: [], latest: null } }).audioAnalysedPct, '—',
+    'no live songs: no percentage rather than a division by zero');
 });
 
 test('tokenValues survives a missing or empty coverage block', () => {

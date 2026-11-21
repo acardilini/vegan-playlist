@@ -5,9 +5,9 @@ import { useCodebook } from './useCodebook';
 
 // One term: its label, its definition, and how many songs currently carry it. The count links
 // through to a browse filtered to exactly that code — a zero-count term renders the count as
-// plain text, because a link to an empty result set is a dead end. `threshold` is optional —
-// only acoustic codes carry it.
-function Term({ filterKey, code, label, definition, count, threshold }) {
+// plain text, because a link to an empty result set is a dead end. Audio codes also carry `listener`
+// (what it means to a reader); for those, `definition` is the exact wording the AI model is given.
+function Term({ filterKey, code, label, definition, listener, count }) {
   return (
     <li className="reference-term">
       <span className="reference-term-label">{label}</span>
@@ -18,8 +18,8 @@ function Term({ filterKey, code, label, definition, count, threshold }) {
       ) : (
         <span className="reference-term-count is-empty">0 songs</span>
       )}
-      <p className="reference-term-def">{definition}</p>
-      {threshold && <p className="reference-threshold">{threshold}</p>}
+      <p className="reference-term-def">{listener || definition}</p>
+      {listener && <p className="reference-threshold">The model is told: {definition}</p>}
     </li>
   );
 }
@@ -93,15 +93,23 @@ function AnalysisReference() {
 
       <section id="sound" className="reference-family">
         <h2>Sound</h2>
-        {data.acoustic.map(a => (
-          <CodedComponent
-            key={a.key}
-            component={a}
-            extra={a.derivation_source && (
-              <p className="reference-derivation">Measured from: {a.derivation_source}</p>
-            )}
-          />
-        ))}
+        {data.acoustic.map(a => <CodedComponent key={a.key} component={a} />)}
+        {data.objective && data.objective.length > 0 && (
+          <FilterSection title="Measured by software">
+            <p className="reference-dimension-desc">
+              These are numbers taken from the recording, not judgements. A key estimate in
+              particular can be wrong.
+            </p>
+            <ul className="reference-terms">
+              {data.objective.map(m => (
+                <li key={m.key} className="reference-term">
+                  <span className="reference-term-label">{m.label}</span>
+                  <p className="reference-term-def">{m.description}</p>
+                </li>
+              ))}
+            </ul>
+          </FilterSection>
+        )}
       </section>
     </div>
   );
