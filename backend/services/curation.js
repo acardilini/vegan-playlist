@@ -3,6 +3,7 @@
 const { hasAnalysisExists, getSongAnalysis } = require('./analysis');
 const junkLyrics = require('./junkLyrics');
 const { getParentGenre } = require('../utils/genreMapping');
+const { parentSql } = require('./genres');
 const PARK_REASONS = ['awaiting_community', 'needs_transcription', 'listened_unclear'];
 
 async function getProcessing(db, songId) {
@@ -52,8 +53,29 @@ const SHELVED_SQL = `(COALESCE(sp.park_reason IN ${LYRIC_PARK_REASONS_SQL}, fals
 const SONG_GENRE_SQL = `NULLIF(btrim(s.genre), '')`;
 const ARTIST_GENRE_SQL = `(SELECT (a2.genres)[1] FROM song_artists sa2 JOIN artists a2 ON a2.id = sa2.artist_id
               WHERE sa2.song_id = s.id AND array_length(a2.genres, 1) > 0 ORDER BY sa2.id LIMIT 1)`;
+// The audio analysis project's genre for a song (its latest usable row: audio_status OK with a subgenre). The web
+// app only READS song_audio_analysis; an inferred genre reaches `songs` only when the curator chooses it.
+const AUDIO_ROW_SQL = `FROM song_audio_analysis saa
+              WHERE saa.song_id = s.id AND saa.audio_status = 'OK' AND saa.inferred_subgenre IS NOT NULL
+              ORDER BY saa.analyzed_at DESC NULLS LAST, saa.model_used LIMIT 1`;
+const AUDIO_SUBGENRE_SQL = `(SELECT saa.inferred_subgenre ${AUDIO_ROW_SQL})`;
+const AUDIO_CONFIDENCE_SQL = `(SELECT saa.genre_confidence ${AUDIO_ROW_SQL})`;
+// The genre the site shows for the song (own, else its artist's) - the filter's effective genre.
+const EFFECTIVE_GENRE_SQL = `LOWER(TRIM(COALESCE(${SONG_GENRE_SQL}, ${ARTIST_GENRE_SQL})))`;
+const EXISTING_PARENT_SQL = parentSql(EFFECTIVE_GENRE_SQL);
+const AUDIO_PARENT_SQL = parentSql(AUDIO_SUBGENRE_SQL);
+
+// genre_source stamped when the curator chooses an audio-inferred genre, from the model that inferred it.
+// An unrecognised model is refused rather than guessed.
+function audioSourceFor(model) {
+  const m = String(model || '').toLowerCase();
+  if (m.includes('gemini')) return 'audio_gemini';
+  if (m.includes('local') || m.includes('mir')) return 'audio_local_mir';
+  return null;
+}
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics',
-  'needs-cover','needs-album','needs-released','needs-language','needs-genre','genre-from-artist','needs-video','no-video','junk-lyrics','needs-analysis','to-finalise','live','all','featured'];
+  'needs-cover','needs-album','needs-released','needs-language','needs-genre','genre-from-artist','genre-from-audio','genre-conflicts',
+  'needs-video','no-video','junk-lyrics','needs-analysis','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
@@ -88,6 +110,16 @@ function queueWhere(queue) {
       return `s.status='included' AND ${SONG_GENRE_SQL} IS NULL AND ${ARTIST_GENRE_SQL} IS NULL`;
     case 'genre-from-artist':
       return `s.status='included' AND ${SONG_GENRE_SQL} IS NULL AND ${ARTIST_GENRE_SQL} IS NOT NULL`;
+    // Audio genre review (the audio project never writes `songs`; the curator chooses). Genre from audio = no genre
+    // anywhere but an audio-inferred one exists. Genre conflicts = the audio parent differs from the parent of the
+    // genre the site shows (not 'other'); a song the curator has already decided (any genre_source) is not listed.
+    case 'genre-from-audio':
+      return `s.status='included' AND ${SONG_GENRE_SQL} IS NULL AND ${ARTIST_GENRE_SQL} IS NULL
+              AND ${AUDIO_SUBGENRE_SQL} IS NOT NULL`;
+    case 'genre-conflicts':
+      return `s.status='included' AND s.genre_source IS NULL AND ${AUDIO_SUBGENRE_SQL} IS NOT NULL
+              AND ${EFFECTIVE_GENRE_SQL} IS NOT NULL
+              AND ${EXISTING_PARENT_SQL} <> 'other' AND ${EXISTING_PARENT_SQL} <> ${AUDIO_PARENT_SQL}`;
     case 'needs-video':
       return `s.status='included' AND s.no_video_display IS NULL
               AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
@@ -133,12 +165,20 @@ function mapQueueRow(r) {
     genre: r.song_genre || r.artist_genre || null,
     // The stored source when there is one ('manual', 'audio_*'); a legacy song genre has none and reads 'song'.
     genre_source: r.song_genre ? (r.song_genre_source || 'song') : (r.artist_genre ? 'artist' : null),
+    audio_subgenre: r.audio_subgenre || null, audio_confidence: r.audio_confidence || null,
   };
 }
 
-async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 } = {}) {
-  const where = queueWhere(queue);
+// pair = 'existingParent>audioParent' narrows the genre-conflicts queue to one kind of disagreement.
+async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0, pair = null } = {}) {
+  let where = queueWhere(queue);
   const params = [];
+  if (pair) {
+    const m = queue === 'genre-conflicts' && /^([a-z-]+)>([a-z-]+)$/.exec(String(pair));
+    if (!m) { const e = new Error('bad pair'); e.code = 'BAD_QUEUE'; throw e; }
+    params.push(m[1], m[2]);
+    where += ` AND ${EXISTING_PARENT_SQL} = $1 AND ${AUDIO_PARENT_SQL} = $2`;
+  }
   let searchClause = '';
   if (q && q.trim()) {
     params.push(`%${q.trim()}%`);
@@ -149,6 +189,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0 }
   let sql = `
     SELECT s.id, s.title, s.status, s.published, s.featured, s.language, s.no_video_display, s.spotify_dormant,
            ${SONG_GENRE_SQL} AS song_genre, s.genre_source AS song_genre_source, ${ARTIST_GENRE_SQL} AS artist_genre,
+           ${AUDIO_SUBGENRE_SQL} AS audio_subgenre, ${AUDIO_CONFIDENCE_SQL} AS audio_confidence,
            s.spotify_url, s.bandcamp_url, s.soundcloud_url,
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
@@ -250,6 +291,18 @@ async function getWorkbench(db, id) {
   const artistGenre = (await db.query(
     `SELECT (a.genres)[1] AS genre, a.name FROM song_artists sa JOIN artists a ON a.id=sa.artist_id
      WHERE sa.song_id=$1 AND array_length(a.genres, 1) > 0 ORDER BY sa.id LIMIT 1`, [id])).rows[0] || null;
+  // Audio-inferred genre options (read-only: the curator picks one with chooseGenre). `parent` is derived here
+  // from the shared hierarchy, never taken from the row.
+  const audioGenres = (await db.query(
+    `SELECT model_used, inferred_subgenre, inferred_secondary_genre, genre_confidence, genre_rationale, sonic_summary
+       FROM song_audio_analysis
+      WHERE song_id=$1 AND audio_status='OK' AND inferred_subgenre IS NOT NULL
+      ORDER BY analyzed_at DESC NULLS LAST, model_used`, [id])).rows.map((r) => ({
+    model_used: r.model_used, source: audioSourceFor(r.model_used),
+    subgenre: r.inferred_subgenre, parent: getParentGenre(r.inferred_subgenre),
+    secondary: r.inferred_secondary_genre, confidence: r.genre_confidence,
+    rationale: r.genre_rationale, summary: r.sonic_summary,
+  }));
   const videos = (await db.query(
     `SELECT id, youtube_id, video_title, video_type, is_primary FROM youtube_videos
      WHERE song_id=$1 ORDER BY is_primary DESC, id`, [id])).rows;
@@ -269,6 +322,7 @@ async function getWorkbench(db, id) {
     genre: (s.genre && s.genre.trim()) || null, parent_genre: s.parent_genre || null,
     genre_source: (s.genre && s.genre.trim()) ? (s.genre_source || 'song') : null,
     artist_genre: artistGenre ? { value: artistGenre.genre, artist: artistGenre.name } : null,
+    audio_genres: audioGenres,
     spotify_id: s.spotify_id, spotify_url: s.spotify_url, bandcamp_url: s.bandcamp_url, soundcloud_url: s.soundcloud_url,
     lyrics_status: s.lyrics_status, lyrics_url: s.lyrics_url, lyrics_source: s.lyrics_source,
     lyrics_highlights: s.lyrics_highlights, status_notes: s.status_notes,
@@ -334,6 +388,60 @@ async function saveDetails(db, id, { title, language, status_notes, genre } = {}
   if (g) { add('genre', g.genre); add('parent_genre', g.parent_genre); add('genre_source', g.genre ? 'manual' : null); }
   if (sets.length) await db.query(`UPDATE songs SET ${sets.join(', ')}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, params);
   return getWorkbench(db, id);
+}
+
+// Choose where the song's genre comes from. The server reads the genre itself; the client only names the source:
+//   artist - copy the artist's genre (stamped spotify_artist)
+//   audio  - copy the audio-inferred genre of `model` (stamped from the model: audio_gemini / audio_local_mir)
+//   keep   - confirm what the site already shows: a song genre is stamped manual (untouched); an inherited artist
+//            genre is written to the song (spotify_artist). Either way the song stops being a conflict.
+// parent_genre is always derived from the shared hierarchy, as for any curator save.
+async function chooseGenre(db, id, { source, model } = {}) {
+  await assertSong(db, id);
+  const bad = (msg) => { const e = new Error(msg); e.code = 'BAD_INPUT'; throw e; };
+  const artistGenre = async () => (await db.query(`SELECT ${ARTIST_GENRE_SQL} AS g FROM songs s WHERE s.id=$1`, [id])).rows[0].g;
+  const write = (genre, stamp) => {
+    const g = normGenre(genre);
+    return db.query(
+      `UPDATE songs SET genre=$2, parent_genre=$3, genre_source=$4, updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+      [id, g.genre, g.parent_genre, stamp]);
+  };
+  if (source === 'artist') {
+    const g = await artistGenre();
+    if (!g) bad("this song's artist has no genre");
+    await write(g, 'spotify_artist');
+  } else if (source === 'audio') {
+    const row = (await db.query(
+      `SELECT inferred_subgenre FROM song_audio_analysis
+        WHERE song_id=$1 AND model_used=$2 AND audio_status='OK' AND inferred_subgenre IS NOT NULL`,
+      [id, String(model || '')])).rows[0];
+    if (!row) bad('no usable audio genre for that model');
+    const stamp = audioSourceFor(model);
+    if (!stamp) bad('unrecognised audio model');
+    await write(row.inferred_subgenre, stamp);
+  } else if (source === 'keep') {
+    const own = (await db.query(`SELECT ${SONG_GENRE_SQL} AS g FROM songs s WHERE s.id=$1`, [id])).rows[0].g;
+    if (own) {
+      await db.query(`UPDATE songs SET genre_source='manual', updated_at=CURRENT_TIMESTAMP WHERE id=$1`, [id]);
+    } else {
+      const g = await artistGenre();
+      if (!g) bad('this song has no genre to keep');
+      await write(g, 'spotify_artist');
+    }
+  } else {
+    bad('source must be artist, audio or keep');
+  }
+  return getWorkbench(db, id);
+}
+
+// Counts of genre-conflicts by (genre the site shows -> audio genre) parent pair, biggest first, so the curator
+// can work through one kind of disagreement at a time.
+async function genreConflictPairs(db) {
+  const r = await db.query(`
+    SELECT ${EXISTING_PARENT_SQL} AS "from", ${AUDIO_PARENT_SQL} AS "to", COUNT(*)::int AS count
+      FROM songs s WHERE (${queueWhere('genre-conflicts')})
+     GROUP BY 1, 2 ORDER BY count DESC, "from", "to"`);
+  return r.rows;
 }
 
 const NO_VIDEO_DISPLAYS = ['hide', 'cover'];
@@ -522,4 +630,5 @@ async function quickCapture(db, { title, artist } = {}) {
 
 module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES, HAS_LYRICS_SQL,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, quickCapture, setFeatured, listLanguages };
+  saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, quickCapture, setFeatured, listLanguages,
+  chooseGenre, genreConflictPairs, audioSourceFor };

@@ -523,8 +523,9 @@ Items intentionally deferred until needed (from the PRD and the Session 0.1
   fallback in `getParentGenre` for future regional Spotify tags such as "swedish hardcore" (the exact entries already cover every
   current value; if built, keep `zz totally unknown genre` -> `other`); (2) `songs.genre_confidence` and `songs.secondary_genre`
   (nothing writes them until the audio pipeline does); (3) the **genre-from-audio** workflow, now settled as Option B (see the 2026-11-21 Decision Log entry): the analysis project keeps
-  inferred genres in `song_audio_analysis`; the main project adds a workbench compare panel and a review queue (bulk accept for
-  HIGH confidence) that writes `songs.genre` / `parent_genre` / `genre_source` only on curator accept - built after the Phase 2 handoff; (4) **Phase 2 audio changes** (`song_audio_analysis`
+  inferred genres in `song_audio_analysis`; the main project adds a workbench compare panel and a review queue that writes
+  `songs.genre` / `parent_genre` / `genre_source` only on curator accept - **BUILT 2026-11-22 (Step A, branch `session-genre-choice`):** Genre options on
+  the Details panel, Genre from audio + Genre conflicts queues with a disagreement-pair filter; a bulk accept for HIGH confidence was **not** built (per-song choice only). **Step B** (switch the site and admin to the new audio data, remove old audio connections) and **Step C** (Explore on audio-only points) are approved and next; (4) **Phase 2 audio changes** (`song_audio_analysis`
   table, 8-dimension acoustic codebook with multi-value array filters, Explore "Sound" similarity on neural embeddings) - wait
   for the analysis pilot sign-off and a second handoff. (The three leftover hard-coded copies of the hierarchy were removed on
   2026-11-20, branch `session-genre-copies`.)

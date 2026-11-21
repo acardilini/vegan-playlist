@@ -133,7 +133,7 @@ function GenreField({ wb, savePanel }) {
   };
   const ag = wb.artist_genre;
   let source;
-  if (wb.genre) source = 'Set on this song';
+  if (wb.genre) source = `Set on this song${SOURCE_NOTE[wb.genre_source] ? ` - ${SOURCE_NOTE[wb.genre_source]}` : ''}`;
   else if (ag) source = `Not set on the song - the site uses the artist's genre (${ag.value}, from ${ag.artist})`;
   else source = 'No genre on the song or its artist';
 
@@ -148,15 +148,101 @@ function GenreField({ wb, savePanel }) {
       <datalist id="wb-genre-options">{options.map((o) => <option key={o} value={o} />)}</datalist>
       <div className="wb-genre-source">
         {source}
-        {!wb.genre && ag && (
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setValue(ag.value); save(ag.value); }}>
-            Use {ag.value} for this song
-          </button>
-        )}
         {wb.genre && (
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setValue(''); save(''); }}>Clear</button>
         )}
       </div>
+      <GenreOptions wb={wb} savePanel={savePanel} />
+    </div>
+  );
+}
+
+// Where a genre the curator did not type came from, for the line under the Genre field.
+const SOURCE_NOTE = {
+  manual: 'by you',
+  spotify_artist: "copied from the artist's Spotify genre",
+  audio_gemini: 'chosen from Gemini audio listening',
+  audio_local_mir: 'chosen from local audio analysis',
+};
+
+// The genre options for this song side by side: what the site shows now, the artist's Spotify genre and what the
+// audio analysis inferred. Use makes that one the song's genre (cards, filters and the homepage follow at once);
+// Keep confirms what the site already shows, which takes the song out of the Genre conflicts queue. The server
+// reads the genre itself - this only says which source was picked.
+function GenreOptions({ wb, savePanel }) {
+  const [busy, setBusy] = useState(null);
+  const [error, setError] = useState('');
+  const ag = wb.artist_genre;
+  const audio = wb.audio_genres || [];
+  if (!ag && audio.length === 0) return null;
+
+  const current = (wb.genre || '').toLowerCase();
+  // Undecided = a legacy song genre, or none on the song and the site falling back to the artist's.
+  const undecided = wb.genre_source === 'song' || (!wb.genre && !!ag);
+  const choose = async (key, body) => {
+    setBusy(key); setError('');
+    const res = await savePanel('genre-choice', body);
+    setBusy(null);
+    if (!(res && res.ok)) setError((res && res.error) || 'Could not save');
+  };
+  const inUse = (g) => !!current && current === String(g).toLowerCase();
+  const showing = wb.genre || (ag && ag.value) || null;
+
+  return (
+    <div className="wb-genre-options" role="group" aria-label="Genre options">
+      <div className="wb-genre-options-title">Genre options</div>
+      {showing && (
+        <div className="wb-genre-opt">
+          <span className="wb-genre-opt-src">Showing on the site</span>
+          <span className="wb-genre-opt-val">{showing}</span>
+          {audio.length > 0 && undecided && (
+            <button type="button" className="btn btn-secondary btn-sm" disabled={busy !== null}
+              onClick={() => choose('keep', { source: 'keep' })}>
+              {busy === 'keep' ? 'Saving…' : 'Keep this genre'}
+            </button>
+          )}
+        </div>
+      )}
+      {ag && (
+        <div className="wb-genre-opt">
+          <span className="wb-genre-opt-src">Spotify (artist)</span>
+          <span className="wb-genre-opt-val">{ag.value}</span>
+          <span className="wb-genre-opt-meta">{ag.artist}</span>
+          {inUse(ag.value) && wb.genre_source === 'spotify_artist'
+            ? <span className="wb-genre-opt-inuse">In use</span>
+            : <button type="button" className="btn btn-secondary btn-sm" disabled={busy !== null}
+                onClick={() => choose('artist', { source: 'artist' })}>
+                {busy === 'artist' ? 'Saving…' : 'Use'}
+              </button>}
+        </div>
+      )}
+      {audio.map((a) => (
+        <div key={a.model_used} className="wb-genre-opt">
+          <span className="wb-genre-opt-src">Audio{a.source === 'audio_gemini' ? ' (Gemini)' : ''}</span>
+          <span className="wb-genre-opt-val">{a.subgenre}</span>
+          <span className="wb-genre-opt-meta">
+            {a.parent !== a.subgenre ? `${a.parent}` : ''}
+            {a.secondary ? `${a.parent !== a.subgenre ? ' · ' : ''}also ${a.secondary}` : ''}
+            {a.confidence ? ` · ${a.confidence.toLowerCase()} confidence` : ''}
+          </span>
+          {!a.source
+            ? <span className="wb-genre-opt-meta" title={`Unrecognised model: ${a.model_used}`}>unrecognised model</span>
+            : inUse(a.subgenre) && wb.genre_source === a.source
+              ? <span className="wb-genre-opt-inuse">In use</span>
+              : <button type="button" className="btn btn-secondary btn-sm" disabled={busy !== null}
+                  onClick={() => choose(a.model_used, { source: 'audio', model: a.model_used })}>
+                  {busy === a.model_used ? 'Saving…' : 'Use'}
+                </button>}
+          {(a.rationale || a.summary) && (
+            <details className="wb-genre-opt-why">
+              <summary>Why</summary>
+              {a.rationale && <p>{a.rationale}</p>}
+              {a.summary && <p className="wb-genre-opt-summary">{a.summary}</p>}
+            </details>
+          )}
+        </div>
+      ))}
+      {error && <div className="wb-genre-opt-error" role="alert">{error}</div>}
     </div>
   );
 }

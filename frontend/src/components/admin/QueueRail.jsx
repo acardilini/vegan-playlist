@@ -10,6 +10,8 @@ const GROUPS = [
     ['needs-language', 'Needs language', false],
     ['needs-genre', 'Needs genre', false],
     ['genre-from-artist', 'Genre from artist', false],
+    ['genre-from-audio', 'Genre from audio', false],
+    ['genre-conflicts', 'Genre conflicts', false],
     ['needs-video', 'Needs video', false],
     ['no-video', 'No video available', false],
     ['junk-lyrics', 'Junk lyrics', false],

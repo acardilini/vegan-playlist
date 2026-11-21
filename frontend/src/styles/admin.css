@@ -69,6 +69,20 @@
 .wb-panel h2 { font-size: 0.95rem; margin: 0 0 var(--space-3); }
 .wb-field { display: block; margin-bottom: var(--space-3); }
 .wb-genre-source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-1); font-size: 0.8rem; color: var(--text-secondary); }
+/* Genre options: the site's genre, the artist's Spotify genre and the audio-inferred genre, side by side. */
+.wb-genre-options { margin-top: var(--space-2); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3); }
+.wb-genre-options-title { font-size: 0.72rem; color: var(--text-muted); margin-bottom: var(--space-1); }
+.wb-genre-opt { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); padding: var(--space-1) 0; font-size: 0.85rem; }
+.wb-genre-opt + .wb-genre-opt { border-top: 1px solid var(--border-hairline); }
+.wb-genre-opt-src { min-width: 7.5rem; color: var(--text-secondary); }
+.wb-genre-opt-val { font-weight: 600; color: var(--text-primary); }
+.wb-genre-opt-meta { color: var(--text-muted); font-size: 0.78rem; }
+.wb-genre-opt-inuse { color: var(--color-success); font-size: 0.78rem; font-weight: 600; }
+.wb-genre-opt-why { flex-basis: 100%; font-size: 0.8rem; color: var(--text-secondary); }
+.wb-genre-opt-why summary { cursor: pointer; color: var(--text-muted); }
+.wb-genre-opt-why p { margin: var(--space-1) 0 0; }
+.wb-genre-opt-summary { font-style: italic; }
+.wb-genre-opt-error { color: var(--color-danger); font-size: 0.8rem; margin-top: var(--space-1); }
 .wb-field-label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: var(--space-1); }
 .wb-mono { font-family: ui-monospace, monospace; font-size: 0.85rem; }
 .wb-readonly { font-size: 0.9rem; color: var(--text-primary); }
