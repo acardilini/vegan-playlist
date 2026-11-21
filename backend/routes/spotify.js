@@ -7,6 +7,7 @@ const genres_svc = require('../services/genres');
 const browse = require('../services/browseFilters');
 const codebook = require('../services/metadataCodebook');
 const acousticCodebook = require('../services/acousticCodebook');
+const audioAnalysis = require('../services/audioAnalysis');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -299,6 +300,7 @@ router.get('/search', async (req, res) => {
     const facetJoin = [
       bw.joins.analysis ? `JOIN ${analysis.LATEST_ANALYSIS} sa ON sa.song_id = s.id` : '',
       bw.joins.scalarAnalysis ? `JOIN ${analysis.LATEST_ANALYSIS} sca ON sca.song_id = s.id` : '',
+      bw.joins.audio ? `JOIN ${audioAnalysis.LATEST_AUDIO} sau ON sau.song_id = s.id` : '',
     ].filter(Boolean).join(' ');
 
     // Build WHERE clause
@@ -493,12 +495,12 @@ router.get('/browse-facets', async (req, res) => {
       };
     }
 
-    // One exclude-self constraint per acoustic component.
-    const acousticConstraints = {};
-    for (const c of acousticCodebook.COMPONENTS) {
-      const bwAc = browse.buildWhere(f, { exclude: `acoustic:${c.key}`, startIndex: 1 });
-      acousticConstraints[c.key] = {
-        joinSql: browse.joinSql(bwAc.joins), where: bwAc.where, params: bwAc.params,
+    // One exclude-self constraint per audio dimension (and the samples filter).
+    const audioConstraints = {};
+    for (const key of acousticCodebook.FILTER_KEYS) {
+      const bwAu = browse.buildWhere(f, { exclude: `audio:${key}`, startIndex: 1 });
+      audioConstraints[key] = {
+        joinSql: browse.joinSql(bwAu.joins), where: bwAu.where, params: bwAu.params,
       };
     }
 
@@ -506,7 +508,7 @@ router.get('/browse-facets', async (req, res) => {
       FROM albums WHERE release_date IS NOT NULL
         AND id IN (SELECT album_id FROM songs WHERE status = 'included' AND published = true AND album_id IS NOT NULL)`;
 
-    const [gR, lR, aR, tR, langR, facets, yR, scalar_facets, acoustic_facets, tempo_range] =
+    const [gR, lR, aR, tR, langR, facets, yR, scalar_facets, audio_facets, tempo_range] =
       await Promise.all([
         pool.query(genreSql, bwG.params),
         pool.query(lengthSql, bwL.params),
@@ -516,8 +518,8 @@ router.get('/browse-facets', async (req, res) => {
         analysis.facetTree(pool, constraint),
         pool.query(yearSql),
         analysis.scalarFacets(pool, scalarConstraints),
-        analysis.acousticFacets(pool, acousticConstraints),
-        analysis.tempoRange(pool),
+        audioAnalysis.audioFacets(pool, audioConstraints),
+        audioAnalysis.tempoRange(pool),
       ]);
 
     const lc = lR.rows[0] || {};
@@ -525,7 +527,7 @@ router.get('/browse-facets', async (req, res) => {
       genre_tree: genres_svc.buildGenreTree(gR.rows),
       facets,
       scalar_facets,
-      acoustic_facets,
+      audio_facets,
       tempo_range,
       length_buckets: genres_svc.LENGTH_BUCKETS.map(b => ({ value: b.value, label: b.label, count: lc[b.value] || 0 })),
       availability: {

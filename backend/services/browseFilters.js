@@ -6,6 +6,7 @@ const genres_svc = require('./genres');
 const analysis = require('./analysis');
 const codebook = require('./metadataCodebook');
 const acousticCodebook = require('./acousticCodebook');
+const audioAnalysis = require('./audioAnalysis');
 
 function asList(v) { return v == null ? [] : (Array.isArray(v) ? v : [v]); }
 
@@ -13,9 +14,9 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
   const where = [];
   const params = [];
   let idx = startIndex;
-  // scalarAnalysis === the `sca` LATEST_ANALYSIS join. Shared by the scalar metadata
-  // components AND the acoustic dimensions — they are columns on the same row.
-  const joins = { albums: false, artists: false, effectiveGenre: false, analysis: false, scalarAnalysis: false };
+  // scalarAnalysis === the `sca` LATEST_ANALYSIS join (the scalar metadata components); audio === the `sau`
+  // LATEST_AUDIO join (the audio dimensions and tempo).
+  const joins = { albums: false, artists: false, effectiveGenre: false, analysis: false, scalarAnalysis: false, audio: false };
   const inc = (g) => g !== exclude;
 
   const q = (filters.q || '').trim();
@@ -72,18 +73,19 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
     joins.scalarAnalysis = true;
   }
 
-  // Acoustic dimensions — same latest-analysis row as the scalar components, so they reuse
-  // the `sca` join and add none of their own. OR within a component, AND across.
-  const acousticSel = {};
-  for (const c of acousticCodebook.COMPONENTS) {
-    if (inc(`acoustic:${c.key}`)) acousticSel[c.key] = filters[c.key];
+  // Audio dimensions — the song's latest OK row in song_audio_analysis (alias `sau`), a separate table from the
+  // lyric analysis. OR within a dimension (any selected code), AND across. The audio_samples filter is gated on
+  // the curator's approval inside selectionClauses. Retired Sound keys are simply not recognised.
+  const audioSel = {};
+  for (const key of acousticCodebook.FILTER_KEYS) {
+    if (inc(`audio:${key}`)) audioSel[key] = filters[key];
   }
-  const ac = acousticCodebook.acousticSelectionClauses(acousticSel, idx);
-  if (ac.needsJoin) {
-    where.push(...ac.clauses);
-    params.push(...ac.params);
-    idx = ac.nextIndex;
-    joins.scalarAnalysis = true;
+  const au = acousticCodebook.selectionClauses(audioSel, idx);
+  if (au.needsJoin) {
+    where.push(...au.clauses);
+    params.push(...au.params);
+    idx = au.nextIndex;
+    joins.audio = true;
   }
 
   // Tempo is a range, not an enum: always applied (it has no facet counts of its own to
@@ -94,13 +96,13 @@ function buildWhere(filters, { exclude = null, startIndex = 1 } = {}) {
   // EXTRACT(YEAR ...) is numeric, which accepts NaN.)
   const tempoFrom = parseInt(filters.tempo_from, 10);
   if (Number.isFinite(tempoFrom)) {
-    where.push(`sca.tempo_bpm >= $${idx}`); params.push(tempoFrom);
-    idx++; joins.scalarAnalysis = true;
+    where.push(`sau.tempo_bpm >= $${idx}`); params.push(tempoFrom);
+    idx++; joins.audio = true;
   }
   const tempoTo = parseInt(filters.tempo_to, 10);
   if (Number.isFinite(tempoTo)) {
-    where.push(`sca.tempo_bpm <= $${idx}`); params.push(tempoTo);
-    idx++; joins.scalarAnalysis = true;
+    where.push(`sau.tempo_bpm <= $${idx}`); params.push(tempoTo);
+    idx++; joins.audio = true;
   }
 
   return { where, params, nextIndex: idx, joins };
@@ -114,6 +116,7 @@ function joinSql(joins) {
   if (joins.effectiveGenre) s += ` ${genres_svc.EFFECTIVE_GENRE_JOIN}`;
   if (joins.analysis) s += ` JOIN ${analysis.LATEST_ANALYSIS} sa ON sa.song_id = s.id`;
   if (joins.scalarAnalysis) s += ` JOIN ${analysis.LATEST_ANALYSIS} sca ON sca.song_id = s.id`;
+  if (joins.audio) s += ` JOIN ${audioAnalysis.LATEST_AUDIO} sau ON sau.song_id = s.id`;
   return s;
 }
 

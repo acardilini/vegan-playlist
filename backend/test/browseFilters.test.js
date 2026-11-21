@@ -10,7 +10,7 @@ test('buildWhere with no filters is empty', () => {
   assert.deepEqual(r.where, []);
   assert.deepEqual(r.params, []);
   assert.equal(r.nextIndex, 1);
-  assert.deepEqual(r.joins, { albums: false, artists: false, effectiveGenre: false, analysis: false, scalarAnalysis: false });
+  assert.deepEqual(r.joins, { albums: false, artists: false, effectiveGenre: false, analysis: false, scalarAnalysis: false, audio: false });
 });
 
 test('buildWhere text search sets albums+artists joins and one param', () => {
@@ -128,59 +128,72 @@ test('joinSql routes analysis joins through the latest-pass subquery, not a mode
   assert.ok(!/model_used\s*=/.test(sql), 'no hard-coded model filter remains');
 });
 
-test('buildWhere acoustic components reuse the sca join, OR within a component', () => {
+test('buildWhere audio dimensions use their own join: && for multi-value, = ANY for single-value', () => {
   const r = b.buildWhere({
-    sonic_energy: ['EXPLOSIVE', 'ENERGETIC'],
-    vocal_delivery: 'SPOKEN',
+    musical_mood: ['DARK_OMINOUS', 'URGENT_TENSE'],
+    sonic_intensity: 'HEAVY_INTENSE',
   });
-  assert.ok(r.joins.scalarAnalysis, 'acoustic filters ride the existing scalar join');
-  assert.ok(!r.joins.analysis, 'no second analysis join is added');
-  assert.ok(r.where.includes('sca.sonic_energy = ANY($1::text[])'));
-  assert.ok(r.where.includes('sca.vocal_delivery = ANY($2::text[])'));
-  assert.deepEqual(r.params[0], ['EXPLOSIVE', 'ENERGETIC']);
-  assert.deepEqual(r.params[1], ['SPOKEN']);
+  assert.ok(r.joins.audio, 'audio filters add the audio join');
+  assert.ok(!r.joins.scalarAnalysis && !r.joins.analysis, 'and no lyric-analysis join');
+  assert.ok(r.where.includes('sau.musical_mood && $1::text[]'));
+  assert.ok(r.where.includes('sau.sonic_intensity = ANY($2::text[])'));
+  assert.deepEqual(r.params[0], ['DARK_OMINOUS', 'URGENT_TENSE']);
+  assert.deepEqual(r.params[1], ['HEAVY_INTENSE']);
 });
 
-test('buildWhere drops invented acoustic codes rather than querying for them', () => {
-  const r = b.buildWhere({ sonic_energy: ['NOT_A_REAL_CODE'] });
+test('buildWhere drops invented codes, hidden codes and the retired Sound keys', () => {
+  const r = b.buildWhere({
+    musical_mood: ['NOT_A_REAL_CODE'], audio_samples: ['NONE'],
+    sonic_energy: ['EXPLOSIVE'], emotional_mood: ['DARK'], vocal_delivery: ['SPOKEN'],
+  });
   assert.deepEqual(r.where, []);
-  assert.equal(r.joins.scalarAnalysis, false);
+  assert.equal(r.joins.audio, false);
 });
 
-test('buildWhere tempo bounds are integers on the sca row and always applied', () => {
-  const r = b.buildWhere({ tempo_from: '100', tempo_to: '140' },
-    { exclude: 'acoustic:sonic_energy' });
-  assert.ok(r.joins.scalarAnalysis);
-  assert.deepEqual(r.where, ['sca.tempo_bpm >= $1', 'sca.tempo_bpm <= $2']);
+test('buildWhere gates the audio_samples filter on the curator approval', () => {
+  const r = b.buildWhere({ audio_samples: ['ANIMAL_SLAUGHTER_SFX'] });
+  assert.equal(r.where.length, 1);
+  assert.match(r.where[0], /sau\.audio_samples && \$1::text\[\]/);
+  assert.match(r.where[0], /s\.show_audio_samples IS TRUE/);
+  assert.ok(r.joins.audio);
+});
+
+test('buildWhere tempo bounds are integers on the audio row and always applied', () => {
+  const r = b.buildWhere({ tempo_from: '100', tempo_to: '140' }, { exclude: 'audio:musical_mood' });
+  assert.ok(r.joins.audio);
+  assert.deepEqual(r.where, ['sau.tempo_bpm >= $1', 'sau.tempo_bpm <= $2']);
   assert.deepEqual(r.params, [100, 140], 'parsed as integers, not strings');
   assert.equal(r.nextIndex, 3);
 });
 
-test('buildWhere exclude omits one acoustic component but keeps its siblings', () => {
+test('buildWhere exclude omits one audio group but keeps its siblings', () => {
   const r = b.buildWhere(
-    { sonic_energy: ['ENERGETIC'], vocal_delivery: ['SPOKEN'] },
-    { exclude: 'acoustic:sonic_energy' });
-  assert.ok(!r.where.some(c => c.includes('sonic_energy')), 'own group excluded');
-  assert.ok(r.where.some(c => c.includes('vocal_delivery')), 'sibling kept');
+    { musical_mood: ['DARK_OMINOUS'], vocal_style: ['SPOKEN_WORD'] },
+    { exclude: 'audio:musical_mood' });
+  assert.ok(!r.where.some(c => c.includes('musical_mood')), 'own group excluded');
+  assert.ok(r.where.some(c => c.includes('vocal_style')), 'sibling kept');
 });
 
 test('buildWhere ignores a non-numeric tempo bound instead of binding NaN', () => {
   const r = b.buildWhere({ tempo_from: 'abc', tempo_to: '' });
   assert.deepEqual(r.where, [], 'no clause emitted');
   assert.deepEqual(r.params, []);
-  assert.equal(r.joins.scalarAnalysis, false, 'and no join is forced');
-  // a valid bound alongside an invalid one still applies
+  assert.equal(r.joins.audio, false, 'and no join is forced');
   const mixed = b.buildWhere({ tempo_from: 'abc', tempo_to: '140' });
-  assert.deepEqual(mixed.where, ['sca.tempo_bpm <= $1']);
+  assert.deepEqual(mixed.where, ['sau.tempo_bpm <= $1']);
   assert.deepEqual(mixed.params, [140]);
 });
 
-test('buildWhere numbers acoustic params after the scalar ones', () => {
-  const r = b.buildWhere({
-    perspective: ['CRITIC_PHILOSOPHER'],
-    sonic_energy: ['ENERGETIC'],
-  });
+test('buildWhere numbers audio params after the scalar ones', () => {
+  const r = b.buildWhere({ perspective: ['CRITIC_PHILOSOPHER'], sonic_intensity: ['HEAVY_INTENSE'] });
   assert.ok(r.where.includes('sca.perspective = ANY($1::text[])'));
-  assert.ok(r.where.includes('sca.sonic_energy = ANY($2::text[])'));
+  assert.ok(r.where.includes('sau.sonic_intensity = ANY($2::text[])'));
   assert.equal(r.nextIndex, 3);
+});
+
+test('joinSql emits the audio join under its own alias from the latest-OK-row subquery', () => {
+  const s = b.joinSql({ audio: true });
+  assert.ok(s.includes(') sau ON sau.song_id = s.id'));
+  assert.ok(s.includes("audio_status = 'OK'"), 'only usable rows');
+  assert.equal(b.joinSql({ audio: false }), '');
 });
