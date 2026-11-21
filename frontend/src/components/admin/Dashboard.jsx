@@ -18,6 +18,7 @@ const TILES = [
   ['genre-conflicts', 'Genre conflicts', false],
   ['needs-video', 'Needs video', false],
   ['junk-lyrics', 'Junk lyrics', false],
+  ['needs-sample-approval', 'Needs sample approval', false],
   ['to-finalise', 'To finalise', false],
   ['featured', 'Featured', false],
   ['inbox', 'Inbox', false],

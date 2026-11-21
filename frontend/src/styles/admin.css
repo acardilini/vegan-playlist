@@ -308,3 +308,23 @@ a.band-chip:hover { text-decoration: underline; }
 .leads-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
 .lead-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .lead-note { width: 100%; }
+
+/* Audio panel (workbench side column): the analysis summary, its code rows, the sample list and the Show / Hide decision. */
+.wb-audio-status { font-size: 0.78rem; color: var(--text-muted); margin-bottom: var(--space-2); }
+.wb-audio-summary { margin: 0 0 var(--space-2); font-style: italic; color: var(--text-secondary); font-size: 0.88rem; }
+.wb-audio-rows { margin: 0 0 var(--space-2); }
+.wb-audio-row { display: flex; gap: var(--space-2); padding: var(--space-1) 0; font-size: 0.85rem; }
+.wb-audio-row + .wb-audio-row { border-top: 1px solid var(--border-hairline); }
+.wb-audio-row dt { min-width: 7.5rem; color: var(--text-secondary); }
+.wb-audio-row dd { margin: 0; font-weight: 600; color: var(--text-primary); }
+.wb-audio-measured { font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--space-2); }
+.wb-audio-samples { margin-top: var(--space-2); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3); }
+.wb-audio-sample-list { list-style: none; margin: 0; padding: 0; }
+.wb-audio-sample-list li { padding: var(--space-1) 0; font-size: 0.85rem; }
+.wb-audio-sample-list li + li { border-top: 1px solid var(--border-hairline); }
+.wb-audio-sample-list p { margin: var(--space-1) 0 0; color: var(--text-secondary); }
+.wb-audio-sample-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.wb-audio-transcript { font-style: italic; }
+.wb-audio-decision { margin-top: var(--space-3); }
+.wb-audio-choices { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-1) 0; }
+.wb-audio-hint { font-size: 0.78rem; color: var(--text-muted); }
