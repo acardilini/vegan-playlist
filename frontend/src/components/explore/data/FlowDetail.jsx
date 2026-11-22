@@ -11,6 +11,8 @@ function FlowDetail({ flow, pin, state, bounds, onClear }) {
   if (!sel) return <div className="data-arg-live" aria-live="polite" />;
   const pct = Math.round((sel.n / flow.n) * 100);
   const hasOther = sel.parts.some(p => p.other);
+  // a genre pick: the flow's genre includes audio-inferred genres, but Browse matches catalogue genres only
+  const touchesGenre = sel.parts.some(p => flow.preset.columns[p.col].field === 'g');
   return (
     <div className="data-arg-live" aria-live="polite">
       <div className="data-arg-detail">
@@ -27,7 +29,9 @@ function FlowDetail({ flow, pin, state, bounds, onClear }) {
           <button type="button" className="data-arg-clear" onClick={onClear}>Clear</button>
         </p>
         {!hasOther && (
-          <p className="data-arg-note">Browse counts songs with this code anywhere, not only as the first-listed one.</p>
+          <p className="data-arg-note">Browse counts songs with this code anywhere, not only as the first-listed one.
+            {touchesGenre && ' Browse matches catalogue genres only, so it can list fewer songs than the flow counts.'}
+          </p>
         )}
       </div>
     </div>

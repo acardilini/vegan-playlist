@@ -13,7 +13,7 @@ function PathwayList({ flow, pin, onPin }) {
     <ul className="data-arg-paths">
       {rows.map(p => (
         <li key={key(p)}>
-          <button type="button" className="data-arg-path" aria-pressed={pinned === key(p)} onClick={() => onPin({ type: 'path', keys: p.keys })}>
+          <button type="button" className="data-arg-path" aria-pressed={pinned === key(p)} onClick={() => onPin(pinned === key(p) ? null : { type: 'path', keys: p.keys })}>
             <span className="data-arg-path-label">{p.labels.join(' > ')}</span>
             <span className="data-arg-path-count">{p.n} {noun(p.n)}</span>
             <span className="data-arg-bar" aria-hidden="true"><span style={{ width: `${(p.n / max) * 100}%` }} /></span>

@@ -3295,7 +3295,7 @@
 .data-arg-node:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
 .data-arg-node { cursor: pointer; }
 .data-arg-node.is-pinned { stroke: var(--text-primary); stroke-width: 2; }
-.data-arg-label { fill: var(--text-primary); font-size: 12px; font-family: var(--font-body); paint-order: stroke; stroke: var(--bg-surface); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.data-arg-label { fill: var(--text-primary); font: var(--text-meta); paint-order: stroke; stroke: var(--bg-surface); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 .data-arg-count { fill: var(--text-secondary); }
 .data-arg-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .data-arg-pair { position: relative; }

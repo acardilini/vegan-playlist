@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MIN_GROUP_FOR_SENTENCE } from './dataModel.js';
+import { MIN_GROUP_FOR_SENTENCE, MIN_POINT_N } from './dataModel.js';
 import {
   TOP_NODES, MIN_PAIR_N, TOP_PAIRS, TOP_PATHS, PRESETS,
+  MIN_FLOW_N, firstOrderFor, flowEmptyMessage,
   buildFlow, strongestSentence, topPathways, flowTable, topThemePairs, pairsTable, flowLayout, browseSelectionFor,
 } from './flowModel.js';
 
@@ -362,4 +363,48 @@ test('flowLayout orders a node\'s outgoing ribbons by target y and incoming ribb
   assert.ok(punkAngry.y0 < punkSad.y0, 'punk -> angry (higher target) leaves higher on punk');
   const metalAngry = ends(ribbon('metal', 'angry'));
   assert.ok(punkAngry.y1 < metalAngry.y1, 'punk (higher source) enters angry higher than metal');
+});
+
+// --- Final-review fixes ---
+test('firstOrderFor ranks the genre preset by the WHOLE catalogue, other presets by their eligible songs', () => {
+  const songs = [
+    ...many(8, { g: 'metal', tone: null, act: null }),   // not eligible for the genre preset, but the biggest genre overall
+    ...many(3, { g: 'punk', tone: 'angry', act: 'protest' }),
+    ...many(2, { g: 'folk', tone: 'sad', act: 'protest' }),
+  ];
+  assert.deepEqual(firstOrderFor(PRESETS[0], songs, { labels }), ['metal', 'punk', 'folk']);
+  // the flow itself (eligible songs only) would rank punk first: that is the bug this guards against
+  assert.deepEqual(buildFlow(songs, PRESETS[0], { labels }).columns[0].nodes.map(n => n.key), ['punk', 'folk']);
+  const aud = [
+    ...many(2, { aud: 'a', frm: 'x', act: 'protest' }),
+    ...many(5, { aud: 'b', frm: 'x', act: 'protest' }),
+    ...many(9, { aud: 'c', frm: null, act: 'protest' }),
+  ];
+  assert.deepEqual(firstOrderFor(PRESETS[1], aud, { labels }), ['b', 'a']);
+  assert.deepEqual(firstOrderFor(PRESETS[0], [], { labels }), []);
+});
+
+test('flowEmptyMessage is null at MIN_FLOW_N and above, and counts the songs below it', () => {
+  assert.equal(MIN_FLOW_N, MIN_POINT_N);
+  const at = buildFlow(many(MIN_FLOW_N, {}), PRESET, { labels });
+  const below = buildFlow(many(MIN_FLOW_N - 1, {}), PRESET, { labels });
+  assert.equal(flowEmptyMessage(at), null);
+  assert.equal(flowEmptyMessage(below), `Too few songs in this slice carry all three (${MIN_FLOW_N - 1} of them; at least ${MIN_FLOW_N} are needed).`);
+  assert.ok(/Too few songs/.test(flowEmptyMessage(buildFlow([], PRESET, { labels }))));
+});
+
+test('a real "Other" genre beside the folded Other node is labelled "Other genre"', () => {
+  const songs = [...many(30, { g: 'other' }), ...['a', 'b', 'c', 'd', 'e', 'f', 'g'].flatMap((g, i) => many(20 - i, { g }))];
+  const flow = buildFlow(songs, PRESET, { labels: { ...labels, genres: { ...labels.genres, other: 'Other' } } });
+  const nodes = flow.columns[0].nodes;
+  const folded = nodes.filter(n => n.other);
+  assert.equal(folded.length, 1);
+  assert.equal(folded[0].label, 'Other');
+  const real = nodes.find(n => n.key === 'other');
+  assert.ok(real, 'the real other genre is in the top nodes');
+  assert.equal(real.label, 'Other genre');
+  assert.equal(new Set(nodes.map(n => n.label.toLowerCase())).size, nodes.length);
+  // with no folded node the real one keeps its plain label
+  const small = buildFlow(many(3, { g: 'other' }), PRESET, { labels: { ...labels, genres: { other: 'Other' } } });
+  assert.equal(small.columns[0].nodes[0].label, 'Other');
 });

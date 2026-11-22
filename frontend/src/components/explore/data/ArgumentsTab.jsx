@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { PRESETS, buildFlow, strongestSentence, flowTable } from './flowModel';
+import { PRESETS, buildFlow, firstOrderFor, flowEmptyMessage, strongestSentence, flowTable } from './flowModel';
 import ChartFrame from './ChartFrame';
 import FlowChart from './FlowChart';
 import PathwayList from './PathwayList';
@@ -20,12 +20,10 @@ function ArgumentsTab() {
   const onPin = next => setPinState(next ? { preset: preset.id, pin: next } : null);
 
   // Colours follow the entity: the column-0 ranking comes from the WHOLE catalogue, so filtering never repaints a code.
-  const firstOrder = useMemo(() => {
-    const whole = buildFlow(allSongs, preset, { labels });
-    return whole.columns.length ? whole.columns[0].nodes.filter(x => !x.other).map(x => x.key) : [];
-  }, [allSongs, preset, labels]);
+  const firstOrder = useMemo(() => firstOrderFor(preset, allSongs, { labels }), [allSongs, preset, labels]);
   const flow = useMemo(() => buildFlow(songs, preset, { labels, firstOrder }), [songs, preset, labels, firstOrder]);
-  const sentence = useMemo(() => (flow.n ? strongestSentence(flow) : null), [flow]);
+  const emptyMessage = flowEmptyMessage(flow); // too thin a flow is not drawn: no chart, no sentence
+  const sentence = useMemo(() => (emptyMessage ? null : strongestSentence(flow)), [flow, emptyMessage]);
 
   const names = preset.columns.map(c => c.name.toLowerCase());
   const caption = `Based on ${flow.n} of ${songs.length} songs in this slice: those with a first-listed code in all three of ${names[0]}, ${names[1]} and ${names[2]}. Each column uses a song's first-listed code.`;
@@ -46,8 +44,8 @@ function ArgumentsTab() {
       <ChartFrame
         title="How the fields line up"
         controls={picker}
-        empty={flow.n ? null : 'No songs in this slice carry all three.'}
-        table={flow.n ? flowTable(flow) : { head: [], rows: [] }}
+        empty={emptyMessage}
+        table={emptyMessage ? { head: [], rows: [] } : flowTable(flow)}
         caption={caption}
       >
         {width => (

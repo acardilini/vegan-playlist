@@ -2,12 +2,13 @@
 // list and the theme-pair list. No DOM, no React, no layout: everything is computed from the one dataset payload so
 // node --test can exercise it directly. A song counts under its FIRST VALID code in each column (the payload carries
 // only that code per field), and needs a value in all three of a preset's fields to be in a flow.
-import { MIN_GROUP_FOR_SENTENCE } from './dataModel.js';
+import { MIN_GROUP_FOR_SENTENCE, MIN_POINT_N, genreRanking } from './dataModel.js';
 
 export const TOP_NODES = 6;     // codes per column that get their own node; the rest fold into one Other node
 export const MIN_PAIR_N = 3;    // a theme pair needs this many songs to be listed
 export const TOP_PAIRS = 10;    // theme pairs listed
 export const TOP_PATHS = 10;    // pathways listed
+export const MIN_FLOW_N = MIN_POINT_N; // a flow needs this many songs with all three fields to be drawn
 
 const OTHER_KEY = 'other';
 const OTHER_LABEL = 'Other';
@@ -84,6 +85,10 @@ function buildColumn(counts, column, labels, firstOrder, withSlots) {
 
   let otherKey = OTHER_KEY;
   if (rest.length) {
+    // a real code labelled "Other" (the genre hierarchy has one) must not read as the folded node
+    for (const node of nodes) {
+      if (node.label.toLowerCase() === OTHER_LABEL.toLowerCase()) node.label = `${OTHER_LABEL} ${column.name.toLowerCase()}`;
+    }
     // a real code can itself be "other" (the genre hierarchy has one); keep the folded node's key distinct from it
     if (nodes.some(x => x.key === OTHER_KEY)) otherKey = `_${OTHER_KEY}`;
     nodes.push({ key: otherKey, label: OTHER_LABEL, n: rest.reduce((s, r) => s + r.n, 0), other: true, slot: null });
@@ -143,6 +148,21 @@ export function buildFlow(songs, preset, { labels = {}, firstOrder = [] } = {}) 
     .sort((a, b) => b.n - a.n || byLabel(a.labels.join(SEP), b.labels.join(SEP)));
 
   return { preset, n: eligible.length, columns, links, paths };
+}
+
+// The colour order for column 0 (best first). It is the ranking over the WHOLE catalogue, so a code keeps its colour as the
+// slice changes: for a genre column that is the same ranking the Over time tab uses (every song, not only the ones with all
+// three fields), so a genre has one colour across both tabs; other columns rank the songs that carry all three fields.
+export function firstOrderFor(preset, allSongs, { labels = {} } = {}) {
+  if (preset.columns[0].field === 'g') return genreRanking(allSongs).map(r => r.g);
+  const whole = buildFlow(allSongs, preset, { labels });
+  return whole.columns.length ? whole.columns[0].nodes.filter(x => !x.other).map(x => x.key) : [];
+}
+
+// Why a flow is not drawn, or null when it has enough songs.
+export function flowEmptyMessage(flow) {
+  if (flow.n >= MIN_FLOW_N) return null;
+  return `Too few songs in this slice carry all three (${flow.n} of them; at least ${MIN_FLOW_N} are needed).`;
 }
 
 const isOtherKey = (flow, col, key) => flow.columns[col].nodes.some(x => x.key === key && x.other);
