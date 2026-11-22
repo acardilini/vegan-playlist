@@ -5,7 +5,7 @@ const path = require('path');
 
 // The full-lyrics table (song_lyrics.lyrics/.translation) is LOCAL ONLY. Only admin.js
 // (behind auth) may reference it. Guard against a public route ever SELECTing it.
-const PUBLIC_ROUTES = ['spotify.js', 'playlists.js', 'youtube.js', 'submissions.js', 'analytics.js', 'analysis.js', 'content.js'];
+const PUBLIC_ROUTES = ['spotify.js', 'playlists.js', 'youtube.js', 'submissions.js', 'analytics.js', 'analysis.js', 'content.js', 'stories.js'];
 
 test('no public route references song_lyrics', () => {
   for (const f of PUBLIC_ROUTES) {
@@ -52,7 +52,7 @@ test('the admin curation service is the one place that reads it, and only behind
 
 // The Explore > Data payload is public: it must carry no lyric/transcript text and no audio samples.
 test('the dataset service and its route never reference lyric text, transcripts or audio samples', () => {
-  for (const f of ['services/dataset.js', 'routes/analytics.js']) {
+  for (const f of ['services/dataset.js', 'routes/analytics.js', 'services/stories.js', 'routes/stories.js']) {
     const src = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     for (const word of ['song_lyrics', 'translation', 'song_audio_transcripts', 'audio_samples']) {
       assert.ok(!src.includes(word), `${f} must not reference ${word}`);
