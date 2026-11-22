@@ -324,7 +324,11 @@ a.band-chip:hover { text-decoration: underline; }
 .wb-audio-sample-list li + li { border-top: 1px solid var(--border-hairline); }
 .wb-audio-sample-list p { margin: var(--space-1) 0 0; color: var(--text-secondary); }
 .wb-audio-sample-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
-.wb-audio-transcript { font-style: italic; }
+.wb-audio-sample-type { font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.wb-audio-sample-time { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: var(--text-muted); }
+.wb-audio-sample-list .wb-audio-transcript { font-style: italic; font-size: 0.85rem; color: var(--text-primary); }
+.wb-audio-by { margin-top: var(--space-1); font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
+.wb-audio-by-unknown { font-size: 0.75rem; font-weight: 400; font-style: italic; color: var(--text-muted); }
 .wb-audio-decision { margin-top: var(--space-3); }
 .wb-audio-choices { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-1) 0; }
 .wb-audio-hint { font-size: 0.78rem; color: var(--text-muted); }

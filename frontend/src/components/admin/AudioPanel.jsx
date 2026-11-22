@@ -76,12 +76,14 @@ function SampleList({ samples }) {
             {items.map((it, i) => (
               <li key={`${it.type}-${it.timestamp || i}`}>
                 <div className="wb-audio-sample-head">
-                  <span className="wb-genre-opt-val">{it.label}</span>
-                  {it.timestamp && <span className="wb-genre-opt-meta">at {it.timestamp}</span>}
-                  {it.source && <span className="wb-genre-opt-meta">{it.source}</span>}
+                  <span className="wb-audio-sample-type">{it.label}</span>
+                  {it.timestamp && <span className="wb-audio-sample-time">{it.timestamp}</span>}
                 </div>
-                {it.description && <p>{it.description}</p>}
+                {!it.transcript && it.description && <p>{it.description}</p>}
                 {it.transcript && <p className="wb-audio-transcript">&ldquo;{it.transcript}&rdquo;</p>}
+                {it.source
+                  ? <div className="wb-audio-by">&mdash; {it.source}</div>
+                  : it.transcript && <div className="wb-audio-by wb-audio-by-unknown">Unidentified source</div>}
               </li>
             ))}
           </ul>
