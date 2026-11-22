@@ -475,8 +475,11 @@ async function mapPayload(db) {
 // one is an (x, y) to plot — but each embedding needs a metric and a normalisation
 // judgement that code must not guess. Adding a third tab is one entry plus a test.
 const SIMILARITY = [
-  { key: 'message', label: 'Similar message', column: 'lyric_embedding',
-    dims: null, metric: 'cosine', lyricDerived: true },
+  // The analysis project's lyric-hybrid vector (1188 dims: qualitative codes + centred BGE-M3), the same vector that
+  // builds the Thematic space, so "Similar message" matches neighbourhoods on the map. The older `lyric_embedding`
+  // column (mixed 768 / 1024 widths) is no longer read.
+  { key: 'message', label: 'Similar message', column: 'lyric_hybrid_embedding',
+    dims: 1188, metric: 'cosine', lyricDerived: true },
   // The analysis project's hybrid audio vector (574 dims). `dims` is enforced on the target AND
   // every candidate, so a row of any other length can never enter a comparison.
   { key: 'sound', label: 'Similar sound', column: 'audio_hybrid_embedding',

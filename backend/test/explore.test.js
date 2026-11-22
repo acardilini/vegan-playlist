@@ -460,33 +460,51 @@ test('a non-genre dimension is completely unaffected by the genre fold', async (
   assert.equal(songC.codes.sonic_intensity, explore.NOT_CODED);
 });
 
+// The message tab reads the analysis project's 1188-dim lyric-hybrid vector (qualitative codes + centred BGE-M3),
+// the same vector behind the Thematic space of the Explore map.
 async function addLyricEmbedding(songId, vec) {
   await makeEligible(songId);
   await pool.query(
-    `INSERT INTO song_embeddings (song_id, lyric_embedding, updated_at)
+    `INSERT INTO song_embeddings (song_id, lyric_hybrid_embedding, updated_at)
      VALUES ($1, $2::float8[], now())
-     ON CONFLICT (song_id) DO UPDATE SET lyric_embedding = EXCLUDED.lyric_embedding`,
+     ON CONFLICT (song_id) DO UPDATE SET lyric_hybrid_embedding = EXCLUDED.lyric_hybrid_embedding`,
     [songId, vec]);
 }
+const lyricHybrid = (...lead) => { const v = new Array(1188).fill(0); lead.forEach((x, i) => { v[i] = x; }); return v; };
 
-test('message similarity ranks by cosine and respects the publish filter', async () => {
+test('message similarity is cosine over the 1188-dim lyric-hybrid embedding, ranks by cosine and respects the publish filter', async () => {
+  const entry = explore.SIMILARITY.find(s => s.key === 'message');
+  assert.equal(entry.column, 'lyric_hybrid_embedding');
+  assert.equal(entry.metric, 'cosine');
+  assert.equal(entry.dims, 1188);
+
   const target = await mkSong('ZZZEXP Target');
   const near = await mkSong('ZZZEXP Near');
   const far = await mkSong('ZZZEXP Far');
   const hidden = await mkSong('ZZZEXP Hidden', { published: false });
+  const wrongLength = await mkSong('ZZZEXP Message wronglen');
+  const legacyOnly = await mkSong('ZZZEXP Message legacy');
 
-  // 3-dim vectors: `near` points almost the same way as the target, `far` is orthogonal.
-  await addLyricEmbedding(target, [1, 0, 0]);
-  await addLyricEmbedding(near, [0.98, 0.2, 0]);
-  await addLyricEmbedding(far, [0, 1, 0]);
-  await addLyricEmbedding(hidden, [1, 0, 0]);   // a perfect match, but unpublished
+  // `near` points almost the same way as the target, `far` is orthogonal.
+  await addLyricEmbedding(target, lyricHybrid(1, 0, 0));
+  await addLyricEmbedding(near, lyricHybrid(0.98, 0.2, 0));
+  await addLyricEmbedding(far, lyricHybrid(0, 1, 0));
+  await addLyricEmbedding(hidden, lyricHybrid(1, 0, 0));   // a perfect match, but unpublished
+  await addLyricEmbedding(wrongLength, [1, 0, 0]);          // a perfect direction, but not 1188-dim
+  // A song holding only the older lyric_embedding has nothing to compare.
+  await makeEligible(legacyOnly);
+  await pool.query(
+    `INSERT INTO song_embeddings (song_id, lyric_embedding, updated_at) VALUES ($1, $2::float8[], now())
+     ON CONFLICT (song_id) DO UPDATE SET lyric_embedding = EXCLUDED.lyric_embedding`,
+    [legacyOnly, [1, 0, 0]]);
 
-  const entry = explore.SIMILARITY.find(s => s.key === 'message');
-  const rows = await explore.similarByEmbedding(pool, target, entry, 10);
+  const rows = await explore.similarByEmbedding(pool, target, entry, 5000);
   const ids = rows.map(r => r.id);
 
   assert.ok(!ids.includes(target), 'the song itself is excluded');
   assert.ok(!ids.includes(hidden), 'unpublished songs are excluded');
+  assert.ok(!ids.includes(wrongLength), 'a vector of the wrong length never enters the comparison');
+  assert.ok(!ids.includes(legacyOnly), 'the older lyric_embedding is ignored');
   assert.ok(ids.indexOf(near) < ids.indexOf(far), 'nearer song ranks first');
 });
 
@@ -556,7 +574,7 @@ test('similarFor omits a tab with no embedding and falls back to genre when both
 
   // A song with only a lyric embedding gets one tab and no fallback.
   const messageOnly = await mkSong('ZZZEXP Message only');
-  await addLyricEmbedding(messageOnly, [1, 0, 0]);
+  await addLyricEmbedding(messageOnly, lyricHybrid(1, 0, 0));
   const one = await explore.similarFor(pool, messageOnly, 6);
   assert.deepEqual(one.tabs.map(t => t.key), ['message']);
   assert.equal(one.fallback, null, 'no fallback when at least one tab exists');
