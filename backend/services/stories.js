@@ -37,6 +37,16 @@ function parseArgs(rest) {
   return args;
 }
 
+// Derived-values rule: every figure in a story comes from a {{token}} (resolved from the data on each request), so the
+// story stays true as songs are added. A hand-typed percentage or number is rejected; four-digit years and decades
+// ("1980", "1980s") are scope labels and allowed. Written-out words ("three songs") are the author's own wording.
+function assertNoTypedFigures(text, where) {
+  const bare = String(text).replace(/\{\{[^}]*\}\}/g, ' ').replace(/\b(?:1[89]|20)\d\d(?:s\b|\b)/g, ' ');
+  if (/[\d%]/.test(bare)) {
+    throw new StoryError('BAD_FORMAT', `${where} has a typed-in figure. Use a {{pct ...}} or {{n ...}} token so it stays true as songs are added`);
+  }
+}
+
 // Story text -> { meta, blocks }. Block lines start with @; everything between them is Markdown prose.
 function parseStory(raw) {
   const { meta, body } = parseFrontMatter(String(raw).replace(/\r\n?/g, '\n'));
@@ -46,6 +56,7 @@ function parseStory(raw) {
 
   const flushProse = () => {
     const markdown = prose.join('\n').trim();
+    if (markdown) assertNoTypedFigures(markdown, 'Story text');
     if (markdown) blocks.push({ type: 'prose', markdown });
     prose = [];
   };
@@ -53,7 +64,11 @@ function parseStory(raw) {
   for (const line of body.split('\n')) {
     if (songs) {
       const row = SONG_ROW_RE.exec(line);
-      if (row) { songs.rows.push({ id: Number(row[1]), caption: row[2] }); continue; }
+      if (row) {
+        if (/\d/.test(row[2])) throw new StoryError('BAD_FORMAT', `Song caption "${row[2]}" has a number. The song card already shows the year from the data`);
+        songs.rows.push({ id: Number(row[1]), caption: row[2] });
+        continue;
+      }
       if (!line.trim()) continue;
       songs = null; // first non-row, non-blank line ends the block and is handled below
     }

@@ -66,3 +66,20 @@ test('applyTokens splices the resolver result; a throwing resolver is BAD_TOKEN'
   const keep = new StoryError('BAD_TOKEN', 'x');
   assert.throws(() => applyTokens('{{n a 1}}', () => { throw keep; }), e => e === keep);
 });
+
+// Derived-values rule: a figure in a story must come from a {{token}}, never be typed by hand, or it goes stale as songs are added.
+test('prose with a hand-typed percentage or count is BAD_FORMAT; tokens, years and decades are fine', () => {
+  const bad = (text) => assert.throws(() => parseStory(`${FM}${text}`), e => e instanceof StoryError && e.code === 'BAD_FORMAT', text);
+  bad('Shouting fell to 20% by the end.');
+  bad('We counted 104 songs in that decade.');
+  bad('The catalogue holds 1,343 songs.');
+  bad('Growls rose by 43 points.');
+  const ok = parseStory(`${FM}In the 1980s, {{pct vocal_style RAW_SHOUTED 1980}} were shouted. By 2020 it changed. Three songs show it.`);
+  assert.equal(ok.blocks[0].type, 'prose');
+});
+
+test('a song caption may not contain digits (the card already shows the year from the data)', () => {
+  assert.throws(() => parseStory(`${FM}@songs\n1398 | Mob 47, 1984. Shouted.`), e => e instanceof StoryError && e.code === 'BAD_FORMAT');
+  const ok = parseStory(`${FM}@songs\n1398 | Shouted, with a chant.`);
+  assert.equal(ok.blocks[0].rows[0].caption, 'Shouted, with a chant.');
+});
