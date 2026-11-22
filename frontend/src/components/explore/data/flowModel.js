@@ -212,7 +212,7 @@ export function pairsTable(result) {
 // Geometry for the flow: pure numbers, no DOM. ONE scale (pixels per song) is shared by every column so equal totals
 // give equal column heights. Each column is a stack of nodes with `gap` between, centred vertically. A ribbon is a cubic
 // Bezier centre line (stroke it `thickness` wide) from the right edge of its source node to the left edge of its target,
-// attached at stacked offsets inside both nodes: leaving in link order, entering in link order.
+// attached at stacked offsets inside both nodes: leaving in the order of the target nodes' y, entering in the order of the source nodes' y (so ribbons at one node do not cross).
 export function flowLayout(flow, { width, height, nodeWidth = 14, gap = 10, labelPad = 0 } = {}) {
   if (!flow.n || !flow.columns.length) return { nodes: [], ribbons: [], scale: 0 };
 
@@ -249,16 +249,29 @@ export function flowLayout(flow, { width, height, nodeWidth = 14, gap = 10, labe
 
   const ribbons = [];
   flow.links.forEach((links, k) => {
-    const outUsed = new Map(); // offset already taken on a source node's right side
-    const inUsed = new Map();  // ... on a target node's left side
-    for (const link of links) {
-      const a = at.get(k + SEP + link.from);
-      const b = at.get(k + 1 + SEP + link.to);
+    // A node's ribbons attach in the vertical order of the node at their other end (outgoing by target y, incoming by
+    // source y; ties keep link order), so ribbons leaving or entering one node do not cross each other at its edge.
+    const ends = links.map(link => ({ link, a: at.get(k + SEP + link.from), b: at.get(k + 1 + SEP + link.to) }));
+    const outOffset = new Map();
+    const inOffset = new Map();
+    const place = (side, otherSide, offsets) => {
+      const byNode = new Map();
+      for (const e of ends) byNode.set(e[side], [...(byNode.get(e[side]) || []), e]);
+      for (const list of byNode.values()) {
+        let used = 0;
+        for (const e of [...list].sort((x, y) => x[otherSide].y - y[otherSide].y)) {
+          offsets.set(e, used);
+          used += e.link.n * scale;
+        }
+      }
+    };
+    place('a', 'b', outOffset);
+    place('b', 'a', inOffset);
+    for (const e of ends) {
+      const { link, a, b } = e;
       const thickness = link.n * scale;
-      const y0 = a.y + (outUsed.get(a) || 0) + thickness / 2;
-      const y1 = b.y + (inUsed.get(b) || 0) + thickness / 2;
-      outUsed.set(a, (outUsed.get(a) || 0) + thickness);
-      inUsed.set(b, (inUsed.get(b) || 0) + thickness);
+      const y0 = a.y + outOffset.get(e) + thickness / 2;
+      const y1 = b.y + inOffset.get(e) + thickness / 2;
       const x0 = a.x + a.w;
       const x1 = b.x;
       const xm = (x0 + x1) / 2;

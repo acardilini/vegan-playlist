@@ -346,3 +346,20 @@ test('browseSelectionFor maps the middle and third columns to Browse keys', () =
   );
   assert.deepEqual(browseSelectionFor(PRESETS[0], []), {});
 });
+
+// Ribbons attach in the order of the node they connect to, so they do not cross at the node edge.
+const ends = (r) => { const v = r.d.match(/-?\d+(?:\.\d+)?/g).map(Number); return { y0: v[1], y1: v[7] }; };
+test('flowLayout orders a node\'s outgoing ribbons by target y and incoming ribbons by source y', () => {
+  const songs = [
+    ...many(6, { g: 'punk', tone: 'sad' }),    // punk's largest link goes to the LOWER tone (sad)
+    ...many(4, { g: 'punk', tone: 'angry' }),
+    ...many(5, { g: 'metal', tone: 'angry' }), // angry (9) ranks above sad (6); metal's link is bigger than punk's into angry
+  ];
+  const layout = layoutOf(songs);
+  const ribbon = (from, to) => layout.ribbons.find(r => r.fromCol === 0 && r.from === from && r.to === to);
+  const punkAngry = ends(ribbon('punk', 'angry'));
+  const punkSad = ends(ribbon('punk', 'sad'));
+  assert.ok(punkAngry.y0 < punkSad.y0, 'punk -> angry (higher target) leaves higher on punk');
+  const metalAngry = ends(ribbon('metal', 'angry'));
+  assert.ok(punkAngry.y1 < metalAngry.y1, 'punk (higher source) enters angry higher than metal');
+});

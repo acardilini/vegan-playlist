@@ -7,26 +7,29 @@ import { noun, resolvePin } from './flowPin';
 // node has no link, since Browse could not express "everything else".
 function FlowDetail({ flow, pin, state, bounds, onClear }) {
   const sel = resolvePin(flow, pin);
-  if (!sel) return null;
+  // the live region stays mounted (empty when nothing is pinned) so a screen reader announces a newly pinned selection
+  if (!sel) return <div className="data-arg-live" aria-live="polite" />;
   const pct = Math.round((sel.n / flow.n) * 100);
   const hasOther = sel.parts.some(p => p.other);
   return (
-    <div className="data-arg-detail" aria-live="polite">
-      <p className="data-arg-detail-line">
-        <strong>{sel.label}</strong>
-        {`: ${sel.n} ${noun(sel.n)}, ${pct}% of the pathway songs.`}
+    <div className="data-arg-live" aria-live="polite">
+      <div className="data-arg-detail">
+        <p className="data-arg-detail-line">
+          <strong>{sel.label}</strong>
+          {`: ${sel.n} ${noun(sel.n)}, ${pct}% of the pathway songs.`}
+          {!hasOther && (
+            <>
+              {' '}
+              <Link to={browseHref(state, bounds, browseSelectionFor(flow.preset, sel.parts))}>Browse songs</Link>
+            </>
+          )}
+          {' '}
+          <button type="button" className="data-arg-clear" onClick={onClear}>Clear</button>
+        </p>
         {!hasOther && (
-          <>
-            {' '}
-            <Link to={browseHref(state, bounds, browseSelectionFor(flow.preset, sel.parts))}>Browse songs</Link>
-          </>
+          <p className="data-arg-note">Browse counts songs with this code anywhere, not only as the first-listed one.</p>
         )}
-        {' '}
-        <button type="button" className="data-arg-clear" onClick={onClear}>Clear</button>
-      </p>
-      {!hasOther && (
-        <p className="data-arg-note">Browse counts songs with this code anywhere, not only as the first-listed one.</p>
-      )}
+      </div>
     </div>
   );
 }

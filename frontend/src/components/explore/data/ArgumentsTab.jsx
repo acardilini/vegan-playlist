@@ -12,8 +12,8 @@ const PHONE_MAX_WIDTH = 640; // below this the flow becomes a list of pathways
 // Explore > Data > Arguments: how genre, tone and advocacy action (and two other trios of fields) line up on a song.
 function ArgumentsTab() {
   const { songs, allSongs, labels, state, setState, bounds } = useOutletContext();
-  // The pin is a column position plus codes, tagged with the preset it was made on; a pin from another preset is ignored,
-  // so changing the preset clears it (and it comes back only if the user returns and picks again).
+  // The pin is a column position plus codes, tagged with the preset it was made on; a pin from another preset is ignored
+  // (a URL change such as Back), and the picker also clears it, so A to B to A never restores an old pin.
   const [pinState, setPinState] = useState(null);
   const preset = PRESETS.find(p => p.id === state.flow) || PRESETS[0];
   const pin = pinState && pinState.preset === preset.id ? pinState.pin : null;
@@ -35,7 +35,7 @@ function ArgumentsTab() {
       <div className="data-toggle" role="group" aria-label="Fields to compare">
         {PRESETS.map(p => (
           <button key={p.id} type="button" aria-pressed={p.id === preset.id} className={p.id === preset.id ? 'active' : ''}
-            onClick={() => setState({ flow: p.id })}>{p.label}</button>
+            onClick={() => { setPinState(null); setState({ flow: p.id }); }}>{p.label}</button>
         ))}
       </div>
     </div>

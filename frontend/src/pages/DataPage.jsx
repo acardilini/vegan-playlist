@@ -12,7 +12,8 @@ const TABS = [
 // inside SliceLayout, which owns the dataset fetch and the slice bar.
 function DataPage() {
   const { pathname, search } = useLocation();
-  const onSliceTab = TABS.some(t => t.slice && pathname.endsWith(`/${t.to}`));
+  const route = pathname.replace(/\/+$/, ''); // tolerate a trailing slash
+  const onSliceTab = TABS.some(t => t.slice && route.endsWith(`/${t.to}`));
   return (
     <div className="data-page">
       <nav className="data-tabs" aria-label="Data views">
