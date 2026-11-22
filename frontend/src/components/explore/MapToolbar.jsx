@@ -5,7 +5,7 @@
 const PRESET_LABELS = [['iso', 'Iso'], ['top', 'Top'], ['front', 'Front'], ['side', 'Side']];
 
 function MapToolbar({
-  dim, has3d, onDim, activePreset, onPreset, drift, onDrift, reduceMotion,
+  dim, has3d, onDim, activePreset, onPreset, drift, onDrift, reduceMotion, dragMode, onDragMode,
 }) {
   return (
     <div className="explore-maptools">
@@ -41,6 +41,20 @@ function MapToolbar({
                 className={`explore-maptool ${activePreset === key ? 'on' : ''}`}
                 aria-pressed={activePreset === key}
                 onClick={() => onPreset(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="explore-maptools-group" role="group" aria-label="Drag does">
+            {[['orbit', 'Rotate'], ['pan', 'Pan']].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={`explore-maptool ${dragMode === key ? 'on' : ''}`}
+                aria-pressed={dragMode === key}
+                title={key === 'orbit' ? 'Drag to turn the map (hold Shift to pan)' : 'Drag to move the map (hold Shift to rotate)'}
+                onClick={() => onDragMode(key)}
               >
                 {label}
               </button>

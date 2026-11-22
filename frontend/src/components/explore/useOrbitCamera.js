@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 // Explicit .js extensions: plain ESM that `node --test` may load directly.
 import {
-  DEFAULT_CAMERA, PRESETS, clampCamera, interpolateCamera,
+  DEFAULT_CAMERA, PRESETS, clampCamera, dragModeFor, interpolateCamera,
 } from './camera3d.js';
 import { deriveCamera, formatCamera } from './exploreUrlState.js';
 import { easeOutCubic } from './mapGeometry.js';
@@ -24,6 +24,9 @@ export function useOrbitCamera({
   const [camera, setCamera] = useState(() => deriveCamera(params));
   const [isDragging, setIsDragging] = useState(false);
   const [drift, setDrift] = useState(false);
+  const [dragMode, setDragMode] = useState('orbit');   // what a plain drag does; not in the URL
+  const dragModeRef = useRef(dragMode);
+  useEffect(() => { dragModeRef.current = dragMode; }, [dragMode]);
 
   const cameraRef = useRef(camera);
   const committedRef = useRef(urlCam);
@@ -165,7 +168,7 @@ export function useOrbitCamera({
     cancelMove();
     dragRef.current = {
       x: e.clientX, y: e.clientY, cam: { ...cameraRef.current },
-      mode: (e.button === 2 || e.shiftKey) ? 'pan' : 'orbit',
+      mode: dragModeFor(e, dragModeRef.current),
     };
     // Reset here, not on pointer-up: `click` fires after `pointerup` and needs to know.
     movedRef.current = false;
@@ -259,7 +262,7 @@ export function useOrbitCamera({
   }, []);
 
   return {
-    camera, isDragging, drift, setDrift,
+    camera, isDragging, drift, setDrift, dragMode, setDragMode,
     onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onKeyDown, onContextMenu,
     didDrag, attachWheel, zoomIn, zoomOut, reset, goToPreset, moveTo,
   };

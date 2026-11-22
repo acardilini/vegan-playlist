@@ -115,6 +115,14 @@ test('deriveView falls back to fit for an out-of-range zoom', () => {
   assert.deepEqual(deriveView(p('view=99,0,0')), { k: 1, tx: 0, ty: 0 });
 });
 
+test('a zoomed-out view (below fit) is a valid view and round-trips', () => {
+  assert.deepEqual(deriveView(p('view=0.6,40,30')), { k: 0.6, tx: 40, ty: 30 });
+  assert.deepEqual(deriveView(p('view=0.2,0,0')), { k: 1, tx: 0, ty: 0 }, 'below the minimum is still fit');
+  assert.equal(formatView({ k: 0.6, tx: 0, ty: 0 }), '0.6,0,0', 'zoomed out is not "fit", even centred');
+  const v = { k: 0.5, tx: 120, ty: 80 };
+  assert.deepEqual(deriveView(p(`view=${formatView(v)}`)), v);
+});
+
 test('formatView rounds, and writes nothing at fit', () => {
   assert.equal(formatView({ k: 1, tx: 0, ty: 0 }), '');
   assert.equal(formatView({ k: 1, tx: 40.4, ty: -30 }), '1,40,-30', 'an unzoomed but panned map is not "fit"');

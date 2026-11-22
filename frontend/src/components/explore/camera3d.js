@@ -56,6 +56,14 @@ export function clampCamera(cam, size) {
   return out;
 }
 
+// What a drag does: the chosen mode ('orbit' | 'pan', the toolbar switch) for a plain left drag, the other one
+// for Shift or the right button, so both stay one gesture away whichever is chosen.
+export function dragModeFor(e, base) {
+  const chosen = base === 'pan' ? 'pan' : 'orbit';
+  const flipped = e.button === 2 || e.shiftKey;
+  return (chosen === 'pan') !== flipped ? 'pan' : 'orbit';
+}
+
 // Shift the pan so the screen point lands at the plot centre (then clamped to the plot).
 export function panCentredOn(cam, point, size) {
   return clampCamera({

@@ -6,7 +6,7 @@ export const PAD = 18;
 
 // 1x is fit-to-plot; 12x is the point past which 640 dots stop being a map and become a few
 // dots on an empty field.
-export const MIN_K = 1;
+export const MIN_K = 0.5;
 export const MAX_K = 12;
 export const FIT_VIEW = { k: 1, tx: 0, ty: 0 };
 // How far past the plot edge the map may be pushed, as a fraction of the plot, so dots under an
@@ -101,12 +101,14 @@ export function clampView(view, size, slack = PAN_SLACK) {
   const k = Math.min(MAX_K, Math.max(MIN_K, view.k));
   const sx = size.w * slack;
   const sy = size.h * slack;
-  const minTx = size.w - size.w * k - sx;
-  const minTy = size.h - size.h * k - sy;
+  // Zoomed in (k >= 1) the content overflows the plot: tx runs from (size - content) up to 0. Zoomed out (k < 1) it
+  // is smaller than the plot: tx runs from 0 up to (size - content). Either way the slack is added on both ends.
+  const edgeX = size.w - size.w * k;
+  const edgeY = size.h - size.h * k;
   return {
     k,
-    tx: Math.min(sx, Math.max(minTx, view.tx)),
-    ty: Math.min(sy, Math.max(minTy, view.ty)),
+    tx: Math.min(Math.max(0, edgeX) + sx, Math.max(Math.min(0, edgeX) - sx, view.tx)),
+    ty: Math.min(Math.max(0, edgeY) + sy, Math.max(Math.min(0, edgeY) - sy, view.ty)),
   };
 }
 

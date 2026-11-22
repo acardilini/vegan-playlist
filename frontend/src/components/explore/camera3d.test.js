@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_CAMERA, PRESETS, MIN_ZOOM, MAX_ZOOM,
   clampCamera, activePreset, projectCloud, interpolateCamera, sortBackToFront,
-  dotRadius, dotAlpha, gizmoAxes, pickPoint, panCentredOn,
+  dotRadius, dotAlpha, gizmoAxes, pickPoint, panCentredOn, dragModeFor,
 } from './camera3d.js';
 
 const SIZE = { w: 800, h: 520 };
@@ -167,4 +167,14 @@ test('panCentredOn keeps the pan inside the clamp', () => {
   const next = panCentredOn(DEFAULT_CAMERA, { x: SIZE.w * 3, y: SIZE.h / 2 }, SIZE);
   assert.equal(next.panX, -SIZE.w / 2);
   assert.equal(next.panY, 0);
+});
+
+test('dragModeFor: the chosen mode applies to a plain left drag; Shift or right button does the other one', () => {
+  assert.equal(dragModeFor({ button: 0, shiftKey: false }, 'orbit'), 'orbit');
+  assert.equal(dragModeFor({ button: 0, shiftKey: false }, 'pan'), 'pan');
+  assert.equal(dragModeFor({ button: 0, shiftKey: true }, 'orbit'), 'pan');
+  assert.equal(dragModeFor({ button: 0, shiftKey: true }, 'pan'), 'orbit');
+  assert.equal(dragModeFor({ button: 2, shiftKey: false }, 'orbit'), 'pan');
+  assert.equal(dragModeFor({ button: 2, shiftKey: false }, 'pan'), 'orbit');
+  assert.equal(dragModeFor({ button: 0, shiftKey: false }, 'nonsense'), 'orbit', 'an unknown base falls back to orbit');
 });

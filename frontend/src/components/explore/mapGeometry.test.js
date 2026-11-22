@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  FIT_VIEW, MAX_K, PAD, PAN_SLACK,
+  FIT_VIEW, MAX_K, MIN_K, PAD, PAN_SLACK,
   applyView, clampView, easeOutCubic, extentsFor, layout, outsideCore, projectPoint, viewCentredOn,
   zoomAtPoint,
 } from './mapGeometry.js';
@@ -86,9 +86,9 @@ test('zoomAtPoint keeps the anchor from a non-identity view too', () => {
   assert.equal(baseY * after.k + after.ty, py);
 });
 
-test('zoomAtPoint clamps k to the 1x-12x range', () => {
+test('zoomAtPoint clamps k to the MIN_K-12x range', () => {
   assert.equal(zoomAtPoint({ k: 1, tx: 0, ty: 0 }, 40, 0, 0).k, MAX_K);
-  assert.equal(zoomAtPoint({ k: 4, tx: 0, ty: 0 }, 0.2, 0, 0).k, 1);
+  assert.equal(zoomAtPoint({ k: 4, tx: 0, ty: 0 }, 0.2, 0, 0).k, MIN_K);
 });
 
 test('clampView with no slack pins the view to fit at 1x', () => {
@@ -107,6 +107,19 @@ test('clampView by default lets the map be pushed a margin past the plot edge, e
   assert.equal(w.tx, -240);
   assert.equal(w.ty, -156);
   assert.equal(clampView({ k: 1, tx: 40, ty: -30 }, { w: 800, h: 520 }).tx, 40, 'a small pan is untouched');
+});
+
+test('the map can be zoomed out past fit, and a zoomed-out map can sit anywhere within the plot plus slack', () => {
+  assert.ok(MIN_K < 1, 'zooming out below fit is allowed');
+  const size = { w: 800, h: 520 };
+  assert.equal(clampView({ k: 0.01, tx: 0, ty: 0 }, size).k, MIN_K, 'but not without limit');
+  // At 0.5x the content is 400 wide: tx runs from 0 (left edge flush) to 400 (right edge flush), no slack.
+  assert.equal(clampView({ k: 0.5, tx: -900, ty: 0 }, size, 0).tx, 0);
+  assert.equal(clampView({ k: 0.5, tx: 900, ty: 0 }, size, 0).tx, 400);
+  assert.equal(clampView({ k: 0.5, tx: 900, ty: 0 }, size).tx, 400 + 240, 'default slack past the right edge');
+  assert.equal(clampView({ k: 0.5, tx: -900, ty: 0 }, size).tx, -240, 'default slack past the left edge');
+  assert.equal(clampView({ k: 0.5, tx: 0, ty: 900 }, size, 0).ty, 260, 'ty uses the plot height');
+  assert.equal(clampView({ k: 0.5, tx: 100, ty: 50 }, size).tx, 100, 'an in-range pan is untouched');
 });
 
 test('clampView keeps the plot covered when panned at zoom', () => {

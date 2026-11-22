@@ -574,6 +574,8 @@ function ExploreMap() {
             onPreset={orbit.goToPreset}
             drift={orbit.drift}
             onDrift={orbit.setDrift}
+            dragMode={orbit.dragMode}
+            onDragMode={orbit.setDragMode}
             reduceMotion={reduceMotion}
           />
           <div className="explore-sidetools">
