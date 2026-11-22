@@ -15,6 +15,9 @@ import ArtistSearchResults from './components/ArtistSearchResults';
 import ArtistDetailPage from './components/ArtistDetailPage';
 import SongSubmissionForm from './components/SongSubmissionForm';
 import DataPage from './pages/DataPage';
+import SliceLayout from './pages/SliceLayout';
+import StoriesIndex from './pages/StoriesIndex';
+import StoryPage from './pages/StoryPage';
 import OverTimeTab from './components/explore/data/OverTimeTab';
 import ExplorePage from './pages/ExplorePage';
 import ExploreMap from './components/explore/ExploreMap';
@@ -53,8 +56,12 @@ function App() {
           <Route path="/explore" element={<ExplorePage />}>
             <Route index element={<ExploreMap />} />
             <Route path="data" element={<DataPage />}>
-              <Route index element={<Navigate to="over-time" replace />} />
-              <Route path="over-time" element={<OverTimeTab />} />
+              <Route index element={<Navigate to="stories" replace />} />
+              <Route path="stories" element={<StoriesIndex />} />
+              <Route path="stories/:slug" element={<StoryPage />} />
+              <Route element={<SliceLayout />}>
+                <Route path="over-time" element={<OverTimeTab />} />
+              </Route>
             </Route>
           </Route>
           <Route path="/dashboard" element={<Navigate to="/explore/data" replace />} />

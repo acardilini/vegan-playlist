@@ -48,7 +48,7 @@ function LineChart({ width, xs, series, domain, format, unit = '' }) {
         {series.map(s => (
           <g key={s.key}>
             {runs(s.values).map(run => (run.length > 1 ? (
-              <polyline key={run[0]} fill="none" style={{ stroke: s.colour, strokeWidth: 2 }}
+              <polyline key={run[0]} pathLength="1" fill="none" style={{ stroke: s.colour, strokeWidth: 2 }}
                 points={run.map(i => `${px(i).toFixed(1)},${y(s.values[i]).toFixed(1)}`).join(' ')} />
             ) : null))}
             {s.values.map((v, i) => (v == null ? null : (

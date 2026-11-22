@@ -3281,3 +3281,63 @@
 .data-table thead th, .data-table tbody th { text-align: left; font-weight: 600; }
 .data-table thead th { color: var(--text-secondary); }
 @media (max-width: 640px) { .data-card { padding: var(--space-3); } .data-filter { padding: var(--space-3); } }
+
+/* Data stories: narrative that emerges between full-width visual panels. The hidden state exists only while an element is
+   .is-pending (the observer is waiting), so content is readable if the reveal never runs. */
+.stories-index { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
+.stories-card { display: flex; flex-direction: column; gap: var(--space-2); height: 100%; padding: 0 0 var(--space-4); background: var(--bg-surface); border: 1px solid var(--border-hairline); border-radius: var(--radius-md); overflow: hidden; color: var(--text-primary); text-decoration: none; }
+.stories-card:hover { border-color: var(--border-strong); }
+.stories-card img, .stories-card-noart { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--bg-surface-raised); }
+.stories-card-title { padding: 0 var(--space-4); font: var(--text-display-sm); }
+.stories-card-sub { padding: 0 var(--space-4); font: var(--text-body-sm); color: var(--text-secondary); }
+
+.story { display: flex; flex-direction: column; gap: var(--space-6, 48px); padding-bottom: var(--space-8); }
+.story-back { align-self: flex-start; font: var(--text-label); color: var(--text-secondary); text-decoration: none; }
+.story-back:hover { color: var(--text-primary); }
+
+.story-opening { position: relative; display: flex; align-items: center; justify-content: center; min-height: min(70vh, 520px); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface); }
+.story-mosaic { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; opacity: 0.35; }
+.story-mosaic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.story-opening-text { position: relative; max-width: 38rem; padding: var(--space-5, 32px) var(--space-4); text-align: center; }
+.story-opening-text h1 { margin: 0 0 var(--space-3); font: var(--text-display-lg); color: var(--text-primary); }
+.story-opening-text p { margin: 0; font: var(--text-body-lg); color: var(--text-primary); }
+.story-cue { position: absolute; bottom: var(--space-3); left: 50%; transform: translateX(-50%); font: var(--text-meta); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+
+.story-prose { width: 100%; max-width: 38rem; margin: 0 auto; padding: var(--space-5, 32px) 0; font: var(--text-body-lg); color: var(--text-primary); }
+.story-prose p { margin: 0 0 var(--space-4); }
+.story-prose a { color: var(--accent-ember-60); }
+
+.story-panel { width: 100%; }
+.story-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.story-bars li { display: grid; grid-template-columns: 9rem 1fr 3rem; grid-template-areas: "label track value" ". delta delta"; align-items: center; gap: var(--space-1) var(--space-3); font: var(--text-body-sm); color: var(--text-primary); }
+.story-bar-label { grid-area: label; }
+.story-bar-track { grid-area: track; position: relative; height: 18px; background: var(--bg-surface-raised); border-radius: 4px; }
+.story-bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; transition: width 0.9s ease-out; }
+.story-bar-ghost { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text-secondary); }
+.story-bar-value { grid-area: value; text-align: right; font-weight: 600; }
+.story-bar-delta { grid-area: delta; color: var(--text-secondary); }
+.story-lines polyline { stroke-dasharray: 1; stroke-dashoffset: 0; }
+
+.story-songs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); width: 100%; }
+.story-song { display: flex; flex-direction: column; gap: var(--space-1); color: var(--text-primary); text-decoration: none; }
+.story-song img, .story-song-noart { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-md); background: var(--bg-surface-raised); }
+.story-song-title { font: var(--text-display-sm); margin-top: var(--space-2); }
+.story-song-meta { font: var(--text-body-sm); color: var(--text-secondary); }
+.story-song-caption { font: var(--text-body-sm); color: var(--text-primary); }
+.story-song:hover .story-song-title { text-decoration: underline; }
+
+.story-closing { text-align: center; padding: var(--space-5, 32px) 0; }
+.story-closing a { display: inline-block; padding: var(--space-3) var(--space-5, 32px); border-radius: var(--radius-pill); background: var(--accent-ember-60); color: var(--bg-canvas); font: var(--text-label); text-decoration: none; }
+.story-closing a:hover { background: var(--accent-ember-80); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .story-reveal { transition: opacity 0.7s ease-out, transform 0.7s ease-out; }
+  .story-reveal.is-pending { opacity: 0; transform: translateY(24px); }
+  .story-lines polyline { transition: stroke-dashoffset 1.2s ease-out; }
+  .story-lines:not(.is-seen) polyline { stroke-dashoffset: 1; }
+}
+@media (max-width: 640px) {
+  .story-mosaic { grid-template-columns: repeat(2, 1fr); }
+  .story-bars li { grid-template-columns: 1fr 3rem; grid-template-areas: "label value" "track track" "delta delta"; }
+  .story-songs { grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+}
