@@ -14,7 +14,7 @@ import { nearestSongs } from './neighbours';
 import { walkBack, walkBase, walkNext, walkPrune } from './walk';
 import YearStrip from './YearStrip';
 import {
-  activePreset as presetOf, dotAlpha, dotRadius, gizmoAxes, panCentredOn, pickPoint, projectCloud,
+  dotAlpha, dotRadius, gizmoAxes, panCentredOn, pickPoint, projectCloud,
   sortBackToFront,
 } from './camera3d';
 import {
@@ -570,8 +570,6 @@ function ExploreMap() {
             dim={dim}
             has3d={has3d}
             onDim={(d) => setParam('dim', d === '3d' ? '3d' : null)}
-            activePreset={presetOf(orbit.camera)}
-            onPreset={orbit.goToPreset}
             drift={orbit.drift}
             onDrift={orbit.setDrift}
             dragMode={orbit.dragMode}

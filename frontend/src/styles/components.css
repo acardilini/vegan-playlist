@@ -2315,19 +2315,7 @@
   padding: var(--space-2) var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm);
 }
 .la-attr-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
-.la-attr-value { color: var(--text-primary); }
-
-/* Groups inside a section; the rule only appears between two groups, so a single-group
-   section shows no stray divider. */
-.la-group { display: flex; flex-direction: column; gap: var(--space-1); }
-.la-group + .la-group {
-  margin-top: var(--space-3); padding-top: var(--space-3);
-  border-top: 1px solid var(--border-hairline);
-}
-.la-group-title {
-  margin: 0; font-size: 0.68rem; letter-spacing: 0.03em;
-  text-transform: uppercase; color: var(--text-muted);
-}
+.la-attr-value { color: var(--text-primary); overflow-wrap: anywhere; }
 
 /* "What it's about": one card of label / value rows, the same surface and value style as the Style & tone cards. */
 .la-rows {
@@ -2337,6 +2325,11 @@
 .la-row, .la-attr {
   display: grid; grid-template-columns: 6.75rem minmax(0, 1fr); gap: var(--space-2); align-items: baseline;
 }
+.la-row > *, .la-attr > * { min-width: 0; overflow-wrap: anywhere; }   /* a long code label wraps instead of overshooting its card */
+
+/* The admin workbench's Analysis panel is only about half the page wide: the halves stack there, one under the other. */
+.wb-panel .lyrical-analysis { grid-template-columns: minmax(0, 1fr); }
+.wb-panel .la-major + .la-major { padding-left: 0; border-left: 0; padding-top: var(--space-4); border-top: 1px solid var(--border-hairline); }
 
 /* Per-code quotes, revealed under each row by the section "Show quotes" toggle. */
 .la-quotes { grid-column: 1 / -1; list-style: none; margin: var(--space-1) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }

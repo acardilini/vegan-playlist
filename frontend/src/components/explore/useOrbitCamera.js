@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 // Explicit .js extensions: plain ESM that `node --test` may load directly.
 import {
-  DEFAULT_CAMERA, PRESETS, clampCamera, dragModeFor, interpolateCamera,
+  DEFAULT_CAMERA, clampCamera, dragModeFor, interpolateCamera,
 } from './camera3d.js';
 import { deriveCamera, formatCamera } from './exploreUrlState.js';
 import { easeOutCubic } from './mapGeometry.js';
@@ -111,11 +111,6 @@ export function useOrbitCamera({
     moveRafRef.current = requestAnimationFrame(frame);
     return null;
   }, [apply, cancelMove, commit]);
-
-  const goToPreset = useCallback((name) => {
-    if (!Object.hasOwn(PRESETS, name)) return;
-    moveTo({ ...PRESETS[name], zoom: 1, panX: 0, panY: 0 });
-  }, [moveTo]);
 
   const reset = useCallback(() => moveTo(DEFAULT_CAMERA), [moveTo]);
 
@@ -264,6 +259,6 @@ export function useOrbitCamera({
   return {
     camera, isDragging, drift, setDrift, dragMode, setDragMode,
     onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onKeyDown, onContextMenu,
-    didDrag, attachWheel, zoomIn, zoomOut, reset, goToPreset, moveTo,
+    didDrag, attachWheel, zoomIn, zoomOut, reset, moveTo,
   };
 }

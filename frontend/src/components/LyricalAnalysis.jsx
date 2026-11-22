@@ -83,8 +83,7 @@ function LyricalAnalysis({ analysis }) {
               </div>
 
               <div className="la-group">
-                <h5 className="la-group-title">Subject matter</h5>
-                <div className="la-rows">
+                  <div className="la-rows">
                   {animalFocus && (
                     <div className="la-row">
                       <span className="la-attr-label">Lvl of Animal Focus</span>
@@ -131,7 +130,6 @@ function LyricalAnalysis({ analysis }) {
 
               {hasLyricStyle && (
                 <div className="la-group">
-                  <h5 className="la-group-title">In the lyrics</h5>
                   <div className="la-attributes">
                     {attributes.map(a => (
                       <div key={a.label} className="la-attr">
