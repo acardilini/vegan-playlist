@@ -49,3 +49,13 @@ test('the admin curation service is the one place that reads it, and only behind
     assert.ok(!/services\/curation/.test(route), `${f} must not import the admin curation service`);
   }
 });
+
+// The Explore > Data payload is public: it must carry no lyric/transcript text and no audio samples.
+test('the dataset service and its route never reference lyric text, transcripts or audio samples', () => {
+  for (const f of ['services/dataset.js', 'routes/analytics.js']) {
+    const src = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+    for (const word of ['song_lyrics', 'translation', 'song_audio_transcripts', 'audio_samples']) {
+      assert.ok(!src.includes(word), `${f} must not reference ${word}`);
+    }
+  }
+});

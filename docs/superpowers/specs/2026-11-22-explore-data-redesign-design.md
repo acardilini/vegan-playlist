@@ -12,12 +12,12 @@ It must feel like the rest of Explore: hand-rolled SVG, no charting library, onl
 
 1. **Layout: sub-tabs inside Data.** Explore keeps `Map | Data`; Data gets its own second row of tabs, each a real route so it is linkable: `/explore/data/over-time`, `/arguments`, `/sound`, `/compare`, `/artists`. `/explore/data` redirects to `over-time`; `/dashboard` keeps redirecting to `/explore/data`.
 2. **Five tabs and their contents** (below).
-3. **Genre source defaults to "Catalogue + audio fallback"**: a song with no catalogue genre (own genre, else its first artist's) is placed under the audio analysis' inferred parent genre. A second option, "Catalogue genres only", is one click away.
+3. **One combined genre, no public provenance.** A song's parent genre is its catalogue genre (own genre, else its first artist's); a song with none is placed under the audio analysis' inferred parent genre. There is no public toggle and no wording about where a genre came from: audio-inferred genres have been checked by the curator and their provenance is an admin detail (the curator also reports audio-inferred genre is proving better than other sources).
 
 ## Goals
 
 - One read-only data endpoint, `GET /api/analytics/dataset`, in the style of `explore.mapPayload`: all live songs with only the fields the charts use, so every filter and chart updates client-side with no round trips.
-- One slim filter bar shared by every tab: genre source, parent genre, release-year window (a two-handle range in the style of `YearStrip`), a one-line count of what the slice contains, and a "Browse these songs" link.
+- One slim filter bar shared by every tab: parent genre, release-year window (a two-handle range in the style of `YearStrip`), a one-line count of what the slice contains, and a "Browse these songs" link.
 - Five tabs:
   - **Over time:** songs per era by parent genre (stacked area; counts or share; 5-year or yearly), lyrical tone by decade, sonic shift by decade (median tempo and loudness).
   - **Arguments:** a three-column flow, preset pathways (Genre > Lyrical tone > Advocacy action; Speaking to > Moral frame > Advocacy action; Vocal style > Lyrical tone > Primary emotion), plus "Themes that travel together" (most frequent co-occurring theme pairs).
@@ -50,7 +50,7 @@ It must feel like the rest of Explore: hand-rolled SVG, no charting library, onl
 - **Legacy audio:** sound figures come only from `song_audio_analysis` through `audioAnalysis.LATEST_AUDIO`; nothing reads the frozen `song_lyric_analysis` acoustic columns or Spotify audio features (`legacyAudio.test.js` must stay green).
 - **Live songs only:** `status = 'included' AND published = true`.
 - **Lyric analysis:** read through `analysis.LATEST_ANALYSIS` with its junk and stale gates (a song counts as lyric-coded only when its analysis is publicly visible), codes gated by the codebook; `act` is `advocacy`, never `tactics`.
-- **Genre:** catalogue genre is the song's own genre, else its first artist's (`genres.EFFECTIVE_GENRE_SUBQUERY`), mapped to a parent with `getParentGenre`; the audio-inferred parent is a read-only fallback and is never written to `songs`.
+- **Genre:** one combined field `g`: the catalogue genre (the song's own genre, else its first artist's, `genres.EFFECTIVE_GENRE_SUBQUERY`) mapped to a parent with `getParentGenre`, else the audio-inferred parent genre from the latest OK `song_audio_analysis` row. Read-only: never written to `songs`, and the payload carries no provenance (no catalogue-vs-audio fields).
 - **Tokens only:** `--bg-*`, `--text-*`, `--accent-*`, `--explore-cat-1..7`, `--explore-not-coded`, `--tl-grit` / `--tl-pulse`. No emojis in any label; labels come from `metadataCodebook`, `acousticCodebook` and the taxonomy (never `short_tag`).
 - **Colour rules:** at most six categorical hues plus a neutral grey "Other" (`--explore-not-coded`), as on the Explore map; Compare uses `--tl-grit` against `--tl-pulse`. Run the dataviz palette validator on any new colour pairing; do not invent colours.
 - **Architecture:** pure, DOM-free, `node --test`-tested modules (`frontend/src/utils/dataUrlState.js`, `frontend/src/components/explore/data/dataModel.js`), with React/SVG presentation kept thin, as `explore/` does. Server logic in `backend/services/dataset.js` with tests; the route stays a thin wrapper.
@@ -58,8 +58,8 @@ It must feel like the rest of Explore: hand-rolled SVG, no charting library, onl
 
 ## How the numbers are protected (calls made while reviewing)
 
-- **Genre basis is always visible.** The caption under any genre-split chart says how many of its songs are using an audio-inferred genre ("1,314 placed by genre; 251 of them audio-inferred").
-- **Browse links stay honest.** Browse knows catalogue genres only. In "Catalogue + audio fallback" mode, when the slice contains audio-inferred songs the link carries a short note ("Browse matches catalogue genres only; N of these M songs are audio-inferred"). The Arguments flow uses each song's *primary* code per dimension while Browse matches *any* code, so a flow click-through says "Browse counts songs with this code anywhere, not only as the main one". Click-throughs use `browseUrlState` vocabulary only.
+- **Genre coverage is stated, provenance is not.** The caption under any genre-split chart says how many songs it is based on ("based on 1,314 songs with a genre"), never where a genre came from.
+- **Browse links stay honest.** Browse filters on catalogue genres, so in a genre-filtered slice its count can differ slightly from a chart's; the link therefore never states a song count and carries no provenance note (known limit). The Arguments flow uses each song's *primary* code per dimension while Browse matches *any* code, so a flow click-through says "Browse counts songs with this code anywhere, not only as the main one". Click-throughs use `browseUrlState` vocabulary only.
 - **Small samples.** Insight sentences ("In the 1980s Punk led at 49%...") are written only when each compared group has at least 30 songs, and hedge ("about"). Decade points with fewer than 10 songs are not plotted. Lift cells with fewer than 3 songs are faded. Every threshold is a named constant in `dataModel.js`.
 - **Coverage is stated everywhere**, because half the catalogue has no lyric coding and some eras are tiny.
 
@@ -71,10 +71,10 @@ Curated `songs.language` covers about 9% of live songs today. The curated-langua
 
 `GET /api/analytics/dataset` returns `{ songs, artists, labels, coverage }`.
 
-- `songs[i]`: `id`, `t` (title), `a` (display artists), `y` (release year or null), `cp` (catalogue parent genre or null), `ap` (audio-inferred parent genre or null), `ha`, `hl` (has OK audio / has visible lyric coding), `bpm` (null for unmetered), `lufs`, `mode`, lyric scalars `persp`, `tone`, `focus`, `aud` (codebook-gated), lyric arrays `emo`, `thm`, `act`, `frm`, audio `aint`, `atex`, `avoc`, `amood`. `clar`, `thm_sd`, `tgt`, `arhy`, `aarc`, `ains`, `key` are included only if a built chart uses them, the build phase decides. Never `asmp` or `al`.
+- `songs[i]`: `id`, `t` (title), `a` (display artists), `y` (release year or null), `g` (combined parent genre or null), `ha`, `hl` (has OK audio / has visible lyric coding), `bpm` (null for unmetered), `lufs`, `mode`, lyric scalars `persp`, `tone`, `focus`, `aud` (codebook-gated), lyric arrays `emo`, `thm`, `act`, `frm`, audio `aint`, `atex`, `avoc`, `amood`. `clar`, `thm_sd`, `tgt`, `arhy`, `aarc`, `ains`, `key` are included only if a built chart uses them, the build phase decides. Never `asmp` or `al`.
 - `artists[i]`: `id`, `name`, `n` (live songs). Country and active-status fields are not shipped until their panels are built.
 - `labels`: code-to-label dictionaries from the codebooks, hidden codes omitted.
-- `coverage`: the denominators (live songs, dated, genre-covered by each basis, audio-analysed, lyric-coded, curated-language).
+- `coverage`: the denominators (live songs, dated, genre-covered, audio-analysed, lyric-coded, curated-language).
 - Cached in process for a short time; target under 100 ms uncached and a few hundred KB gzipped (compare `mapPayload`, about 393 KB).
 
 ## Phasing (each phase ships on its own and is curator-smoked before the next)
