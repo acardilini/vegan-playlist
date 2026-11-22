@@ -74,8 +74,21 @@ function audioSourceFor(model) {
   if (m.includes('local') || m.includes('mir')) return 'audio_local_mir';
   return null;
 }
-const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics',
-  'needs-cover','needs-album','needs-released','needs-language','needs-genre','genre-from-artist','genre-from-audio','genre-conflicts',
+// The analysis project's detected languages for a song: its latest lyric-analysis row that has any, else its OK audio
+// transcript. The web app only READS these (song_lyric_analysis, song_audio_transcripts); a language reaches
+// `songs.language` only when the curator chooses it (chooseLanguage). Ordered primary-first, as the analysis wrote them.
+const ANALYSIS_LANGS_SQL = `(SELECT sla.detected_languages FROM song_lyric_analysis sla
+              WHERE sla.song_id = s.id AND cardinality(sla.detected_languages) > 0
+              ORDER BY sla.analyzed_at DESC NULLS LAST LIMIT 1)`;
+const TRANSCRIPT_LANGS_SQL = `(SELECT sat.detected_languages FROM song_audio_transcripts sat
+              WHERE sat.song_id = s.id AND sat.status = 'OK' AND cardinality(sat.detected_languages) > 0 LIMIT 1)`;
+const SUGGESTED_LANGS_SQL = `COALESCE(${ANALYSIS_LANGS_SQL}, ${TRANSCRIPT_LANGS_SQL})`;
+// An AI draft transcript (spoken-word / advocate-speech tracks with no lyrics). LOCAL / ADMIN ONLY, like song_lyrics:
+// only this file may reference song_audio_transcripts (backend/test/lyrics_privacy.test.js).
+const HAS_DRAFT_SQL = `EXISTS (SELECT 1 FROM song_audio_transcripts sat
+              WHERE sat.song_id = s.id AND sat.status = 'OK' AND btrim(sat.transcript) <> '')`;
+const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics','check-transcripts',
+  'needs-cover','needs-album','needs-released','needs-language','language-suggested','needs-genre','genre-from-artist','genre-from-audio','genre-conflicts',
   'needs-video','no-video','broken-video','junk-lyrics','needs-analysis','needs-sample-approval','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
@@ -95,6 +108,10 @@ function queueWhere(queue) {
       return `sp.snooze_until IS NOT NULL AND sp.snooze_until > CURRENT_DATE`;
     case 'needs-lyrics':
       return `s.status='included' AND NOT ${HAS_LYRICS_SQL} AND sp.park_reason IS NULL`;
+    // Songs the analysis project transcribed from the audio (no lyrics exist): the curator checks the draft, then saves it
+    // as the song's lyrics. A subset of Needs lyrics (and To transcribe), listed apart so the checkable ones can be worked through.
+    case 'check-transcripts':
+      return `s.status='included' AND NOT ${HAS_LYRICS_SQL} AND ${HAS_DRAFT_SQL}`;
     case 'needs-cover':
       return `s.status='included' AND NOT ${ARTWORK_SQL}`;
     // Gap-filling lists, not publishing gates: songs stay live while they sit here. An empty
@@ -105,6 +122,10 @@ function queueWhere(queue) {
       return `s.status='included' AND al.release_date IS NULL`;
     case 'needs-language':
       return `s.status='included' AND (s.language IS NULL OR cardinality(s.language) = 0)`;
+    // The subset of Needs language where the analysis project has detected a language to confirm.
+    case 'language-suggested':
+      return `s.status='included' AND (s.language IS NULL OR cardinality(s.language) = 0)
+              AND ${SUGGESTED_LANGS_SQL} IS NOT NULL`;
     // Needs genre = no genre anywhere (the song has none and neither has its artist). Genre from artist is the
     // review list for songs that are covered only by inheritance.
     case 'needs-genre':
@@ -174,6 +195,7 @@ function mapQueueRow(r) {
     // The stored source when there is one ('manual', 'audio_*'); a legacy song genre has none and reads 'song'.
     genre_source: r.song_genre ? (r.song_genre_source || 'song') : (r.artist_genre ? 'artist' : null),
     audio_subgenre: r.audio_subgenre || null, audio_confidence: r.audio_confidence || null,
+    language_suggestion: r.language_suggestion || null,
   };
 }
 
@@ -198,6 +220,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0, 
     SELECT s.id, s.title, s.status, s.published, s.featured, s.language, s.no_video_display, s.spotify_dormant,
            ${SONG_GENRE_SQL} AS song_genre, s.genre_source AS song_genre_source, ${ARTIST_GENRE_SQL} AS artist_genre,
            ${AUDIO_SUBGENRE_SQL} AS audio_subgenre, ${AUDIO_CONFIDENCE_SQL} AS audio_confidence,
+           ${SUGGESTED_LANGS_SQL} AS language_suggestion,
            s.spotify_url, s.bandcamp_url, s.soundcloud_url,
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
@@ -287,6 +310,43 @@ function hasArt(images) {
   return !!(images && !['null', '[]', ''].includes(String(images).trim()));
 }
 
+// Same set of languages, ignoring case and order.
+function sameLanguages(a, b) {
+  const key = (v) => [...new Set((v || []).map((x) => String(x).trim().toLowerCase()))].sort().join('|');
+  return key(a) === key(b);
+}
+
+// The analysis project's detected-language options for a song (read-only; the curator picks one with chooseLanguage).
+// Lyric analysis first, then the audio transcript. `differs` flags a suggestion that disagrees with a language the
+// curator has already set.
+async function languageSuggestions(db, id, manual) {
+  const out = [];
+  const a = (await db.query(
+    `SELECT model_used, detected_languages, language_confidence FROM song_lyric_analysis
+      WHERE song_id=$1 AND cardinality(detected_languages) > 0 ORDER BY analyzed_at DESC NULLS LAST LIMIT 1`, [id])).rows[0];
+  if (a) out.push({ source: 'analysis', languages: a.detected_languages, confidence: a.language_confidence, model_used: a.model_used });
+  const t = (await db.query(
+    `SELECT model_used, detected_languages, confidence FROM song_audio_transcripts
+      WHERE song_id=$1 AND status='OK' AND cardinality(detected_languages) > 0`, [id])).rows[0];
+  if (t) out.push({ source: 'transcript', languages: t.detected_languages, confidence: t.confidence, model_used: t.model_used });
+  const has = Array.isArray(manual) && manual.length > 0;
+  return out.map((o) => ({ ...o, differs: has && !sameLanguages(manual, o.languages) }));
+}
+
+// The AI draft transcript, offered only while the song has no real lyrics. The curator edits it and saves it through
+// saveLyrics; nothing here ever writes song_lyrics. ADMIN ONLY: getWorkbench is behind the admin password.
+async function draftTranscript(db, id) {
+  const r = (await db.query(
+    `SELECT sat.model_used, sat.youtube_id_used, sat.transcript, sat.detected_languages, sat.word_count, sat.confidence,
+            sat.transcribed_at
+       FROM songs s JOIN song_audio_transcripts sat ON sat.song_id = s.id
+      WHERE s.id=$1 AND sat.status='OK' AND btrim(sat.transcript) <> '' AND NOT ${HAS_LYRICS_SQL}`, [id])).rows[0];
+  return r ? {
+    model_used: r.model_used, youtube_id: r.youtube_id_used, transcript: r.transcript, languages: r.detected_languages || [],
+    word_count: r.word_count, confidence: r.confidence, transcribed_at: r.transcribed_at,
+  } : null;
+}
+
 async function getWorkbench(db, id) {
   const s = (await db.query(`
     SELECT s.*, al.name AS album_name, al.data_source AS album_source, al.images AS album_images, to_char(al.release_date, 'YYYY-MM-DD') AS album_release_date
@@ -344,6 +404,8 @@ async function getWorkbench(db, id) {
     translation: lyricsRow ? lyricsRow.translation : null,
     junk_kind: lyricsRow ? lyricsRow.junk_kind : null,
     processing, analysed, analysis: analysisObj, audio,
+    language_suggestions: await languageSuggestions(db, id, s.language),
+    draft_transcript: await draftTranscript(db, id),
     completeness: { lyrics: !!(lyricsRow && lyricsRow.lyrics && lyricsRow.lyrics.trim() && !lyricsRow.junk_kind), cover, video: videos.length > 0, play_link, analysis: analysed },
   };
 }
@@ -442,6 +504,20 @@ async function chooseGenre(db, id, { source, model } = {}) {
   } else {
     bad('source must be artist, audio or keep');
   }
+  return getWorkbench(db, id);
+}
+
+// Take the song's language from the analysis project's detection. The client only names the source ('analysis' = the
+// lyric analysis, 'transcript' = the audio transcript); the server reads the languages itself and replaces
+// songs.language. Nothing else on the song changes.
+async function chooseLanguage(db, id, { source } = {}) {
+  await assertSong(db, id);
+  const pick = (await languageSuggestions(db, id, null)).find((o) => o.source === source);
+  if (!pick) {
+    const e = new Error(['analysis', 'transcript'].includes(source) ? 'no detected language from that source' : 'source must be analysis or transcript');
+    e.code = 'BAD_INPUT'; throw e;
+  }
+  await db.query(`UPDATE songs SET language=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, [id, normLanguages(pick.languages)]);
   return getWorkbench(db, id);
 }
 
@@ -654,4 +730,4 @@ async function quickCapture(db, { title, artist } = {}) {
 module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES, HAS_LYRICS_SQL,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
   saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, setAudioSamples, quickCapture, setFeatured, listLanguages,
-  chooseGenre, genreConflictPairs, audioSourceFor };
+  chooseGenre, chooseLanguage, genreConflictPairs, audioSourceFor };
