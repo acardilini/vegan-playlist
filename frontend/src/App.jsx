@@ -19,6 +19,7 @@ import SliceLayout from './pages/SliceLayout';
 import StoriesIndex from './pages/StoriesIndex';
 import StoryPage from './pages/StoryPage';
 import OverTimeTab from './components/explore/data/OverTimeTab';
+import ArgumentsTab from './components/explore/data/ArgumentsTab';
 import ExplorePage from './pages/ExplorePage';
 import ExploreMap from './components/explore/ExploreMap';
 import './styles/admin.css';
@@ -61,6 +62,7 @@ function App() {
               <Route path="stories/:slug" element={<StoryPage />} />
               <Route element={<SliceLayout />}>
                 <Route path="over-time" element={<OverTimeTab />} />
+                <Route path="arguments" element={<ArgumentsTab />} />
               </Route>
             </Route>
           </Route>

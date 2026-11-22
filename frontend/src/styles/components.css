@@ -3282,6 +3282,47 @@
 .data-table thead th { color: var(--text-secondary); }
 @media (max-width: 640px) { .data-card { padding: var(--space-3); } .data-filter { padding: var(--space-3); } }
 
+/* Data > Arguments: the flow (SVG), the phone pathway list and the theme pairs. Colour sits on column-0 marks only; every
+   label is a text token. Opacity steps are the only emphasis (no animation). */
+.data-arg-ribbon { fill: none; pointer-events: none; }
+.data-arg-ribbon.is-c0 { opacity: 0.5; }
+.data-arg-ribbon.is-c1 { opacity: 0.22; }
+.data-arg-ribbon.is-on { opacity: 0.85; }
+.data-arg-ribbon.is-faded { opacity: 0.06; }
+.data-arg-casing { stroke: var(--text-primary); opacity: 0.9; pointer-events: none; }
+.data-arg-hit { stroke: transparent; cursor: pointer; }
+.data-arg-hit:focus, .data-arg-hit:focus-visible { outline: none; } /* a ribbon's focus ring would be its whole bounding box; focus shows as the ribbon lighting up with a casing instead */
+.data-arg-node:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+.data-arg-node { cursor: pointer; }
+.data-arg-node.is-pinned { stroke: var(--text-primary); stroke-width: 2; }
+.data-arg-label { fill: var(--text-primary); font-size: 12px; font-family: var(--font-body); paint-order: stroke; stroke: var(--bg-surface); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.data-arg-count { fill: var(--text-secondary); }
+.data-arg-detail { margin-top: var(--space-3); padding: var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm); font: var(--text-body-sm); color: var(--text-primary); }
+.data-arg-detail-line { margin: 0; }
+.data-arg-detail a { color: var(--text-primary); font-weight: 600; }
+.data-arg-clear { background: none; border: 0; padding: 0; margin-left: var(--space-2); color: var(--text-secondary); font: var(--text-label); text-decoration: underline; cursor: pointer; }
+.data-arg-clear:hover { color: var(--text-primary); }
+.data-arg-note { margin: var(--space-2) 0 0; font: var(--text-body-sm); color: var(--text-secondary); }
+.data-arg-paths, .data-arg-pairs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.data-arg-path { display: grid; grid-template-columns: 1fr auto; gap: var(--space-1) var(--space-3); width: 100%; padding: var(--space-2) var(--space-3); text-align: left; background: none; border: 1px solid var(--border-hairline); border-radius: var(--radius-sm); color: var(--text-primary); font: var(--text-body-sm); cursor: pointer; }
+.data-arg-path:hover, .data-arg-path[aria-pressed="true"] { background: var(--bg-surface-raised); }
+.data-arg-path:focus-visible, .data-arg-pair:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+.data-arg-path[aria-pressed="true"] { border-color: var(--text-primary); }
+.data-arg-path-label { min-width: 0; overflow-wrap: anywhere; }
+.data-arg-path-count { color: var(--text-secondary); white-space: nowrap; }
+.data-arg-path .data-arg-bar { grid-column: 1 / -1; }
+.data-arg-bar { display: block; height: 6px; background: var(--bg-surface-raised); border-radius: 3px; overflow: hidden; }
+.data-arg-bar > span { display: block; height: 100%; background: var(--text-muted); border-radius: 3px; }
+.data-arg-pair { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(60px, 1fr) 3em 3.5em; align-items: center; gap: var(--space-3); padding: var(--space-1) var(--space-2); color: var(--text-primary); text-decoration: none; font: var(--text-body-sm); border-radius: var(--radius-sm); }
+.data-arg-pair:hover { background: var(--bg-surface-raised); }
+.data-arg-pair-label { min-width: 0; overflow-wrap: anywhere; }
+.data-arg-pair-count, .data-arg-pair-share { text-align: right; }
+.data-arg-pair-share { color: var(--text-secondary); }
+@media (max-width: 640px) {
+  .data-arg-pair { grid-template-columns: 1fr 3em 3.5em; }
+  .data-arg-pair .data-arg-bar { grid-column: 1 / -1; grid-row: 2; }
+}
+
 /* Data stories: narrative that emerges between full-width visual panels. The hidden state exists only while an element is
    .is-pending (the observer is waiting), so content is readable if the reveal never runs. */
 .stories-index { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
