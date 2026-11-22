@@ -102,4 +102,95 @@ function applyTokens(markdown, resolve) {
   });
 }
 
-module.exports = { StoryError, parseStory, findTokens, applyTokens };
+// ---------------------------------------------------------------------------------------------------------------
+// PROVIDERS: live-song data for panels and tokens. Charts and prose both read these, so they cannot disagree.
+// ---------------------------------------------------------------------------------------------------------------
+const analysis = require('./analysis');
+const audioAnalysis = require('./audioAnalysis');
+const acoustic = require('./acousticCodebook');
+const metadata = require('./metadataCodebook');
+
+const LIVE = `s.status = 'included' AND s.published = true`;
+const MIN_POINT_N = 10; // a decade with fewer songs is withheld, never plotted and never quoted
+
+// `kind` decides which latest-pass view the column lives in. The keys double as the SQL identifier whitelist.
+const DIMENSIONS = {
+  vocal_style: { kind: 'audio-multi', clean: (v) => acoustic.cleanSelection('vocal_style', v), label: (c) => acoustic.codeLabel('vocal_style', c) },
+  lyrical_tone: { kind: 'lyric-scalar', clean: (v) => metadata.cleanSelection('lyrical_tone', v), label: (c) => metadata.codeLabel('lyrical_tone', c) },
+};
+
+function dimensionOf(name) {
+  if (!Object.prototype.hasOwnProperty.call(DIMENSIONS, name)) throw new StoryError('BAD_BLOCK', `Unknown dimension "${name}"`);
+  return DIMENSIONS[name];
+}
+
+// Share of songs carrying each code, per decade of album release. `n` counts the songs the dimension was read for
+// (an OK audio row, or a publicly visible lyric analysis), so for a multi-value dimension shares can add to > 100%.
+async function decadeShares(db, dimension) {
+  const dim = dimensionOf(dimension);
+  const source = dim.kind.startsWith('audio') ? audioAnalysis.LATEST_AUDIO : analysis.LATEST_ANALYSIS;
+  const r = await db.query(
+    `SELECT (EXTRACT(YEAR FROM al.release_date)::int / 10 * 10) AS decade, src.${dimension} AS codes
+       FROM songs s
+       JOIN albums al ON al.id = s.album_id
+       JOIN ${source} src ON src.song_id = s.id
+      WHERE ${LIVE} AND al.release_date IS NOT NULL`);
+  const byDecade = new Map();
+  const labels = {};
+  for (const row of r.rows) {
+    const d = byDecade.get(row.decade) || { decade: row.decade, n: 0, counts: {} };
+    d.n += 1;
+    for (const code of new Set(dim.clean(row.codes))) {
+      d.counts[code] = (d.counts[code] || 0) + 1;
+      labels[code] = dim.label(code);
+    }
+    byDecade.set(row.decade, d);
+  }
+  const decades = [...byDecade.values()].sort((a, b) => a.decade - b.decade).map((d) => ({
+    decade: d.decade,
+    n: d.n,
+    plot: d.n >= MIN_POINT_N,
+    shares: Object.fromEntries(Object.entries(d.counts).map(([code, c]) => [code, c / d.n])),
+  }));
+  return { dimension, decades, labels };
+}
+
+function decadeEntry(result, decade) {
+  const d = result.decades.find((x) => x.decade === Number(decade));
+  if (!d) throw new StoryError('BAD_TOKEN', `No songs in the ${decade}s for ${result.dimension}`);
+  if (!d.plot) throw new StoryError('BAD_TOKEN', `The ${decade}s have fewer than ${MIN_POINT_N} songs for ${result.dimension}`);
+  return d;
+}
+
+// "46%": the share of songs carrying `code` in `decade`. Throws BAD_TOKEN for a withheld decade or an unknown code.
+function pct(result, code, decade) {
+  const d = decadeEntry(result, decade);
+  if (!dimensionOf(result.dimension).clean([code]).length) throw new StoryError('BAD_TOKEN', `Unknown code "${code}" for ${result.dimension}`);
+  return `${Math.round((d.shares[code] || 0) * 100)}%`;
+}
+
+function nOf(result, decade) {
+  return String(decadeEntry(result, decade).n);
+}
+
+// Song cards for a story: only what the card shows. A song that is not live fails the story loudly.
+async function songCards(db, rows) {
+  const ids = rows.map((x) => x.id);
+  const r = await db.query(
+    `SELECT s.id, s.title, EXTRACT(YEAR FROM al.release_date)::int AS year, al.images->0->>'url' AS art,
+            (SELECT string_agg(a.name, ', ' ORDER BY sa.id)
+               FROM song_artists sa JOIN artists a ON a.id = sa.artist_id WHERE sa.song_id = s.id) AS artists
+       FROM songs s LEFT JOIN albums al ON al.id = s.album_id
+      WHERE s.id = ANY($1::int[]) AND ${LIVE}`, [ids]);
+  const byId = new Map(r.rows.map((x) => [x.id, x]));
+  return rows.map(({ id, caption }) => {
+    const s = byId.get(id);
+    if (!s) throw new StoryError('SONG_NOT_LIVE', `Song ${id} is not a live song`);
+    return { id, title: s.title, artists: s.artists || '', year: s.year, art: s.art || null, caption };
+  });
+}
+
+module.exports = {
+  StoryError, parseStory, findTokens, applyTokens,
+  MIN_POINT_N, DIMENSIONS, decadeShares, pct, nOf, songCards,
+};
