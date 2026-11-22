@@ -7,7 +7,7 @@ function AnalysisPanel({ wb }) {
       {wb.analysis ? (
         <>
           <p className="wb-readonly">Read-only — added by the external analysis process.</p>
-          <LyricalAnalysis analysis={wb.analysis} />
+          <LyricalAnalysis analysis={wb.analysis} showTimeline={false} />
         </>
       ) : (
         wb.analysed
