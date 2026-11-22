@@ -23,17 +23,10 @@ export function splitColumns(audio) {
   return { left, right };
 }
 
-// The fold's heading: how many sample moments the analysis listed (or, if it gave types but no details, how many types).
-export function sampleHeading(samples) {
-  const n = samples && Array.isArray(samples.items) && samples.items.length > 0
-    ? samples.items.length
-    : (samples && Array.isArray(samples.types) ? samples.types.length : 0);
-  return `Samples heard (${n})`;
-}
-
-// Whether "The Sound" has anything to show: a summary, any row (tempo and key included) or the approved samples.
+// Whether "The Sound" has anything to show: a summary or any row (tempo and key included). Sample clips are not part of it:
+// they live in the "Through the song" timeline.
 export function hasSoundContent(audio) {
   if (!audio) return false;
   const { left, right } = splitColumns(audio);
-  return !!audio.summary || left.length > 0 || right.length > 0 || !!audio.samples;
+  return !!audio.summary || left.length > 0 || right.length > 0;
 }

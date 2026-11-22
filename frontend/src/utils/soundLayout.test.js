@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { splitColumns, sampleHeading, hasSoundContent } from './soundLayout.js';
+import { splitColumns, hasSoundContent } from './soundLayout.js';
 
 // Shapes match what GET /api/analysis/song/:id serves as `audio` (services/audioAnalysis.getSongAudio).
 const row = (key, label, ...labels) => ({
@@ -58,25 +58,12 @@ test('splitColumns tolerates a sparse or missing audio block', () => {
   assert.deepEqual(splitColumns({}), { left: [], right: [] });
 });
 
-test('sampleHeading counts the items and names the types', () => {
-  const samples = {
-    types: [{ code: 'ADVOCATE_SPEECH', label: 'Advocate Speech' }],
-    items: [{ type: 'ADVOCATE_SPEECH' }, { type: 'ADVOCATE_SPEECH' }, { type: 'ADVOCATE_SPEECH' }, { type: 'ADVOCATE_SPEECH' }],
-  };
-  assert.equal(sampleHeading(samples), 'Samples heard (4)');
-});
-
-test('sampleHeading falls back to the type count when the details are missing', () => {
-  const samples = { types: [{ code: 'A', label: 'A' }, { code: 'B', label: 'B' }], items: [] };
-  assert.equal(sampleHeading(samples), 'Samples heard (2)');
-});
-
-test('hasSoundContent: true for a summary, rows or approved samples; false for nothing, null or an empty block', () => {
+test('hasSoundContent: true for a summary or rows; false for nothing, null, an empty block or samples alone (samples live in Through the song)', () => {
   assert.equal(hasSoundContent(FULL), true);
   assert.equal(hasSoundContent({ summary: 'Heavy.', rows: [], tempo_bpm: null, key: null, samples: null }), true, 'a summary alone');
   assert.equal(hasSoundContent({ summary: '', rows: FULL.rows.slice(0, 1), samples: null }), true, 'rows alone');
   assert.equal(hasSoundContent({ summary: '', rows: [], tempo_bpm: 100, key: null, samples: null }), true, 'tempo alone');
-  assert.equal(hasSoundContent({ summary: '', rows: [], samples: { types: [{ code: 'A', label: 'A' }], items: [] } }), true, 'samples alone');
+  assert.equal(hasSoundContent({ summary: '', rows: [], tempo_bpm: null, key: null, samples: { types: [{ code: 'A', label: 'A' }], items: [] } }), false, 'samples alone do not make a Sound card');
   assert.equal(hasSoundContent({ summary: '', rows: [], tempo_bpm: null, key: null, samples: null }), false);
   assert.equal(hasSoundContent(null), false);
   assert.equal(hasSoundContent(undefined), false);

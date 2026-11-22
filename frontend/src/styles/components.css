@@ -3157,23 +3157,8 @@
 .artist-members { margin: 0; }
 .vmark-public { display: inline-flex; align-items: center; justify-content: center; width: 1.1em; height: 1.1em; margin-left: 0.3em; border: 1px solid var(--accent-moss-60); border-radius: 50%; color: var(--accent-moss-80); font-size: 0.7em; font-weight: 700; line-height: 1; vertical-align: 0.1em; }
 
-/* The Sound (song page): the right-hand half of Song analysis - a summary, one card of label / value rows (the
-   same card as The Lyrics), then a fold for the sample moments. */
-.sound-samples {
-  padding: var(--space-2) var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm);
-}
-.sound-samples > summary { cursor: pointer; color: var(--text-secondary); }
-.sound-samples-types { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: 0.85rem; }
-.sound-sample-list { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.sound-sample-list li { display: flex; flex-direction: column; gap: 2px; padding-left: var(--space-2); border-left: 2px solid var(--border-hairline); }
-.sound-sample-list p { margin: 0; color: var(--text-secondary); }
-.sound-sample-head { display: flex; align-items: baseline; gap: var(--space-2); }
-.sound-sample-time { color: var(--text-muted); font-size: 0.8rem; }
-.sound-sample-transcript { font-style: italic; }
-.sound-sample-source { color: var(--text-muted); font-size: 0.8rem; }
-
 /* "Through the song" (song page audio timeline). One card on --bg-surface: a bar of toggles that double as the legend, the
-   canvas, a readout, the active section and, when the samples are approved, the clip under the cursor.
+   canvas, a readout and, when the samples are approved, the clip under the cursor.
    Chart colours are dark-mode only (the site has no light theme) and were validated with the dataviz skill's
    validate_palette.js against the card surface #1c1611 (= --bg-surface), all three as one categorical set:
      validate_palette.js "#e8601f,#2a9fdc,#d94f9d" --mode dark --surface "#1c1611" --pairs all
