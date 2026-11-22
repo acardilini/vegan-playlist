@@ -77,15 +77,6 @@ test('tone is gated by the codebook; legacy and error codes become null', async 
   assert.ok(d.labels.tone.INDICTMENT);
 });
 
-test('unmetered tempo is null, not a number', async () => {
-  const id = await mkSong('unmetered'); await mkAudio(id, { bpm: 77, stability: 'UNMETERED' });
-  const metered = await mkSong('metered'); await mkAudio(metered, { bpm: 150, stability: 'STABLE', lufs: -7.5 });
-  const d = await dataset.buildDataset(pool);
-  assert.equal(find(d, 'unmetered').bpm, null);
-  assert.equal(find(d, 'metered').bpm, 150);
-  assert.equal(find(d, 'metered').lufs, -7.5);
-});
-
 test('a song with no album has a null year', async () => {
   await mkSong('noalbum', { album: false });
   const d = await dataset.buildDataset(pool);
@@ -107,7 +98,7 @@ test('the payload carries no provenance, text or sample fields', async () => {
   for (const word of ['inferred', 'lyrics', 'transcript', 'samples', 'provenance']) {
     assert.ok(!json.includes(`"${word}`) && !json.includes(`${word}"`), `payload must not mention ${word}`);
   }
-  assert.deepEqual(Object.keys(d.songs[0]).sort(), ['a', 'bpm', 'g', 'ha', 'hl', 'id', 'lufs', 't', 'tone', 'y']);
+  assert.deepEqual(Object.keys(d.songs[0]).sort(), ['a', 'g', 'ha', 'hl', 'id', 't', 'tone', 'y']);
 });
 
 test('getDataset is cached until cleared', async () => {

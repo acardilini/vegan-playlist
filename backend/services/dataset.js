@@ -26,7 +26,6 @@ async function buildDataset(db) {
             ${genres.EFFECTIVE_GENRE_SUBQUERY} AS catalogue_genre,
             sau.song_id IS NOT NULL AS has_audio,
             sau.inferred_parent_genre AS audio_genre,
-            sau.tempo_bpm, sau.tempo_stability, sau.loudness_lufs,
             sla.song_id IS NOT NULL AS has_lyric,
             sla.lyrical_tone
        FROM songs s
@@ -52,8 +51,6 @@ async function buildDataset(db) {
       ha: row.has_audio,
       hl: row.has_lyric,
       tone: tone || null,
-      bpm: row.tempo_bpm != null && row.tempo_stability !== 'UNMETERED' ? row.tempo_bpm : null,
-      lufs: row.loudness_lufs != null ? row.loudness_lufs : null,
     };
   });
 

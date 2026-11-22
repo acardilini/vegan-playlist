@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
-  genreRanking, computeKpis, buildEraSeries, buildToneByDecade, buildSonicByDecade, insightSentences, MIN_POINT_N,
+  genreRanking, computeKpis, buildEraSeries, buildToneByDecade, insightSentences, MIN_POINT_N,
 } from './dataModel';
 import { seriesColour } from './chartScale';
 import ChartFrame from './ChartFrame';
@@ -21,18 +21,6 @@ function Toggle({ label, value, options, onChange }) {
   );
 }
 
-// Padded integer domain around a set of values, for a line that is not a share.
-function domainOf(values) {
-  const v = values.filter(x => x != null);
-  if (!v.length) return null;
-  const lo = Math.min(...v);
-  const hi = Math.max(...v);
-  const pad = (hi - lo) * 0.25 || 5;
-  const bottom = Math.floor(lo - pad);
-  // A span divisible by four puts the four gridlines on whole numbers.
-  return [bottom, bottom + Math.ceil((Math.ceil(hi + pad) - bottom) / 4) * 4];
-}
-
 function OverTimeTab() {
   const { songs, allSongs, labels, state, setState } = useOutletContext();
   const genreName = k => (k === 'other' ? 'Other' : labels.genres[k] || k);
@@ -45,7 +33,6 @@ function OverTimeTab() {
   const kpis = useMemo(() => computeKpis(songs), [songs]);
   const era = useMemo(() => buildEraSeries(songs, { bucket: state.eraBucket, mode: state.eraMode, order: genreOrder }), [songs, state.eraBucket, state.eraMode, genreOrder]);
   const tone = useMemo(() => buildToneByDecade(songs, { order: toneOrder }), [songs, toneOrder]);
-  const sonic = useMemo(() => buildSonicByDecade(songs), [songs]);
   const insights = useMemo(() => (state.pg ? [] : insightSentences(songs, labels.genres)), [songs, labels.genres, state.pg]);
 
   const eraTable = {
@@ -67,20 +54,6 @@ function OverTimeTab() {
     rows: tone.decades.map((d, i) => [`${d.decade}s`, d.n, ...toneSeries.map(s => (s.values[i] == null ? 'too few' : pct(s.values[i])))]),
   };
   const hasTonePoints = tone.decades.some(d => d.plot);
-
-  const tempoDomain = domainOf(sonic.map(d => d.bpm));
-  const loudDomain = domainOf(sonic.map(d => d.lufs));
-  const sonicXs = sonic.map(d => ({ key: d.decade, label: `${d.decade}s` }));
-  const bpmN = sonic.reduce((a, d) => a + d.bpmN, 0);
-  const lufsN = sonic.reduce((a, d) => a + d.lufsN, 0);
-  const tempoTable = {
-    head: ['Decade', 'Songs with tempo', 'Median tempo (BPM)'],
-    rows: sonic.map(d => [`${d.decade}s`, d.bpmN, d.bpm == null ? 'too few' : Math.round(d.bpm)]),
-  };
-  const loudTable = {
-    head: ['Decade', 'Songs with loudness', 'Median loudness (LUFS)'],
-    rows: sonic.map(d => [`${d.decade}s`, d.lufsN, d.lufs == null ? 'too few' : d.lufs.toFixed(1)]),
-  };
 
   return (
     <div className="data-tab">
@@ -109,29 +82,6 @@ function OverTimeTab() {
         )}
       </ChartFrame>
 
-      <ChartFrame
-        title="Median tempo by decade"
-        empty={tempoDomain ? null : `No decade has ${MIN_POINT_N} or more songs with a measurable tempo in this slice.`}
-        table={tempoTable}
-        caption={`Based on ${bpmN} songs with a sound analysis and a measurable tempo (unmetered songs are left out). Decades with fewer than ${MIN_POINT_N} are not plotted.`}
-      >
-        {width => (
-          <LineChart width={width} xs={sonicXs} domain={tempoDomain} format={v => String(Math.round(v))} unit=" BPM"
-            series={[{ key: 'bpm', label: 'Median tempo', colour: 'var(--tl-pulse)', values: sonic.map(d => d.bpm) }]} />
-        )}
-      </ChartFrame>
-
-      <ChartFrame
-        title="Median loudness by decade"
-        empty={loudDomain ? null : `No decade has ${MIN_POINT_N} or more songs with a loudness measurement in this slice.`}
-        table={loudTable}
-        caption={`Based on ${lufsN} songs with a sound analysis. Higher (closer to zero) is louder. Decades with fewer than ${MIN_POINT_N} are not plotted.`}
-      >
-        {width => (
-          <LineChart width={width} xs={sonicXs} domain={loudDomain} format={v => v.toFixed(0)} unit=" LUFS"
-            series={[{ key: 'lufs', label: 'Median loudness', colour: 'var(--tl-grit)', values: sonic.map(d => d.lufs) }]} />
-        )}
-      </ChartFrame>
     </div>
   );
 }

@@ -124,22 +124,6 @@ export function buildToneByDecade(songs, { minN = MIN_POINT_N, order, top = TOP_
   return { decades, series, n: items.length };
 }
 
-// Median tempo and loudness per decade. A median is withheld (null) when fewer than minN songs have that measure.
-export function buildSonicByDecade(songs, { minN = MIN_POINT_N } = {}) {
-  const items = songs.filter(s => s.ha && s.y != null);
-  const decades = [...new Set(items.map(s => decadeOf(s.y)))].sort((a, b) => a - b);
-  return decades.map(decade => {
-    const inDecade = items.filter(s => decadeOf(s.y) === decade);
-    const bpm = inDecade.map(s => s.bpm).filter(v => v != null);
-    const lufs = inDecade.map(s => s.lufs).filter(v => v != null);
-    return {
-      decade,
-      bpmN: bpm.length, bpm: bpm.length >= minN ? median(bpm) : null,
-      lufsN: lufs.length, lufs: lufs.length >= minN ? median(lufs) : null,
-    };
-  });
-}
-
 // "In the 1980s Punk led, with about 49% of songs with a genre." Written only when the decade has enough songs.
 export function topGenreSentence(songs, decade, labels, minGroup = MIN_GROUP_FOR_SENTENCE) {
   const inDecade = songs.filter(s => s.y != null && s.g && decadeOf(s.y) === decade);

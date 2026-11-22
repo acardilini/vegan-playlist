@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   MIN_GROUP_FOR_SENTENCE, MIN_POINT_N, TOP_GENRES,
   yearBounds, filterSongs, computeKpis, genreRanking, median,
-  buildEraSeries, buildToneByDecade, buildSonicByDecade, topGenreSentence, insightSentences,
+  buildEraSeries, buildToneByDecade, topGenreSentence, insightSentences,
 } from './dataModel.js';
 
 const song = (o) => ({ id: 1, t: 't', a: 'a', y: 1990, g: 'punk', ha: false, hl: false, tone: null, bpm: null, lufs: null, ...o });
@@ -93,22 +93,6 @@ test('tone by decade: only lyric-coded songs with a tone and a year; thin decade
   assert.equal(t.series.find(s => s.key === 'INDICTMENT').values[0], 0.5);
   assert.equal(t.series.find(s => s.key === 'INDICTMENT').values[1], null);
   assert.equal(t.n, 29);
-});
-
-test('sonic shift: medians per decade ignore nulls and thin decades are withheld', () => {
-  const songs = [
-    ...many(10, { y: 1991, ha: true, bpm: 100, lufs: -8 }),
-    ...many(10, { y: 1992, ha: true, bpm: 140, lufs: -6 }),
-    ...many(3, { y: 2003, ha: true, bpm: 90, lufs: -9 }),
-    song({ y: 1993, ha: true, bpm: null, lufs: -7 }),
-  ];
-  const s = buildSonicByDecade(songs, { minN: MIN_POINT_N });
-  assert.deepEqual(s.map(d => d.decade), [1990, 2000]);
-  assert.equal(s[0].bpm, 120);
-  assert.equal(s[0].bpmN, 20);
-  assert.equal(s[0].lufsN, 21);
-  assert.equal(s[1].bpm, null);
-  assert.equal(s[1].lufs, null);
 });
 
 test('a decade sentence needs at least 30 songs with a genre and hedges with "about"', () => {
