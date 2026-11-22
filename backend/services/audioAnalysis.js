@@ -125,8 +125,10 @@ function buildSamples(row) {
         label: acoustic.codeLabel('audio_samples', d.type),
         timestamp: d.timestamp || null,
         ...parseRange(d.timestamp),
-        // The analysis' own `description` of a sample is deliberately NOT served (curator decision 2026-11-22): the page
-        // shows only the quote and, when known, who said it.
+        // The analysis' own `description` is served ONLY for a sample with no quote (a sound effect or soundscape, where
+        // it is the only thing to show). A quoted sample shows the quote and who said it, never the AI's words about it
+        // (curator decision 2026-11-22), so the description is not in the payload at all.
+        ...(d.transcript_excerpt ? {} : { description: d.description || null }),
         transcript: d.transcript_excerpt || null,
         // A person or source is named only when the analysis was HIGHLY confident who it was; otherwise the name is not
         // in the payload at all (the page says "Unidentified source").

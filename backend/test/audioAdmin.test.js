@@ -84,8 +84,12 @@ test('getWorkbench audio carries the sample details whatever the gate says, and 
   const wb = await curation.getWorkbench(pool, id);
   assert.equal(wb.audio.show_audio_samples, null);
   assert.ok(wb.audio.samples, 'the curator sees the samples before approving them');
-  assert.ok(!('description' in wb.audio.samples.items[0]), 'the AI description of a sample is not served, not even to the curator');
-  assert.ok(!JSON.stringify(wb.audio).includes('Stunning bolt'));
+  assert.equal(wb.audio.samples.items[0].description, 'Stunning bolt', 'no quote: the description is served');
+  const quoted = await mkSong('ZZZAAD Quoted');
+  await addAudio(quoted, { samples: ['ADVOCATE_SPEECH_CLIP'], details: [{ type: 'ADVOCATE_SPEECH_CLIP', timestamp: '0:06-0:20', description: 'AI words about a speech', transcript_excerpt: 'A real quote.' }] });
+  const q = (await curation.getWorkbench(pool, quoted)).audio.samples.items[0];
+  assert.ok(!('description' in q), 'a quote never carries the AI description, even to the curator');
+  assert.ok(!JSON.stringify(q).includes('AI words about a speech'));
   assert.equal(wb.audio.status, 'OK');
 
   const bare = await mkSong('ZZZAAD Workbench bare');

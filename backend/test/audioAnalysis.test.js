@@ -96,8 +96,10 @@ test('samples reach getSongAudio only when the curator approved them', async () 
   assert.deepEqual(s.items[0], {
     type: 'ADVOCATE_SPEECH_CLIP', label: 'Advocate Speech', timestamp: '0:44-1:19', startSec: 44, endSec: 79,
     transcript: 'Eating animals acts as mirror.', source: null, confidence: 'UNIDENTIFIED',
-  });   // no `description`: the analysis' own words about a sample are never served
+  });   // a quote carries no `description`: the analysis' own words are never served beside a quote
   assert.equal(s.items[1].transcript, null);
+  assert.equal(s.items[1].description, 'Saws and mooing.', 'a sample with no quote carries its description');
+  assert.ok(!('description' in s.items[0]), 'a quoted sample does not');
   assert.equal(s.items[1].source, 'A documentary', 'HIGH confidence: the source is named');
   // hidden data must not appear anywhere in the public payload
   assert.doesNotMatch(JSON.stringify(await audio.getSongAudio(pool, hidden)), /lecture|mooing|ADVOCATE|SLAUGHTER/);

@@ -79,6 +79,7 @@ function SampleList({ samples }) {
                   <span className="wb-audio-sample-type">{it.label}</span>
                   {it.timestamp && <span className="wb-audio-sample-time">{it.timestamp}</span>}
                 </div>
+                {!it.transcript && it.description && <p>{it.description}</p>}
                 {it.transcript && <p className="wb-audio-transcript">&ldquo;{it.transcript}&rdquo;</p>}
                 {it.source
                   ? <div className="wb-audio-by">&mdash; {it.source}</div>
