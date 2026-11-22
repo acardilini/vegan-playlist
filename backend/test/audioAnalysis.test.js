@@ -94,11 +94,11 @@ test('samples reach getSongAudio only when the curator approved them', async () 
   assert.deepEqual(s.types.map(t => t.label), ['Advocate Speech', 'Slaughterhouse Sounds']);
   assert.equal(s.items.length, 2);
   assert.deepEqual(s.items[0], {
-    type: 'ADVOCATE_SPEECH_CLIP', label: 'Advocate Speech', timestamp: '0:44-1:19',
-    description: 'A calm lecture.', transcript: 'Eating animals acts as mirror.', source: null,
+    type: 'ADVOCATE_SPEECH_CLIP', label: 'Advocate Speech', timestamp: '0:44-1:19', startSec: 44, endSec: 79,
+    description: 'A calm lecture.', transcript: 'Eating animals acts as mirror.', source: null, confidence: 'UNIDENTIFIED',
   });
   assert.equal(s.items[1].transcript, null);
-  assert.equal(s.items[1].source, 'A documentary');
+  assert.equal(s.items[1].source, 'A documentary', 'HIGH confidence: the source is named');
   // hidden data must not appear anywhere in the public payload
   assert.doesNotMatch(JSON.stringify(await audio.getSongAudio(pool, hidden)), /lecture|mooing|ADVOCATE|SLAUGHTER/);
 });

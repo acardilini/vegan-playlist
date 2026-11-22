@@ -55,6 +55,63 @@ const BROKEN_VIDEO_SQL = (alias = 's') =>
 
 const asArray = (v) => (Array.isArray(v) ? v : (v ? [v] : [])).filter(Boolean);
 
+// ---- the song page's timeline ----
+
+const fmtClock = (sec) => `${Math.floor(sec / 60)}:${String(Math.round(sec) % 60).padStart(2, '0')}`;
+const toSeconds = (m, s) => parseInt(m, 10) * 60 + parseInt(s, 10);
+const NUM_CURVES = ['loudness', 'grit', 'pulse'];
+
+// The analysis' 80-bin timeline, or null. Only version 'v1' is understood; anything malformed (a curve of the wrong
+// length or a non-number) is dropped whole rather than half-drawn. Values are clamped to 0..1.
+function cleanTimeline(t) {
+  if (!t || typeof t !== 'object' || t.version !== 'v1') return null;
+  const bins = t.bins;
+  const duration = Number(t.duration_sec);
+  if (!Number.isInteger(bins) || bins < 2 || !(duration > 0)) return null;
+  const out = { version: 'v1', bins, duration_sec: duration, bin_sec: Number.isFinite(Number(t.bin_sec)) && Number(t.bin_sec) > 0 ? Number(t.bin_sec) : duration / bins };
+  for (const k of NUM_CURVES) {
+    const c = t[k];
+    if (!Array.isArray(c) || c.length !== bins || !c.every((v) => typeof v === 'number' && Number.isFinite(v))) return null;
+    out[k] = c.map((v) => Math.min(1, Math.max(0, v)));
+  }
+  return out;
+}
+
+// "M:SS-M:SS: text", "M:SS–M:SS text" or "M:SS text" lines of sonic_evidence -> timed sections. A lone time ends where the
+// next section starts (the duration for the last one, open-ended without it). A line with no timestamp stays as an untimed
+// note so nothing the analysis said is lost; non-strings and blanks are dropped.
+const SECTION_RE = /^(\d+):(\d{2})(?:\s*[-–]\s*(\d+):(\d{2}))?(?::\s*|\s+)(.+)$/;
+function parseSections(evidence, durationSec) {
+  if (!Array.isArray(evidence)) return [];
+  const rows = [];
+  for (const line of evidence) {
+    if (typeof line !== 'string' || !line.trim()) continue;
+    const m = SECTION_RE.exec(line.trim());
+    if (!m) { rows.push({ startSec: null, endSec: null, label: null, text: line.trim() }); continue; }
+    const startSec = toSeconds(m[1], m[2]);
+    rows.push({ startSec, endSec: m[3] != null ? Math.max(startSec, toSeconds(m[3], m[4])) : undefined, text: m[5].trim() });
+  }
+  const dur = Number.isFinite(Number(durationSec)) && Number(durationSec) > 0 ? Number(durationSec) : null;
+  return rows.map((r, i) => {
+    if (r.startSec == null) return r;
+    let endSec = r.endSec;
+    if (endSec === undefined) {
+      const next = rows.slice(i + 1).find((n) => n.startSec != null);
+      endSec = next ? Math.max(r.startSec, next.startSec) : (dur != null ? Math.max(r.startSec, dur) : null);
+    }
+    return { startSec: r.startSec, endSec, label: endSec != null ? `${fmtClock(r.startSec)}–${fmtClock(endSec)}` : fmtClock(r.startSec), text: r.text };
+  });
+}
+
+// A sample's timestamp ("0:44-1:19", or a lone "2:00") in seconds. A backwards range collapses to its start.
+const RANGE_RE = /^\s*(\d+):(\d{2})(?:\s*[-–]\s*(\d+):(\d{2}))?\s*$/;
+function parseRange(ts) {
+  const m = typeof ts === 'string' ? RANGE_RE.exec(ts) : null;
+  if (!m) return { startSec: null, endSec: null };
+  const startSec = toSeconds(m[1], m[2]);
+  return { startSec, endSec: m[3] != null ? Math.max(startSec, toSeconds(m[3], m[4])) : startSec };
+}
+
 function buildSamples(row) {
   const codes = asArray(row.audio_samples).filter((c) => c !== 'NONE');
   if (codes.length === 0) return null;
@@ -67,9 +124,13 @@ function buildSamples(row) {
         type: d.type,
         label: acoustic.codeLabel('audio_samples', d.type),
         timestamp: d.timestamp || null,
+        ...parseRange(d.timestamp),
         description: d.description || null,
         transcript: d.transcript_excerpt || null,
-        source: d.speaker_or_source || null,
+        // A person or source is named only when the analysis was HIGHLY confident who it was; otherwise the name is not
+        // in the payload at all (the page says "Unidentified source").
+        source: d.identification_confidence === 'HIGH' ? (d.speaker_or_source || null) : null,
+        confidence: d.identification_confidence || null,
       })),
   };
 }
@@ -88,6 +149,8 @@ function buildBlock(row, { withSamples }) {
     // The tempo of a beatless track is a median of noise: hide it rather than state it.
     tempo_bpm: row.tempo_bpm != null && row.tempo_stability !== 'UNMETERED' ? row.tempo_bpm : null,
     key: row.musical_key || null,
+    timeline: cleanTimeline(row.audio_timeline),
+    sections: parseSections(row.sonic_evidence, row.audio_timeline && row.audio_timeline.duration_sec),
     samples: withSamples ? buildSamples(row) : null,
   };
 }
@@ -118,7 +181,7 @@ async function getAdminAudio(db, songId) {
   const ok = row.audio_status === 'OK';
   const block = ok
     ? buildBlock(row, { withSamples: true })
-    : { summary: null, rows: [], tempo_bpm: null, key: null, samples: null };
+    : { summary: null, rows: [], tempo_bpm: null, key: null, timeline: null, sections: [], samples: null };
   return {
     ...block,
     status: row.audio_status,
@@ -189,6 +252,6 @@ async function coverage(db) {
 }
 
 module.exports = {
-  LATEST_AUDIO, audioColumnSql, MOOD_SUBQUERY, attachMood, SAMPLES_PENDING_SQL, BROKEN_VIDEO_SQL,
+  LATEST_AUDIO, audioColumnSql, MOOD_SUBQUERY, attachMood, SAMPLES_PENDING_SQL, BROKEN_VIDEO_SQL, parseSections, parseRange, cleanTimeline,
   getSongAudio, getAdminAudio, audioFacets, tempoRange, coverage,
 };
