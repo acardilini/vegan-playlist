@@ -1950,6 +1950,7 @@ router.put('/workbench/:id/highlights', panelSave(curation.saveHighlights));
 router.put('/workbench/:id/links',      panelSave(curation.saveLinks));
 router.put('/workbench/:id/album',      panelSave(curation.saveAlbum));
 router.put('/workbench/:id/genre-choice', panelSave(curation.chooseGenre));
+router.put('/workbench/:id/language-choice', panelSave(curation.chooseLanguage));
 router.put('/workbench/:id/cover',      panelSave(curation.setCover));
 router.put('/workbench/:id/no-video',   panelSave(curation.setNoVideo));
 router.put('/workbench/:id/audio-samples', panelSave(curation.setAudioSamples));

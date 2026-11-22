@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import { CLEAR_LYRICS_BODY } from './junkLyricsActions';
 
 const PAGE_SIZE = 50;
 
-const KIND_LABELS = { error: 'Error message', youtube_description: 'YouTube description' };
+const KIND_LABELS = { error: 'Error message', youtube_description: 'YouTube description', placeholder: 'Placeholder text' };
 
 // Songs whose stored "lyrics" look like a scraper error or a YouTube description. Not junk = keep the text and stop
 // flagging it; Clear lyrics = blank the text, so the song falls into Needs lyrics. A flagged song's analysis is hidden
@@ -16,6 +16,7 @@ function JunkLyricsList({ refreshKey, onChanged }) {
   const [busyId, setBusyId] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [page, setPage] = useState(0);
+  const navigate = useNavigate();
 
   const load = useCallback(() => {
     adminFetch(`/api/admin/junk-lyrics?limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`)
@@ -56,21 +57,24 @@ function JunkLyricsList({ refreshKey, onChanged }) {
           {scanning ? 'Scanning…' : 'Scan for junk lyrics'}
         </button>
       </div>
-      <p className="admin-stub">Stored lyrics that look like an error message or a YouTube description. While a song is listed here its analysis is hidden on the public site.</p>
+      <p className="admin-stub">Stored lyrics that look like an error message, a YouTube description or placeholder text. Click a song to check its lyrics and fix them in the song page. While a song is listed here its analysis is hidden on the public site.</p>
       {msg && <div className="modal-result">{msg}</div>}
       {rows === null ? <div className="queue-empty">Loading…</div>
         : rows.length === 0 ? <div className="queue-empty">Nothing flagged. Run a scan to check every song.</div>
         : rows.map(row => (
           <div key={row.id} className="song-row-wrap junk-row">
-            <div className="song-row">
+            {/* Opens the song in the workbench (like every other queue) with Prev/Next through this page, so the lyrics can be checked and fixed there. */}
+            <button type="button" className="song-row" onClick={() => navigate(`/admin/song/${row.id}`, {
+              state: { from: 'junk-lyrics', ids: rows.map((r) => r.id), index: rows.findIndex((r) => r.id === row.id) },
+            })}>
               <span className="song-meta">
-                <span className="song-title"><Link to={`/admin/song/${row.id}`}>{row.title}</Link></span>
+                <span className="song-title">{row.title}</span>
                 <span className="song-artist">{row.artists || '—'}</span>
                 <span className="junk-snippet">{row.snippet}</span>
               </span>
               <span className="origin-tag">{KIND_LABELS[row.junk_kind] || row.junk_kind}</span>
               {row.has_analysis && <span className="miss-chip warn">analysis hidden</span>}
-            </div>
+            </button>
             <button type="button" className="btn btn-secondary btn-sm song-row-action" disabled={busyId === row.id}
               onClick={() => act(row, 'dismiss')}>Not junk</button>
             <button type="button" className="btn btn-secondary btn-sm song-row-action" disabled={busyId === row.id}

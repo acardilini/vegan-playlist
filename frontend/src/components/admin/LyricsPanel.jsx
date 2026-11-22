@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { adminFetch } from '../../api/adminApi';
 import { CLEAR_LYRICS_BODY } from './junkLyricsActions';
 import { AutoText, SaveTag } from './SavedField';
+import DraftTranscript from './DraftTranscript';
 import { useBandcampLyricsRun } from './useBandcampLyricsRun';
 import { FetchedLyricsList, RunProgress } from './BandcampLyricsResults';
 import { LYRIC_SITES, anywhereUrl, allSitesUrl, siteUrl, youtubeSearchUrl, sourceNameFromUrl } from '../../utils/lyricsSearchUrls';
@@ -101,7 +102,7 @@ function LyricsPanel({ wb, savePanel, saveProcessing, reload }) {
       {wb.junk_kind && wb.lyrics && (
         <div className="wb-junk">
           <span className="miss-chip warn">
-            These lyrics look like {wb.junk_kind === 'error' ? 'a scraper error message' : 'a YouTube description'}
+            These lyrics look like {wb.junk_kind === 'error' ? 'a scraper error message' : wb.junk_kind === 'placeholder' ? 'placeholder text, not lyrics' : 'a YouTube description'}
             {wb.analysed ? ' — the analysis is hidden on the public site' : ''}.
           </span>
           <button type="button" className="btn btn-secondary btn-sm" disabled={junkBusy} onClick={async () => {
@@ -161,6 +162,8 @@ function LyricsPanel({ wb, savePanel, saveProcessing, reload }) {
             onClick={() => markTried('youtube')}>YouTube</a>
         </div>
       )}
+
+      {wb.draft_transcript && <DraftTranscript draft={wb.draft_transcript} savePanel={savePanel} />}
 
       <AutoText label="Full lyrics (local-only)" initial={wb.lyrics} multiline rows={12} monospace
         inputRef={lyricsRef} onSave={(v) => savePanel('lyrics', { lyrics: v })} />

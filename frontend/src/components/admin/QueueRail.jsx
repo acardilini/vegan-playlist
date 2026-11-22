@@ -4,10 +4,12 @@ const GROUPS = [
   ['Capture', [['inbox', 'Inbox', false], ['to-process', 'To be processed', false]]],
   ['Needs work', [
     ['needs-lyrics', 'Needs lyrics', false],
+    ['check-transcripts', 'Check transcripts', false],
     ['needs-cover', 'Needs cover', false],
     ['needs-album', 'Needs album', false],
     ['needs-released', 'Needs released', false],
     ['needs-language', 'Needs language', false],
+    ['language-suggested', 'Language suggested', false],
     ['needs-genre', 'Needs genre', false],
     ['genre-from-artist', 'Genre from artist', false],
     ['genre-from-audio', 'Genre from audio', false],

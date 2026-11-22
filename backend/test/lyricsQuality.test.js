@@ -2,8 +2,8 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { classify, JUNK_KINDS } = require('../services/lyricsQuality');
 
-test('JUNK_KINDS lists both kinds', () => {
-  assert.deepEqual(JUNK_KINDS, ['error', 'youtube_description']);
+test('JUNK_KINDS lists all three kinds', () => {
+  assert.deepEqual(JUNK_KINDS, ['error', 'youtube_description', 'placeholder']);
 });
 
 test('the three real scraper error messages are flagged as error', () => {
@@ -46,4 +46,17 @@ test('real lyrics, empty, whitespace and non-strings are not flagged', () => {
   assert.equal(classify('   \n  '), null);
   assert.equal(classify(null), null);
   assert.equal(classify(undefined), null);
+});
+
+test('the placeholder stubs found in the catalogue are flagged as placeholder', () => {
+  for (const t of ['NA', ' na\n', 'N/A', '[object Object]', 'Lyrics on spotify', 'Transcribe from song', 'transcribe from song.']) {
+    assert.equal(classify(t), 'placeholder', JSON.stringify(t));
+  }
+});
+
+test('real lyrics that merely contain or resemble a placeholder are not flagged', () => {
+  assert.equal(classify('NA NA NA NA\nHey hey hey goodbye'), null);
+  assert.equal(classify('Na\nna na na'), null);
+  assert.equal(classify('Transcribe from song and then some real words follow here'), null);
+  assert.equal(classify('Lyrics on spotify are wrong\nbut these are right'), null);
 });

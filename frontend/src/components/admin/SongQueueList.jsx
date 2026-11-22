@@ -7,7 +7,7 @@ const ORIGIN_LABELS = { spotify: 'From Spotify', submission: 'From submit form',
 
 const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
-  'needs-album': 'Needs album', 'needs-released': 'Needs released', 'needs-language': 'Needs language', 'needs-genre': 'Needs genre', 'genre-from-artist': 'Genre from artist',
+  'needs-album': 'Needs album', 'needs-released': 'Needs released', 'needs-language': 'Needs language', 'language-suggested': 'Language suggested', 'check-transcripts': 'Check transcripts', 'needs-genre': 'Needs genre', 'genre-from-artist': 'Genre from artist',
   'genre-from-audio': 'Genre from audio', 'genre-conflicts': 'Genre conflicts',
   'needs-video': 'Needs video', 'no-video': 'No video available', 'broken-video': 'Broken video', 'junk-lyrics': 'Junk lyrics', 'needs-sample-approval': 'Needs sample approval', 'to-transcribe': 'To transcribe', 'lyrics-on-hold': 'Lyrics on hold',
   'remind-later': 'Remind me later', 'to-finalise': 'To finalise',
@@ -115,6 +115,9 @@ function SongQueueList({ queue, refreshKey }) {
               {row.genre && queue === 'genre-from-artist' && <span className="origin-tag" title={row.genre_source === 'artist' ? 'Genre comes from the artist' : 'Genre set on the song'}>{row.genre}{row.genre_source === 'artist' ? ' (artist)' : ''}</span>}
               {row.audio_subgenre && queue === 'genre-from-audio' && (
                 <span className="origin-tag" title="Genre inferred from the audio">{row.audio_subgenre}{row.audio_confidence ? ` (${row.audio_confidence.toLowerCase()})` : ''}</span>
+              )}
+              {row.language_suggestion && queue === 'language-suggested' && (
+                <span className="origin-tag" title="Language detected by the analysis">{row.language_suggestion.join(', ')}</span>
               )}
               {row.audio_subgenre && queue === 'genre-conflicts' && (
                 <span className="origin-tag" title="Genre the site shows now → genre inferred from the audio">{row.genre} → {row.audio_subgenre}</span>
