@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SaveTag } from './SavedField';
+import AudioTimeline from '../AudioTimeline';
 
 // The song's audio analysis as the curator sees it, plus the one decision it needs: whether the sample moments
 // (sound effects, sampled speech - some of them graphic) may appear on the public song page. The server withholds
@@ -129,6 +130,8 @@ function AudioPanel({ wb, savePanel }) {
             ))}
           </dl>
           {measured.length > 0 && <div className="wb-audio-measured">{measured.join(' · ')}</div>}
+          {/* The curator's view of the timeline, with every sample clip whatever the gate says, to judge before approving. */}
+          <AudioTimeline audio={audio} />
           {audio.samples
             ? (
               <>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import InfoTip from './InfoTip';
 import TheSound from './TheSound';
+import AudioTimeline from './AudioTimeline';
 import { hasSoundContent } from '../utils/soundLayout';
 
 // Right-hand "What it's about" dimensions: [data key, display heading].
@@ -31,7 +32,8 @@ function termTip(c) {
   return [c.sub_dimension_label, c.definition].filter(Boolean).join(': ');
 }
 
-function LyricalAnalysis({ analysis }) {
+// `showTimeline` is off in the admin workbench, whose Audio panel carries the curator's own (ungated) timeline.
+function LyricalAnalysis({ analysis, showTimeline = true }) {
   const [showQuotes, setShowQuotes] = useState(false);
   if (!analysis) return null;
 
@@ -51,12 +53,18 @@ function LyricalAnalysis({ analysis }) {
   const hasThemes = dims.length > 0 || !!animalFocus;
   const hasLyrics = hasStyle || hasThemes || !!summary;
   const hasSound = hasSoundContent(analysis.audio);
-  if (!hasLyrics && !hasSound) return null;
+  const hasTimeline = showTimeline && !!(analysis.audio && analysis.audio.timeline);
+  if (!hasLyrics && !hasSound && !hasTimeline) return null;
 
   const hasQuotes = dims.some(([, , codes]) => codes.some(c => c.evidence));
 
   return (
     <div className={`lyrical-analysis${hasLyrics && hasSound ? '' : ' la-single'}`}>
+      {hasTimeline && (
+        <div className="la-timeline">
+          <AudioTimeline audio={analysis.audio} heading="Through the song" />
+        </div>
+      )}
       {hasLyrics && (
         <section className="la-major">
           <h3 className="la-major-title">The Lyrics</h3>

@@ -1,10 +1,9 @@
 import InfoTip from './InfoTip';
-import { splitColumns, sampleHeading, hasSoundContent } from '../utils/soundLayout';
+import { splitColumns, hasSoundContent } from '../utils/soundLayout';
 
 // The song page's "The Sound": the right-hand half of Song analysis, the counterpart of "The Lyrics". A summary,
 // then one card of rows (Mood / Intensity / Production / Dynamics, then Vocals / Rhythm / Instruments / Tempo · Key).
-// The sample moments sit in a fold and only exist in the payload when the curator approved them, so this component
-// has no gate of its own: it shows whatever the server sent.
+// Sampled speech and sound clips are not here: they are shown in the "Through the song" timeline.
 function Row({ row }) {
   return (
     <div className="la-row">
@@ -20,31 +19,6 @@ function Row({ row }) {
           : <InfoTip text="Estimated by software, so treat it as a guide.">{row.text}</InfoTip>}
       </span>
     </div>
-  );
-}
-
-function Samples({ samples }) {
-  const items = samples.items || [];
-  return (
-    <details className="sound-samples">
-      <summary>{sampleHeading(samples)}</summary>
-      <p className="sound-samples-types">{samples.types.map((t) => t.label).join(', ')}</p>
-      {items.length > 0 && (
-        <ul className="sound-sample-list">
-          {items.map((it, i) => (
-            <li key={`${it.type}-${it.timestamp || i}`}>
-              <div className="sound-sample-head">
-                <span className="la-quote-tag">{it.label}</span>
-                {it.timestamp && <span className="sound-sample-time">{it.timestamp}</span>}
-              </div>
-              {it.description && <p>{it.description}</p>}
-              {it.transcript && <p className="sound-sample-transcript">&ldquo;{it.transcript}&rdquo;</p>}
-              {it.source && <p className="sound-sample-source">{it.source}</p>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </details>
   );
 }
 
@@ -65,7 +39,6 @@ function TheSound({ audio }) {
       {rows.length > 0 && (
         <div className="la-rows">{rows.map((r) => <Row key={r.key} row={r} />)}</div>
       )}
-      {audio.samples && <Samples samples={audio.samples} />}
     </section>
   );
 }

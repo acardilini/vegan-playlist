@@ -3157,17 +3157,69 @@
 .artist-members { margin: 0; }
 .vmark-public { display: inline-flex; align-items: center; justify-content: center; width: 1.1em; height: 1.1em; margin-left: 0.3em; border: 1px solid var(--accent-moss-60); border-radius: 50%; color: var(--accent-moss-80); font-size: 0.7em; font-weight: 700; line-height: 1; vertical-align: 0.1em; }
 
-/* The Sound (song page): the right-hand half of Song analysis - a summary, one card of label / value rows (the
-   same card as The Lyrics), then a fold for the sample moments. */
-.sound-samples {
-  padding: var(--space-2) var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm);
+/* "Through the song" (song page audio timeline). One card on --bg-surface: a bar of toggles that double as the legend, the
+   canvas, a readout and, when the samples are approved, the clip under the cursor.
+   Chart colours are dark-mode only (the site has no light theme) and were validated with the dataviz skill's
+   validate_palette.js against the card surface #1c1611 (= --bg-surface), all three as one categorical set:
+     validate_palette.js "#e8601f,#2a9fdc,#d94f9d" --mode dark --surface "#1c1611" --pairs all
+   (every check PASS: lightness band, chroma floor, CVD worst 10.2 deutan, normal-vision worst 16.8, contrast >= 3:1).
+   Each is also encoded a second way: Grit a solid line, Beat Pulse a dashed one, sample clips a hatched band. The ribbon is a
+   quiet steel tint, a data envelope and not a series, kept low-chroma so the Pulse line stays distinct over it. */
+:root {
+  --tl-grit: #e8601f;
+  --tl-pulse: #2a9fdc;
+  --tl-sample: #d94f9d;
+  --tl-ribbon: #8a96ad;
 }
-.sound-samples > summary { cursor: pointer; color: var(--text-secondary); }
-.sound-samples-types { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: 0.85rem; }
-.sound-sample-list { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.sound-sample-list li { display: flex; flex-direction: column; gap: 2px; padding-left: var(--space-2); border-left: 2px solid var(--border-hairline); }
-.sound-sample-list p { margin: 0; color: var(--text-secondary); }
-.sound-sample-head { display: flex; align-items: baseline; gap: var(--space-2); }
-.sound-sample-time { color: var(--text-muted); font-size: 0.8rem; }
-.sound-sample-transcript { font-style: italic; }
-.sound-sample-source { color: var(--text-muted); font-size: 0.8rem; }
+.la-timeline { grid-column: 1 / -1; }
+.tl {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3); background: var(--bg-surface); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg);
+  min-width: 0;
+}
+.tl-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.tl-toggles { display: flex; gap: var(--space-2); margin-left: auto; }
+.tl-toggle {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 2px var(--space-3); border-radius: var(--radius-sm); cursor: pointer;
+  background: transparent; border: 1px solid var(--border-hairline); color: var(--text-secondary);
+  font: inherit; font-size: 0.78rem; font-weight: 500;
+}
+.tl-toggle[aria-pressed="true"] { color: var(--text-primary); background: var(--bg-surface-raised); }
+.tl-toggle-grit[aria-pressed="true"] { border-color: var(--tl-grit); }
+.tl-toggle-pulse[aria-pressed="true"] { border-color: var(--tl-pulse); }
+.tl-toggle[aria-pressed="false"] { opacity: 0.55; }
+.tl-toggle:focus-visible, .tl-clip-pill:focus-visible, .tl-canvas:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.tl-swatch { flex: none; }
+.tl-canvas { display: block; width: 100%; height: 152px; cursor: crosshair; touch-action: pan-y; border-radius: var(--radius-sm); }
+@media (max-width: 720px) { .tl-canvas { height: 128px; } }
+
+.tl-readout {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4);
+  padding-top: var(--space-2); border-top: 1px solid var(--border-hairline);
+  font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums;
+}
+.tl-readout b { color: var(--text-primary); font-weight: 500; }
+.tl-time { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: var(--text-primary); }
+.tl-off { opacity: 0.45; }
+.tl-clips { display: inline-flex; flex-wrap: wrap; gap: var(--space-1); margin-left: auto; }
+.tl-clip-pill {
+  padding: 0 var(--space-2); border-radius: var(--radius-sm); cursor: pointer;
+  background: transparent; border: 1px solid var(--border-hairline); color: var(--text-muted); font: inherit; font-size: 0.74rem;
+}
+.tl-clip-pill[aria-current="true"] { color: var(--text-primary); border-color: var(--tl-sample); }
+
+.tl-clip { display: flex; flex-direction: column; gap: var(--space-1); padding-top: var(--space-2); border-top: 1px solid var(--border-hairline); }
+.tl-clip-near { opacity: 0.8; }
+.tl-clip-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); font-size: 0.82rem; }
+/* The same hatched magenta as the band on the chart, so the card reads as that band's detail. */
+.tl-clip-key {
+  align-self: center; width: 14px; height: 10px; flex: none; border-radius: 2px;
+  border-top: 3px solid var(--tl-sample);
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--tl-sample) 55%, transparent) 0 1.5px, color-mix(in srgb, var(--tl-sample) 14%, transparent) 1.5px 5px);
+}
+.tl-clip-type { font-weight: 600; color: var(--text-primary); }
+.tl-clip-time { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-muted); }
+.tl-clip-source { font-weight: 600; color: var(--text-secondary); }
+.tl-clip-quote { margin: var(--space-1) 0 0; padding-left: var(--space-5); }   /* room for the passage's hanging opening quote mark */
+.tl-clip-quote p { font-size: 0.875rem; line-height: 1.5; }
