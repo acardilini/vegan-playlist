@@ -1,7 +1,7 @@
 // Pure model for the song page's audio timeline ("Through the song"): where a pixel, a bin and a time sit on the plot, what
-// the cursor reads out, and which section and sample clip are under it. No React, no DOM, so it runs under `node --test`.
+// the cursor reads out, and which sample clip is under it. No React, no DOM, so it runs under `node --test`.
 // The canvas drawing lives in components/timelineDraw.js; the shapes come from backend/services/audioAnalysis.js
-// (`timeline`: 80 bins of loudness / grit / pulse in 0..1; `sections` and `samples.items` carry startSec / endSec).
+// (`timeline`: 80 bins of loudness / grit / pulse in 0..1; `samples.items` carry startSec / endSec).
 
 // Plot padding in CSS pixels, shared by drawing and hit-testing so the two can never disagree.
 export const PAD = { l: 8, r: 8, t: 10, b: 22 };
@@ -59,15 +59,6 @@ export function readout(tl, bin) {
   };
 }
 
-// The timed section under a time. In a gap between sections the nearest one in time stays shown (the analysis simply
-// had nothing to say there); untimed notes are never "active"; null when there is no timed section at all.
-export function activeSection(sections, sec) {
-  const timed = (Array.isArray(sections) ? sections : []).filter((s) => s && s.startSec != null && s.endSec != null);
-  if (timed.length === 0) return null;
-  const distance = (s) => (sec < s.startSec ? s.startSec - sec : (sec > s.endSec ? sec - s.endSec : 0));
-  return timed.reduce((best, s) => (distance(s) < distance(best) ? s : best), timed[0]);
-}
-
 // The sample clip under a time (with a little grace either side, as clips are short), or else the closest clip by its
 // middle, flagged as not a hit. null when no clip has a usable time.
 export function activeSample(items, sec, grace = 1.5) {
@@ -93,4 +84,17 @@ export function withAlpha(hex, alpha) {
   const h = m[1].length === 3 ? m[1].split('').map((c) => c + c).join('') : m[1];
   const n = parseInt(h, 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
+// Hover moves the cursor until a click pins it; while pinned the mouse can roam without moving it. `hoverBin` is null when
+// the pointer is off the chart (or on touch, which has no hover), and the cursor then rests at the pinned / default bin.
+export function activeBinOf({ pinned, pinnedBin }, hoverBin) {
+  return pinned ? pinnedBin : (hoverBin ?? pinnedBin);
+}
+
+// A press on the chart: pins at that bin; a mouse click on the bin that is already pinned lets go again (touch and pen
+// always pin, since a tap is also how you start a drag).
+export function pressBin({ pinned, pinnedBin }, bin, pointerType) {
+  if (pointerType === 'mouse' && pinned && bin === pinnedBin) return { pinned: false, pinnedBin: bin };
+  return { pinned: true, pinnedBin: bin };
 }

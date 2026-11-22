@@ -1,9 +1,9 @@
-import { PAD, spanBox, xForBin, xForSec, withAlpha } from '../utils/timelineModel.js';
+import { PAD, spanBox, xForBin, withAlpha } from '../utils/timelineModel.js';
 
 // Canvas drawing for the audio timeline. Pure of React: everything it needs arrives in one argument, and every colour
 // comes from the CSS tokens (read by the component), so theming stays in the token layer.
 //
-// Layers, back to front: reference grid, sample spans (tinted + hatched + a top bar), section dividers, the loudness ribbon
+// Layers, back to front: reference grid, sample spans (tinted + hatched + a top bar), the loudness ribbon
 // (mirrored about the centre line), Beat Pulse (dashed) and Grit (solid) rising from the baseline, the cursor, time ticks.
 // Every curve and span is encoded twice (colour AND stroke / hatch) so the chart reads under colour-vision deficiency.
 
@@ -37,7 +37,7 @@ function curve(ctx, pts, { colour, halo, dashed }) {
 }
 
 export function drawTimeline(ctx, {
-  width, height, timeline: tl, samples, activeSampleItem, sections, showGrit, showPulse, activeBin, colours: c,
+  width, height, timeline: tl, samples, activeSampleItem, showGrit, showPulse, activeBin, colours: c,
 }) {
   const n = tl.bins;
   const plotW = width - PAD.l - PAD.r;
@@ -83,21 +83,6 @@ export function drawTimeline(ctx, {
     ctx.fillStyle = c.sample;
     ctx.fillRect(x1, PAD.t, x2 - x1, 4);
   }
-
-  // Where each analysed section starts (the first one starts at the left edge, so it needs no line).
-  ctx.save();
-  ctx.strokeStyle = c.border;
-  ctx.setLineDash([3, 3]);
-  ctx.lineWidth = 1;
-  for (const s of sections) {
-    if (s.startSec == null || s.startSec <= 0) continue;
-    const x = Math.round(xForSec(s.startSec, tl.duration_sec, width)) + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(x, PAD.t);
-    ctx.lineTo(x, PAD.t + plotH);
-    ctx.stroke();
-  }
-  ctx.restore();
 
   // Loudness ribbon, mirrored about the centre line.
   const grad = ctx.createLinearGradient(0, PAD.t, 0, PAD.t + plotH);

@@ -3224,10 +3224,6 @@
 }
 .tl-clip-pill[aria-current="true"] { color: var(--text-primary); border-color: var(--tl-sample); }
 
-.tl-section { margin: 0; font-size: 0.82rem; line-height: 1.4; color: var(--text-primary); }
-.tl-range { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: var(--text-secondary); margin-right: var(--space-2); }
-.tl-notes { margin: 0; padding-left: var(--space-4); font-size: 0.82rem; color: var(--text-secondary); }
-
 .tl-clip { display: flex; flex-direction: column; gap: var(--space-1); padding-top: var(--space-2); border-top: 1px solid var(--border-hairline); }
 .tl-clip-near { opacity: 0.8; }
 .tl-clip-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); font-size: 0.82rem; }
@@ -3240,6 +3236,5 @@
 .tl-clip-type { font-weight: 600; color: var(--text-primary); }
 .tl-clip-time { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-muted); }
 .tl-clip-source { font-weight: 600; color: var(--text-secondary); }
-.tl-clip-desc { margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; }
 .tl-clip-quote { margin: var(--space-1) 0 0; padding-left: var(--space-5); }   /* room for the passage's hanging opening quote mark */
 .tl-clip-quote p { font-size: 0.875rem; line-height: 1.5; }

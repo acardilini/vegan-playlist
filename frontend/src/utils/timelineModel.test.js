@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PAD, fmtTime, binFromX, xForBin, xForSec, secForBin, binForSec, stepBin, readout,
-  activeSection, activeSample, spanBox, withAlpha,
+  activeSample, spanBox, withAlpha, activeBinOf, pressBin,
 } from './timelineModel.js';
 
 const TL = {
@@ -68,25 +68,6 @@ test('readout gives whole percentages and the clock for a bin', () => {
   assert.deepEqual(r, { time: '1:11', total: '3:06', loudness: 30, grit: 40, pulse: 86 });
 });
 
-const SECTIONS = [
-  { startSec: 0, endSec: 15, label: '0:00–0:15', text: 'Intro.' },
-  { startSec: 16, endSec: 83, label: '0:16–1:23', text: 'Groove.' },
-  { startSec: 124, endSec: 174, label: '2:04–2:54', text: 'Build.' },
-];
-
-test('activeSection: the section containing the time, else the one nearest in time, else null', () => {
-  assert.equal(activeSection(SECTIONS, 5).text, 'Intro.');
-  assert.equal(activeSection(SECTIONS, 83).text, 'Groove.', 'the end is inclusive');
-  assert.equal(activeSection(SECTIONS, 90).text, 'Groove.', 'in the 1:23-2:04 gap: 7s after Groove ends, 34s before Build starts');
-  assert.equal(activeSection(SECTIONS, 100).text, 'Groove.', 'still nearer Groove (17s) than Build (24s)');
-  assert.equal(activeSection(SECTIONS, 110).text, 'Build.', 'now nearer Build (14s)');
-  assert.equal(activeSection(SECTIONS, 180).text, 'Build.', 'past the last section: the last one');
-  assert.equal(activeSection([], 5), null);
-  assert.equal(activeSection(null, 5), null);
-  const untimed = [{ startSec: null, endSec: null, label: null, text: 'A note.' }];
-  assert.equal(activeSection(untimed, 5), null, 'untimed notes are never "active"');
-});
-
 const SAMPLES = [
   { type: 'A', startSec: 0, endSec: 10 },
   { type: 'A', startSec: 44, endSec: 53 },
@@ -118,4 +99,19 @@ test('withAlpha turns a hex colour into rgba', () => {
   assert.equal(withAlpha('#e8601f', 0.5), 'rgba(232, 96, 31, 0.5)');
   assert.equal(withAlpha('#fff', 1), 'rgba(255, 255, 255, 1)');
   assert.equal(withAlpha('not-a-colour', 0.3), 'rgba(128, 128, 128, 0.3)', 'a safe grey rather than a throw');
+});
+
+test('activeBinOf: hover moves the cursor until a click pins it; while pinned, hover is ignored', () => {
+  assert.equal(activeBinOf({ pinned: false, pinnedBin: 5 }, 30), 30, 'hovering');
+  assert.equal(activeBinOf({ pinned: false, pinnedBin: 5 }, null), 5, 'not hovering: rests at the pinned/default bin');
+  assert.equal(activeBinOf({ pinned: true, pinnedBin: 5 }, 30), 5, 'pinned: the mouse moving does not move the cursor');
+  assert.equal(activeBinOf({ pinned: true, pinnedBin: 5 }, null), 5);
+});
+
+test('pressBin: a click pins at that bin; clicking the pinned bin again unpins (mouse); touch and pen always pin', () => {
+  assert.deepEqual(pressBin({ pinned: false, pinnedBin: 0 }, 12, 'mouse'), { pinned: true, pinnedBin: 12 });
+  assert.deepEqual(pressBin({ pinned: true, pinnedBin: 12 }, 40, 'mouse'), { pinned: true, pinnedBin: 40 }, 'a click elsewhere moves the pin');
+  assert.deepEqual(pressBin({ pinned: true, pinnedBin: 12 }, 12, 'mouse'), { pinned: false, pinnedBin: 12 }, 'the same bin toggles it off');
+  assert.deepEqual(pressBin({ pinned: true, pinnedBin: 12 }, 12, 'touch'), { pinned: true, pinnedBin: 12 }, 'a tap never unpins on touch');
+  assert.deepEqual(pressBin({ pinned: false, pinnedBin: 0 }, 7, 'pen'), { pinned: true, pinnedBin: 7 });
 });

@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { drawTimeline } from './timelineDraw';
 import {
-  binForSec, binFromX, activeSample, activeSection, fmtTime, readout, secForBin, stepBin,
+  activeBinOf, activeSample, binForSec, binFromX, fmtTime, pressBin, readout, secForBin, stepBin,
 } from '../utils/timelineModel';
 
 // "Through the song": the audio analysis laid out over the song's running time. A mirrored loudness ribbon with two
-// toggleable curves (Grit solid, Beat Pulse dashed), the analysed sections, and - only when the curator approved the
-// samples, which the server enforces by sending none otherwise - the clips of sampled speech or sound, each with its
-// speaker only when the analysis was highly confident who it was. Hover (or drag on touch) to inspect a moment, click
-// or tap to pin it; arrow keys, Home and End move the cursor.
+// toggleable curves (Grit solid, Beat Pulse dashed) and - only when the curator approved the samples, which the server
+// enforces by sending none otherwise - the clips of sampled speech or sound, each with its speaker only when the analysis
+// was highly confident who it was. Hover to inspect a moment; click (or tap) to pin it, and click the same spot again to
+// let go; drag on touch; arrow keys, Home and End move a pinned cursor.
 //
 // The two toggles ARE the legend, so nothing repeats under the chart, and nothing here repeats what the page header
 // already says (title, artist, tempo, key). Definitions of grit and pulse belong on the About > Reference pages.
@@ -23,7 +23,6 @@ function readColours() {
     ribbon: v('--tl-ribbon', '#8a96ad'),
     surface: v('--bg-surface', '#1c1611'),
     grid: v('--border-hairline', 'rgba(255,255,255,0.14)'),
-    border: v('--border-hairline', 'rgba(255,255,255,0.14)'),
     text: v('--text-muted', '#9a9088'),
     cursor: v('--text-primary', '#f5f0eb'),
     fmt: fmtTime,
@@ -42,7 +41,6 @@ function Swatch({ dashed, colour }) {
 
 function AudioTimeline({ audio, heading }) {
   const tl = audio && audio.timeline ? audio.timeline : null;
-  const sections = useMemo(() => (audio && Array.isArray(audio.sections) ? audio.sections : []), [audio]);
   const clips = useMemo(
     () => ((audio && audio.samples && Array.isArray(audio.samples.items)) ? audio.samples.items.filter(timed) : []),
     [audio],
@@ -53,14 +51,14 @@ function AudioTimeline({ audio, heading }) {
   const [showGrit, setShowGrit] = useState(true);
   const [showPulse, setShowPulse] = useState(true);
   const [hoverBin, setHoverBin] = useState(null);
-  const [pinnedBin, setPinnedBin] = useState(0);
+  const [pin, setPin] = useState({ pinned: false, pinnedBin: 0 });
 
-  // A new song (or a changed analysis) starts on its first clip if it has one, else at the start.
+  // A new song (or a changed analysis) starts unpinned, resting on its first clip if it has one, else at the start.
   useEffect(() => {
     if (!tl) return;
     const first = clips[0];
     setHoverBin(null);
-    setPinnedBin(first ? binForSec(tl, (first.startSec + first.endSec) / 2) : 0);
+    setPin({ pinned: false, pinnedBin: first ? binForSec(tl, (first.startSec + first.endSec) / 2) : 0 });
   }, [tl, clips]);
 
   useEffect(() => {
@@ -71,12 +69,10 @@ function AudioTimeline({ audio, heading }) {
     return () => ro.disconnect();
   }, [tl]);
 
-  const bin = tl ? Math.min(tl.bins - 1, Math.max(0, hoverBin ?? pinnedBin)) : 0;
+  const bin = tl ? Math.min(tl.bins - 1, Math.max(0, activeBinOf(pin, hoverBin))) : 0;
   const sec = tl ? secForBin(tl, bin) : 0;
-  const section = tl ? activeSection(sections, sec) : null;
   const under = tl ? activeSample(clips, sec) : null;
   const hitItem = under && under.hit ? under.item : null;
-  const untimedNotes = sections.filter((s) => s.startSec == null);
 
   useEffect(() => {
     const el = canvasRef.current;
@@ -89,29 +85,37 @@ function AudioTimeline({ audio, heading }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawTimeline(ctx, {
       width, height, timeline: tl, samples: clips, activeSampleItem: hitItem,
-      sections, showGrit, showPulse, activeBin: bin, colours: readColours(),
+      showGrit, showPulse, activeBin: bin, colours: readColours(),
     });
-  }, [tl, clips, sections, showGrit, showPulse, bin, width, hitItem]);
+  }, [tl, clips, showGrit, showPulse, bin, width, hitItem]);
 
   if (!tl) return null;
 
   const binAt = (e) => binFromX(e.clientX - e.currentTarget.getBoundingClientRect().left, width, tl.bins);
-  const onPointerDown = (e) => { setPinnedBin(binAt(e)); setHoverBin(null); };
+  const onPointerDown = (e) => {
+    // Read everything off the event now: a state updater runs after the handler, when currentTarget is already null.
+    const at = binAt(e);
+    const kind = e.pointerType;
+    setPin((p) => pressBin(p, at, kind));
+    setHoverBin(null);
+  };
   const onPointerMove = (e) => {
     if (e.pointerType === 'mouse') setHoverBin(binAt(e));
-    else if (e.buttons) setPinnedBin(binAt(e));   // touch / pen: dragging scrubs; vertical drags still scroll the page
+    else if (e.buttons) setPin({ pinned: true, pinnedBin: binAt(e) });   // touch / pen: dragging scrubs; vertical drags still scroll the page
   };
   const onKeyDown = (e) => {
-    const next = stepBin(pinnedBin, e.key, tl.bins);
+    const next = stepBin(bin, e.key, tl.bins);
     if (next == null) return;
     e.preventDefault();
     setHoverBin(null);
-    setPinnedBin(next);
+    setPin({ pinned: true, pinnedBin: next });
   };
-  const goToClip = (s) => { setHoverBin(null); setPinnedBin(binForSec(tl, (s.startSec + s.endSec) / 2)); };
+  const goToClip = (s) => {
+    setHoverBin(null);
+    setPin({ pinned: true, pinnedBin: binForSec(tl, (s.startSec + s.endSec) / 2) });
+  };
 
   const r = readout(tl, bin);
-  const valueText = `${r.time} of ${r.total}${section && section.label ? `, section ${section.label}` : ''}`;
   const clip = under ? under.item : null;
 
   return (
@@ -137,7 +141,7 @@ function AudioTimeline({ audio, heading }) {
         aria-valuemin={0}
         aria-valuemax={Math.round(tl.duration_sec)}
         aria-valuenow={Math.round(sec)}
-        aria-valuetext={valueText}
+        aria-valuetext={`${r.time} of ${r.total}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerLeave={() => setHoverBin(null)}
@@ -161,15 +165,6 @@ function AudioTimeline({ audio, heading }) {
         )}
       </div>
 
-      {section && (
-        <p className="tl-section">
-          <span className="tl-range">{section.label}</span> {section.text}
-        </p>
-      )}
-      {untimedNotes.length > 0 && (
-        <ul className="tl-notes">{untimedNotes.map((s, i) => <li key={i}>{s.text}</li>)}</ul>
-      )}
-
       {clip && (
         <div className={`tl-clip${under.hit ? '' : ' tl-clip-near'}`}>
           <div className="tl-clip-head">
@@ -178,7 +173,6 @@ function AudioTimeline({ audio, heading }) {
             <span className="tl-clip-time">{fmtTime(clip.startSec)}–{fmtTime(clip.endSec)}</span>
             <span className="tl-clip-source">{clip.source || 'Unidentified source'}</span>
           </div>
-          {clip.description && <p className="tl-clip-desc">{clip.description}</p>}
           {clip.transcript && <blockquote className="lyrics-passage tl-clip-quote"><p>{clip.transcript}</p></blockquote>}
         </div>
       )}
