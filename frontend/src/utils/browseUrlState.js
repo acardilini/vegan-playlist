@@ -8,10 +8,11 @@ export const SCALAR_KEYS = [
   'focus_amount', 'target_audience', 'emotions',
 ];
 
-// The five acoustic dimensions (song_lyric_analysis columns) derived from the audio —
-// filterable since 2026-07-26. tempo_bpm is a range (tempo_from/tempo_to), not an array.
-export const ACOUSTIC_KEYS = [
-  'sonic_energy', 'emotional_mood', 'rhythmic_style', 'acoustic_type', 'vocal_delivery',
+// The eight audio dimensions (song_audio_analysis columns) from the audio analysis. tempo_bpm is a range
+// (tempo_from/tempo_to), not an array. `audio_samples` only ever lists songs the curator approved.
+export const AUDIO_KEYS = [
+  'musical_mood', 'sonic_intensity', 'production_texture', 'vocal_style',
+  'rhythmic_feel', 'instrumentation', 'dynamic_arc', 'audio_samples',
 ];
 
 export const EMPTY_FILTERS = {
@@ -24,7 +25,8 @@ export const EMPTY_FILTERS = {
   facet_groups: [], facet_subdims: [],
   perspective: [], lyrical_tone: [], clarity: [],
   focus_amount: [], target_audience: [], emotions: [],
-  sonic_energy: [], emotional_mood: [], rhythmic_style: [], acoustic_type: [], vocal_delivery: [],
+  musical_mood: [], sonic_intensity: [], production_texture: [], vocal_style: [],
+  rhythmic_feel: [], instrumentation: [], dynamic_arc: [], audio_samples: [],
   tempo_from: '', tempo_to: '',
   sort_by: 'year', dir: '',
 };
@@ -34,7 +36,7 @@ const ARRAY_KEYS = [
   'themes', 'targets', 'actions', 'moral_frames',
   'facet_groups', 'facet_subdims',
   ...SCALAR_KEYS,
-  ...ACOUSTIC_KEYS,
+  ...AUDIO_KEYS,
 ];
 const STRING_KEYS = ['year_from', 'year_to', 'dir', 'tempo_from', 'tempo_to'];
 const BOOL_KEYS = ['has_youtube', 'has_analysis', 'on_spotify'];

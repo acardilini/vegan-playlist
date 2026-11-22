@@ -1,11 +1,9 @@
 // The floating controls over the map: a pill with 2D | 3D (the top-level switch) and, in 3D, a smaller
-// pill under it with the camera presets and drift. Two pills so the 2D|3D switch never changes width.
+// pill under it with the Rotate | Pan drag mode and drift. Two pills so the 2D|3D switch never changes width.
 // The Labels / Lines toggles live with the zoom buttons (OverlayToggles), apart from this switch.
 // Presentational only - ExploreMap owns the state and passes it down.
-const PRESET_LABELS = [['iso', 'Iso'], ['top', 'Top'], ['front', 'Front'], ['side', 'Side']];
-
 function MapToolbar({
-  dim, has3d, onDim, activePreset, onPreset, drift, onDrift, reduceMotion,
+  dim, has3d, onDim, drift, onDrift, reduceMotion, dragMode, onDragMode,
 }) {
   return (
     <div className="explore-maptools">
@@ -33,14 +31,15 @@ function MapToolbar({
       </div>
       {dim === '3d' && (
         <div className="explore-maptools-pill explore-maptools-pill--sub" role="toolbar" aria-label="Camera">
-          <div className="explore-maptools-group" role="group" aria-label="Camera angle">
-            {PRESET_LABELS.map(([key, label]) => (
+          <div className="explore-maptools-group" role="group" aria-label="Drag does">
+            {[['orbit', 'Rotate'], ['pan', 'Pan']].map(([key, label]) => (
               <button
                 key={key}
                 type="button"
-                className={`explore-maptool ${activePreset === key ? 'on' : ''}`}
-                aria-pressed={activePreset === key}
-                onClick={() => onPreset(key)}
+                className={`explore-maptool ${dragMode === key ? 'on' : ''}`}
+                aria-pressed={dragMode === key}
+                title={key === 'orbit' ? 'Drag to turn the map (hold Shift to pan)' : 'Drag to move the map (hold Shift to rotate)'}
+                onClick={() => onDragMode(key)}
               >
                 {label}
               </button>

@@ -1,20 +1,12 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert');
 const ref = require('../services/referenceCodebook');
-const acb = require('../services/acousticCodebook');
+const audioAnalysis = require('../services/audioAnalysis');
 const taxonomy = require('../data/taxonomy.json');
 const pool = require('../database/db');
 const analysisModule = require('../services/analysis');
 
 // Unique fixture sentinel per test file: ZZZREF.
-
-test('acousticCodebook exposes derivation source and per-code thresholds', () => {
-  assert.match(acb.derivationSource('sonic_energy'), /Librosa/);
-  assert.match(acb.derivationSource('tempo_bpm'), /Librosa/);
-  assert.equal(acb.derivationSource('not_a_dimension'), '');
-  assert.match(acb.codeThreshold('sonic_energy', 'EXPLOSIVE'), /RMS/);
-  assert.equal(acb.codeThreshold('sonic_energy', 'NOT_A_CODE'), '');
-});
 
 test('catalogue lists all four thematic dimensions with descriptions', () => {
   const c = ref.catalogue();
@@ -68,20 +60,28 @@ test('catalogue lists the six metadata components and hides the four absence cod
   }
 });
 
-test('catalogue lists six acoustic dimensions, each with a derivation source', () => {
+test('catalogue lists the seven audio dimensions and the samples, with both definitions and no hidden code', () => {
   const c = ref.catalogue();
   assert.deepEqual(c.acoustic.map(a => a.key), [
-    'sonic_energy', 'emotional_mood', 'rhythmic_style',
-    'acoustic_type', 'vocal_delivery', 'tempo_bpm',
+    'musical_mood', 'sonic_intensity', 'production_texture', 'dynamic_arc',
+    'vocal_style', 'rhythmic_feel', 'instrumentation', 'audio_samples',
   ]);
+  assert.equal(c.acoustic.find(a => a.key === 'production_texture').heading, 'Production');
   for (const a of c.acoustic) {
-    assert.ok(a.derivation_source.length > 0, `${a.key} names its derivation`);
     assert.ok(a.description.length > 20, `${a.key} has a description`);
+    assert.ok(a.codes.length > 0, `${a.key} lists codes`);
+    assert.ok(!('derivation_source' in a), `${a.key} carries no derivation source`);
+    for (const code of a.codes) {
+      assert.ok(code.definition.length > 0, `${a.key}/${code.code} has the AI definition`);
+      assert.ok(code.listener.length > 0, `${a.key}/${code.code} has the listener description`);
+      assert.ok(!('threshold' in code), 'no threshold');
+      assert.equal(code.count, 0, 'catalogue() is count-free');
+    }
   }
-  const energy = c.acoustic.find(a => a.key === 'sonic_energy');
-  assert.ok(energy.codes.every(x => x.threshold.length > 0), 'every energy code shows its threshold');
-  // tempo is an integer, not an enum — it carries no codes.
-  assert.deepEqual(c.acoustic.find(a => a.key === 'tempo_bpm').codes, []);
+  const samples = c.acoustic.find(a => a.key === 'audio_samples').codes.map(x => x.code);
+  assert.ok(!samples.includes('NONE'), 'the hidden NONE code is never listed');
+  assert.deepEqual(c.objective.map(m => m.label), ['Tempo', 'Key', 'Loudness']);
+  assert.ok(c.objective.every(m => m.description.length > 0));
 });
 
 const express = require('express');
@@ -156,6 +156,52 @@ test('an unpublished song raises no count (the publish gate holds)', async () =>
   }
 });
 
+const mkSong = async (title, published = true) => (await pool.query(
+  `INSERT INTO songs (title, status, published, data_source) VALUES ($1, 'included', $2, 'manual') RETURNING id`,
+  [title, published])).rows[0].id;
+
+test('payload audio counts equal the browse sidebar counts, code for code', async () => {
+  const p = await ref.payload(pool);
+  const facets = await audioAnalysis.audioFacets(pool, {});
+  for (const dim of p.acoustic) {
+    const byCode = new Map((facets[dim.key].options || []).map(o => [o.code, o.count]));
+    for (const code of dim.codes) {
+      assert.equal(code.count, byCode.get(code.code) || 0, `${dim.key}/${code.code} agrees with the sidebar`);
+    }
+  }
+  assert.ok(p.acoustic.find(a => a.key === 'musical_mood').codes.some(c => c.count > 0), 'some mood is in use');
+});
+
+test('a samples count only includes songs whose samples the curator approved', async () => {
+  const code = 'FOUND_SOUND_OTHER';
+  const count = async () => (await ref.payload(pool)).acoustic.find(a => a.key === 'audio_samples')
+    .codes.find(c => c.code === code).count;
+  const before = await count();
+  const id = await mkSong('ZZZREF sample gate');
+  try {
+    await pool.query(
+      `INSERT INTO song_audio_analysis (song_id, model_used, audio_status, analyzed_at, audio_samples)
+       VALUES ($1, 'zzzref-audio', 'OK', NOW(), ARRAY[$2]::text[])`, [id, code]);
+    assert.equal(await count(), before, 'an unreviewed song adds nothing');
+    await pool.query('UPDATE songs SET show_audio_samples = false WHERE id = $1', [id]);
+    assert.equal(await count(), before, 'a reviewed-and-hidden song adds nothing');
+    await pool.query('UPDATE songs SET show_audio_samples = true WHERE id = $1', [id]);
+    assert.equal(await count(), before + 1, 'approving it counts it');
+  } finally {
+    await pool.query('DELETE FROM song_audio_analysis WHERE song_id = $1', [id]);
+    await pool.query('DELETE FROM songs WHERE id = $1', [id]);
+  }
+});
+
+test('coverage.audio reports how many live songs have a sound analysis and which model made it', async () => {
+  const { audio } = (await ref.payload(pool)).coverage;
+  assert.ok(Number.isInteger(audio.analysed) && audio.analysed > 0);
+  assert.ok(Array.isArray(audio.models) && audio.models.length > 0);
+  assert.ok(audio.models.every(m => m.model && Number.isInteger(m.songs)));
+  assert.equal(audio.models.reduce((n, m) => n + m.songs, 0), audio.analysed, 'each analysed song has one latest row');
+  assert.ok(!Number.isNaN(Date.parse(audio.latest)), 'latest parses as a date');
+});
+
 test('coverage reports live, analysed and mapped songs plus the latest-pass models', async () => {
   const c = (await ref.payload(pool)).coverage;
   assert.ok(c.live_songs > 1000, 'live songs looks like the real catalogue');
@@ -193,7 +239,8 @@ test('GET /api/analysis/codebook serves the whole reference payload', async () =
     const body = await res.json();
     assert.equal(body.thematic.length, 4);
     assert.equal(body.metadata.length, 6);
-    assert.equal(body.acoustic.length, 6);
+    assert.equal(body.acoustic.length, 8);
+    assert.equal(body.objective.length, 3);
     assert.ok(body.coverage.live_songs > 1000);
     const codes = body.metadata.flatMap(m => m.codes.map(c => c.code));
     assert.ok(!codes.includes('UNSPECIFIED'), 'suppressed codes never reach the wire');

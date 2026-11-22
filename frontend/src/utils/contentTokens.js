@@ -46,6 +46,14 @@ export function tokenValues(coverage) {
     : MISSING;
   const when = c.latest_pass_at ? new Date(c.latest_pass_at) : null;
 
+  // The sound analysis is its own pass over its own table, with its own coverage block.
+  const a = c.audio || {};
+  const audioModels = Array.isArray(a.models) ? a.models : [];
+  const audioPct = (Number.isFinite(a.analysed) && c.live_songs)
+    ? `${Math.round((a.analysed / c.live_songs) * 100)}%`
+    : MISSING;
+  const audioWhen = a.latest ? new Date(a.latest) : null;
+
   return {
     songs: num(c.live_songs),
     artists: num(c.artists),
@@ -55,6 +63,12 @@ export function tokenValues(coverage) {
     codingModels: list(models.map(m => m.model)),
     codingDate: (when && !Number.isNaN(when.getTime()))
       ? when.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' })
+      : MISSING,
+    audioAnalysed: num(a.analysed),
+    audioAnalysedPct: audioPct,
+    audioModels: list(audioModels.map(m => m.model)),
+    audioDate: (audioWhen && !Number.isNaN(audioWhen.getTime()))
+      ? audioWhen.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' })
       : MISSING,
   };
 }

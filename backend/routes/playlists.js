@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../database/db');
 const genres_svc = require('../services/genres');
+const audioAnalysis = require('../services/audioAnalysis');
 const router = express.Router();
 
 // Get all playlists
@@ -77,10 +78,7 @@ router.get('/:id', async (req, res) => {
         s.duration_ms,
         s.popularity,
         s.spotify_url,
-        s.energy,
-        s.danceability,
-        s.valence,
-        s.custom_mood,
+        ${audioAnalysis.MOOD_SUBQUERY()} AS mood_code,
         ps.position,
         ps.added_at,
         al.name as album_name,
@@ -102,7 +100,7 @@ router.get('/:id', async (req, res) => {
     
     res.json({
       playlist: playlistResult.rows[0],
-      songs: songsResult.rows
+      songs: audioAnalysis.attachMood(songsResult.rows)
     });
   } catch (error) {
     console.error('Error fetching playlist:', error);

@@ -4,7 +4,8 @@
 // Functions take `db` (pool or client) first, mirroring services/curation.js.
 const taxonomy = require('../data/taxonomy.json');
 const codebook = require('./metadataCodebook');
-const acoustic = require('./acousticCodebook');
+const audioAnalysis = require('./audioAnalysis');
+const { unpackConstraint, countByCode } = require('./facetSql');
 
 // The site shows each song's latest analysis pass (see LATEST_ANALYSIS below).
 
@@ -104,14 +105,13 @@ async function getSongAnalysis(db, songId) {
   const r = await db.query(
     `SELECT sla.themes, sla.topics, sla.advocacy, sla.moral_frames, sla.lyric_summary,
             sla.perspective, sla.lyrical_tone, sla.clarity, sla.focus_amount,
-            sla.target_audience, sla.emotions,
-            sla.sonic_energy, sla.emotional_mood, sla.rhythmic_style,
-            sla.acoustic_type, sla.vocal_delivery, sla.tempo_bpm
+            sla.target_audience, sla.emotions
      FROM ${LATEST_ANALYSIS} sla
      WHERE sla.song_id = $1`,
     [songId]);
-  const a = r.rows[0];
-  if (!a) return null;
+  // No lyric analysis (or one hidden as junk-derived) is not the end: the song's audio analysis is
+  // independent of its lyrics, so the page can still have a Sound section to show.
+  const a = r.rows[0] || {};
 
   // Compact attributes card: the six single-valued components. cleanSelection drops null,
   // suppressed and off-codebook values — the same gate the filters use, so the page can only
@@ -138,44 +138,24 @@ async function getSongAnalysis(db, songId) {
     moral_frames: mapDim('moral_frames', a.moral_frames),
   };
 
-  // Acoustic dimensions, derived from the audio. UNGATED by design (spec 2026-07-26 §4.3):
-  // whatever the pipeline emits is shown, title-cased when off-codebook. The tooltip carries
-  // "<Component name> — <definition>" so the long name stays out of the narrow grid cell.
-  const acousticCells = [];
-  for (const c of acoustic.COMPONENTS) {
-    const v = a[c.column];
-    if (!v) continue;
-    const def = acoustic.codeDefinition(c.key, v);
-    acousticCells.push({
-      label: c.heading,
-      value: acoustic.codeLabel(c.key, v),
-      definition: def
-        ? `${acoustic.componentName(c.key)} — ${def}`
-        : acoustic.componentDescription(c.key),
-    });
-  }
-  if (a.tempo_bpm != null) {
-    acousticCells.push({
-      label: acoustic.TEMPO.heading,
-      value: `${a.tempo_bpm} BPM`,
-      definition: acoustic.componentDescription(acoustic.TEMPO.key),
-    });
-  }
+  // The audio analysis (the song's latest OK audio row): its own block, with its own gates (codebook-known
+  // codes only; sample data only once the curator has approved it). Null when the song has none.
+  const audio = await audioAnalysis.getSongAudio(db, songId);
 
-  // Nothing displayable (e.g. a lyrics-less pass with empty codes and empty scalars) -> null,
+  // Nothing displayable (e.g. a lyrics-less pass with empty codes and empty scalars, and no audio) -> null,
   // so the route 404s and the page shows no empty "Lyrical analysis" heading.
-  const hasContent = attributes.length > 0 || emotions.length > 0 || acousticCells.length > 0 ||
+  const hasContent = attributes.length > 0 || emotions.length > 0 || !!audio ||
     Object.values(dims).some(d => d.length > 0) || !!(a.lyric_summary && a.lyric_summary.trim());
   if (!hasContent) return null;
 
   return {
-    perspective: a.perspective, clarity: a.clarity,
-    focus_amount: a.focus_amount, lyrical_tone: a.lyrical_tone,
-    target_audience: a.target_audience,
-    emotions, summary: a.lyric_summary,
+    perspective: a.perspective ?? null, clarity: a.clarity ?? null,
+    focus_amount: a.focus_amount ?? null, lyrical_tone: a.lyrical_tone ?? null,
+    target_audience: a.target_audience ?? null,
+    emotions, summary: a.lyric_summary ?? null,
     ...dims,
     attributes,
-    acoustic: acousticCells,
+    audio,
     dimension_descriptions: DIM_DESCRIPTIONS,
   };
 }
@@ -191,18 +171,6 @@ const DIM_DESCRIPTIONS = Object.fromEntries(
     return [pub, h.description || ''];
   })
 );
-
-// Unpack a per-component constraint {joinSql, where, params} into ready-to-splice SQL
-// fragments. A missing/null constraint degrades to no extra join, where or params — shared
-// by facetTree (one constraint per call) and scalarFacets/acousticFacets (one per component).
-function unpackConstraint(cn) {
-  cn = cn || {};
-  return {
-    joinSql: cn.joinSql || '',
-    whereSql: (cn.where && cn.where.length) ? ' AND ' + cn.where.join(' AND ') : '',
-    params: cn.params || [],
-  };
-}
 
 // Parameter base: constraint.where/params must be built with startIndex: 1 — this function no
 // longer prepends a model param.
@@ -254,16 +222,6 @@ async function facetTree(db, constraint = null) {
   return out;
 }
 
-// Count distinct live songs per code. `inner` is a SELECT yielding (song_id, code) rows;
-// each caller owns its own inner query because the scalar tier must unnest an array column
-// while the acoustic tier reads a plain one. Shared by scalarFacets and acousticFacets.
-async function countByCode(db, inner, params) {
-  const rows = (await db.query(
-    `SELECT code, COUNT(DISTINCT song_id)::int AS count FROM (${inner}) t
-     WHERE code IS NOT NULL GROUP BY code`, params)).rows;
-  return new Map(rows.map(r => [r.code, r.count]));
-}
-
 // Per-component option counts for the sidebar. `constraints` is keyed by component:
 // { [componentKey]: { joinSql, where: string[], params: any[] } } — each built with that
 // component excluded, so a group's own selection never shrinks its own options.
@@ -297,40 +255,7 @@ async function scalarFacets(db, constraints = {}) {
   return out;
 }
 
-// Per-component option counts for the sidebar's Sound group. Mirrors scalarFacets: each
-// component's constraint is built with that component excluded, so an open group's own
-// selection never shrinks its own options. Tempo is absent by design — a range has no
-// options to count; the route serves tempoRange() instead.
-// Parameter base: each constraint's where/params is built with startIndex: 1.
-async function acousticFacets(db, constraints = {}) {
-  const out = {};
-  for (const c of acoustic.COMPONENTS) {
-    const { joinSql: extraJoin, whereSql: extraWhere, params: cParams } = unpackConstraint(constraints[c.key]);
-    // c.column comes from the COMPONENTS whitelist — never user input.
-    const inner = `SELECT DISTINCT s.id AS song_id, acf.${c.column} AS code
-       FROM songs s${extraJoin}
-       JOIN ${LATEST_ANALYSIS} acf ON acf.song_id = s.id
-       WHERE s.status = 'included' AND s.published = true${extraWhere}`;
-    const counts = await countByCode(db, inner, [...cParams]);
-    out[c.key] = {
-      key: c.key,
-      heading: c.heading,
-      description: acoustic.componentDescription(c.key),
-      options: acoustic.optionsFor(c.key).map(o => ({ ...o, count: counts.get(o.code) || 0 })),
-    };
-  }
-  return out;
-}
-
-// Min/max BPM over live+published songs' latest pass — feeds the range input placeholders,
-// the same role year_range plays for the Year inputs.
-async function tempoRange(db) {
-  const r = await db.query(
-    `SELECT MIN(la.tempo_bpm)::int AS min_bpm, MAX(la.tempo_bpm)::int AS max_bpm
-     FROM songs s JOIN ${LATEST_ANALYSIS} la ON la.song_id = s.id
-     WHERE s.status = 'included' AND s.published = true`);
-  return r.rows[0] || { min_bpm: null, max_bpm: null };
-}
+// (The Sound filter group's option counts and the tempo range now live in services/audioAnalysis.js.)
 
 const FACET_TO_COLUMN = { themes: 'themes', targets: 'topics', actions: 'advocacy', moral_frames: 'moral_frames' };
 
@@ -412,4 +337,4 @@ async function themeCounts(db, limit = 15) {
 module.exports = { LATEST_ANALYSIS, hasAnalysisExists, hasRealLyricsExists,
   hasCodesExists, EVIDENCE_DIMS, DIM_TO_TAXONOMY,
   taxonomy, label, getSongAnalysis, subDimensionLabel, SUBDIM, PUBLIC_DIMS, facetTree,
-  scalarFacets, acousticFacets, tempoRange, facetFilterConditions, facetSelectionClauses, themeCounts };
+  scalarFacets, facetFilterConditions, facetSelectionClauses, themeCounts };

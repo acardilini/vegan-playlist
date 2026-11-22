@@ -2,78 +2,87 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const acb = require('../services/acousticCodebook');
 
-// Pure-function tests — no DB, no sentinel.
+// Pure-function tests over the new 8-dimension audio codebook — no DB, no sentinel.
 
-test('COMPONENTS lists the five enum dimensions in order with short headings', () => {
-  assert.deepEqual(acb.COMPONENT_KEYS, [
-    'sonic_energy', 'emotional_mood', 'rhythmic_style', 'acoustic_type', 'vocal_delivery',
+test('DIMENSIONS lists the seven coded dimensions in page order with site headings', () => {
+  assert.deepEqual(acb.DIMENSIONS.map(d => d.key), [
+    'musical_mood', 'sonic_intensity', 'production_texture', 'dynamic_arc',
+    'vocal_style', 'rhythmic_feel', 'instrumentation',
   ]);
-  assert.deepEqual(acb.COMPONENTS.map(c => c.heading), [
-    'Energy', 'Mood', 'Rhythm', 'Instruments', 'Vocals',
+  // production_texture is "Sound" in the codebook; the site calls it Production (a one-constant override)
+  assert.deepEqual(acb.DIMENSIONS.map(d => d.heading), [
+    'Mood', 'Intensity', 'Production', 'Dynamics', 'Vocals', 'Rhythm', 'Instruments',
   ]);
-  assert.ok(acb.COMPONENTS.every(c => c.column === c.key));
-  // tempo is an integer range, not an enum component
-  assert.ok(!acb.COMPONENT_KEYS.includes('tempo_bpm'));
+  assert.equal(acb.componentName('production_texture'), 'Sound');
+  assert.ok(acb.DIMENSIONS.every(d => d.column === d.key));
+  assert.deepEqual(acb.DIMENSIONS.filter(d => d.multi).map(d => d.key),
+    ['musical_mood', 'vocal_style', 'instrumentation']);
+  assert.deepEqual(acb.SINGLE_KEYS, ['sonic_intensity', 'production_texture', 'dynamic_arc', 'rhythmic_feel']);
+  // The Explore colour menu takes single-value dimensions that fit the 7-colour palette; rhythm has 8 codes.
+  assert.deepEqual(acb.COLOUR_KEYS, ['sonic_intensity', 'production_texture', 'dynamic_arc']);
+  assert.equal(acb.SAMPLES.key, 'audio_samples');
+  assert.equal(acb.SAMPLES.multi, true);
   assert.equal(acb.TEMPO.column, 'tempo_bpm');
-  assert.equal(acb.TEMPO.heading, 'Tempo');
+  assert.deepEqual(acb.FILTER_KEYS, [...acb.DIMENSIONS.map(d => d.key), 'audio_samples']);
 });
 
-test('codeLabel, codeDefinition and component text resolve from the acoustic codebook', () => {
-  assert.equal(acb.codeLabel('sonic_energy', 'MODERATE'), 'Moderate');
-  assert.equal(acb.codeLabel('vocal_delivery', 'SPOKEN'), 'Spoken Word');
-  assert.ok(acb.codeDefinition('rhythmic_style', 'DRIVING').length > 0);
-  assert.equal(acb.componentName('sonic_energy'), 'Sonic Energy & Intensity');
-  assert.ok(acb.componentDescription('emotional_mood').length > 20);
-  assert.ok(acb.componentDescription('tempo_bpm').length > 20, 'tempo has component text too');
+test('optionsFor lists codes in codebook order and never offers a hidden code', () => {
+  assert.equal(acb.optionsFor('musical_mood').length, 9);
+  assert.equal(acb.optionsFor('musical_mood')[0].code, 'FEROCIOUS_AGGRESSIVE');
+  const samples = acb.optionsFor('audio_samples');
+  assert.equal(samples.length, 5);
+  assert.ok(!samples.some(o => o.code === 'NONE'), 'NONE is hidden_in_ui');
+  assert.deepEqual(acb.optionsFor('sonic_energy'), [], 'a retired key has no options');
 });
 
-test('unknown codes title-case rather than vanish (acoustic display is ungated)', () => {
-  assert.equal(acb.codeLabel('sonic_energy', 'SOME_NEW_CODE'), 'Some New Code');
-  assert.equal(acb.codeLabel('sonic_energy', null), null);
-  assert.equal(acb.codeDefinition('sonic_energy', 'SOME_NEW_CODE'), '');
+test('labels and definitions resolve; unknown codes title-case instead of vanishing', () => {
+  assert.equal(acb.codeLabel('musical_mood', 'FEROCIOUS_AGGRESSIVE'), 'Aggressive');
+  assert.equal(acb.codeLabel('production_texture', 'RAW_DIY_LOFI'), 'Raw DIY');
+  assert.equal(acb.codeLabel('musical_mood', 'SOME_NEW_CODE'), 'Some New Code');
+  assert.equal(acb.codeLabel('musical_mood', null), null);
+  assert.ok(acb.codeDefinition('musical_mood', 'DARK_OMINOUS').length > 10, 'listener description');
+  assert.ok(acb.aiDefinition('musical_mood', 'DARK_OMINOUS').length > 10, 'ai definition');
+  assert.notEqual(acb.codeDefinition('musical_mood', 'DARK_OMINOUS'), acb.aiDefinition('musical_mood', 'DARK_OMINOUS'));
+  assert.ok(acb.componentDescription('dynamic_arc').length > 20);
 });
 
-test('labels never carry the codebook emoji short_tag', () => {
-  for (const c of acb.COMPONENTS) {
-    for (const o of acb.optionsFor(c.key)) {
-      assert.ok(!/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(o.label),
-        `${c.key}/${o.code} label must be emoji-free`);
-    }
-  }
+test('cleanSelection keeps known codes only and drops hidden ones', () => {
+  assert.deepEqual(acb.cleanSelection('audio_samples', ['NONE', 'NATURE_ANIMAL_SOUNDSCAPE', 'x']),
+    ['NATURE_ANIMAL_SOUNDSCAPE']);
+  assert.deepEqual(acb.cleanSelection('sonic_intensity', 'HEAVY_INTENSE'), ['HEAVY_INTENSE']);
+  assert.deepEqual(acb.cleanSelection('sonic_intensity', ['BOGUS']), []);
+  assert.deepEqual(acb.cleanSelection('sonic_energy', ['MODERATE']), [], 'retired key');
+  assert.deepEqual(acb.cleanSelection('musical_mood', null), []);
 });
 
-test('optionsFor returns every code in codebook order', () => {
-  assert.deepEqual(acb.optionsFor('acoustic_type').map(o => o.code),
-    ['ACOUSTIC', 'HYBRID', 'ELECTRIC']);
-  assert.equal(acb.optionsFor('acoustic_type')[0].label, 'Acoustic');
-});
-
-test('cleanSelection keeps known codes and drops invented ones (filters ARE gated)', () => {
-  assert.deepEqual(acb.cleanSelection('vocal_delivery', ['SPOKEN', 'NOT_A_CODE']),
-    ['SPOKEN']);
-  assert.deepEqual(acb.cleanSelection('vocal_delivery', 'SPOKEN'), ['SPOKEN']);
-  assert.deepEqual(acb.cleanSelection('vocal_delivery', null), []);
-  assert.deepEqual(acb.cleanSelection('no_such_component', ['X']), []);
-});
-
-test('acousticSelectionClauses: OR within a component, one param array per component', () => {
-  const r = acb.acousticSelectionClauses({
-    sonic_energy: ['MODERATE', 'ENERGETIC'],
-    vocal_delivery: ['SPOKEN'],
+test('selectionClauses: && for multi, = ANY for single, one param array per dimension', () => {
+  const r = acb.selectionClauses({
+    musical_mood: ['DARK_OMINOUS', 'URGENT_TENSE'], sonic_intensity: ['HEAVY_INTENSE'],
   }, 3);
-  assert.equal(r.needsJoin, true);
   assert.deepEqual(r.clauses, [
-    'sca.sonic_energy = ANY($3::text[])',
-    'sca.vocal_delivery = ANY($4::text[])',
+    'sau.musical_mood && $3::text[]',
+    'sau.sonic_intensity = ANY($4::text[])',
   ]);
-  assert.deepEqual(r.params, [['MODERATE', 'ENERGETIC'], ['SPOKEN']]);
+  assert.deepEqual(r.params, [['DARK_OMINOUS', 'URGENT_TENSE'], ['HEAVY_INTENSE']]);
   assert.equal(r.nextIndex, 5);
+  assert.equal(r.needsJoin, true);
 });
 
-test('acousticSelectionClauses: empty and all-invalid selections need no join', () => {
-  assert.equal(acb.acousticSelectionClauses({}, 1).needsJoin, false);
-  const bogus = acb.acousticSelectionClauses({ sonic_energy: ['NOPE'] }, 1);
-  assert.equal(bogus.needsJoin, false);
-  assert.deepEqual(bogus.clauses, []);
-  assert.equal(bogus.nextIndex, 1);
+test('selectionClauses gates audio_samples on the curator approval and ignores old keys', () => {
+  const s = acb.selectionClauses({ audio_samples: ['ANIMAL_SLAUGHTER_SFX'] }, 1);
+  assert.equal(s.clauses.length, 1);
+  assert.match(s.clauses[0], /sau\.audio_samples && \$1::text\[\]/);
+  assert.match(s.clauses[0], /s\.show_audio_samples IS TRUE/);
+
+  const none = acb.selectionClauses({ sonic_energy: ['MODERATE'], musical_mood: ['BOGUS'] }, 1);
+  assert.deepEqual(none.clauses, []);
+  assert.equal(none.needsJoin, false);
+  assert.equal(none.nextIndex, 1);
+});
+
+test('objectiveMetrics describes the three measured values', () => {
+  const m = acb.objectiveMetrics();
+  assert.deepEqual(m.map(x => x.key), ['tempo_bpm', 'musical_key', 'loudness_lufs']);
+  assert.deepEqual(m.map(x => x.label), ['Tempo', 'Key', 'Loudness']);
+  assert.ok(m.every(x => x.description.length > 5 && x.source.length > 2));
 });

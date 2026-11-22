@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { spotifyService } from '../api/spotifyService';
-import { readBrowseState, applyFilterState, writeStoredBrowseState, EMPTY_FILTERS, SCALAR_KEYS, ACOUSTIC_KEYS } from '../utils/browseUrlState';
+import { readBrowseState, applyFilterState, writeStoredBrowseState, EMPTY_FILTERS, SCALAR_KEYS, AUDIO_KEYS } from '../utils/browseUrlState';
 import GenreFilterTree from './GenreFilterTree';
 import ThemeFacetTree from './ThemeFacetTree';
 import ScalarFacetGroups from './ScalarFacetGroups';
@@ -25,7 +25,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
   const [filterOptions, setFilterOptions] = useState({});
   const [facets, setFacets] = useState({});
   const [scalarFacets, setScalarFacets] = useState({});
-  const [acousticFacets, setAcousticFacets] = useState({});
+  const [audioFacets, setAudioFacets] = useState({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -64,7 +64,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     if (filters.facet_groups.length) p.facet_groups = filters.facet_groups;
     if (filters.facet_subdims.length) p.facet_subdims = filters.facet_subdims;
     SCALAR_KEYS.forEach(k => { if (filters[k].length) p[k] = filters[k]; });
-    ACOUSTIC_KEYS.forEach(k => { if (filters[k].length) p[k] = filters[k]; });
+    AUDIO_KEYS.forEach(k => { if (filters[k].length) p[k] = filters[k]; });
     if (filters.tempo_from) p.tempo_from = filters.tempo_from;
     if (filters.tempo_to) p.tempo_to = filters.tempo_to;
     return p;
@@ -108,7 +108,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       });
       setFacets(data.facets || {});
       setScalarFacets(data.scalar_facets || {});
-      setAcousticFacets(data.acoustic_facets || {});
+      setAudioFacets(data.audio_facets || {});
     }, 300);
     return () => clearTimeout(t);
   }, [buildSearchParams]);
@@ -225,14 +225,14 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
     return m;
   }, [scalarFacets]);
 
-  const acousticLabelMap = useMemo(() => {
+  const audioLabelMap = useMemo(() => {
     const m = {};
-    ACOUSTIC_KEYS.forEach(k => {
+    AUDIO_KEYS.forEach(k => {
       m[k] = {};
-      (acousticFacets[k]?.options || []).forEach(o => { m[k][o.code] = o.label; });
+      (audioFacets[k]?.options || []).forEach(o => { m[k][o.code] = o.label; });
     });
     return m;
-  }, [acousticFacets]);
+  }, [audioFacets]);
 
   const chips = useMemo(() => {
     const list = [];
@@ -269,8 +269,8 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       list.push({ key: `${dim}:${code}`, label: codeLabelMap[dim]?.[code] || code })));
     SCALAR_KEYS.forEach(k => filters[k].forEach(code =>
       list.push({ key: `${k}:${code}`, label: scalarLabelMap[k]?.[code] || code })));
-    ACOUSTIC_KEYS.forEach(k => filters[k].forEach(code =>
-      list.push({ key: `${k}:${code}`, label: acousticLabelMap[k]?.[code] || code })));
+    AUDIO_KEYS.forEach(k => filters[k].forEach(code =>
+      list.push({ key: `${k}:${code}`, label: audioLabelMap[k]?.[code] || code })));
     // Spell the open-ended cases out rather than filling the missing bound with an ellipsis:
     // "150–… BPM" reads as a truncated chip, not as an open upper bound.
     if (filters.tempo_from || filters.tempo_to) {
@@ -282,7 +282,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       list.push({ key: 'tempo:', label });
     }
     return list;
-  }, [searchQuery, filters, filterOptions, lengthLabelMap, codeLabelMap, facetLabelMaps, scalarLabelMap, acousticLabelMap]);
+  }, [searchQuery, filters, filterOptions, lengthLabelMap, codeLabelMap, facetLabelMaps, scalarLabelMap, audioLabelMap]);
 
   const removeChip = (key) => {
     const [type, value] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
@@ -306,7 +306,7 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
       return onToggleGroup(dk, id, false);
     }
     if (SCALAR_KEYS.includes(type)) return toggleInArray(type, value, false);
-    if (ACOUSTIC_KEYS.includes(type)) return toggleInArray(type, value, false);
+    if (AUDIO_KEYS.includes(type)) return toggleInArray(type, value, false);
     if (DIM_KEYS.includes(type)) return toggleInArray(type, value, false);
   };
 
@@ -390,10 +390,10 @@ function SearchAndFilter({ onResults, onLoading, onError, initialQuery = '', cur
 
       <FilterSection
         title="Sound"
-        count={ACOUSTIC_KEYS.reduce((n, k) => n + filters[k].length, 0) + ((filters.tempo_from || filters.tempo_to) ? 1 : 0)}
+        count={AUDIO_KEYS.reduce((n, k) => n + filters[k].length, 0) + ((filters.tempo_from || filters.tempo_to) ? 1 : 0)}
       >
         <ScalarFacetGroups
-          groups={acousticFacets}
+          groups={audioFacets}
           selected={filters}
           onToggle={(key, code, checked) => toggleInArray(key, code, checked)}
         />

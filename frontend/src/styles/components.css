@@ -2274,58 +2274,65 @@
    Lyrical analysis (B2) — read-only qualitative coding display
    ============================================================ */
 
-.lyrical-analysis { display: flex; flex-direction: column; gap: var(--space-4); }
+/* Song analysis is two halves side by side - "The Lyrics" and "The Sound", each opening with its own "In short" -
+   in type a step smaller than the page body so the section reads as reference, not as headline copy. They stack
+   on narrow screens; with only one half to show it takes the full width. */
+.lyrical-analysis {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5);
+  align-items: start; font-size: 0.875rem; line-height: 1.45;
+}
+.lyrical-analysis.la-single { grid-template-columns: minmax(0, 1fr); }
+.la-major { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.la-major + .la-major { padding-left: var(--space-5); border-left: 1px solid var(--border-hairline); }
+.la-major-title { margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
+@media (max-width: 720px) {
+  .lyrical-analysis { grid-template-columns: minmax(0, 1fr); }
+  .la-major + .la-major { padding-left: 0; border-left: 0; padding-top: var(--space-4); border-top: 1px solid var(--border-hairline); }
+}
 
-/* Top summary — shown only when the latest pass carries explanation prose. */
+/* The song page's section header: Song analysis owns everything below it, so it carries a rule. */
+.analysis-section > h2 { padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-strong); }
+
+/* "In short" - shown only when the latest pass carries explanation prose. */
 .la-summary {
-  margin: 0; padding: var(--space-3) var(--space-4);
+  margin: 0; padding: var(--space-2) var(--space-3);
   background: var(--bg-surface-raised); border-left: 3px solid var(--accent-ember-60);
-  border-radius: var(--radius-sm); color: var(--text-primary); line-height: 1.5;
+  border-radius: var(--radius-sm); color: var(--text-primary); line-height: 1.45;
 }
 .la-summary-label {
-  display: block; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--text-muted); margin-bottom: 4px;
+  display: block; font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 2px;
 }
 
-/* Two labelled sub-sections, side by side; stack on narrow screens. */
-.la-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
-@media (max-width: 720px) { .la-sections { grid-template-columns: 1fr; } }
-.la-section { display: flex; flex-direction: column; gap: var(--space-2); }
+.la-section { display: flex; flex-direction: column; gap: var(--space-1); }
 .la-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
-.la-section-title { margin: 0; color: var(--text-primary); }
+.la-section-title { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--text-secondary); }
 .la-quotes-toggle { align-self: baseline; flex: none; margin-block: -4px; }  /* so the button does not make this column's header taller than its neighbour's */
 
+/* Every analysis card is the same thing: label | value rows on one surface, label beside its value to keep it tight. */
 .la-attributes {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--space-2) var(--space-4);
-  padding: var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm);
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm);
 }
-.la-attr { display: flex; flex-direction: column; gap: 2px; }
-.la-attr-emotions { grid-column: 1 / -1; }
-.la-attr-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
-.la-attr-value { color: var(--text-primary); }
-
-/* Style & tone splits into "In the lyrics" / "In the sound"; the rule only appears
-   between two groups, so a single-group section shows no stray divider. */
-.la-group { display: flex; flex-direction: column; gap: var(--space-1); }
-.la-group + .la-group {
-  margin-top: var(--space-3); padding-top: var(--space-3);
-  border-top: 1px solid var(--border-hairline);
-}
-.la-group-title {
-  margin: 0; font-size: 0.8rem; letter-spacing: 0.03em;
-  text-transform: uppercase; color: var(--text-muted);
-}
+.la-attr-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.la-attr-value { color: var(--text-primary); overflow-wrap: anywhere; }
 
 /* "What it's about": one card of label / value rows, the same surface and value style as the Style & tone cards. */
 .la-rows {
-  display: flex; flex-direction: column; gap: var(--space-3);
-  padding: var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm);
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm);
 }
-.la-row { display: flex; flex-direction: column; gap: var(--space-1); }
+.la-row, .la-attr {
+  display: grid; grid-template-columns: 6.75rem minmax(0, 1fr); gap: var(--space-2); align-items: baseline;
+}
+.la-row > *, .la-attr > * { min-width: 0; overflow-wrap: anywhere; }   /* a long code label wraps instead of overshooting its card */
+
+/* The admin workbench's Analysis panel is only about half the page wide: the halves stack there, one under the other. */
+.wb-panel .lyrical-analysis { grid-template-columns: minmax(0, 1fr); }
+.wb-panel .la-major + .la-major { padding-left: 0; border-left: 0; padding-top: var(--space-4); border-top: 1px solid var(--border-hairline); }
 
 /* Per-code quotes, revealed under each row by the section "Show quotes" toggle. */
-.la-quotes { list-style: none; margin: var(--space-1) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.la-quotes { grid-column: 1 / -1; list-style: none; margin: var(--space-1) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .la-quotes li { display: flex; flex-direction: column; gap: 2px; padding-left: var(--space-2); border-left: 2px solid var(--border-hairline); }
 .la-quote-tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--accent-ember-60); }
 .la-quote-text { color: var(--text-secondary); font-style: italic; }
@@ -3149,3 +3156,18 @@
 .artist-facts-line { margin: 0; color: var(--text-primary); text-shadow: 0 1px 8px oklch(0 0 0 / 0.8); } /* last row of the scrim, where the cover has faded to its darkest */
 .artist-members { margin: 0; }
 .vmark-public { display: inline-flex; align-items: center; justify-content: center; width: 1.1em; height: 1.1em; margin-left: 0.3em; border: 1px solid var(--accent-moss-60); border-radius: 50%; color: var(--accent-moss-80); font-size: 0.7em; font-weight: 700; line-height: 1; vertical-align: 0.1em; }
+
+/* The Sound (song page): the right-hand half of Song analysis - a summary, one card of label / value rows (the
+   same card as The Lyrics), then a fold for the sample moments. */
+.sound-samples {
+  padding: var(--space-2) var(--space-3); background: var(--bg-surface-raised); border-radius: var(--radius-sm);
+}
+.sound-samples > summary { cursor: pointer; color: var(--text-secondary); }
+.sound-samples-types { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: 0.85rem; }
+.sound-sample-list { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.sound-sample-list li { display: flex; flex-direction: column; gap: 2px; padding-left: var(--space-2); border-left: 2px solid var(--border-hairline); }
+.sound-sample-list p { margin: 0; color: var(--text-secondary); }
+.sound-sample-head { display: flex; align-items: baseline; gap: var(--space-2); }
+.sound-sample-time { color: var(--text-muted); font-size: 0.8rem; }
+.sound-sample-transcript { font-style: italic; }
+.sound-sample-source { color: var(--text-muted); font-size: 0.8rem; }

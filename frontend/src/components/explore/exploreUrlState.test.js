@@ -29,7 +29,7 @@ import { DEFAULT_CAMERA, PRESETS } from './camera3d.js';
 // Shapes match what GET /api/analysis/explore/points serves: spaces and colourBy are
 // arrays of objects keyed by `key`. Only `key` matters to these functions.
 const SPACES = [{ key: 'thematic' }, { key: 'audio' }, { key: 'holistic' }];
-const COLOURS = [{ key: 'genre' }, { key: 'sonic_energy' }, { key: 'emotional_mood' }];
+const COLOURS = [{ key: 'genre' }, { key: 'sonic_intensity' }, { key: 'production_texture' }];
 const p = (qs) => new URLSearchParams(qs);
 
 test('deriveSpace honours a space the catalogue still serves', () => {
@@ -47,7 +47,10 @@ test('deriveSpace falls back when the param is absent or the catalogue is empty'
   assert.equal(deriveSpace(p('space=audio'), []), null);
 });
 
-test('deriveColour falls back to sonic_energy, not merely to the first entry', () => {
+test('deriveColour falls back to sonic_intensity, not merely to the first entry', () => {
+  assert.equal(DEFAULT_COLOUR, 'sonic_intensity');
+  // A link shared while the old Energy colouring existed must draw the default, not an all-grey map.
+  assert.equal(deriveColour(p('colour=sonic_energy'), COLOURS), DEFAULT_COLOUR);
   // The distinction matters: colourBy[0] is `genre`, so a naive fallback would silently
   // change the default map's colouring whenever a stale link arrives.
   assert.equal(deriveColour(p('colour=nonsense'), COLOURS), DEFAULT_COLOUR);
@@ -55,7 +58,7 @@ test('deriveColour falls back to sonic_energy, not merely to the first entry', (
   assert.equal(deriveColour(p('colour=genre'), COLOURS), 'genre');
 });
 
-test('deriveColour uses the first entry only when sonic_energy is not served', () => {
+test('deriveColour uses the first entry only when sonic_intensity is not served', () => {
   assert.equal(deriveColour(p('colour=nope'), [{ key: 'genre' }]), 'genre');
   assert.equal(deriveColour(p(''), []), null);
 });
@@ -91,8 +94,8 @@ test('withParam deletes the key for a null or empty value', () => {
 });
 
 test('changing colour drops a spotlight expressed in the old dimension codes', () => {
-  const next = withParam(p('colour=genre&codes=metal,punk'), 'colour', 'sonic_energy');
-  assert.equal(next.get('colour'), 'sonic_energy');
+  const next = withParam(p('colour=genre&codes=metal,punk'), 'colour', 'sonic_intensity');
+  assert.equal(next.get('colour'), 'sonic_intensity');
   assert.equal(next.has('codes'), false);
 });
 
@@ -110,6 +113,14 @@ test('deriveView falls back to fit for anything malformed', () => {
 test('deriveView falls back to fit for an out-of-range zoom', () => {
   assert.deepEqual(deriveView(p('view=0.2,0,0')), { k: 1, tx: 0, ty: 0 });
   assert.deepEqual(deriveView(p('view=99,0,0')), { k: 1, tx: 0, ty: 0 });
+});
+
+test('a zoomed-out view (below fit) is a valid view and round-trips', () => {
+  assert.deepEqual(deriveView(p('view=0.6,40,30')), { k: 0.6, tx: 40, ty: 30 });
+  assert.deepEqual(deriveView(p('view=0.2,0,0')), { k: 1, tx: 0, ty: 0 }, 'below the minimum is still fit');
+  assert.equal(formatView({ k: 0.6, tx: 0, ty: 0 }), '0.6,0,0', 'zoomed out is not "fit", even centred');
+  const v = { k: 0.5, tx: 120, ty: 80 };
+  assert.deepEqual(deriveView(p(`view=${formatView(v)}`)), v);
 });
 
 test('formatView rounds, and writes nothing at fit', () => {

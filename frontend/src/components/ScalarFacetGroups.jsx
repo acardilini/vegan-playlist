@@ -1,8 +1,8 @@
 import FilterSection from './FilterSection';
 
 // A set of analysis components rendered as collapsible checkbox groups. Used for both the
-// seven lyric-metadata components (`scalar_facets`) and the five acoustic dimensions
-// (`acoustic_facets`). Options, labels, counts and the description all come from the API —
+// six lyric-metadata components (`scalar_facets`) and the eight audio dimensions
+// (`audio_facets`). Options, labels, counts and the description all come from the API —
 // the codebooks live in the backend only. Selecting several codes in one group widens (OR);
 // selecting across groups narrows (AND).
 function ScalarFacetGroups({ groups, selected, onToggle }) {

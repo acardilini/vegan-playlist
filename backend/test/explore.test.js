@@ -75,23 +75,34 @@ async function makeEligible(songId) {
 
 async function addAnalysis(songId, fields = {}) {
   const f = {
-    sonic_energy: null, focus_amount: null,
+    focus_amount: null,
     themes: [], topics: [], advocacy: [], tactics: [], moral_frames: [],
     ...fields,
   };
   const j = v => JSON.stringify(v);
   await pool.query(
     `INSERT INTO song_lyric_analysis
-       (song_id, model_used, analyzed_at, themes, topics, advocacy, tactics, moral_frames,
-        sonic_energy, focus_amount)
+       (song_id, model_used, analyzed_at, themes, topics, advocacy, tactics, moral_frames, focus_amount)
      VALUES ($1,'zzzexp-model','2026-07-27 10:00:00',
-             $4::jsonb,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$2,$3)
+             $3::jsonb,$4::jsonb,$5::jsonb,$6::jsonb,$7::jsonb,$2)
      ON CONFLICT (song_id, model_used) DO UPDATE SET
-       sonic_energy = EXCLUDED.sonic_energy, focus_amount = EXCLUDED.focus_amount,
+       focus_amount = EXCLUDED.focus_amount,
        themes = EXCLUDED.themes, topics = EXCLUDED.topics, advocacy = EXCLUDED.advocacy,
        tactics = EXCLUDED.tactics, moral_frames = EXCLUDED.moral_frames`,
-    [songId, f.sonic_energy, f.focus_amount,
+    [songId, f.focus_amount,
       j(f.themes), j(f.topics), j(f.advocacy), j(f.tactics), j(f.moral_frames)]);
+}
+
+// The song's audio row (the new analysis); deleting the song cascades it away.
+async function addAudio(songId, fields = {}) {
+  const f = { sonic_intensity: null, production_texture: null, dynamic_arc: null, ...fields };
+  await pool.query(
+    `INSERT INTO song_audio_analysis (song_id, model_used, audio_status, analyzed_at, sonic_intensity, production_texture, dynamic_arc)
+     VALUES ($1,'zzzexp-audio','OK','2026-11-01 10:00:00',$2,$3,$4)
+     ON CONFLICT (song_id, model_used) DO UPDATE SET
+       sonic_intensity = EXCLUDED.sonic_intensity, production_texture = EXCLUDED.production_texture,
+       dynamic_arc = EXCLUDED.dynamic_arc`,
+    [songId, f.sonic_intensity, f.production_texture, f.dynamic_arc]);
 }
 
 const codes = (...ids) => ids.map(code => ({ code, evidence: 'zzzexp' }));
@@ -101,7 +112,7 @@ test('mapRows returns live mapped songs only', async () => {
 
   const live = await mkSong('ZZZEXP Live');
   await addCoords(live);
-  await addAnalysis(live, { sonic_energy: 'EXPLOSIVE' });
+  await addAudio(live, { sonic_intensity: 'HEAVY_INTENSE' });
 
   const unpublished = await mkSong('ZZZEXP Unpublished', { published: false });
   await addCoords(unpublished);
@@ -122,14 +133,15 @@ test('mapRows returns live mapped songs only', async () => {
   const row = rows.find(r => r.id === live);
   assert.deepEqual(row.thematic_2d, [3, 4], 'coordinates come through as numbers');
   assert.ok(!('semantic_2d' in row), 'a hidden space is not even selected');
-  assert.equal(row.sonic_energy, 'EXPLOSIVE', 'latest-pass codes come through');
+  assert.equal(row.sonic_intensity, 'HEAVY_INTENSE', 'the song\'s audio codes come through');
+  assert.ok(!('sonic_energy' in row) && !('emotional_mood' in row), 'the retired acoustic columns are not selected');
   assert.equal(row.title, 'ZZZEXP Live');
 });
 
 test('codeFor collapses absent, suppressed and missing values into NOT_CODED', () => {
-  assert.equal(explore.codeFor('sonic_energy', { sonic_energy: 'EXPLOSIVE' }),
-    'EXPLOSIVE');
-  assert.equal(explore.codeFor('sonic_energy', { sonic_energy: null }), explore.NOT_CODED);
+  assert.equal(explore.codeFor('sonic_intensity', { sonic_intensity: 'HEAVY_INTENSE' }),
+    'HEAVY_INTENSE');
+  assert.equal(explore.codeFor('sonic_intensity', { sonic_intensity: null }), explore.NOT_CODED);
   // ABSENT is a suppressed absence code, not a finding
   assert.equal(explore.codeFor('focus_amount', { focus_amount: 'ABSENT' }), explore.NOT_CODED);
   assert.equal(explore.codeFor('focus_amount', { focus_amount: 'PRIMARY' }), 'PRIMARY');
@@ -141,7 +153,8 @@ test('codeFor collapses absent, suppressed and missing values into NOT_CODED', (
 test('mapPayload assembles spaces, legends, coverage and songs', async () => {
   const id = await mkSong('ZZZEXP Payload');
   await addCoords(id);
-  await addAnalysis(id, { sonic_energy: 'EXPLOSIVE', focus_amount: 'ABSENT' });
+  await addAnalysis(id, { focus_amount: 'ABSENT' });
+  await addAudio(id, { sonic_intensity: 'HEAVY_INTENSE' });
 
   const p = await explore.mapPayload(pool);
 
@@ -150,10 +163,18 @@ test('mapPayload assembles spaces, legends, coverage and songs', async () => {
     'coverage counts are sane');
   assert.equal(p.coverage.mapped, p.songs.length, 'mapped count matches the songs served');
 
-  const energy = p.colourBy.find(c => c.key === 'sonic_energy');
-  assert.equal(energy.label, 'Energy');
-  assert.ok(energy.codes.every(c => c.count > 0), 'legend lists only codes actually present');
-  assert.ok(energy.codes.some(c => c.code === 'EXPLOSIVE'));
+  const intensity = p.colourBy.find(c => c.key === 'sonic_intensity');
+  assert.equal(intensity.label, 'Intensity');
+  assert.ok(intensity.codes.every(c => c.count > 0), 'legend lists only codes actually present');
+  assert.ok(intensity.codes.some(c => c.code === 'HEAVY_INTENSE' && c.label === 'Heavy'));
+  // The colour menu is the three palette-sized audio dimensions, focus, genre and the theme dimensions.
+  assert.deepEqual(p.colourBy.map(c => c.key), [
+    'sonic_intensity', 'production_texture', 'dynamic_arc', 'focus_amount', 'genre',
+    'themes', 'targets', 'actions', 'moral_frames',
+  ]);
+  // Not coded is drawn neutral grey, so it takes no palette slot: the coloured codes must fit the 7.
+  assert.ok(p.colourBy.every(c => c.codes.filter(x => x.code !== explore.NOT_CODED).length <= 7
+    || c.key === 'genre'), 'each legend fits the palette');
 
   // The fixture's focus_amount is the suppressed ABSENT, so this bucket is guaranteed present —
   // assert on it unconditionally rather than skipping when it happens to be absent.
@@ -167,7 +188,7 @@ test('mapPayload assembles spaces, legends, coverage and songs', async () => {
   const song = p.songs.find(s => s.id === id);
   assert.deepEqual(song.coords.thematic, [3, 4]);
   assert.ok(!('semantic' in song.coords), 'no coordinates are served for a hidden space');
-  assert.equal(song.codes.sonic_energy, 'EXPLOSIVE');
+  assert.equal(song.codes.sonic_intensity, 'HEAVY_INTENSE');
   assert.equal(song.codes.focus_amount, explore.NOT_CODED, 'suppressed code is bucketed');
   assert.equal(song.artist, '', 'a song with no artist rows serves an empty artist string');
 });
@@ -413,30 +434,30 @@ test('genre colour-by via mapPayload: no-genre stays NOT_CODED, legend fits the 
 test('a non-genre dimension is completely unaffected by the genre fold', async () => {
   const a = await mkSong('ZZZEXP NonGenre A');
   await addCoords(a);
-  await addAnalysis(a, { sonic_energy: 'EXPLOSIVE' });
+  await addAudio(a, { sonic_intensity: 'HEAVY_INTENSE' });
 
   const b = await mkSong('ZZZEXP NonGenre B');
   await addCoords(b);
-  await addAnalysis(b, { sonic_energy: 'SUBDUED' });
+  await addAudio(b, { sonic_intensity: 'INTIMATE_SPARSE' });
 
   const c = await mkSong('ZZZEXP NonGenre C');
   await addCoords(c);
-  await addAnalysis(c, { sonic_energy: null });
+  await addAudio(c, { sonic_intensity: null });
 
   const p = await explore.mapPayload(pool);
-  const energy = p.colourBy.find(c => c.key === 'sonic_energy');
+  const energy = p.colourBy.find(c => c.key === 'sonic_intensity');
   const codes = energy.codes.map(x => x.code);
 
-  assert.ok(codes.includes('EXPLOSIVE'), 'fixture code A is in the legend');
-  assert.ok(codes.includes('SUBDUED'), 'fixture code B is in the legend');
+  assert.ok(codes.includes('HEAVY_INTENSE'), 'fixture code A is in the legend');
+  assert.ok(codes.includes('INTIMATE_SPARSE'), 'fixture code B is in the legend');
   assert.ok(!codes.includes('OTHER_GENRES'), 'the genre-only fold bucket never leaks in here');
 
   const songA = p.songs.find(s => s.id === a);
   const songB = p.songs.find(s => s.id === b);
   const songC = p.songs.find(s => s.id === c);
-  assert.equal(songA.codes.sonic_energy, 'EXPLOSIVE');
-  assert.equal(songB.codes.sonic_energy, 'SUBDUED');
-  assert.equal(songC.codes.sonic_energy, explore.NOT_CODED);
+  assert.equal(songA.codes.sonic_intensity, 'HEAVY_INTENSE');
+  assert.equal(songB.codes.sonic_intensity, 'INTIMATE_SPARSE');
+  assert.equal(songC.codes.sonic_intensity, explore.NOT_CODED);
 });
 
 async function addLyricEmbedding(songId, vec) {
@@ -469,46 +490,54 @@ test('message similarity ranks by cosine and respects the publish filter', async
   assert.ok(ids.indexOf(near) < ids.indexOf(far), 'nearer song ranks first');
 });
 
-async function addAudioEmbedding(songId, vec) {
+// The new audio embedding: one 574-dim hybrid vector per song, built by the analysis project.
+async function addHybridEmbedding(songId, vec) {
   await pool.query(
-    `INSERT INTO song_embeddings (song_id, audio_embedding, updated_at)
+    `INSERT INTO song_embeddings (song_id, audio_hybrid_embedding, updated_at)
      VALUES ($1, $2::float8[], now())
-     ON CONFLICT (song_id) DO UPDATE SET audio_embedding = EXCLUDED.audio_embedding`,
+     ON CONFLICT (song_id) DO UPDATE SET audio_hybrid_embedding = EXCLUDED.audio_hybrid_embedding`,
     [songId, vec]);
 }
+const hybrid = (...lead) => { const v = new Array(574).fill(0); lead.forEach((x, i) => { v[i] = x; }); return v; };
 
-test('sound similarity standardises dimensions and ignores 1024-dim rows', async () => {
-  const target = await mkSong('ZZZEXP Sound target');
-  const bigSdNeighbour = await mkSong('ZZZEXP Sound bigsd');
-  const smallSdNeighbour = await mkSong('ZZZEXP Sound smallsd');
-  const oldShape = await mkSong('ZZZEXP Sound legacy');
-
-  // These fixtures exist to make a DROPPED z-score fail, not just to rank. Measured over
-  // the live 6-dim set: dimension 3 (danceability) has sd 0.66, dimension 4 (acousticness)
-  // sd 0.023 — a ~30x spread, because these are Librosa proxies, not Spotify's 0-1
-  // features. So:
-  //   bigSdNeighbour   differs by 0.30 on dim 3 -> raw 0.30, z 0.30/0.66 = 0.45
-  //   smallSdNeighbour differs by 0.05 on dim 4 -> raw 0.05, z 0.05/0.023 = 2.22
-  // RAW Euclidean ranks smallSd first (0.05 < 0.30); Z-SCORED ranks bigSd first
-  // (0.45 < 2.22). The order flips, so the assertion below is only satisfiable by the
-  // standardised metric. Every value sits inside the live observed range for its
-  // dimension, so the fixtures do not distort the stats they are measured against.
-  await addAudioEmbedding(target,           [0.2275, 1.0, 1.30, 0.030, 0.11, 0.55]);
-  await addAudioEmbedding(bigSdNeighbour,   [0.2275, 1.0, 1.60, 0.030, 0.11, 0.55]);
-  await addAudioEmbedding(smallSdNeighbour, [0.2275, 1.0, 1.30, 0.080, 0.11, 0.55]);
-  await addAudioEmbedding(oldShape, new Array(1024).fill(0.2));
-
+test('sound similarity is cosine over the 574-dim hybrid embedding and ignores other lengths and the legacy column', async () => {
   const entry = explore.SIMILARITY.find(s => s.key === 'sound');
+  assert.equal(entry.column, 'audio_hybrid_embedding');
+  assert.equal(entry.metric, 'cosine');
+  assert.equal(entry.dims, 574);
+
+  const target = await mkSong('ZZZEXP Sound target');
+  const near = await mkSong('ZZZEXP Sound near');
+  const far = await mkSong('ZZZEXP Sound far');
+  const wrongLength = await mkSong('ZZZEXP Sound wronglen');
+  const legacyOnly = await mkSong('ZZZEXP Sound legacy');
+
+  await addHybridEmbedding(target, hybrid(1, 0, 0));
+  await addHybridEmbedding(near, hybrid(0.98, 0.2, 0));
+  await addHybridEmbedding(far, hybrid(0, 1, 0));
+  await addHybridEmbedding(wrongLength, [1, 0, 0]);          // a perfect direction, but not 574-dim
+  // A song holding only the retired audio_embedding has nothing to compare.
+  await pool.query(
+    `INSERT INTO song_embeddings (song_id, audio_embedding, updated_at) VALUES ($1, $2::float8[], now())
+     ON CONFLICT (song_id) DO UPDATE SET audio_embedding = EXCLUDED.audio_embedding`,
+    [legacyOnly, [1, 0, 0, 0, 0, 0]]);
+
   const rows = await explore.similarByEmbedding(pool, target, entry, 500);
   const ids = rows.map(r => r.id);
 
-  assert.ok(!ids.includes(oldShape), '1024-dim rows never enter the distance');
   assert.ok(!ids.includes(target), 'the song itself is excluded');
-  assert.ok(ids.includes(bigSdNeighbour) && ids.includes(smallSdNeighbour),
-    'both 6-dim songs rank');
-  assert.ok(ids.indexOf(bigSdNeighbour) < ids.indexOf(smallSdNeighbour),
-    'a big-sd dimension difference is scored as SMALLER than a small-sd one — '
-    + 'this fails if the z-scoring is removed and the metric becomes raw Euclidean');
+  assert.ok(!ids.includes(wrongLength), 'a vector of the wrong length never enters the comparison');
+  assert.ok(!ids.includes(legacyOnly), 'the legacy audio_embedding is ignored');
+  assert.ok(ids.includes(near) && ids.includes(far));
+  assert.ok(ids.indexOf(near) < ids.indexOf(far), 'the nearer direction ranks first');
+});
+
+test('a song whose hybrid embedding is the wrong length has no sound neighbours', async () => {
+  const odd = await mkSong('ZZZEXP Sound odd target');
+  await addHybridEmbedding(odd, [1, 0, 0]);
+  const entry = explore.SIMILARITY.find(s => s.key === 'sound');
+  const rows = await explore.similarByEmbedding(pool, odd, entry, 10);
+  assert.deepEqual(rows, []);
 });
 
 test('similarFor omits a tab with no embedding and falls back to genre when both are missing', async () => {

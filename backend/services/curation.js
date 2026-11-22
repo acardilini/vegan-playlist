@@ -2,6 +2,7 @@
 // Mirrors services/staging.js conventions.
 const { hasAnalysisExists, getSongAnalysis } = require('./analysis');
 const junkLyrics = require('./junkLyrics');
+const audioAnalysis = require('./audioAnalysis');
 const { getParentGenre } = require('../utils/genreMapping');
 const { parentSql } = require('./genres');
 const PARK_REASONS = ['awaiting_community', 'needs_transcription', 'listened_unclear'];
@@ -75,7 +76,7 @@ function audioSourceFor(model) {
 }
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics',
   'needs-cover','needs-album','needs-released','needs-language','needs-genre','genre-from-artist','genre-from-audio','genre-conflicts',
-  'needs-video','no-video','junk-lyrics','needs-analysis','to-finalise','live','all','featured'];
+  'needs-video','no-video','junk-lyrics','needs-analysis','needs-sample-approval','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
@@ -132,6 +133,10 @@ function queueWhere(queue) {
       return `s.status='included'
               AND ${HAS_LYRICS_SQL}
               AND NOT ${hasAnalysisExists('s')}`;
+    // Audio samples (the analysis project lists sound-effect / sampled-speech moments, some of them graphic) stay off the
+    // site until the curator approves them per song. This lists live-eligible songs that have real samples and no decision yet.
+    case 'needs-sample-approval':
+      return `s.status='included' AND ${audioAnalysis.SAMPLES_PENDING_SQL('s')}`;
     case 'to-finalise':
       return `s.status='included' AND s.published=false`;
     case 'live':
@@ -313,6 +318,9 @@ async function getWorkbench(db, id) {
     `SELECT 1 FROM song_lyric_analysis WHERE song_id=$1`,
     [id])).rows.length > 0;
   const analysisObj = analysed ? await getSongAnalysis(db, id) : null;
+  // The curator's view of the song's audio analysis: samples shown regardless of the approval gate (that is
+  // the point of reviewing them), plus the run's status and model. Null when the song has no audio row at all.
+  const audio = await audioAnalysis.getAdminAudio(db, id);
 
   const cover = hasArt(s.album_images);
   const play_link = !!((s.spotify_url && !s.spotify_dormant) || s.bandcamp_url || s.soundcloud_url || videos.length > 0);
@@ -332,7 +340,7 @@ async function getWorkbench(db, id) {
     lyrics_source_url: lyricsRow ? lyricsRow.source_url : null,
     translation: lyricsRow ? lyricsRow.translation : null,
     junk_kind: lyricsRow ? lyricsRow.junk_kind : null,
-    processing, analysed, analysis: analysisObj,
+    processing, analysed, analysis: analysisObj, audio,
     completeness: { lyrics: !!(lyricsRow && lyricsRow.lyrics && lyricsRow.lyrics.trim() && !lyricsRow.junk_kind), cover, video: videos.length > 0, play_link, analysis: analysed },
   };
 }
@@ -457,6 +465,18 @@ async function setNoVideo(db, id, { display } = {}) {
     const e = new Error('song already has a video'); e.code = 'BAD_INPUT'; throw e;
   }
   await db.query('UPDATE songs SET no_video_display=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1', [id, display ?? null]);
+  return getWorkbench(db, id);
+}
+
+// The curator's per-song decision on audio samples: true = show them on the song page, false = reviewed and kept
+// hidden, null = back to unreviewed (so the song returns to Needs sample approval). Anything else is rejected, and
+// a missing value is NOT treated as "unreview": clearing a decision has to be said out loud.
+async function setAudioSamples(db, id, { show } = {}) {
+  await assertSong(db, id);
+  if (show !== true && show !== false && show !== null) {
+    const e = new Error('show must be true, false or null'); e.code = 'BAD_INPUT'; throw e;
+  }
+  await db.query('UPDATE songs SET show_audio_samples=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1', [id, show]);
   return getWorkbench(db, id);
 }
 
@@ -630,5 +650,5 @@ async function quickCapture(db, { title, artist } = {}) {
 
 module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES, HAS_LYRICS_SQL,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, quickCapture, setFeatured, listLanguages,
+  saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, setAudioSamples, quickCapture, setFeatured, listLanguages,
   chooseGenre, genreConflictPairs, audioSourceFor };

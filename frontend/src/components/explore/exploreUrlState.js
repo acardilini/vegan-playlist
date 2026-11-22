@@ -13,7 +13,7 @@ import {
   DEFAULT_CAMERA, MAX_PAN, MAX_ZOOM, MIN_ZOOM, PRESETS, activePreset, clampCamera,
 } from './camera3d.js';
 
-export const DEFAULT_COLOUR = 'sonic_energy';
+export const DEFAULT_COLOUR = 'sonic_intensity';
 
 export function deriveSpace(params, spaces = []) {
   const requested = params.get('space');
@@ -196,6 +196,6 @@ export function deriveFlag(params, key) {
 // unzoomed map should share as a clean URL. Translates round to whole pixels; nobody can see
 // a hundredth of one, and it keeps shared links short.
 export function formatView(view) {
-  if (view.k <= MIN_K && Math.round(view.tx) === 0 && Math.round(view.ty) === 0) return '';
+  if (view.k === FIT_VIEW.k && Math.round(view.tx) === 0 && Math.round(view.ty) === 0) return '';
   return `${Math.round(view.k * 100) / 100},${Math.round(view.tx)},${Math.round(view.ty)}`;
 }

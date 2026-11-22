@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import WorkbenchTopBar from './WorkbenchTopBar';
 import DetailsPanel from './DetailsPanel';
+import AudioPanel from './AudioPanel';
 import LyricsPanel from './LyricsPanel';
 import VideoPanel from './VideoPanel';
 import LinksPanel from './LinksPanel';
@@ -126,6 +127,7 @@ function Workbench() {
         </div>
         <div className="wb-col wb-col-side">
           <DetailsPanel wb={wb} savePanel={savePanel} />
+          <AudioPanel wb={wb} savePanel={savePanel} />
           <VideoPanel wb={wb} id={id} reload={reload} />
           <LinksPanel wb={wb} savePanel={savePanel} id={id} reload={reload} />
           <NotesPanel wb={wb} savePanel={savePanel} saveProcessing={saveProcessing} />

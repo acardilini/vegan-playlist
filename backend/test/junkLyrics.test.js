@@ -256,14 +256,15 @@ test('a song with no lyrics row at all is unaffected by the blank rule', async (
 test('"Similar message" never offers junk-derived songs, and gives none for a junk-derived song; "Similar sound" is unaffected', async () => {
   const explore = require('../services/explore');
   const emb = async (id, lyric, audio) => pool.query(
-    `INSERT INTO song_embeddings (song_id, lyric_embedding, audio_embedding, updated_at) VALUES ($1,$2,$3,NOW())`, [id, lyric, audio]);
+    `INSERT INTO song_embeddings (song_id, lyric_embedding, audio_hybrid_embedding, updated_at) VALUES ($1,$2,$3,NOW())`, [id, lyric, audio]);
+  const hybrid = (...lead) => { const v = new Array(574).fill(0); lead.forEach((x, i) => { v[i] = x; }); return v; };
   const target = await mk('ZZZJUNK sim target', 'Real words here and more real words');
   const good = await mk('ZZZJUNK sim good', 'Real words here and more real words');
   const bad = await mk('ZZZJUNK sim bad', 'Error: Lyrics container not found on this Bandcamp page.');
   for (const id of [target, good, bad]) await addAnalysis(id);
-  await emb(target, [1, 0, 0], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]);
-  await emb(good, [0.9, 0.1, 0], [0.4, 0.5, 0.5, 0.5, 0.5, 0.5]);
-  await emb(bad, [0.95, 0.05, 0], [0.5, 0.5, 0.5, 0.5, 0.5, 0.6]);
+  await emb(target, [1, 0, 0], hybrid(0.5, 0.5, 0.5));
+  await emb(good, [0.9, 0.1, 0], hybrid(0.4, 0.5, 0.5));
+  await emb(bad, [0.95, 0.05, 0], hybrid(0.5, 0.5, 0.6));
   await junk.scan(pool, { songIds: [bad] });
   const message = explore.SIMILARITY.find((e) => e.key === 'message');
   const sound = explore.SIMILARITY.find((e) => e.key === 'sound');

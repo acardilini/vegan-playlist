@@ -1,19 +1,8 @@
 function MoodBadge({ song, size = 'small' }) {
-  // Only use custom_mood - no audio feature fallback
-  const mood = song.custom_mood || null;
+  // `mood` is the song's first-listed musical mood from the audio analysis, already a display label.
+  const label = song.mood || null;
 
-  if (!mood) return null;
-
-  const labels = {
-    energetic: 'Energetic',
-    intense: 'Intense',
-    chill: 'Chill',
-    melancholic: 'Melancholic',
-    danceable: 'Danceable',
-    balanced: 'Balanced'
-  };
-
-  const label = labels[mood] || mood;
+  if (!label) return null;
 
   return (
     <span
