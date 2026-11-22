@@ -289,7 +289,7 @@ function SongDetailPage() {
       )}
 
       {analysis && (
-        <section className="detail-section">
+        <section className="detail-section analysis-section">
           <h2>Song analysis</h2>
           <LyricalAnalysis analysis={analysis} />
         </section>

@@ -30,3 +30,10 @@ export function sampleHeading(samples) {
     : (samples && Array.isArray(samples.types) ? samples.types.length : 0);
   return `Samples heard (${n})`;
 }
+
+// Whether "The Sound" has anything to show: a summary, any row (tempo and key included) or the approved samples.
+export function hasSoundContent(audio) {
+  if (!audio) return false;
+  const { left, right } = splitColumns(audio);
+  return !!audio.summary || left.length > 0 || right.length > 0 || !!audio.samples;
+}

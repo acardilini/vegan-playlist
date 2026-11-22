@@ -1,10 +1,10 @@
 import InfoTip from './InfoTip';
-import { splitColumns, sampleHeading } from '../utils/soundLayout';
+import { splitColumns, sampleHeading, hasSoundContent } from '../utils/soundLayout';
 
-// The song page's "The Sound" section: what the audio analysis heard. A summary, then two columns of rows
-// (Mood / Intensity / Production / Dynamics, then Vocals / Rhythm / Instruments / Tempo · Key). The sample
-// moments sit in a fold and only exist in the payload when the curator approved them, so this component has
-// no gate of its own: it shows whatever the server sent.
+// The song page's "The Sound": the right-hand half of Song analysis, the counterpart of "The Lyrics". A summary,
+// then one card of rows (Mood / Intensity / Production / Dynamics, then Vocals / Rhythm / Instruments / Tempo · Key).
+// The sample moments sit in a fold and only exist in the payload when the curator approved them, so this component
+// has no gate of its own: it shows whatever the server sent.
 function Row({ row }) {
   return (
     <div className="la-row">
@@ -21,11 +21,6 @@ function Row({ row }) {
       </span>
     </div>
   );
-}
-
-function Column({ rows }) {
-  if (rows.length === 0) return null;
-  return <div className="la-rows">{rows.map((r) => <Row key={r.key} row={r} />)}</div>;
 }
 
 function Samples({ samples }) {
@@ -54,25 +49,21 @@ function Samples({ samples }) {
 }
 
 function TheSound({ audio }) {
-  if (!audio) return null;
+  if (!hasSoundContent(audio)) return null;
   const { left, right } = splitColumns(audio);
-  const hasRows = left.length > 0 || right.length > 0;
-  if (!audio.summary && !hasRows && !audio.samples) return null;
+  const rows = [...left, ...right];
 
   return (
-    <section className="la-section la-section-sound">
-      <h3 className="la-section-title">The Sound</h3>
+    <section className="la-major la-major-sound">
+      <h3 className="la-major-title">The Sound</h3>
       {audio.summary && (
         <p className="la-summary sound-summary">
-          <span className="la-summary-label">Sound summary</span>
+          <span className="la-summary-label">In short</span>
           {audio.summary}
         </p>
       )}
-      {hasRows && (
-        <div className="sound-columns">
-          <Column rows={left} />
-          <Column rows={right} />
-        </div>
+      {rows.length > 0 && (
+        <div className="la-rows">{rows.map((r) => <Row key={r.key} row={r} />)}</div>
       )}
       {audio.samples && <Samples samples={audio.samples} />}
     </section>

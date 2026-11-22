@@ -166,7 +166,7 @@ Run before ending every working session:
   **The server withholds** sample details, types, the `audio_samples` filter membership and reference counts unless TRUE —
   never trust the page to hide them. The curator decides in the workbench **Audio** panel (`PUT /api/admin/workbench/:id/audio-samples`,
   `curation.setAudioSamples`, returns the reassembled workbench) and the **Needs sample approval** rail lists included songs with
-  real samples and no decision. The song page's **The Sound** section (`TheSound.jsx`, pure layout in `utils/soundLayout.js`)
+  real samples and no decision. The song page's **The Sound** (`TheSound.jsx`, pure layout and `hasSoundContent` in `utils/soundLayout.js`; the right half of **Song analysis**, beside **The Lyrics** in `LyricalAnalysis.jsx`, each opening with its own "In short")
   replaced "In the sound". `facetSql.js` holds the shared constraint/count helpers (`unpackConstraint`, `countByCode`)
 - **services/explore.js**: the read-only consumer of `song_coordinates` + `song_embeddings` behind the
   Explore map and the song page's "You might also like". Two halves. **The map:** space discovery is
@@ -277,7 +277,7 @@ Run before ending every working session:
   into one pure, DOM-free module because the B4 final review found three separate URL-state
   defects all living in one unextracted block of `ExploreMap.jsx`; being pure lets `node --test`
   exercise it directly with no frontend test runner), `mapGeometry.js` (pure fit/zoom/pan geometry
-  — `layout()`, `clampView`, `zoomAtPoint`, `FIT_VIEW`, `MIN_K`/`MAX_K` — shared by the gesture
+  — `layout()`, `clampView`, `zoomAtPoint`, `FIT_VIEW`, `MIN_K` (0.5: the map zooms out past fit)/`MAX_K` — shared by the gesture
   hook and the draw loop so the maths that moves the map and the maths that draws it can never
   disagree; also pure and node-tested), `useMapTransform.js` (the gesture hook: a non-passive
   wheel listener zooming toward the cursor, drag-pan with a 4px click-vs-drag threshold, the
@@ -285,7 +285,7 @@ Run before ending every working session:
   it is imperative pointer/wheel-event plumbing, not rendering), `SelectedSongCard`,
   `useExplorePoints`, the **3D view** (`camera3d.js` pure perspective maths - projection, presets, interpolation,
   depth cues, gizmo, depth-aware `pickPoint`, zoom scales the focal length not the camera distance;
-  `useOrbitCamera.js` the gesture/preset/drift hook, left-drag orbits, right- or Shift-drag pans, arrow keys orbit;
+  `useOrbitCamera.js` the gesture/preset/drift hook, left-drag does what the toolbar's Rotate | Pan switch says (`camera3d.dragModeFor`; Shift or right button does the other), arrow keys orbit;
   `MapToolbar.jsx` the floating 2D|3D pill with the camera pill (Iso/Top/Front/Side, Drift) stacked under it in 3D; URL params `dim=3d` and
   `cam=<preset>|yaw,pitch,zoom,panX,panY`, both falling back to the default view when invalid, and `dim=3d` falling
   back to 2D for a space with no 3D data; default view stays 2D), **Round 2:** `mapLabels.js` (pure `placeLabels`: level 1 beats level 2, then larger regions win collisions; `labelsAtZoom` offers level 2 from `FINE_ZOOM = 1.6`; `truncateLabel`), `neighbours.js` (`nearestSongs` in the map's OWN coordinates, not embedding similarity) and `walk.js` (`walkBase`/`walkNext`/`walkBack`: the path is component state and only counts while its last element is the selected song), `YearStrip.jsx` (a two-handle year range, `yf` start + `yr` end, with Play sweeping the end handle from the start up to where it was; `PAN_SLACK = 0.3` in `mapGeometry.js` lets the 2D map be pushed 30% past the plot edge so dots can clear the overlays; `exploreUrlState.js` `yearBounds`/`deriveYear`/`formatYear`/`yearState`, `deriveFlag`), new URL params `yr=<year>` (end; absent = open) and `yf=<year>` (start; absent = from the first year), `labels=0`, `lines=0`; `mapGeometry.js` gained `projectPoint` (a label centre projects exactly like a dot), `outsideCore`, `viewCentredOn` and `camera3d.js` `panCentredOn` for the walk, and both camera hooks export an eased `moveTo`, `palette.js` (categorical colours live in

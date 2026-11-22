@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { splitColumns, sampleHeading } from './soundLayout.js';
+import { splitColumns, sampleHeading, hasSoundContent } from './soundLayout.js';
 
 // Shapes match what GET /api/analysis/song/:id serves as `audio` (services/audioAnalysis.getSongAudio).
 const row = (key, label, ...labels) => ({
@@ -69,4 +69,15 @@ test('sampleHeading counts the items and names the types', () => {
 test('sampleHeading falls back to the type count when the details are missing', () => {
   const samples = { types: [{ code: 'A', label: 'A' }, { code: 'B', label: 'B' }], items: [] };
   assert.equal(sampleHeading(samples), 'Samples heard (2)');
+});
+
+test('hasSoundContent: true for a summary, rows or approved samples; false for nothing, null or an empty block', () => {
+  assert.equal(hasSoundContent(FULL), true);
+  assert.equal(hasSoundContent({ summary: 'Heavy.', rows: [], tempo_bpm: null, key: null, samples: null }), true, 'a summary alone');
+  assert.equal(hasSoundContent({ summary: '', rows: FULL.rows.slice(0, 1), samples: null }), true, 'rows alone');
+  assert.equal(hasSoundContent({ summary: '', rows: [], tempo_bpm: 100, key: null, samples: null }), true, 'tempo alone');
+  assert.equal(hasSoundContent({ summary: '', rows: [], samples: { types: [{ code: 'A', label: 'A' }], items: [] } }), true, 'samples alone');
+  assert.equal(hasSoundContent({ summary: '', rows: [], tempo_bpm: null, key: null, samples: null }), false);
+  assert.equal(hasSoundContent(null), false);
+  assert.equal(hasSoundContent(undefined), false);
 });

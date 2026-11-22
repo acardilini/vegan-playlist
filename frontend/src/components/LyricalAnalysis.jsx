@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import InfoTip from './InfoTip';
 import TheSound from './TheSound';
+import { hasSoundContent } from '../utils/soundLayout';
 
 // Right-hand "What it's about" dimensions: [data key, display heading].
 const DIMENSIONS = [
@@ -48,109 +49,113 @@ function LyricalAnalysis({ analysis }) {
   const hasLyricStyle = attributes.length > 0 || emotions.length > 0;
   const hasStyle = hasLyricStyle;
   const hasThemes = dims.length > 0 || !!animalFocus;
-  if (!hasStyle && !hasThemes && !summary && !analysis.audio) return null;
+  const hasLyrics = hasStyle || hasThemes || !!summary;
+  const hasSound = hasSoundContent(analysis.audio);
+  if (!hasLyrics && !hasSound) return null;
 
   const hasQuotes = dims.some(([, , codes]) => codes.some(c => c.evidence));
 
   return (
-    <div className="lyrical-analysis">
-      {summary && (
-        <p className="la-summary">
-          <span className="la-summary-label">In short</span>
-          {summary}
-        </p>
-      )}
-
-      <div className="la-sections">
-        {hasThemes && (
-          <section className="la-section">
-            <div className="la-section-head">
-              <h3 className="la-section-title">What it&rsquo;s about</h3>
-              {hasQuotes && (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm la-quotes-toggle"
-                  aria-expanded={showQuotes}
-                  onClick={() => setShowQuotes(v => !v)}
-                >
-                  {showQuotes ? 'Hide quotes' : 'Show quotes'}
-                </button>
-              )}
-            </div>
-
-            <div className="la-group">
-              <h4 className="la-group-title">Subject matter</h4>
-              <div className="la-rows">
-                {animalFocus && (
-                  <div className="la-row">
-                    <span className="la-attr-label">Lvl of Animal Focus</span>
-                    <span className="la-attr-value">
-                      <InfoTip text={animalFocus.desc}>{animalFocus.label}</InfoTip>
-                    </span>
-                  </div>
+    <div className={`lyrical-analysis${hasLyrics && hasSound ? '' : ' la-single'}`}>
+      {hasLyrics && (
+        <section className="la-major">
+          <h3 className="la-major-title">The Lyrics</h3>
+          {summary && (
+            <p className="la-summary">
+              <span className="la-summary-label">In short</span>
+              {summary}
+            </p>
+          )}
+          {hasThemes && (
+            <section className="la-section">
+              <div className="la-section-head">
+                <h4 className="la-section-title">What it&rsquo;s about</h4>
+                {hasQuotes && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm la-quotes-toggle"
+                    aria-expanded={showQuotes}
+                    onClick={() => setShowQuotes(v => !v)}
+                  >
+                    {showQuotes ? 'Hide quotes' : 'Show quotes'}
+                  </button>
                 )}
-
-                {dims.map(([key, heading, codes]) => {
-                  const quoted = codes.filter(c => c.evidence);
-                  return (
-                    <div key={key} className="la-row">
-                      <span className="la-attr-label">{heading}</span>
-                      <span className="la-attr-value">
-                        {codes.map((c, i) => (
-                          <span key={`${c.code}-${i}`}>
-                            {i > 0 && '; '}
-                            <InfoTip text={termTip(c)}>{c.label}</InfoTip>
-                          </span>
-                        ))}
-                      </span>
-                      {showQuotes && quoted.length > 0 && (
-                        <ul className="la-quotes">
-                          {quoted.map((c, i) => (
-                            <li key={`${c.code}-${i}`}>
-                              <span className="la-quote-tag">{c.label}</span>
-                              <span className="la-quote-text">&ldquo;{c.evidence}&rdquo;</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  );
-                })}
               </div>
-            </div>
-          </section>
-        )}
 
-        {hasStyle && (
-          <section className="la-section">
-            <h3 className="la-section-title">Style &amp; tone</h3>
-
-            {hasLyricStyle && (
               <div className="la-group">
-                <h4 className="la-group-title">In the lyrics</h4>
-                <div className="la-attributes">
-                  {attributes.map(a => (
-                    <div key={a.label} className="la-attr">
-                      <span className="la-attr-label">{a.label}</span>
-                      <InfoTip text={a.definition}>
-                        <span className="la-attr-value">{a.value}</span>
-                      </InfoTip>
-                    </div>
-                  ))}
-                  {emotions.length > 0 && (
-                    <div className="la-attr la-attr-emotions">
-                      <span className="la-attr-label">Emotions</span>
-                      <span className="la-attr-value">{emotions.join('; ')}</span>
+                <h5 className="la-group-title">Subject matter</h5>
+                <div className="la-rows">
+                  {animalFocus && (
+                    <div className="la-row">
+                      <span className="la-attr-label">Lvl of Animal Focus</span>
+                      <span className="la-attr-value">
+                        <InfoTip text={animalFocus.desc}>{animalFocus.label}</InfoTip>
+                      </span>
                     </div>
                   )}
+
+                  {dims.map(([key, heading, codes]) => {
+                    const quoted = codes.filter(c => c.evidence);
+                    return (
+                      <div key={key} className="la-row">
+                        <span className="la-attr-label">{heading}</span>
+                        <span className="la-attr-value">
+                          {codes.map((c, i) => (
+                            <span key={`${c.code}-${i}`}>
+                              {i > 0 && '; '}
+                              <InfoTip text={termTip(c)}>{c.label}</InfoTip>
+                            </span>
+                          ))}
+                        </span>
+                        {showQuotes && quoted.length > 0 && (
+                          <ul className="la-quotes">
+                            {quoted.map((c, i) => (
+                              <li key={`${c.code}-${i}`}>
+                                <span className="la-quote-tag">{c.label}</span>
+                                <span className="la-quote-text">&ldquo;{c.evidence}&rdquo;</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            )}
-          </section>
-        )}
+            </section>
+          )}
 
-        <TheSound audio={analysis.audio} />
-      </div>
+          {hasStyle && (
+            <section className="la-section">
+              <h4 className="la-section-title">Style &amp; tone</h4>
+
+              {hasLyricStyle && (
+                <div className="la-group">
+                  <h5 className="la-group-title">In the lyrics</h5>
+                  <div className="la-attributes">
+                    {attributes.map(a => (
+                      <div key={a.label} className="la-attr">
+                        <span className="la-attr-label">{a.label}</span>
+                        <InfoTip text={a.definition}>
+                          <span className="la-attr-value">{a.value}</span>
+                        </InfoTip>
+                      </div>
+                    ))}
+                    {emotions.length > 0 && (
+                      <div className="la-attr la-attr-emotions">
+                        <span className="la-attr-label">Emotions</span>
+                        <span className="la-attr-value">{emotions.join('; ')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+        </section>
+      )}
+
+      <TheSound audio={analysis.audio} />
     </div>
   );
 }
