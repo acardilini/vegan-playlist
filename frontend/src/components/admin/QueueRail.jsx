@@ -14,6 +14,7 @@ const GROUPS = [
     ['genre-conflicts', 'Genre conflicts', false],
     ['needs-video', 'Needs video', false],
     ['no-video', 'No video available', false],
+    ['broken-video', 'Broken video', false],
     ['junk-lyrics', 'Junk lyrics', false],
     ['needs-analysis', 'Needs analysis', true],
     ['needs-sample-approval', 'Needs sample approval', false],
