@@ -489,6 +489,9 @@ Round 1 (3D map, motion, Themes colouring) ☑ merged to `main` 2026-11-06 (`d0a
 year scrubber, neighbour lines, guided walk) ☑ merged to `main` 2026-11-09 (`b457bee`) after the curator's smoke and a feedback pass; then the artist location map (own brainstorm). Spec
 `docs/superpowers/specs/2026-11-06-explorer-3d-design.md`; plans `docs/superpowers/plans/2026-11-06-explorer-3d-round1.md` and `docs/superpowers/plans/2026-11-06-explorer-round2.md`.
 
+## Data stories (curator-requested, 2026-11-22)
+Spec `docs/superpowers/specs/2026-11-22-data-stories-design.md`, plan `docs/superpowers/plans/2026-11-22-data-stories.md`. Scrollytelling stories as the first Data tab, authored as editable Markdown in `backend/data/stories/`. **Phase 1 ◐ (built, awaiting smoke):** story engine + Stories tab + story 1 'From shouts to growls' (opening, decade bars, decade lines, song cards, closing). **Phase 2 ☐:** story 2 'From accusation to resistance' (lyrical tone by decade) and story 4 'The long road from 1967' (year-columns panel). **Phase 3 ☐:** story 3 'What the songs are angry about' (ranked-bars panel). Explorer phases 2-5 below stay paused until stories are smoked.
+
 ## Explore > Data redesign (curator-requested, 2026-11-22)
 Spec `docs/superpowers/specs/2026-11-22-explore-data-redesign-design.md`. Each phase is built on its own branch and curator-smoked before the next. **Phase 1 ☑ (merged 2026-11-22):** dataset service + endpoint, Data sub-tab shell, shared slice bar, Over time tab; Chart.js and the five old analytics routes retired. **Phases 2-5 ☐:** Arguments (flow + theme pairs), Sound (tempo vs loudness scatter, major/minor), Compare (+ Advanced cross-tab), Artists (depth, leaderboard, language once at least a quarter of live songs have a curated language).
 
