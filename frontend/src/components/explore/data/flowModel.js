@@ -208,3 +208,76 @@ export function pairsTable(result) {
     rows: result.pairs.map(p => [p.aLabel, p.bLabel, p.n, `${Math.round(p.share * 100)}%`]),
   };
 }
+
+// Geometry for the flow: pure numbers, no DOM. ONE scale (pixels per song) is shared by every column so equal totals
+// give equal column heights. Each column is a stack of nodes with `gap` between, centred vertically. A ribbon is a cubic
+// Bezier centre line (stroke it `thickness` wide) from the right edge of its source node to the left edge of its target,
+// attached at stacked offsets inside both nodes: leaving in link order, entering in link order.
+export function flowLayout(flow, { width, height, nodeWidth = 14, gap = 10, labelPad = 0 } = {}) {
+  if (!flow.n || !flow.columns.length) return { nodes: [], ribbons: [], scale: 0 };
+
+  const cols = flow.columns.length;
+  const widthSafe = Math.max(0, width);
+  const span = Math.max(0, widthSafe - 2 * labelPad - nodeWidth);
+  const xOf = col => labelPad + (cols > 1 ? (span * col) / (cols - 1) : 0);
+
+  // the tallest column (by node count) decides how much room the gaps take; one scale then fits every column
+  let scale = Infinity;
+  for (const column of flow.columns) {
+    const total = column.nodes.reduce((s, x) => s + x.n, 0);
+    if (!total) continue;
+    const room = Math.max(0, height - gap * (column.nodes.length - 1));
+    scale = Math.min(scale, room / total);
+  }
+  if (!Number.isFinite(scale)) scale = 0;
+
+  const nodes = [];
+  const at = new Map(); // `${col}\u0001${key}` -> placed node
+  flow.columns.forEach((column, col) => {
+    const stack = column.nodes.reduce((s, x) => s + x.n * scale, 0) + gap * Math.max(0, column.nodes.length - 1);
+    let y = Math.max(0, (height - stack) / 2);
+    for (const node of column.nodes) {
+      const placed = {
+        col, key: node.key, label: node.label, n: node.n, other: node.other, slot: node.slot,
+        x: xOf(col), y, w: nodeWidth, h: node.n * scale,
+      };
+      nodes.push(placed);
+      at.set(col + SEP + node.key, placed);
+      y += placed.h + gap;
+    }
+  });
+
+  const ribbons = [];
+  flow.links.forEach((links, k) => {
+    const outUsed = new Map(); // offset already taken on a source node's right side
+    const inUsed = new Map();  // ... on a target node's left side
+    for (const link of links) {
+      const a = at.get(k + SEP + link.from);
+      const b = at.get(k + 1 + SEP + link.to);
+      const thickness = link.n * scale;
+      const y0 = a.y + (outUsed.get(a) || 0) + thickness / 2;
+      const y1 = b.y + (inUsed.get(b) || 0) + thickness / 2;
+      outUsed.set(a, (outUsed.get(a) || 0) + thickness);
+      inUsed.set(b, (inUsed.get(b) || 0) + thickness);
+      const x0 = a.x + a.w;
+      const x1 = b.x;
+      const xm = (x0 + x1) / 2;
+      ribbons.push({ fromCol: k, from: link.from, to: link.to, n: link.n, d: `M${x0},${y0} C${xm},${y0} ${xm},${y1} ${x1},${y1}`, thickness });
+    }
+  });
+
+  return { nodes, ribbons, scale };
+}
+
+// The Browse filters that mean "the songs on these picked nodes": one Browse key per column, from the preset. An Other
+// node (flagged `other`, never recognised by its key: a real genre can be called "other") and a part with no key are skipped.
+export function browseSelectionFor(preset, parts) {
+  const out = {};
+  for (const part of parts) {
+    if (!part || part.other || !part.key) continue;
+    const browseKey = preset.browseKeys[part.col];
+    if (!browseKey) continue;
+    out[browseKey] = [...new Set([...(out[browseKey] || []), part.key])];
+  }
+  return out;
+}

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { MIN_GROUP_FOR_SENTENCE } from './dataModel.js';
 import {
   TOP_NODES, MIN_PAIR_N, TOP_PAIRS, TOP_PATHS, PRESETS,
-  buildFlow, strongestSentence, topPathways, flowTable, topThemePairs, pairsTable,
+  buildFlow, strongestSentence, topPathways, flowTable, topThemePairs, pairsTable, flowLayout, browseSelectionFor,
 } from './flowModel.js';
 
 const PRESET = PRESETS[0]; // genre-tone-action: fields g, tone, act
@@ -247,4 +247,102 @@ test('pairsTable renders whole-percent shares', () => {
   assert.deepEqual(table.head, ['Theme', 'With', 'Songs', 'Share']);
   assert.deepEqual(table.rows, [['Health', 'Rights', 4, '100%']]);
   assert.equal(MIN_PAIR_N, 3);
+});
+
+// --- Task 3: layout geometry and Browse selection ---
+const W = 640;
+const H = 300;
+const layoutOf = (songs, opts = {}) => flowLayout(buildFlow(songs, PRESET, { labels }), { width: W, height: H, ...opts });
+const mixed = () => [
+  ...many(20, { g: 'punk', tone: 'angry', act: 'protest' }),
+  ...many(10, { g: 'punk', tone: 'sad', act: 'educate' }),
+  ...many(15, { g: 'metal', tone: 'angry', act: 'educate' }),
+  ...many(5, { g: 'folk', tone: 'hopeful', act: 'protest' }),
+];
+const colNodes = (layout, col) => layout.nodes.filter(n => n.col === col);
+const sum = (xs) => xs.reduce((s, x) => s + x, 0);
+
+test('flowLayout node heights use one scale', () => {
+  const layout = layoutOf(mixed());
+  assert.ok(layout.scale > 0);
+  for (const n of layout.nodes) assert.ok(Math.abs(n.h - n.n * layout.scale) < 1e-9);
+  const totals = [0, 1, 2].map(c => sum(colNodes(layout, c).map(n => n.h)));
+  assert.ok(Math.abs(totals[0] - totals[1]) < 1);
+  assert.ok(Math.abs(totals[1] - totals[2]) < 1);
+});
+
+test('flowLayout ribbon thicknesses sum to each node height on both sides', () => {
+  const layout = layoutOf(mixed());
+  for (const n of layout.nodes) {
+    const out = sum(layout.ribbons.filter(r => r.fromCol === n.col && r.from === n.key).map(r => r.thickness));
+    const inn = sum(layout.ribbons.filter(r => r.fromCol === n.col - 1 && r.to === n.key).map(r => r.thickness));
+    if (n.col < 2) assert.ok(Math.abs(out - n.h) < 1e-6, `out ${n.col}/${n.key}`);
+    if (n.col > 0) assert.ok(Math.abs(inn - n.h) < 1e-6, `in ${n.col}/${n.key}`);
+  }
+});
+
+test('flowLayout keeps every node and ribbon inside the given width and height', () => {
+  const layout = layoutOf(mixed(), { labelPad: 80 });
+  for (const n of layout.nodes) {
+    assert.ok(n.x >= 80 - 1e-9 && n.x + n.w <= W - 80 + 1e-9, `x ${n.key}`);
+    assert.ok(n.y >= -1e-9 && n.y + n.h <= H + 1e-9, `y ${n.key}`);
+  }
+  for (const r of layout.ribbons) {
+    const nums = r.d.match(/-?\d+(\.\d+)?(e-?\d+)?/g).map(Number);
+    assert.ok(nums.every(Number.isFinite));
+    const ys = nums.filter((_, i) => i % 2 === 1);
+    assert.ok(Math.min(...ys) - r.thickness / 2 >= -1e-6);
+    assert.ok(Math.max(...ys) + r.thickness / 2 <= H + 1e-6);
+    const xs = nums.filter((_, i) => i % 2 === 0);
+    assert.ok(Math.min(...xs) >= 80 - 1e-6);
+    assert.ok(Math.max(...xs) <= W - 80 + 1e-6);
+  }
+});
+
+test('flowLayout of a single-node column has no NaN anywhere', () => {
+  const layout = layoutOf(many(12, {}));
+  assert.equal(layout.nodes.length, 3);
+  assert.equal(layout.ribbons.length, 2);
+  const json = JSON.stringify(layout);
+  assert.ok(!/NaN/.test(json)); // slot is legitimately null outside column 0, so only NaN (which JSON turns into null) is checked via the finite test below
+  assert.ok(layout.nodes.every(n => [n.x, n.y, n.w, n.h].every(Number.isFinite)));
+  assert.ok(layout.ribbons.every(r => Number.isFinite(r.thickness) && !/NaN|null/.test(r.d)));
+});
+
+test('flowLayout carries other and slot through, and survives a cramped height', () => {
+  const songs = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].flatMap((g, i) => many(10 - i, { g }));
+  const layout = layoutOf(songs, { height: 40 });
+  const other = colNodes(layout, 0).filter(n => n.other);
+  assert.equal(other.length, 1);
+  assert.equal(other[0].slot, null);
+  assert.ok(colNodes(layout, 0).some(n => n.slot === 0));
+  assert.ok(!/NaN/.test(JSON.stringify(layout)));
+  assert.ok(layout.nodes.every(n => n.y >= 0 && n.h >= 0));
+});
+
+test('flowLayout of an empty flow is empty', () => {
+  const layout = flowLayout(buildFlow([], PRESET, { labels }), { width: W, height: H });
+  assert.deepEqual(layout.nodes, []);
+  assert.deepEqual(layout.ribbons, []);
+  assert.ok(Number.isFinite(layout.scale));
+});
+
+test('browseSelectionFor skips Other', () => {
+  assert.deepEqual(
+    browseSelectionFor(PRESETS[0], [{ col: 0, key: 'metal', other: false }, { col: 1, key: 'other', other: true }]),
+    { parent_genres: ['metal'] },
+  );
+});
+
+test('browseSelectionFor keeps a real genre called other', () => {
+  assert.deepEqual(browseSelectionFor(PRESETS[0], [{ col: 0, key: 'other', other: false }]), { parent_genres: ['other'] });
+});
+
+test('browseSelectionFor maps the middle and third columns to Browse keys', () => {
+  assert.deepEqual(browseSelectionFor(PRESETS[0], [{ col: 1, key: 'angry', other: false }]), { lyrical_tone: ['angry'] });
+  assert.deepEqual(
+    browseSelectionFor(PRESETS[0], [{ col: 0, key: 'punk' }, { col: 2, key: 'protest' }, { col: 1, key: '' }]),
+    { parent_genres: ['punk'], actions: ['protest'] },
+  );
+  assert.deepEqual(browseSelectionFor(PRESETS[0], []), {});
 });
