@@ -161,7 +161,7 @@ Run before ending every working session:
   with the latest `analyzed_at`** (`LATEST_AUDIO`, alias `sau`; a newer non-OK row never hides an older OK one), `getSongAudio`
   (public block on `GET /api/analysis/song/:id` as `audio`), `getAdminAudio` (the curator's view), `audioFacets` (exclude-self
   sidebar counts, group `audio:<key>`), `tempoRange` (UNMETERED tempo is hidden; key is an *estimate*), `coverage`,
-  `MOOD_SUBQUERY` / `attachMood` (cards carry `mood` = the first-listed `musical_mood` label), `SAMPLES_PENDING_SQL`.
+  `MOOD_SUBQUERY` / `attachMood` (cards carry `mood` = the first-listed `musical_mood` label), `SAMPLES_PENDING_SQL`, `BROKEN_VIDEO_SQL` (the **Broken video** rail: an `UNAVAILABLE` row, no `OK` row from any model, a video still on the song, none added after the failed analysis - so adding a replacement link clears the song, and the analysis-owned row is never written here; a song with no video left is Needs video's).
   **The samples gate:** `songs.show_audio_samples` (migration 021; NULL unreviewed = hidden, TRUE show, FALSE reviewed-hidden).
   **The server withholds** sample details, types, the `audio_samples` filter membership and reference counts unless TRUE —
   never trust the page to hide them. The curator decides in the workbench **Audio** panel (`PUT /api/admin/workbench/:id/audio-samples`,

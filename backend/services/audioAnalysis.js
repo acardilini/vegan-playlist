@@ -40,6 +40,19 @@ const SAMPLES_PENDING_SQL = (alias = 's') =>
   `${alias}.show_audio_samples IS NULL AND EXISTS (
      SELECT 1 FROM unnest(${audioColumnSql('audio_samples', `${alias}.id`)}) AS t(c) WHERE t.c <> 'NONE')`;
 
+// Songs whose video the audio analysis could not reach: an UNAVAILABLE row, no OK row from any model, a video still on the
+// song, and none added after the failed analysis (adding a replacement link is what clears the song; the analysis project
+// owns the UNAVAILABLE row and we never write it). A song with no video left belongs to Needs video instead.
+const BROKEN_VIDEO_SQL = (alias = 's') =>
+  `EXISTS (SELECT 1 FROM song_audio_analysis bv WHERE bv.song_id = ${alias}.id AND bv.audio_status = 'UNAVAILABLE')
+   AND NOT EXISTS (SELECT 1 FROM song_audio_analysis ok WHERE ok.song_id = ${alias}.id AND ok.audio_status = 'OK')
+   AND EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id = ${alias}.id)
+   AND NOT EXISTS (
+     SELECT 1 FROM youtube_videos nv
+     WHERE nv.song_id = ${alias}.id
+       AND nv.created_at > (SELECT max(f.analyzed_at) FROM song_audio_analysis f
+                            WHERE f.song_id = ${alias}.id AND f.audio_status = 'UNAVAILABLE'))`;
+
 const asArray = (v) => (Array.isArray(v) ? v : (v ? [v] : [])).filter(Boolean);
 
 function buildSamples(row) {
@@ -176,6 +189,6 @@ async function coverage(db) {
 }
 
 module.exports = {
-  LATEST_AUDIO, audioColumnSql, MOOD_SUBQUERY, attachMood, SAMPLES_PENDING_SQL,
+  LATEST_AUDIO, audioColumnSql, MOOD_SUBQUERY, attachMood, SAMPLES_PENDING_SQL, BROKEN_VIDEO_SQL,
   getSongAudio, getAdminAudio, audioFacets, tempoRange, coverage,
 };

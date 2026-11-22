@@ -76,7 +76,7 @@ function audioSourceFor(model) {
 }
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics',
   'needs-cover','needs-album','needs-released','needs-language','needs-genre','genre-from-artist','genre-from-audio','genre-conflicts',
-  'needs-video','no-video','junk-lyrics','needs-analysis','needs-sample-approval','to-finalise','live','all','featured'];
+  'needs-video','no-video','broken-video','junk-lyrics','needs-analysis','needs-sample-approval','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
@@ -127,6 +127,9 @@ function queueWhere(queue) {
     case 'no-video':
       return `s.status='included' AND s.no_video_display IS NOT NULL
               AND NOT EXISTS (SELECT 1 FROM youtube_videos yv WHERE yv.song_id=s.id)`;
+    // The audio analysis could not reach the song's video (the link is dead): delete it and add a working one in the workbench.
+    case 'broken-video':
+      return `s.status='included' AND ${audioAnalysis.BROKEN_VIDEO_SQL('s')}`;
     case 'junk-lyrics':
       return `EXISTS (SELECT 1 FROM song_lyrics jl WHERE jl.song_id=s.id AND jl.junk_kind IS NOT NULL AND btrim(jl.lyrics) <> '')`;
     case 'needs-analysis':
