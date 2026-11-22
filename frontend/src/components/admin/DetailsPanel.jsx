@@ -247,6 +247,46 @@ function GenreOptions({ wb, savePanel }) {
   );
 }
 
+const LANG_SOURCE = { analysis: 'Lyric analysis', transcript: 'Audio transcript' };
+
+// The languages the analysis project detected for this song, to confirm. Use replaces the song's language list with
+// that source's (the server reads the languages itself - this only names the source). A suggestion that disagrees with
+// a language already recorded says so instead of offering to replace it silently.
+function LanguageSuggestions({ wb, savePanel }) {
+  const [busy, setBusy] = useState(null);
+  const [error, setError] = useState('');
+  const options = wb.language_suggestions || [];
+  if (options.length === 0) return null;
+  const has = Array.isArray(wb.language) && wb.language.length > 0;
+
+  const choose = async (source) => {
+    setBusy(source); setError('');
+    const res = await savePanel('language-choice', { source });
+    setBusy(null);
+    if (!(res && res.ok)) setError((res && res.error) || 'Could not save');
+  };
+
+  return (
+    <div className="wb-genre-options" role="group" aria-label="Detected languages">
+      <div className="wb-genre-options-title">Detected language</div>
+      {options.map((o) => (
+        <div key={o.source} className="wb-genre-opt">
+          <span className="wb-genre-opt-src">{LANG_SOURCE[o.source] || o.source}</span>
+          <span className="wb-genre-opt-val">{o.languages.join(', ')}</span>
+          <span className="wb-genre-opt-meta">{o.confidence ? `${o.confidence.toLowerCase()} confidence` : ''}</span>
+          {has && !o.differs
+            ? <span className="wb-genre-opt-inuse">Matches</span>
+            : <button type="button" className="btn btn-secondary btn-sm" disabled={busy !== null} onClick={() => choose(o.source)}>
+                {busy === o.source ? 'Saving…' : o.differs ? 'Replace with this' : 'Use'}
+              </button>}
+          {o.differs && <span className="wb-genre-opt-meta">differs from what you recorded</span>}
+        </div>
+      ))}
+      {error && <div className="wb-genre-opt-error" role="alert">{error}</div>}
+    </div>
+  );
+}
+
 function DetailsPanel({ wb, savePanel }) {
   const artistNames = (wb.artists || []).map((a) => a.name).join(', ') || '—';
   const cover = coverUrl(wb.album && wb.album.images);
@@ -259,6 +299,7 @@ function DetailsPanel({ wb, savePanel }) {
       <AutoText label="Title" initial={wb.title} onSave={(v) => savePanel('details', { title: v })} />
       <GenreField wb={wb} savePanel={savePanel} />
       <LanguageChips wb={wb} savePanel={savePanel} />
+      <LanguageSuggestions wb={wb} savePanel={savePanel} />
       <div className="wb-readonly">
         <div><span className="k">Artist(s)</span>{artistNames}</div>
         {!albumEditable && <div><span className="k">Album</span>{(wb.album && wb.album.name) || '—'}</div>}

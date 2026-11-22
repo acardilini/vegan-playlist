@@ -3223,3 +3223,8 @@
 .tl-clip-source { font-weight: 600; color: var(--text-secondary); }
 .tl-clip-quote { margin: var(--space-1) 0 0; padding-left: var(--space-5); }   /* room for the passage's hanging opening quote mark */
 .tl-clip-quote p { font-size: 0.875rem; line-height: 1.5; }
+
+/* Draft transcript (admin Lyrics panel): an AI draft the curator corrects before saving it as lyrics. */
+.wb-draft { margin: var(--space-4) 0; padding: var(--space-3); border: 1px solid var(--border-hairline); border-radius: var(--radius-md, 8px); background: var(--bg-surface); }
+.wb-draft-meta { font-size: 0.8125rem; color: var(--text-muted); margin: var(--space-1) 0 var(--space-2); }
+.wb-draft-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }

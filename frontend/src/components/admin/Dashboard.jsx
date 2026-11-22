@@ -9,10 +9,12 @@ import { relTime } from './relTime';
 const TILES = [
   ['to-process', 'To be processed', false],
   ['needs-lyrics', 'Needs lyrics', false],
+  ['check-transcripts', 'Check transcripts', false],
   ['needs-cover', 'Needs cover', false],
   ['needs-album', 'Needs album', false],
   ['needs-released', 'Needs released', false],
   ['needs-language', 'Needs language', false],
+  ['language-suggested', 'Language suggested', false],
   ['needs-genre', 'Needs genre', false],
   ['genre-from-audio', 'Genre from audio', false],
   ['genre-conflicts', 'Genre conflicts', false],
