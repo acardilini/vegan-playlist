@@ -136,6 +136,7 @@ Run before ending every working session:
   throws or yields no song — so a concurrent accept/dismiss gets `NOT_PENDING` and can't orphan a song.
   The submit-time match is a fuzzy prefix match, so Accept stays available on matched rows; staging's
   title|artist dedupe makes an exact duplicate resolve to the existing song. Tests in `test/inbox.test.js`
+- **services/dataset.js** (Explore > Data, phase 1, 2026-11-22): `GET /api/analytics/dataset` (the only `analytics.js` route; the five Chart.js-era routes were deleted) serves every live song in ONE payload, `{songs, labels, coverage}`, cached 60 s (~185 KB, ~100 ms uncached). `songs[i]` = `{id, t, a, y, g, ha, hl, tone}`: **`g` is ONE combined parent genre** (`getParentGenre` of the catalogue genre, else of the latest OK `song_audio_analysis.inferred_parent_genre`) with **no provenance anywhere in payload or UI** (curator decision: audio-inferred genres are checked, their source is an admin detail); `tone` is the latest coding pass's `lyrical_tone` through `metadataCodebook.cleanSelection` (legacy/ERROR codes become null); `hl`/`ha` = has a publicly visible lyric coding / an OK audio row. Read-only; never touches lyric or transcript text or audio samples (`lyrics_privacy.test.js` scans the service and route). Test `test/dataset.test.js` (sentinel `ZZZDSET`). Phases 2-5 add fields only when a built chart needs them.
 - **services/analysis.js + services/metadataCodebook.js**: the lyric-analysis read. Every consumer
   (song page, browse facets, `/search` filters, `themeCounts`, the admin `needs-analysis` queue) reads
   each song's **latest coding pass** — the single newest `song_lyric_analysis` row by `MAX(analyzed_at)`,
@@ -257,7 +258,7 @@ Run before ending every working session:
 - **src/App.jsx** (~50 lines): router shell only — routes, header/nav, footer
 - **src/pages/**: one file per route — HomePage, SongDetailPage, PlaylistsPage,
   PlaylistDetailPage, **ExplorePage** (a tab shell over `/explore` = Map and
-  `/explore/data` = the analytics dashboard; **the standalone Dashboard nav item is retired and
+  `/explore/data` = **`DataPage`**, the Data area (below); **the standalone Dashboard nav item is retired and
   `/dashboard` redirects to `/explore/data`**), **AboutPage** (triage 6 — became a second tab
   shell mirroring `ExplorePage`'s pattern, `NavLink` × 3 + `Outlet`, over three routes:
   `/about` → `pages/about/AboutOverview.jsx`, `/about/analysis` →
@@ -270,8 +271,8 @@ Run before ending every working session:
   hook fetching `GET /api/analysis/codebook` once and sharing it across the tabs. Single-consumer
   helpers stay local to their page file
 - **src/components/**: components (public + admin; the **Artists area** - `ArtistsArea` + `ArtistQueueList` (rail and list, `/admin/artists?queue=&q=&page=`) and `ArtistWorkbench` (`/admin/artist/:id`: Details, Links, Catalogue = Band check, Notes); `QueueRail` takes a `groups` prop so both areas share it; **SpotifySyncCard** on the Dashboard and **SpotifyLists**, the Songs > Spotify sync view) — public (SearchAndFilter,
-  ArtistSearchResults, ArtistDetailPage, SongSubmissionForm, DataDashboard, MoodBadge,
-  YouTubeEmbed, **SimilarSongs** (the song page's two embedding tabs + genre fallback), plus
+  ArtistSearchResults, ArtistDetailPage, SongSubmissionForm, MoodBadge,
+  YouTubeEmbed, **SimilarSongs** (the song page's two embedding tabs + genre fallback), the **Data area** (`pages/DataPage.jsx` + `components/explore/data/`: `useDataset` fetches the payload ONCE; the slice (parent genre `pg`, year window `yf`/`yt`, Over-time toggles `era_m`/`era_b`) lives in the URL via the pure `utils/dataUrlState.js`; the pure, node-tested `dataModel.js` does every aggregation (filter, KPIs, era series with colours following the entity's slot in a fixed whole-catalogue order, tone by decade with `MIN_POINT_N = 10` and `MIN_GROUP_FOR_SENTENCE = 30` thresholds); `ChartFrame` (card + Table view + denominator caption), `EraChart` (stacked bars)/`LineChart` hand-rolled SVG at the container's measured width, tokens only; sub-tabs are real routes `/explore/data/<tab>` and a tab appears only once built - **phase 1 = Over time**; spec `docs/superpowers/specs/2026-11-22-explore-data-redesign-design.md`, plan `docs/superpowers/plans/2026-11-22-explore-data-phase1.md`; `chart.js` / `react-chartjs-2` and `DataDashboard.jsx` are gone), plus
   **`components/explore/`** — `ExploreMap` (hand-rolled canvas scatter, **no charting
   dependency**), `exploreUrlState.js` (every `derive*`/`format*` that reads or writes the map's URL
   params — space, colour, spotlight, search, selection, and the `view=k,tx,ty` viewport — pulled

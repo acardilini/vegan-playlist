@@ -305,7 +305,7 @@ keep/rebuild/drop/defer decisions are recorded in
 | `/playlist/:playlistId` | Playlist Detail | ✅ | Playlist songs and metadata (browse-only) |
 | `/submit` | Submit a Song | ✅ | Community suggestion form |
 | `/explore` | Explore → Map | ✅ | 2D canvas scatter of the catalogue in four projected spaces (B4) |
-| `/explore/data` | Explore → Data | ✅ | Visualisations (Chart.js) — the former standalone Dashboard |
+| `/explore/data/over-time` | Explore → Data → Over time | ✅ | Hand-rolled SVG analytics over one `/api/analytics/dataset` payload (era by genre, tone and sound by decade); phases 2-5 add Arguments, Sound, Compare, Artists |
 | `/dashboard` | _(redirect)_ | ↪ | Redirects to `/explore/data`; the Dashboard nav item is retired (B4) |
 | `/about` | About | ✅ | Methodology / coding-system explanation |
 | `/admin` | Admin Interface | ✅ | Private content-management console (no auth yet — see 11.5) |

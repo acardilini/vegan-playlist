@@ -489,6 +489,9 @@ Round 1 (3D map, motion, Themes colouring) ☑ merged to `main` 2026-11-06 (`d0a
 year scrubber, neighbour lines, guided walk) ☑ merged to `main` 2026-11-09 (`b457bee`) after the curator's smoke and a feedback pass; then the artist location map (own brainstorm). Spec
 `docs/superpowers/specs/2026-11-06-explorer-3d-design.md`; plans `docs/superpowers/plans/2026-11-06-explorer-3d-round1.md` and `docs/superpowers/plans/2026-11-06-explorer-round2.md`.
 
+## Explore > Data redesign (curator-requested, 2026-11-22)
+Spec `docs/superpowers/specs/2026-11-22-explore-data-redesign-design.md`. Each phase is built on its own branch and curator-smoked before the next. **Phase 1 ◐ (built, awaiting smoke):** dataset service + endpoint, Data sub-tab shell, shared slice bar, Over time tab; Chart.js and the five old analytics routes retired. **Phases 2-5 ☐:** Arguments (flow + theme pairs), Sound (tempo vs loudness scatter, major/minor), Compare (+ Advanced cross-tab), Artists (depth, leaderboard, language once at least a quarter of live songs have a curated language).
+
 ## Backlog / Deferred (YAGNI)
 
 Items intentionally deferred until needed (from the PRD and the Session 0.1
