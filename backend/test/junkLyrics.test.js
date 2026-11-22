@@ -41,6 +41,12 @@ test('scan flags error stubs and descriptions, leaves real lyrics alone, and is 
   assert.deepEqual({ flagged: r2.flagged, cleared: r2.cleared }, { flagged: 0, cleared: 0 }, 'second scan changes nothing');
 });
 
+test('scan flags a placeholder stub (the CHECK constraint accepts the kind)', async () => {
+  const na = await mk('ZZZJUNK na', 'NA');
+  await junk.scan(pool, { songIds: [na] });
+  assert.equal((await row(na)).junk_kind, 'placeholder');
+});
+
 test('scan clears a stale flag on now-fine lyrics, leaves blank rows alone, and skips dismissed rows', async () => {
   const emptied = await mk('ZZZJUNK emptied', 'Error: Could not find lyrics container on the page.');
   const dism = await mk('ZZZJUNK dismissed', 'Error: Could not find lyrics container on the page.');

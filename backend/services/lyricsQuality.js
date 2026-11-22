@@ -3,7 +3,12 @@
 // clicks "Not junk". Tuned against the real catalogue (2026-10-13): 185 error stubs and ~29 of ~32
 // description candidates; a Genius page with a [Verse] header and two blurbs that contain real lyrics
 // are intentionally NOT flagged.
-const JUNK_KINDS = ['error', 'youtube_description'];
+const JUNK_KINDS = ['error', 'youtube_description', 'placeholder'];
+
+// The whole stored text is a stand-in for lyrics, not lyrics (found in the catalogue 2026-11-22: 'NA', '[object Object]',
+// "Lyrics on spotify", and a curator's own "Transcribe from song" note). Matched on the WHOLE text only, ignoring case and
+// trailing punctuation, so a real song that happens to contain these words is never flagged.
+const PLACEHOLDERS = new Set(['na', 'n/a', '[object object]', 'lyrics on spotify', 'transcribe from song']);
 
 // Any one of these is enough on its own.
 const STRONG = [
@@ -25,6 +30,7 @@ function classify(text) {
   const t = text.trim();
   if (!t) return null;
   if (/^error:/i.test(t) && t.length < 200) return 'error';
+  if (PLACEHOLDERS.has(t.toLowerCase().replace(/[.!\s]+$/, ''))) return 'placeholder';
   if (VERSE_HEADER.test(t)) return null;
   if (STRONG.some((re) => re.test(t))) return 'youtube_description';
   return WEAK.filter((re) => re.test(t)).length >= 2 ? 'youtube_description' : null;

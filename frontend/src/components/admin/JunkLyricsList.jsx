@@ -5,7 +5,7 @@ import { CLEAR_LYRICS_BODY } from './junkLyricsActions';
 
 const PAGE_SIZE = 50;
 
-const KIND_LABELS = { error: 'Error message', youtube_description: 'YouTube description' };
+const KIND_LABELS = { error: 'Error message', youtube_description: 'YouTube description', placeholder: 'Placeholder text' };
 
 // Songs whose stored "lyrics" look like a scraper error or a YouTube description. Not junk = keep the text and stop
 // flagging it; Clear lyrics = blank the text, so the song falls into Needs lyrics. A flagged song's analysis is hidden
