@@ -14,7 +14,8 @@ import SearchResults from './components/SearchResults';
 import ArtistSearchResults from './components/ArtistSearchResults';
 import ArtistDetailPage from './components/ArtistDetailPage';
 import SongSubmissionForm from './components/SongSubmissionForm';
-import DataDashboard from './components/DataDashboard';
+import DataPage from './pages/DataPage';
+import OverTimeTab from './components/explore/data/OverTimeTab';
 import ExplorePage from './pages/ExplorePage';
 import ExploreMap from './components/explore/ExploreMap';
 import './styles/admin.css';
@@ -51,7 +52,10 @@ function App() {
           <Route path="/submit" element={<SongSubmissionForm />} />
           <Route path="/explore" element={<ExplorePage />}>
             <Route index element={<ExploreMap />} />
-            <Route path="data" element={<DataDashboard />} />
+            <Route path="data" element={<DataPage />}>
+              <Route index element={<Navigate to="over-time" replace />} />
+              <Route path="over-time" element={<OverTimeTab />} />
+            </Route>
           </Route>
           <Route path="/dashboard" element={<Navigate to="/explore/data" replace />} />
           <Route path="/about" element={<AboutPage />}>
