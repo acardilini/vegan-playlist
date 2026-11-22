@@ -84,7 +84,8 @@ test('getWorkbench audio carries the sample details whatever the gate says, and 
   const wb = await curation.getWorkbench(pool, id);
   assert.equal(wb.audio.show_audio_samples, null);
   assert.ok(wb.audio.samples, 'the curator sees the samples before approving them');
-  assert.equal(wb.audio.samples.items[0].description, 'Stunning bolt');
+  assert.ok(!('description' in wb.audio.samples.items[0]), 'the AI description of a sample is not served, not even to the curator');
+  assert.ok(!JSON.stringify(wb.audio).includes('Stunning bolt'));
   assert.equal(wb.audio.status, 'OK');
 
   const bare = await mkSong('ZZZAAD Workbench bare');

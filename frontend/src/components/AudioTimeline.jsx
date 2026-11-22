@@ -171,9 +171,12 @@ function AudioTimeline({ audio, heading }) {
             <span className="tl-clip-key" aria-hidden="true" />
             <span className="tl-clip-type">{clip.label}</span>
             <span className="tl-clip-time">{fmtTime(clip.startSec)}–{fmtTime(clip.endSec)}</span>
-            <span className="tl-clip-source">{clip.source || 'Unidentified source'}</span>
           </div>
           {clip.transcript && <blockquote className="lyrics-passage tl-clip-quote"><p>{clip.transcript}</p></blockquote>}
+          {/* Who said it: a byline under the quote, the strongest line of the card. Unknown speakers are said so quietly. */}
+          {clip.source
+            ? <div className="tl-clip-by">&mdash; {clip.source}</div>
+            : <div className="tl-clip-by tl-clip-by-unknown">Unidentified source</div>}
         </div>
       )}
     </div>
