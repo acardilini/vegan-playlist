@@ -306,6 +306,7 @@ keep/rebuild/drop/defer decisions are recorded in
 | `/submit` | Submit a Song | ✅ | Community suggestion form |
 | `/explore` | Explore → Map | ✅ | 2D canvas scatter of the catalogue in four projected spaces (B4) |
 | `/explore/data/stories`, `/explore/data/stories/:slug` | Explore → Data → Stories | ✅ (phase 1) | Scrollytelling: curator-editable Markdown stories (`backend/data/stories/`) with narrative between full-width chart / album-art panels; numbers in the prose resolve from the same data as the charts; story 1 built, three more planned |
+| `/explore/data/arguments` | Explore → Data → Arguments | ✅ (phase 2, awaiting smoke) | Three-column flow chart (presets: genre, tone, action / audience, frame, action / voice, tone, emotion) with pinnable ribbons that link to a filtered Browse, a strongest-link sentence, and "Themes that travel together" (top theme pairs); shares the slice bar; a list replaces the ribbons on a phone; Advocacy action is coded on only ~38% of lyric-coded songs, so captions state the denominator |
 | `/explore/data/over-time` | Explore → Data → Over time | ✅ | Hand-rolled SVG analytics over one `/api/analytics/dataset` payload (era by genre, tone and sound by decade); phases 2-5 add Arguments, Sound, Compare, Artists |
 | `/dashboard` | _(redirect)_ | ↪ | Redirects to `/explore/data`; the Dashboard nav item is retired (B4) |
 | `/about` | About | ✅ | Methodology / coding-system explanation |
