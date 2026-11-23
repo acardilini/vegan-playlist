@@ -1,37 +1,25 @@
-// Artist facts: country, years, the Active status and members, each stored with the source that supplied it.
-// Only stored (= accepted) facts are ever public; MusicBrainz proposals are computed on demand and never stored.
+// Artist facts: country, years (formed, disbanded, first and last release) and members, each stored with the source that
+// supplied it. There is deliberately no Active/Inactive status (a band can reform): the public page shows the range of
+// published work instead. Only stored (= accepted) facts are ever public; proposals are computed on demand and never stored.
 const { coded } = require('./bandCheck/errors');
 
 const CURATOR = 'Added by curator';
-const SOURCES = new Set(['MusicBrainz', CURATOR]);
-const ACTIVE_WINDOW_YEARS = 3;
-const YEAR_FIELDS = ['formed_year', 'disbanded_year', 'last_release_year'];
+const SOURCE_NAMES = Object.freeze(['MusicBrainz', 'Wikidata', 'Bandcamp', 'Catalogue Albums', 'Gemini Web Search', CURATOR]);
+const SOURCES = new Set(SOURCE_NAMES);
+const YEAR_FIELDS = ['formed_year', 'disbanded_year', 'first_release_year', 'last_release_year'];
 
 const nameKey = (name) => String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 
-// Automatic from the last release (within 3 years = Active), a disbanded year = Inactive, the curator's override wins.
-function activeStatus({ lastReleaseYear, disbandedYear, override } = {}, now = new Date()) {
-  let active = null;
-  if (override === true || override === false) active = override;
-  else if (disbandedYear) active = false;
-  else if (lastReleaseYear) active = now.getFullYear() - lastReleaseYear <= ACTIVE_WINDOW_YEARS;
-  if (active === null) return { active: null, label: null };
-  return { active, label: `${active ? 'Active' : 'Inactive'}${lastReleaseYear ? `, last release ${lastReleaseYear}` : ''}` };
-}
-
+// artists.active_override (migration 016) is no longer read or written; the column is left in place.
 const COLS = `country, country_source, formed_year, formed_source, disbanded_year, disbanded_source,
-              last_release_year, last_release_source, active_override`;
+              first_release_year, first_release_source, last_release_year, last_release_source`;
 const MEMBER_COLS = 'id, name, is_current, vegan, source';
 
 async function getFacts(db, artistId) {
   const a = (await db.query(`SELECT ${COLS} FROM artists WHERE id = $1`, [artistId])).rows[0];
   if (!a) throw coded('NOT_FOUND', 'Artist not found');
   const members = (await db.query(`SELECT ${MEMBER_COLS} FROM artist_members WHERE artist_id = $1 ORDER BY is_current DESC, lower(name), id`, [artistId])).rows;
-  return {
-    ...a,
-    active: activeStatus({ lastReleaseYear: a.last_release_year, disbandedYear: a.disbanded_year, override: a.active_override }),
-    members,
-  };
+  return { ...a, members };
 }
 
 function validYear(v) {
@@ -61,10 +49,6 @@ async function saveFacts(db, artistId, patch = {}) {
     const srcCol = `${key.replace('_year', '')}_source`;
     if (patch[key] === null) { set(key, null); set(srcCol, null); }
     else { set(key, validYear(patch[key])); set(srcCol, sourceFor(patch, key.replace('_year', ''))); }
-  }
-  if (patch.active_override !== undefined) {
-    if (patch.active_override !== null && typeof patch.active_override !== 'boolean') throw coded('BAD_INPUT', 'active_override must be true, false or null');
-    set('active_override', patch.active_override);
   }
   if (sets.length) {
     params.push(artistId);
@@ -142,15 +126,16 @@ async function proposeFromMusicBrainz(db, artistId, { adapters }) {
 }
 
 // The public view: only stored (accepted) facts, only the parts that exist, null when there is nothing to show.
-// No sources, ids or override flag leave the building.
+// No sources or ids leave the building, and the disbanded year stays admin-only.
 async function publicFacts(db, artistId) {
   const f = await getFacts(db, artistId);
   const out = {};
   if (f.country) out.country = f.country;
   if (f.formed_year) out.formed_year = f.formed_year;
-  if (f.active.label) out.active_label = f.active.label;
+  if (f.first_release_year) out.first_release_year = f.first_release_year;
+  if (f.last_release_year) out.last_release_year = f.last_release_year;
   if (f.members.length) out.members = f.members.map((m) => ({ name: m.name, is_current: m.is_current, vegan: m.vegan }));
   return Object.keys(out).length ? out : null;
 }
 
-module.exports = { activeStatus, nameKey, getFacts, saveFacts, addMember, updateMember, removeMember, proposeFromMusicBrainz, publicFacts };
+module.exports = { SOURCE_NAMES, nameKey, getFacts, saveFacts, addMember, updateMember, removeMember, proposeFromMusicBrainz, publicFacts };
