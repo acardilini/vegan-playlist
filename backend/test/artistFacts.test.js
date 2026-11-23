@@ -14,34 +14,48 @@ async function clean() {
 test('pre-clean leftovers from a crashed run', clean);
 after(async () => { await clean(); await pool.end(); });
 const coded = (code) => (e) => e.code === code;
-const NOW = new Date('2026-06-01');
-
-test('activeStatus: override wins over a disbanded year and a stale release', () => {
-  assert.deepEqual(svc.activeStatus({ lastReleaseYear: 2010, disbandedYear: 2012, override: true }, NOW), { active: true, label: 'Active, last release 2010' });
-  assert.deepEqual(svc.activeStatus({ lastReleaseYear: 2026, override: false }, NOW), { active: false, label: 'Inactive, last release 2026' });
-});
-test('activeStatus: override with no release year is just Active / Inactive', () => {
-  assert.deepEqual(svc.activeStatus({ override: true }, NOW), { active: true, label: 'Active' });
-  assert.deepEqual(svc.activeStatus({ override: false }, NOW), { active: false, label: 'Inactive' });
-});
-test('activeStatus: disbanded means Inactive', () => {
-  assert.deepEqual(svc.activeStatus({ lastReleaseYear: 2025, disbandedYear: 2026 }, NOW), { active: false, label: 'Inactive, last release 2025' });
-});
-test('activeStatus: within 3 years Active, older Inactive, no information null', () => {
-  assert.equal(svc.activeStatus({ lastReleaseYear: 2024 }, NOW).label, 'Active, last release 2024');
-  assert.equal(svc.activeStatus({ lastReleaseYear: 2023 }, NOW).label, 'Active, last release 2023');
-  assert.equal(svc.activeStatus({ lastReleaseYear: 2012 }, NOW).label, 'Inactive, last release 2012');
-  assert.deepEqual(svc.activeStatus({}, NOW), { active: null, label: null });
-});
 
 test('saveFacts round-trips with default source, keeps MusicBrainz when given, null clears', async () => {
   const id = await mk('ZZZAFA One');
   let f = await svc.saveFacts(pool, id, { country: ' Germany ', formed_year: 2009, last_release_year: 2024, last_release_source: 'MusicBrainz' });
   assert.deepEqual([f.country, f.country_source, f.formed_year, f.formed_source, f.last_release_year, f.last_release_source], ['Germany', 'Added by curator', 2009, 'Added by curator', 2024, 'MusicBrainz']);
-  f = await svc.saveFacts(pool, id, { country: null, active_override: false });
-  assert.deepEqual([f.country, f.country_source, f.active_override, f.formed_year], [null, null, false, 2009]);
-  f = await svc.saveFacts(pool, id, { active_override: null });
-  assert.equal(f.active_override, null);
+  f = await svc.saveFacts(pool, id, { country: null });
+  assert.deepEqual([f.country, f.country_source, f.formed_year], [null, null, 2009]);
+});
+test('getFacts has no Active fields, and an old active_override in a patch is ignored', async () => {
+  const id = await mk('ZZZAFA NoActive');
+  const f = await svc.saveFacts(pool, id, { formed_year: 2001, active_override: true });
+  assert.equal(f.formed_year, 2001);
+  assert.ok(!('active' in f) && !('active_override' in f));
+  assert.equal(svc.activeStatus, undefined);
+});
+test('saveFacts stores the first release with its source and clears both', async () => {
+  const id = await mk('ZZZAFA First');
+  let f = await svc.saveFacts(pool, id, { first_release_year: 1996, first_release_source: 'Bandcamp' });
+  assert.deepEqual([f.first_release_year, f.first_release_source], [1996, 'Bandcamp']);
+  f = await svc.saveFacts(pool, id, { first_release_year: null });
+  assert.deepEqual([f.first_release_year, f.first_release_source], [null, null]);
+  for (const bad of [1850, 2999]) await assert.rejects(svc.saveFacts(pool, id, { first_release_year: bad }), coded('BAD_INPUT'));
+});
+test('saveFacts and addMember accept every named source', async () => {
+  assert.equal(svc.SOURCE_NAMES.length, 6);
+  const id = await mk('ZZZAFA Sources');
+  for (const [i, name] of svc.SOURCE_NAMES.entries()) {
+    const f = await svc.saveFacts(pool, id, { country: 'Germany', country_source: name });
+    assert.equal(f.country_source, name);
+    assert.equal((await svc.addMember(pool, id, { name: `ZZZAFA M-${i}`, source: name })).source, name);
+  }
+});
+test('unknown or near-miss sources are rejected and change nothing', async () => {
+  const id = await mk('ZZZAFA BadSource');
+  await svc.saveFacts(pool, id, { country: 'Germany' });
+  for (const bad of ['musicbrainz', 'MusicBrainz ', 'Spotify', '']) {
+    await assert.rejects(svc.saveFacts(pool, id, { country: 'France', country_source: bad }), coded('BAD_INPUT'));
+    await assert.rejects(svc.addMember(pool, id, { name: 'ZZZAFA Nope', source: bad }), coded('BAD_INPUT'));
+  }
+  await assert.rejects(svc.saveFacts(pool, id, { first_release_year: 2000, first_release_source: 'Spotify' }), coded('BAD_INPUT'));
+  const f = await svc.getFacts(pool, id);
+  assert.deepEqual([f.country, f.first_release_year, f.members.length], ['Germany', null, 0]);
 });
 test('saveFacts rejects bad years, long country and unknown artist', async () => {
   const id = await mk('ZZZAFA Two');
@@ -68,7 +82,7 @@ test('nameKey folds case, diacritics and spacing', () => {
 });
 
 const MB = '11111111-2222-3333-4444-555555555555';
-const stub = (facts) => ({ musicbrainz: { fetchFacts: async () => ({ name: 'Stub Band', country: null, formed_year: null, disbanded_year: null, last_release_year: null, members: [], ...facts }) } });
+const stub = (facts) => ({ musicbrainz: { fetchFacts: async () => ({ name: 'Stub Band', country: null, formed_year: null, disbanded_year: null, first_release_year: null, last_release_year: null, members: [], ...facts }) } });
 
 test('propose: no MusicBrainz link is NO_IDENTITY', async () => {
   const id = await mk('ZZZAFA Five');
@@ -76,11 +90,12 @@ test('propose: no MusicBrainz link is NO_IDENTITY', async () => {
 });
 test('propose: fresh artist lists every field MusicBrainz has, with current null, and writes nothing', async () => {
   const id = await mk('ZZZAFA Six', { mb: MB });
-  const p = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({ country: 'Germany', formed_year: 2009, disbanded_year: 2016, last_release_year: 2015 }) });
+  const p = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({ country: 'Germany', formed_year: 2009, disbanded_year: 2016, first_release_year: 2010, last_release_year: 2015 }) });
   assert.equal(p.musicbrainz.name, 'Stub Band');
   assert.deepEqual(p.fields.map((f) => [f.field, f.current, f.proposed, f.source]), [
     ['country', null, 'Germany', 'MusicBrainz'], ['formed_year', null, 2009, 'MusicBrainz'],
-    ['disbanded_year', null, 2016, 'MusicBrainz'], ['last_release_year', null, 2015, 'MusicBrainz']]);
+    ['disbanded_year', null, 2016, 'MusicBrainz'], ['first_release_year', null, 2010, 'MusicBrainz'],
+    ['last_release_year', null, 2015, 'MusicBrainz']]);
   const f = await svc.getFacts(pool, id);
   assert.deepEqual([f.country, f.formed_year, f.members.length], [null, null, 0]);
 });
@@ -120,24 +135,23 @@ test('publicFacts: only what exists, no sources, ids or override', async () => {
   await svc.saveFacts(pool, id, { country: 'Germany' });
   assert.deepEqual(await svc.publicFacts(pool, id), { country: 'Germany' });
 });
-test('publicFacts: formed year, label from a stale release, members current first', async () => {
+test('publicFacts: formed year, the release range, members current first; no sources, no Active label', async () => {
   const id = await mk('ZZZAFA Twelve');
-  await svc.saveFacts(pool, id, { formed_year: 1999, last_release_year: 2012, last_release_source: 'MusicBrainz', active_override: null });
+  await svc.saveFacts(pool, id, { formed_year: 1999, first_release_year: 1994, last_release_year: 2012, last_release_source: 'MusicBrainz' });
   await svc.addMember(pool, id, { name: 'Zed', is_current: false, vegan: true });
   await svc.addMember(pool, id, { name: 'Amy', is_current: true });
   const p = await svc.publicFacts(pool, id);
-  assert.deepEqual(p, { formed_year: 1999, active_label: 'Inactive, last release 2012', members: [{ name: 'Amy', is_current: true, vegan: false }, { name: 'Zed', is_current: false, vegan: true }] });
-  assert.ok(!JSON.stringify(p).match(/source|override|"id"/));
+  assert.deepEqual(p, { first_release_year: 1994, last_release_year: 2012, members: [{ name: 'Amy', is_current: true, vegan: false }, { name: 'Zed', is_current: false, vegan: true }] });
+  assert.ok(!JSON.stringify(p).match(/source|override|active|"id"/));
 });
-test('publicFacts: a recent live-album-only release never counts (stored last release stays null) so the band is not Active', async () => {
-  const id = await mk('ZZZAFA Thirteen');
-  await svc.saveFacts(pool, id, { formed_year: 2000 });
-  assert.equal((await svc.publicFacts(pool, id)).active_label, undefined);
-});
-test('publicFacts: override beats a disbanded year, and clearing returns to automatic', async () => {
+test('publicFacts: the disbanded year stays admin-only', async () => {
   const id = await mk('ZZZAFA Fourteen');
-  await svc.saveFacts(pool, id, { disbanded_year: 2010, active_override: true });
-  assert.equal((await svc.publicFacts(pool, id)).active_label, 'Active');
-  await svc.saveFacts(pool, id, { active_override: null });
-  assert.equal((await svc.publicFacts(pool, id)).active_label, 'Inactive');
+  await svc.saveFacts(pool, id, { disbanded_year: 2010, country: 'Germany' });
+  assert.deepEqual(await svc.publicFacts(pool, id), { country: 'Germany' });
+});
+test('publicFacts: the formed year is stored for the admin but never public', async () => {
+  const id = await mk('ZZZAFA Fifteen');
+  await svc.saveFacts(pool, id, { formed_year: 2008 });
+  assert.equal((await svc.getFacts(pool, id)).formed_year, 2008);
+  assert.equal(await svc.publicFacts(pool, id), null);
 });

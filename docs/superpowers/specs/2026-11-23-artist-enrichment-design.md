@@ -14,7 +14,8 @@ been reviewed; accepted facts show on the artist page and workbench with a sourc
 ## Goals
 - A per-artist review flow where the curator first approves the **artist match**, then accepts or skips each proposed fact.
 - Provenance on every stored fact, expanded beyond MusicBrainz, with a link to check it.
-- Active / Inactive based on last release (a band can reform), not on a disbanded year.
+- No Active/Inactive indicator (a band can reform); instead the public page shows the range of their published work
+  (first to last release).
 - A safe **artist merge** for duplicate artist rows (curator: "merge into one is correct").
 
 ## Non-goals / anti-goals
@@ -42,13 +43,17 @@ been reviewed; accepted facts show on the artist page and workbench with a sourc
 - Staging read: proposals are read **live** from the table (read-only), not copied. Review state lives in a web-owned
   table (below). Copying would duplicate data the analysis project can refresh.
 
-## Piece 1 - Provenance and Active status (small)
+## Piece 1 - Provenance and published-work range (small)
+**Amended 2026-11-23 (curator): no Active/Inactive indicator. Show the range of published work instead.** Plan:
+`docs/superpowers/plans/2026-11-23-artist-enrichment-1-provenance.md`.
 - `artistFacts.SOURCES` becomes: `MusicBrainz`, `Wikidata`, `Bandcamp`, `Catalogue Albums`, `Gemini Web Search`,
-  `Added by curator`. Members' `source` uses the same set. No migration (columns are free text); existing values stay valid.
-- `activeStatus` (pure): override wins; else **last release within 3 years = Active**, otherwise Inactive; no last-release
-  year = unknown (no status). The disbanded year no longer decides. It stays stored and shown in the Facts panel; whether
-  the public summary line still prints it is left to the builder (my call: keep printing it when set, status wording from
-  the new rule; check `utils/artistFactsText.js` `summaryLine` and its tests).
+  `Added by curator`. Members' `source` uses the same set. No migration for this (columns are free text).
+- `activeStatus`, `facts.active`, the public `active_label` and the Active override UI are **removed**; the
+  `artists.active_override` column stays, dormant. The disbanded year stays stored and admin-only.
+- New fact `artists.first_release_year` (+ `first_release_source`, migration 024): editable in the Facts panel, proposed
+  by "Fill from MusicBrainz" (earliest Album/EP/Single release group, same exclusions as last release), and to be staged
+  by the analysis project. The public summary line becomes e.g. `Germany · Released 1996–2024`
+  (`Released 1999` when equal; `Last release 2024` or `First release 1996` when only one is known).
 - Admin: each stored fact shows its source name, and where a check-link can be built it shows one (MusicBrainz ->
   `musicbrainz.org/artist/<id>` from the artist's stored id; Bandcamp -> the stored url; Wikidata -> the proposal's QID
   when reviewing; Catalogue Albums -> none; Gemini -> the proposal's evidence urls). Public pages show no sources (as now).
@@ -108,7 +113,7 @@ artist moves through the queue. Admin routes under `/api/admin/artists/:id/enric
   (3777/3878), Melanie Safka / Melanie (32/3896, the second has 0 songs). Live-song counts for each are shown in the preview.
 
 ## Testing and verification
-Backend `node:test` per piece (sentinels unique per file): provenance set and `activeStatus` table; queue predicate vs
+Backend `node:test` per piece (sentinels unique per file): provenance set, first-release fact and public range payload; queue predicate vs
 counts; match decision applies only while the id matches; accept paths write through the single writers and never delete
 members or touch `vegan`; skip stores nothing; a privacy test that no public route/service references the staging or review
 tables; merge preview equals what merge does, song_artists conflicts, rollback on a failing step, snapshot written.
