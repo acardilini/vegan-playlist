@@ -82,7 +82,7 @@ test('nameKey folds case, diacritics and spacing', () => {
 });
 
 const MB = '11111111-2222-3333-4444-555555555555';
-const stub = (facts) => ({ musicbrainz: { fetchFacts: async () => ({ name: 'Stub Band', country: null, formed_year: null, disbanded_year: null, last_release_year: null, members: [], ...facts }) } });
+const stub = (facts) => ({ musicbrainz: { fetchFacts: async () => ({ name: 'Stub Band', country: null, formed_year: null, disbanded_year: null, first_release_year: null, last_release_year: null, members: [], ...facts }) } });
 
 test('propose: no MusicBrainz link is NO_IDENTITY', async () => {
   const id = await mk('ZZZAFA Five');
@@ -90,11 +90,12 @@ test('propose: no MusicBrainz link is NO_IDENTITY', async () => {
 });
 test('propose: fresh artist lists every field MusicBrainz has, with current null, and writes nothing', async () => {
   const id = await mk('ZZZAFA Six', { mb: MB });
-  const p = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({ country: 'Germany', formed_year: 2009, disbanded_year: 2016, last_release_year: 2015 }) });
+  const p = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({ country: 'Germany', formed_year: 2009, disbanded_year: 2016, first_release_year: 2010, last_release_year: 2015 }) });
   assert.equal(p.musicbrainz.name, 'Stub Band');
   assert.deepEqual(p.fields.map((f) => [f.field, f.current, f.proposed, f.source]), [
     ['country', null, 'Germany', 'MusicBrainz'], ['formed_year', null, 2009, 'MusicBrainz'],
-    ['disbanded_year', null, 2016, 'MusicBrainz'], ['last_release_year', null, 2015, 'MusicBrainz']]);
+    ['disbanded_year', null, 2016, 'MusicBrainz'], ['first_release_year', null, 2010, 'MusicBrainz'],
+    ['last_release_year', null, 2015, 'MusicBrainz']]);
   const f = await svc.getFacts(pool, id);
   assert.deepEqual([f.country, f.formed_year, f.members.length], [null, null, 0]);
 });

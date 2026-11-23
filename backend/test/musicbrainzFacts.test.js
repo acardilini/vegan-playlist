@@ -19,8 +19,16 @@ test('parseFacts: disbanded year only when ended is true', () => {
 test('parseFacts: missing or unknown country and missing dates give nulls, never undefined', () => {
   for (const a of [{}, { country: 'XW' }, { country: 'ZZ' }, { country: 'not a code' }]) {
     const f = parseFacts(a, []);
-    assert.deepEqual([f.country, f.formed_year, f.disbanded_year, f.last_release_year], [null, null, null, null]);
+    assert.deepStrictEqual([f.country, f.formed_year, f.disbanded_year, f.first_release_year, f.last_release_year], [null, null, null, null, null]);
   }
+});
+test('parseFacts: first release is the earliest studio Album/EP/Single, same filter as the last', () => {
+  const groups = [rg('Album', '1996-05-01'), rg('EP', '1994-02'), rg('Single', '2010'), rg('Album', '1990', ['Live']), rg('Album', '1988', ['Compilation']), rg('Other', '1985'), rg('Album', '')];
+  const f = parseFacts({}, groups);
+  assert.deepEqual([f.first_release_year, f.last_release_year], [1994, 2010]);
+  assert.equal(parseFacts({}, [rg('Album', '1990', ['Live']), rg('Other', '1985')]).first_release_year, null);
+  assert.equal(parseFacts({}, []).first_release_year, null);
+  assert.equal(parseFacts({}, [rg('Album', '1999')]).first_release_year, 1999);
 });
 test('parseFacts: last release counts studio Album/EP/Single only', () => {
   const groups = [rg('Album', '2019-01-01'), rg('Album', '2024-05-05', ['Live']), rg('Single', '2021', ['Remix']), rg('EP', '2022-03'), rg('Album', '2025', ['Compilation']), rg('Album', '2026', ['Demo']), rg('Other', '2026')];

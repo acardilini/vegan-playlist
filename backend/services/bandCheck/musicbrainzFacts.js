@@ -24,16 +24,19 @@ function parseMembers(relations) {
   return [...byName.values()];
 }
 
-function lastReleaseYear(groups) {
-  let best = null;
+// The years of the studio releases (Album/EP/Single, no Live/Compilation/Remix/Demo) with a usable date.
+function studioYears(groups) {
+  const years = [];
   for (const g of groups || []) {
     if (!STUDIO_TYPES.has(g['primary-type'])) continue;
     if ((g['secondary-types'] || []).some((t) => EXCLUDED_SECONDARY.has(t))) continue;
     const y = yearOf(g['first-release-date']);
-    if (y && (best === null || y > best)) best = y;
+    if (y) years.push(y);
   }
-  return best;
+  return years;
 }
+const firstReleaseYear = (groups) => { const y = studioYears(groups); return y.length ? Math.min(...y) : null; };
+const lastReleaseYear = (groups) => { const y = studioYears(groups); return y.length ? Math.max(...y) : null; };
 
 function parseFacts(artist = {}, releaseGroups = []) {
   // A solo artist's life-span is a birth and death date, not a band's formed/disbanded years: propose neither.
@@ -43,6 +46,7 @@ function parseFacts(artist = {}, releaseGroups = []) {
     country: countryName(artist.country),
     formed_year: yearOf(life.begin),
     disbanded_year: life.ended === true ? yearOf(life.end) : null,
+    first_release_year: firstReleaseYear(releaseGroups),
     last_release_year: lastReleaseYear(releaseGroups),
     members: parseMembers(artist.relations),
   };
