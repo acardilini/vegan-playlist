@@ -1954,6 +1954,7 @@ router.put('/workbench/:id/language-choice', panelSave(curation.chooseLanguage))
 router.put('/workbench/:id/cover',      panelSave(curation.setCover));
 router.put('/workbench/:id/no-video',   panelSave(curation.setNoVideo));
 router.put('/workbench/:id/audio-samples', panelSave(curation.setAudioSamples));
+router.put('/workbench/:id/sample-source', panelSave(curation.setSampleSource));
 
 router.post('/workbench/:id/videos', async (req, res) => {
   try {

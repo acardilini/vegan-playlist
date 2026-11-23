@@ -2,6 +2,7 @@ const { test, after } = require('node:test');
 const assert = require('node:assert');
 const pool = require('../database/db');
 const audio = require('../services/audioAnalysis');
+const curation = require('../services/curation');
 
 // Unique fixture sentinel per test file: ZZZSMS. Deleting a song cascades its audio rows and its saved sample sources.
 
@@ -89,4 +90,55 @@ test('a saved source matching no sample is an orphan, admin only', async () => {
   await saveSource(id, { type: A.type, timestamp: '9:00-9:10' }, 'ZZZSMS Gone');
   const adm = await audio.getAdminAudio(pool, id);
   assert.deepEqual(adm.samples.orphans, [{ type: A.type, timestamp: '9:00-9:10', source: 'ZZZSMS Gone' }]);
+});
+
+// ---- curation.setSampleSource ----
+const rowCount = async (id) =>
+  (await pool.query('SELECT count(*)::int n FROM song_sample_sources WHERE song_id=$1', [id])).rows[0].n;
+
+test('setSampleSource saves, replaces and clears', async () => {
+  const id = await mkFixture('ZZZSMS Writer');
+  let wb = await curation.setSampleSource(pool, id, { ...A, source: '  ZZZSMS Speaker  ' });
+  assert.equal(item(wb.audio, A).source, 'ZZZSMS Speaker', 'trimmed');
+  assert.equal(item(wb.audio, A).confirmed, true);
+  wb = await curation.setSampleSource(pool, id, { ...A, source: 'ZZZSMS Other' });
+  assert.equal(item(wb.audio, A).source, 'ZZZSMS Other');
+  assert.equal(await rowCount(id), 1, 'a second save replaces, never adds');
+  wb = await curation.setSampleSource(pool, id, { ...A, source: '   ' });
+  assert.equal(item(wb.audio, A).source, null);
+  assert.equal(item(wb.audio, A).confirmed, false);
+  assert.equal(await rowCount(id), 0);
+});
+
+test('setSampleSource rejects bad input and writes nothing', async () => {
+  const id = await mkFixture('ZZZSMS Bad');
+  const bad = [
+    { timestamp: A.timestamp, source: 'x' },
+    { type: A.type, source: 'x' },
+    { ...A },
+    { ...A, source: 42 },
+    { ...A, source: 'x'.repeat(201) },
+    { type: A.type, timestamp: '9:00-9:10', source: 'x' },
+    { type: A.type, timestamp: '0:44\u20131:19', source: 'x' },
+  ];
+  for (const b of bad) {
+    await assert.rejects(() => curation.setSampleSource(pool, id, b), (e) => e.code === 'BAD_INPUT', JSON.stringify(b));
+  }
+  await assert.rejects(() => curation.setSampleSource(pool, 999999999, { ...A, source: 'x' }), (e) => e.code === 'NOT_FOUND');
+  assert.equal(await rowCount(id), 0);
+});
+
+test('setSampleSource lets an orphan be cleared', async () => {
+  const id = await mkFixture('ZZZSMS ClearOrphan');
+  await saveSource(id, { type: A.type, timestamp: '9:00-9:10' }, 'ZZZSMS Gone');
+  const wb = await curation.setSampleSource(pool, id, { type: A.type, timestamp: '9:00-9:10', source: '' });
+  assert.deepEqual(wb.audio.samples.orphans, []);
+  assert.equal(await rowCount(id), 0);
+});
+
+test('setSampleSource leaves the other sample of the same type alone', async () => {
+  const id = await mkFixture('ZZZSMS SameType');
+  const wb = await curation.setSampleSource(pool, id, { ...A, source: 'ZZZSMS Speaker' });
+  assert.equal(item(wb.audio, B).source, null);
+  assert.equal(item(wb.audio, B).confirmed, false);
 });
