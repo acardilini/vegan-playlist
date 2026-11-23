@@ -12,7 +12,8 @@ function releaseRange(first, last) {
 
 export function summaryLine(facts) {
   if (!facts) return null;
-  const parts = [facts.country, facts.formed_year ? `Formed ${facts.formed_year}` : null, releaseRange(facts.first_release_year, facts.last_release_year)].filter(Boolean);
+  // The formed year is deliberately not printed (curator, 2026-11-23: it often clashes with the releases).
+  const parts = [facts.country, releaseRange(facts.first_release_year, facts.last_release_year)].filter(Boolean);
   return parts.length ? parts.join(' · ') : null;
 }
 

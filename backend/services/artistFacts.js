@@ -126,12 +126,12 @@ async function proposeFromMusicBrainz(db, artistId, { adapters }) {
 }
 
 // The public view: only stored (accepted) facts, only the parts that exist, null when there is nothing to show.
-// No sources or ids leave the building, and the disbanded year stays admin-only.
+// No sources or ids leave the building, and the formed and disbanded years stay admin-only (curator, 2026-11-23: the
+// formed year often clashes with the releases, so the public page shows only the range of published work).
 async function publicFacts(db, artistId) {
   const f = await getFacts(db, artistId);
   const out = {};
   if (f.country) out.country = f.country;
-  if (f.formed_year) out.formed_year = f.formed_year;
   if (f.first_release_year) out.first_release_year = f.first_release_year;
   if (f.last_release_year) out.last_release_year = f.last_release_year;
   if (f.members.length) out.members = f.members.map((m) => ({ name: m.name, is_current: m.is_current, vegan: m.vegan }));

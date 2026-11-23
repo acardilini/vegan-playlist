@@ -141,11 +141,17 @@ test('publicFacts: formed year, the release range, members current first; no sou
   await svc.addMember(pool, id, { name: 'Zed', is_current: false, vegan: true });
   await svc.addMember(pool, id, { name: 'Amy', is_current: true });
   const p = await svc.publicFacts(pool, id);
-  assert.deepEqual(p, { formed_year: 1999, first_release_year: 1994, last_release_year: 2012, members: [{ name: 'Amy', is_current: true, vegan: false }, { name: 'Zed', is_current: false, vegan: true }] });
+  assert.deepEqual(p, { first_release_year: 1994, last_release_year: 2012, members: [{ name: 'Amy', is_current: true, vegan: false }, { name: 'Zed', is_current: false, vegan: true }] });
   assert.ok(!JSON.stringify(p).match(/source|override|active|"id"/));
 });
 test('publicFacts: the disbanded year stays admin-only', async () => {
   const id = await mk('ZZZAFA Fourteen');
   await svc.saveFacts(pool, id, { disbanded_year: 2010, country: 'Germany' });
   assert.deepEqual(await svc.publicFacts(pool, id), { country: 'Germany' });
+});
+test('publicFacts: the formed year is stored for the admin but never public', async () => {
+  const id = await mk('ZZZAFA Fifteen');
+  await svc.saveFacts(pool, id, { formed_year: 2008 });
+  assert.equal((await svc.getFacts(pool, id)).formed_year, 2008);
+  assert.equal(await svc.publicFacts(pool, id), null);
 });

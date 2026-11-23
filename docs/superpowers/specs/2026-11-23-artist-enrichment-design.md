@@ -52,7 +52,7 @@ been reviewed; accepted facts show on the artist page and workbench with a sourc
   `artists.active_override` column stays, dormant. The disbanded year stays stored and admin-only.
 - New fact `artists.first_release_year` (+ `first_release_source`, migration 024): editable in the Facts panel, proposed
   by "Fill from MusicBrainz" (earliest Album/EP/Single release group, same exclusions as last release), and to be staged
-  by the analysis project. The public summary line becomes e.g. `Germany · Formed 2009 · Released 1996–2024`
+  by the analysis project. The public summary line becomes e.g. `Germany · Released 1996–2024`
   (`Released 1999` when equal; `Last release 2024` or `First release 1996` when only one is known).
 - Admin: each stored fact shows its source name, and where a check-link can be built it shows one (MusicBrainz ->
   `musicbrainz.org/artist/<id>` from the artist's stored id; Bandcamp -> the stored url; Wikidata -> the proposal's QID
