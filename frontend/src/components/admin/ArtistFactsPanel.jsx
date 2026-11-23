@@ -1,16 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './bandCheckApi';
 import { AutoText } from './SavedField';
+import { sourceLink } from '../../utils/factSources';
 
 const FIELDS = [
   { key: 'country', label: 'Country', year: false },
   { key: 'formed_year', label: 'Formed (year)', year: true },
   { key: 'disbanded_year', label: 'Disbanded (year)', year: true },
+  { key: 'first_release_year', label: 'First release (year)', year: true },
   { key: 'last_release_year', label: 'Last release (year)', year: true },
 ];
 const FIELD_LABEL = Object.fromEntries(FIELDS.map((f) => [f.key, f.label]));
 const sourceKey = (key) => (key === 'country' ? 'country_source' : `${key.replace('_year', '')}_source`);
 const MEMBER_CHANGE = { new: 'new member', status: 'status change' };
+
+// A fact's source name, as a link to check it when the artist's stored ids allow one (admin only).
+function FactSource({ source, artist }) {
+  const href = sourceLink(source, artist);
+  return (
+    <div className="band-meta fact-source">
+      {href ? <a href={href} target="_blank" rel="noopener noreferrer">{source}</a> : source}
+    </div>
+  );
+}
 
 // Facts panel for the artist workbench: stored facts (each with its source), members with the curator-only vegan mark,
 // and "Fill from MusicBrainz" proposals the curator accepts one at a time. Proposals are never stored; only Accept writes.
@@ -48,7 +60,6 @@ function ArtistFactsPanel({ artist, onNeedIdentity }) {
     await load();
   });
 
-  const setOverride = (value) => run(() => put({ active_override: value }));
   const updateMember = (m, patch) => run(async () => { await api(`${base}/members/${m.id}`, { method: 'PUT', body: patch }); await load(); });
   const removeMember = (m) => run(async () => { await api(`${base}/members/${m.id}`, { method: 'DELETE' }); await load(); });
   const addMember = () => run(async () => {
@@ -58,7 +69,6 @@ function ArtistFactsPanel({ artist, onNeedIdentity }) {
     await load();
   });
 
-  const override = facts ? facts.active_override : null;
   const nothingNew = proposals && proposals.fields.length === 0 && proposals.members.length === 0;
 
   return (
@@ -70,21 +80,9 @@ function ArtistFactsPanel({ artist, onNeedIdentity }) {
           {FIELDS.map((f) => (
             <div key={f.key}>
               <AutoText label={f.label} initial={f.year ? String(facts[f.key] ?? '') : (facts[f.key] ?? '')} onSave={saveField(f)} />
-              {facts[sourceKey(f.key)] && <div className="band-meta fact-source">{facts[sourceKey(f.key)]}</div>}
+              {facts[sourceKey(f.key)] && <FactSource source={facts[sourceKey(f.key)]} artist={artist} />}
             </div>
           ))}
-
-          <div className="wb-field">
-            <span className="wb-field-label">Active</span>
-            <div className="fact-active">
-              <span>{facts.active.label || 'Not known yet'}</span>
-              <span className="fact-seg" role="group" aria-label="Active status">
-                {[['Automatic', null], ['Active', true], ['Not active', false]].map(([text, value]) => (
-                  <button key={text} className={`btn btn-sm ${override === value ? 'btn-primary' : 'btn-ghost'}`} aria-pressed={override === value} onClick={() => setOverride(value)}>{text}</button>
-                ))}
-              </span>
-            </div>
-          </div>
 
           <div className="wb-field">
             <span className="wb-field-label">Members</span>
@@ -95,7 +93,7 @@ function ArtistFactsPanel({ artist, onNeedIdentity }) {
                 <button className={`vmark${m.vegan ? ' on' : ''}`} aria-pressed={m.vegan} title="Vegan" aria-label={`${m.name} is vegan`} onClick={() => updateMember(m, { vegan: !m.vegan })}>V</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => updateMember(m, { is_current: !m.is_current })}>{m.is_current ? 'Current' : 'Former'}</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => removeMember(m)} aria-label={`Remove ${m.name}`}>Remove</button>
-                <span className="band-meta fact-source">{m.source}</span>
+                <FactSource source={m.source} artist={artist} />
               </div>
             ))}
             <div className="fact-member">
