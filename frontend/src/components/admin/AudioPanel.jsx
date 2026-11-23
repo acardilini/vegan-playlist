@@ -62,7 +62,77 @@ function SampleDecision({ audio, savePanel }) {
   );
 }
 
-function SampleList({ samples }) {
+// The curator names (or clears) the source of one quoted sample. Saves go to the web-owned song_sample_sources, never to
+// the analysis; the server matches the sample by its type + timestamp. `suggested` is the analysis' lower-confidence guess
+// (admin only), shown as a hint and never saved unless the curator types it.
+function SourceEditor({ item, savePanel }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [status, setStatus] = useState('idle');
+  const [error, setError] = useState('');
+  const key = { type: item.type, timestamp: item.timestamp };
+
+  const send = async (source) => {
+    setStatus('saving'); setError('');
+    const res = await savePanel('sample-source', { ...key, source });
+    if (res && res.ok) { setStatus('saved'); setOpen(false); } else { setStatus('error'); setError((res && res.error) || 'Could not save'); }
+  };
+
+  return (
+    <div className="wb-audio-source">
+      {item.suggested && !item.confirmed && <div className="wb-audio-hint">AI guessed: {item.suggested}</div>}
+      {!open && (
+        <button type="button" className="btn btn-ghost btn-sm"
+          onClick={() => { setText(item.confirmed ? item.source : ''); setOpen(true); setStatus('idle'); }}>
+          {item.confirmed ? 'Edit source' : 'Add source'}
+        </button>
+      )}
+      {open && (
+        <div className="wb-audio-source-edit">
+          <label className="wb-field-label">
+            Source of this sample
+            <input type="text" className="wb-audio-source-input" maxLength={200} value={text}
+              onChange={(e) => setText(e.target.value)} />
+          </label>
+          <div className="wb-audio-source-actions">
+            <button type="button" className="btn btn-primary btn-sm" disabled={status === 'saving' || !text.trim()}
+              onClick={() => send(text)}>Save</button>
+            {item.confirmed && (
+              <button type="button" className="btn btn-secondary btn-sm" disabled={status === 'saving'}
+                onClick={() => send('')}>Clear</button>
+            )}
+            <button type="button" className="btn btn-ghost btn-sm" disabled={status === 'saving'}
+              onClick={() => setOpen(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+      <SaveTag status={status} error={error} />
+    </div>
+  );
+}
+
+// Saved sources that no longer match any sample (the analysis was re-run and the timestamp moved). Never public.
+function OrphanSources({ orphans, savePanel }) {
+  if (!orphans || orphans.length === 0) return null;
+  return (
+    <div className="wb-audio-orphans">
+      <div className="wb-audio-hint">Saved sources that no longer match a sample:</div>
+      <ul>
+        {orphans.map((o) => (
+          <li key={`${o.type}-${o.timestamp}`}>
+            <span className="wb-audio-sample-time">{o.timestamp}</span> {o.type} &mdash; {o.source}{' '}
+            <button type="button" className="btn btn-ghost btn-sm"
+              onClick={() => savePanel('sample-source', { type: o.type, timestamp: o.timestamp, source: '' })}>
+              Clear
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SampleList({ samples, savePanel }) {
   const items = samples.items || [];
   return (
     <div className="wb-audio-samples">
@@ -84,10 +154,12 @@ function SampleList({ samples }) {
                 {it.source
                   ? <div className="wb-audio-by">&mdash; {it.source}</div>
                   : it.transcript && <div className="wb-audio-by wb-audio-by-unknown">Unidentified source</div>}
+                {it.transcript && it.timestamp && <SourceEditor item={it} savePanel={savePanel} />}
               </li>
             ))}
           </ul>
         )}
+      <OrphanSources orphans={samples.orphans} savePanel={savePanel} />
     </div>
   );
 }
@@ -137,7 +209,7 @@ function AudioPanel({ wb, savePanel }) {
           {audio.samples
             ? (
               <>
-                <SampleList samples={audio.samples} />
+                <SampleList samples={audio.samples} savePanel={savePanel} />
                 <SampleDecision audio={audio} savePanel={savePanel} />
               </>
             )
