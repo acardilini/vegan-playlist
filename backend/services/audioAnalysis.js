@@ -112,15 +112,28 @@ function parseRange(ts) {
   return { startSec, endSec: m[3] != null ? Math.max(startSec, toSeconds(m[3], m[4])) : startSec };
 }
 
-function buildSamples(row) {
+// The curator's own source names for a song's samples (web-owned table, migration 023), keyed `${type}|${timestamp}`.
+async function loadSampleSources(db, songId) {
+  const r = await db.query('SELECT sample_type, timestamp, source FROM song_sample_sources WHERE song_id = $1', [songId]);
+  return new Map(r.rows.map((x) => [`${x.sample_type}|${x.timestamp}`, x.source]));
+}
+
+// `sources` is the curator's saved map; `admin` adds what only the curator may see (the analysis' guess, orphans).
+function buildSamples(row, { sources = new Map(), admin = false } = {}) {
   const codes = asArray(row.audio_samples).filter((c) => c !== 'NONE');
   if (codes.length === 0) return null;
   const details = Array.isArray(row.sample_details) ? row.sample_details : [];
-  return {
-    types: codes.map((code) => ({ code, label: acoustic.codeLabel('audio_samples', code) })),
-    items: details
-      .filter((d) => d && d.type && d.type !== 'NONE')
-      .map((d) => ({
+  const matched = new Set();
+  const items = details
+    .filter((d) => d && d.type && d.type !== 'NONE')
+    .map((d) => {
+      const key = `${d.type}|${d.timestamp}`;
+      const saved = sources.has(key) ? sources.get(key) : null;
+      if (saved !== null) matched.add(key);
+      // A person or source is named only when the curator saved one, or the analysis was HIGHLY confident who it was;
+      // otherwise the name is not in the payload at all (the page says "Unidentified source").
+      const source = saved !== null ? saved : (d.identification_confidence === 'HIGH' ? (d.speaker_or_source || null) : null);
+      return {
         type: d.type,
         label: acoustic.codeLabel('audio_samples', d.type),
         timestamp: d.timestamp || null,
@@ -130,15 +143,26 @@ function buildSamples(row) {
         // (curator decision 2026-11-22), so the description is not in the payload at all.
         ...(d.transcript_excerpt ? {} : { description: d.description || null }),
         transcript: d.transcript_excerpt || null,
-        // A person or source is named only when the analysis was HIGHLY confident who it was; otherwise the name is not
-        // in the payload at all (the page says "Unidentified source").
-        source: d.identification_confidence === 'HIGH' ? (d.speaker_or_source || null) : null,
+        source,
+        confirmed: saved !== null,
         confidence: d.identification_confidence || null,
-      })),
+        // The analysis' lower-confidence guess is for the curator only; it is never in the public payload.
+        ...(admin ? { suggested: source === null ? (d.speaker_or_source || null) : null } : {}),
+      };
+    });
+  return {
+    types: codes.map((code) => ({ code, label: acoustic.codeLabel('audio_samples', code) })),
+    items,
+    ...(admin ? {
+      orphans: [...sources.entries()].filter(([k]) => !matched.has(k)).map(([k, source]) => {
+        const i = k.indexOf('|');
+        return { type: k.slice(0, i), timestamp: k.slice(i + 1), source };
+      }),
+    } : {}),
   };
 }
 
-function buildBlock(row, { withSamples }) {
+function buildBlock(row, { withSamples, sources, admin }) {
   const rows = [];
   for (const d of acoustic.DIMENSIONS) {
     const values = asArray(row[d.key]).map((code) => ({
@@ -154,7 +178,7 @@ function buildBlock(row, { withSamples }) {
     key: row.musical_key || null,
     timeline: cleanTimeline(row.audio_timeline),
     sections: parseSections(row.sonic_evidence, row.audio_timeline && row.audio_timeline.duration_sec),
-    samples: withSamples ? buildSamples(row) : null,
+    samples: withSamples ? buildSamples(row, { sources, admin }) : null,
   };
 }
 
@@ -168,7 +192,8 @@ async function getSongAudio(db, songId) {
       ORDER BY x.analyzed_at DESC NULLS LAST, x.model_used DESC LIMIT 1`, [songId]);
   const row = r.rows[0];
   if (!row) return null;
-  return buildBlock(row, { withSamples: row.show_audio_samples === true });
+  const withSamples = row.show_audio_samples === true;
+  return buildBlock(row, { withSamples, sources: withSamples ? await loadSampleSources(db, songId) : undefined, admin: false });
 }
 
 // The curator's view: the same block with samples whatever the gate says, plus the row's status and the decision.
@@ -183,7 +208,7 @@ async function getAdminAudio(db, songId) {
   if (!row) return null;
   const ok = row.audio_status === 'OK';
   const block = ok
-    ? buildBlock(row, { withSamples: true })
+    ? buildBlock(row, { withSamples: true, sources: await loadSampleSources(db, songId), admin: true })
     : { summary: null, rows: [], tempo_bpm: null, key: null, timeline: null, sections: [], samples: null };
   return {
     ...block,
@@ -256,5 +281,5 @@ async function coverage(db) {
 
 module.exports = {
   LATEST_AUDIO, audioColumnSql, MOOD_SUBQUERY, attachMood, SAMPLES_PENDING_SQL, BROKEN_VIDEO_SQL, parseSections, parseRange, cleanTimeline,
-  getSongAudio, getAdminAudio, audioFacets, tempoRange, coverage,
+  getSongAudio, getAdminAudio, loadSampleSources, audioFacets, tempoRange, coverage,
 };

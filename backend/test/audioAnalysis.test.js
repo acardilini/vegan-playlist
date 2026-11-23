@@ -95,7 +95,7 @@ test('samples reach getSongAudio only when the curator approved them', async () 
   assert.equal(s.items.length, 2);
   assert.deepEqual(s.items[0], {
     type: 'ADVOCATE_SPEECH_CLIP', label: 'Advocate Speech', timestamp: '0:44-1:19', startSec: 44, endSec: 79,
-    transcript: 'Eating animals acts as mirror.', source: null, confidence: 'UNIDENTIFIED',
+    transcript: 'Eating animals acts as mirror.', source: null, confirmed: false, confidence: 'UNIDENTIFIED',
   });   // a quote carries no `description`: the analysis' own words are never served beside a quote
   assert.equal(s.items[1].transcript, null);
   assert.equal(s.items[1].description, 'Saws and mooing.', 'a sample with no quote carries its description');
