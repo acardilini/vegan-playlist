@@ -559,6 +559,31 @@ async function setAudioSamples(db, id, { show } = {}) {
   return getWorkbench(db, id);
 }
 
+// The curator names the source of one audio sample (type + timestamp exactly as the analysis wrote them), kept in the
+// web-owned song_sample_sources (the analysis table is never written). A blank source clears; clearing skips the
+// "sample exists" check so a saved source orphaned by an analysis re-run can still be removed.
+const MAX_SAMPLE_SOURCE = 200;
+async function setSampleSource(db, id, { type, timestamp, source } = {}) {
+  await assertSong(db, id);
+  const bad = (msg) => { const e = new Error(msg); e.code = 'BAD_INPUT'; return e; };
+  if (typeof type !== 'string' || !type || typeof timestamp !== 'string' || !timestamp) throw bad('type and timestamp are required');
+  if (typeof source !== 'string') throw bad('source must be a string');
+  const name = source.trim();
+  if (!name) {
+    await db.query('DELETE FROM song_sample_sources WHERE song_id=$1 AND sample_type=$2 AND timestamp=$3', [id, type, timestamp]);
+    return getWorkbench(db, id);
+  }
+  if (name.length > MAX_SAMPLE_SOURCE) throw bad(`source must be at most ${MAX_SAMPLE_SOURCE} characters`);
+  const admin = await audioAnalysis.getAdminAudio(db, id);
+  const items = (admin && admin.samples && admin.samples.items) || [];
+  if (!items.some((i) => i.type === type && i.timestamp === timestamp)) throw bad('no such sample on this song');
+  await db.query(
+    `INSERT INTO song_sample_sources (song_id, sample_type, timestamp, source) VALUES ($1,$2,$3,$4)
+     ON CONFLICT (song_id, sample_type, timestamp) DO UPDATE SET source = EXCLUDED.source, updated_at = CURRENT_TIMESTAMP`,
+    [id, type, timestamp, name]);
+  return getWorkbench(db, id);
+}
+
 async function saveLyrics(db, id, { lyrics, source_url, translation, lyrics_status, lyrics_url, lyrics_source } = {}) {
   await assertSong(db, id);
   if (lyrics_status != null && !LYRICS_STATUSES.includes(lyrics_status)) {
@@ -729,5 +754,5 @@ async function quickCapture(db, { title, artist } = {}) {
 
 module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES, HAS_LYRICS_SQL,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, setAudioSamples, quickCapture, setFeatured, listLanguages,
+  saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, setAudioSamples, setSampleSource, quickCapture, setFeatured, listLanguages,
   chooseGenre, chooseLanguage, genreConflictPairs, audioSourceFor };

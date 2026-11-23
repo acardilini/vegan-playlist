@@ -329,6 +329,12 @@ a.band-chip:hover { text-decoration: underline; }
 .wb-audio-sample-list .wb-audio-transcript { font-style: italic; font-size: 0.85rem; color: var(--text-primary); }
 .wb-audio-by { margin-top: var(--space-1); font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
 .wb-audio-by-unknown { font-size: 0.75rem; font-weight: 400; font-style: italic; color: var(--text-muted); }
+.wb-audio-source { margin-top: var(--space-1); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.wb-audio-source-edit { width: 100%; }
+.wb-audio-source-input { display: block; width: 100%; margin-top: var(--space-1); }
+.wb-audio-source-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-1); }
+.wb-audio-orphans { margin-top: var(--space-2); font-size: 0.8rem; color: var(--text-secondary); }
+.wb-audio-orphans ul { margin: var(--space-1) 0 0; padding-left: var(--space-4); }
 .wb-audio-decision { margin-top: var(--space-3); }
 .wb-audio-choices { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-1) 0; }
 .wb-audio-hint { font-size: 0.78rem; color: var(--text-muted); }
