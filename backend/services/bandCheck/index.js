@@ -98,7 +98,17 @@ async function saveIdentity(db, artistId, source, value) {
     }
   } else if (source === 'musicbrainz') {
     if (value !== null && !(typeof value === 'string' && UUID.test(value))) throw coded('BAD_INPUT', 'That is not a MusicBrainz id');
-    await db.query(`UPDATE artists SET musicbrainz_id=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, [artistId, value === null ? null : value.toLowerCase()]);
+    const mbid = value === null ? null : value.toLowerCase();
+    if (mbid) {
+      const taken = (await db.query(`SELECT id FROM artists WHERE musicbrainz_id=$1 AND id<>$2`, [mbid, artistId])).rows[0];
+      if (taken) throw coded('CONFLICT', 'Another artist in the catalogue already has that MusicBrainz id');
+    }
+    try {
+      await db.query(`UPDATE artists SET musicbrainz_id=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, [artistId, mbid]);
+    } catch (e) {
+      if (e && e.code === '23505') throw coded('CONFLICT', 'Another artist in the catalogue already has that MusicBrainz id');
+      throw e;
+    }
   } else {
     const origin = value === null ? null : normalizeBandcampOrigin(value);
     if (value !== null && !origin) throw coded('BAD_INPUT', 'Paste a https://<name>.bandcamp.com address');
