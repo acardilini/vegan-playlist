@@ -17,6 +17,7 @@ const spotifyPush = require('../services/spotifyPush');
 const bandCheck = require('../services/bandCheck');
 const artistsSvc = require('../services/artists');
 const artistFacts = require('../services/artistFacts');
+const artistEnrichment = require('../services/artistEnrichment');
 const leadsSvc = require('../services/leads');
 const playlistCrosscheck = require('../services/playlistCrosscheck');
 const bandcampLyrics = require('../services/bandcampLyrics');
@@ -1579,6 +1580,50 @@ router.put('/artists/:id/facts/members/:memberId', async (req, res) => {
 router.delete('/artists/:id/facts/members/:memberId', async (req, res) => {
   try { res.json(await artistFacts.removeMember(pool, artistId(req), memberId(req))); }
   catch (e) { artistError(res, e, 'remove the member'); }
+});
+
+// --- Artist enrichment review (the analysis project's staged proposals). Static /enrichment/* paths do not collide with /artists/:id. ---
+router.get('/enrichment/queues', async (req, res) => {
+  try {
+    const c = await artistEnrichment.counts(pool);
+    res.json({ queues: artistEnrichment.QUEUES.map(q => ({ ...q, count: c[q.key] })) });
+  } catch (e) { artistError(res, e, 'count the enrichment queues'); }
+});
+router.get('/enrichment/queue', async (req, res) => {
+  try {
+    res.json(await artistEnrichment.list(pool, {
+      queue: String(req.query.queue || ''), q: String(req.query.q || '').trim().slice(0, 100),
+      limit: req.query.limit, offset: req.query.offset,
+    }));
+  } catch (e) { artistError(res, e, 'list the enrichment queue'); }
+});
+router.get('/artists/:id/enrichment', async (req, res) => {
+  try { res.json(await artistEnrichment.getReview(pool, artistId(req))); }
+  catch (e) { artistError(res, e, 'read the enrichment review'); }
+});
+router.put('/artists/:id/enrichment/match', async (req, res) => {
+  try { res.json(await artistEnrichment.decideMatch(pool, artistId(req), (req.body || {}).decision)); }
+  catch (e) { artistError(res, e, 'save the match decision'); }
+});
+router.post('/artists/:id/enrichment/accept', async (req, res) => {
+  try {
+    const { field, member } = req.body || {};
+    const hasField = field !== undefined, hasMember = member !== undefined;
+    if (hasField === hasMember) return res.status(400).json({ error: 'BAD_INPUT', message: 'Send exactly one of field or member' });
+    if (typeof (hasField ? field : member) !== 'string') return res.status(400).json({ error: 'BAD_INPUT', message: 'field and member must be text' });
+    res.json(hasField ? await artistEnrichment.acceptField(pool, artistId(req), field) : await artistEnrichment.acceptMember(pool, artistId(req), member));
+  } catch (e) { artistError(res, e, 'accept the proposal'); }
+});
+router.post('/artists/:id/enrichment/accept-all', async (req, res) => {
+  try { res.json(await artistEnrichment.acceptAll(pool, artistId(req))); }
+  catch (e) { artistError(res, e, 'accept all proposals'); }
+});
+router.put('/artists/:id/enrichment/finish', async (req, res) => {
+  try {
+    const { finished } = req.body || {};
+    if (typeof finished !== 'boolean') return res.status(400).json({ error: 'BAD_INPUT', message: 'finished must be true or false' });
+    res.json(await artistEnrichment.finish(pool, artistId(req), finished));
+  } catch (e) { artistError(res, e, 'update the review status'); }
 });
 
 // ==================== Leads ====================
