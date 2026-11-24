@@ -7,10 +7,12 @@ import ArtistQueueList from './ArtistQueueList';
 const DEFAULT_QUEUE = 'needs-check';
 const GROUPS = [
   ['Needs work', [['needs-identity', 'Needs identity'], ['needs-check', 'Needs catalogue check'], ['needs-bio', 'Needs bio'], ['needs-notes', 'Needs advocacy notes']]],
+  ['Enrichment', [['enr-review', 'To review'], ['enr-match', 'Match to approve'], ['enr-dupes', 'Possible duplicates'], ['enr-done', 'Done']]],
   ['Finished', [['done', 'Done']]],
   ['Everything', [['all', 'All artists']]],
 ];
 const LABELS = Object.fromEntries(GROUPS.flatMap(([, items]) => items.map(([k, l]) => [k, l])));
+const PLACEHOLDER_COUNTS = Object.fromEntries(Object.keys(LABELS).map((k) => [k, '·']));
 
 function ArtistsArea() {
   const [params, setParams] = useSearchParams();
@@ -19,13 +21,19 @@ function ArtistsArea() {
   const queue = rawQueue !== null && Object.hasOwn(LABELS, rawQueue) ? rawQueue : DEFAULT_QUEUE;
   const q = params.get('q') || '';
   const page = Math.max(0, parseInt(params.get('page'), 10) || 0);
-  const [counts, setCounts] = useState(null);
+  // Two independent count fetches merged into one map: each overrides only its own keys, so one failing leaves the
+  // other's counts showing (the failed one keeps its "·" placeholder).
+  const [artistCounts, setArtistCounts] = useState(null);
+  const [enrCounts, setEnrCounts] = useState(null);
+  const counts = { ...PLACEHOLDER_COUNTS, ...artistCounts, ...enrCounts };
 
   const loadCounts = useCallback(() => {
-    adminFetch('/api/admin/artists/queues')
+    const load = (url, set) => adminFetch(url)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setCounts(d ? Object.fromEntries(d.queues.map((x) => [x.key, x.count])) : null))
-      .catch(() => setCounts(null));
+      .then((d) => set(d ? Object.fromEntries(d.queues.map((x) => [x.key, x.count])) : null))
+      .catch(() => set(null));
+    load('/api/admin/artists/queues', setArtistCounts);
+    load('/api/admin/enrichment/queues', setEnrCounts);
   }, []);
   useEffect(() => { loadCounts(); }, [loadCounts]);
 
