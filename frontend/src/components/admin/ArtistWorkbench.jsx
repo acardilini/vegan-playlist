@@ -93,8 +93,8 @@ function ArtistWorkbench() {
         <div className="wb-col wb-col-side">
           <ArtistDetailsPanel artist={artist} save={save} />
           <ArtistLinksPanel artist={artist} save={save} focus={focus} onIdentitySaved={onIdentitySaved} />
-          {/* Keyed on the identity too: the match state follows the stored ids, so a change under Links re-reads the panel. */}
-          <EnrichmentPanel key={`${artist.id}:${artist.musicbrainz_id}:${artist.bandcamp_url}`} artist={artist} onIdentitySaved={onIdentitySaved} onChanged={factsChanged} onDone={goNext} />
+          {/* Keyed on the artist only, so a Skip survives an identity change; the panel re-reads when the stored ids change. */}
+          <EnrichmentPanel key={artist.id} artist={artist} onIdentitySaved={onIdentitySaved} onChanged={factsChanged} onDone={goNext} />
           <ArtistFactsPanel key={artist.id} artist={artist} onNeedIdentity={needIdentity} refreshKey={factsKey} />
           <section className="wb-panel">
             <h2>Notes</h2>

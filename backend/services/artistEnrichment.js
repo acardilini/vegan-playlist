@@ -339,7 +339,13 @@ async function decideMatch(db, artistId, decision) {
     if (!proposed) throw coded('BAD_INPUT', 'No MusicBrainz id is proposed');
     if (stored === proposed) throw coded('BAD_INPUT', 'That id is already saved; clear it under Links first');
     await upsertDecision(db, artistId, 'rejected', proposed);
-  } else await upsertDecision(db, artistId, null, null);
+  } else {
+    // Only a rejection can be undone: clearing an approval would make an EXACT_ID match pre-trusted again, and Accept all
+    // would re-write an id the curator removed under Links.
+    const row = (await db.query(`SELECT match_decision FROM artist_enrichment_review WHERE artist_id = $1`, [artistId])).rows[0];
+    if (!row || row.match_decision !== 'rejected') throw coded('BAD_INPUT', 'Only a rejected match can be undone');
+    await upsertDecision(db, artistId, null, null);
+  }
   return getReview(db, artistId);
 }
 

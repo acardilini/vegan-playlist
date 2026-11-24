@@ -8,13 +8,6 @@ const MEMBER_CHANGE = { new: 'new member', status: 'status change' };
 const UNDECIDED = new Set(['pretrusted', 'needs-approval']);
 const isEmpty = (v) => v === null || v === undefined || v === '';
 
-// The workbench keys this panel on the artist's identity, so an identity change made by the panel itself (Accept all
-// approving the match or filling the Bandcamp url) remounts it. Accept all's "rows need your check" line is carried
-// across that remount here: artist id -> { labels, at }, read by the next panel for the same artist within a few seconds.
-const carried = new Map();
-const CARRY_MS = 10000;
-const takeCarried = (id) => { const c = carried.get(id); return c && Date.now() - c.at < CARRY_MS ? c.labels : []; };
-
 // A name for a skipped entry of Accept all: 'match', 'member:<name>' or a field key. A row locked because the match was
 // rejected says so (it stays locked whatever the curator does here).
 function skipLabel(s, matchState) {
@@ -59,16 +52,21 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
   const [busy, setBusy] = useState(false);
   const [skipped, setSkipped] = useState(() => new Set());
   const [unsure, setUnsure] = useState(false);
-  const [needCheck, setNeedCheck] = useState(() => takeCarried(artist.id)); // labels of the rows the last Accept all left alone
-  useEffect(() => { carried.delete(artist.id); }, [artist.id]);
+  const [needCheck, setNeedCheck] = useState([]); // labels of the rows the last Accept all left alone
 
-  const mounted = useRef(true); // a response that lands after the panel is gone (curator moved on, or a re-key) is dropped
+  const mounted = useRef(true); // a response that lands after the panel is gone (curator moved on) is dropped
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const seq = useRef(0); // only the newest review wins: a re-read and an action's own response can cross
 
-  const load = useCallback(() => api(base)
-    .then((r) => { if (mounted.current) setReview(r); })
-    .catch((e) => { if (mounted.current) setError(e.message); }), [base]);
-  useEffect(() => { load(); }, [load]);
+  const load = useCallback(() => {
+    const my = ++seq.current;
+    return api(base)
+      .then((r) => { if (mounted.current && my === seq.current) setReview(r); })
+      .catch((e) => { if (mounted.current && my === seq.current) setError(e.message); });
+  }, [base]);
+  // The workbench keys this panel on the artist id only, so Skip survives an identity change; the match state follows
+  // the stored ids, so a change of them (under Links, or by this panel's own Approve match / Bandcamp accept) re-reads.
+  useEffect(() => { load(); }, [load, artist.musicbrainz_id, artist.bandcamp_url]);
 
   // After a success the panel shows the returned review; after a failure it re-reads, keeping the error line.
   const act = async (fn, { identity = false } = {}) => {
@@ -76,6 +74,7 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
     try {
       const r = await fn();
       if (!mounted.current) return false;
+      seq.current += 1; // a re-read already in flight is older than this response
       setReview(r);
       if (onChanged) onChanged();
       if (identity && onIdentitySaved) await onIdentitySaved();
@@ -103,19 +102,16 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
       if (!mounted.current) return res.review;
       if (onChanged) onChanged(); // the Facts panel must show what was just saved
       const identity = res.applied.some((a) => a === 'match' || a === 'bandcamp_url');
+      // Links and Catalogue re-read the identity now, so they are right even if finishing below fails. The panel is
+      // keyed on the artist id, so this re-read does not remount it.
+      if (identity && onIdentitySaved) await onIdentitySaved();
+      if (!mounted.current) return res.review;
       if (res.skipped.length === 0) {
-        // Moving on: the next artist (or the list) loads fresh, so the identity is not re-read here; doing so would
-        // re-key and remount this panel before it could open the next artist.
         const done = await finishCall(true);
         clean = true;
         return done;
       }
-      const labels = res.skipped.map((s) => skipLabel(s, res.review.match.state));
-      setNeedCheck(labels);
-      if (identity && onIdentitySaved) {
-        carried.set(artist.id, { labels, at: Date.now() }); // the identity re-read re-keys this panel
-        await onIdentitySaved();
-      }
+      setNeedCheck(res.skipped.map((s) => skipLabel(s, res.review.match.state)));
       return res.review;
     });
     if (ok && clean && mounted.current && onDone) onDone();

@@ -105,6 +105,25 @@ test('reject records the decision, writes nothing to artists, and locks MusicBra
   assert.equal(await reviewRow(stored), undefined);
 });
 
+test('clear only undoes a rejection: an approved decision or no decision is BAD_INPUT and the review row is unchanged', async () => {
+  const mb = randomUUID();
+  const id = await mkArtist('ZZZENW Clear Approved');
+  await mkProposal(id, { mbid: mb, confidence: 'EXACT_ID', country: 'Chad', country_source: 'MusicBrainz' });
+  // no decision row yet
+  await assert.rejects(svc.decideMatch(pool, id, 'clear'), (e) => e.code === 'BAD_INPUT' && e.message === 'Only a rejected match can be undone');
+  assert.equal(await reviewRow(id), undefined);
+  // approved, then the id cleared under Links: a clear sent straight to the API must not make the match pre-trusted again
+  await svc.decideMatch(pool, id, 'approve');
+  await saveIdentity(pool, id, 'musicbrainz', null);
+  const snap = await reviewRow(id);
+  await assert.rejects(svc.decideMatch(pool, id, 'clear'), isCode('BAD_INPUT'));
+  assert.deepEqual(await reviewRow(id), snap);
+  assert.equal(snap.match_decision, 'approved');
+  const res = await svc.acceptAll(pool, id);
+  assert.ok(!res.applied.includes('match'));
+  assert.equal((await artistRow(id)).musicbrainz_id, null);
+});
+
 test('a decision for an old id stops applying after the proposal\'s id changes', async () => {
   const [x, y] = [randomUUID(), randomUUID()];
   const id = await mkArtist('ZZZENW Old Id');
