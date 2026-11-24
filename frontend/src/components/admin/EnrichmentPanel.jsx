@@ -127,9 +127,10 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
   const pending = UNDECIDED.has(match.state);
   const nothing = !pending && fields.length === 0 && members.length === 0;
   // Accept all needs something the server would take: an unlocked row with no warning of its own, or an exact match.
-  const canAcceptAll = match.state === 'pretrusted'
+  // The server takes no row list and would also apply a row hidden with Skip, so once any row is skipped it is not offered.
+  const canAcceptAll = skipped.size === 0 && (match.state === 'pretrusted'
     || fields.some((f) => !f.locked && warnFor(f.field).length === 0)
-    || members.some((m) => !m.locked && warnFor('members').length === 0);
+    || members.some((m) => !m.locked && warnFor('members').length === 0));
 
   const cat = match.catalogue;
   const spotify = spotifyArtistLink(artist.spotify_id);
