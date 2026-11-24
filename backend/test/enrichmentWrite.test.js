@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const { randomUUID } = require('node:crypto');
 const pool = require('../database/db');
 const svc = require('../services/artistEnrichment');
+const { saveIdentity } = require('../services/bandCheck/index');
 
 // Fixture sentinel for this file: ZZZENW. Proposal, review and member rows cascade from the sentinel artists.
 async function mkArtist(name, f = {}) {
@@ -218,10 +219,12 @@ test('acceptAll on a needs-approval artist applies only unlocked rows (Bandcamp,
     formed: 2001, formed_source: 'Wikidata', last: 2012, last_source: 'Catalogue Albums', bandcamp: 'https://zzzenw-high.bandcamp.com',
     members: [{ name: 'Mo', is_current: true, source: 'MusicBrainz' }] });
   const res = await svc.acceptAll(pool, id);
-  assert.deepEqual(res.applied.sort(), ['bandcamp_url', 'last_release_year']);
-  assert.deepEqual(res.skipped.map((s) => [s.field, s.reason]).sort(), [['country', 'locked'], ['formed_year', 'locked'], ['member:Mo', 'locked']]);
+  // the proposed Bandcamp url is a name match too: Accept all fills it only once the match is approved
+  assert.deepEqual(res.applied.sort(), ['last_release_year']);
+  assert.deepEqual(res.skipped.map((s) => [s.field, s.reason]).sort(),
+    [['bandcamp_url', 'warning'], ['country', 'locked'], ['formed_year', 'locked'], ['member:Mo', 'locked']]);
   const a = await artistRow(id);
-  assert.equal(a.musicbrainz_id, null); assert.equal(a.country, null);
+  assert.equal(a.musicbrainz_id, null); assert.equal(a.country, null); assert.equal(a.bandcamp_url, null);
   assert.equal(await reviewRow(id), undefined);
   // an EXACT_ID match whose id another artist stores: the shared id warns, so the match is skipped and its rows stay locked
   const mb = randomUUID();
@@ -255,11 +258,11 @@ test('pretrusted + id proposed for another artist -> needs-approval, acceptAll s
   assert.equal(r.members[0].locked, true);
   await assert.rejects(svc.acceptField(pool, id, 'country'), (e) => e.code === 'CONFLICT' && e.message === 'Approve the match first');
   const res = await svc.acceptAll(pool, id);
-  assert.deepEqual(res.applied, ['bandcamp_url']);
+  assert.deepEqual(res.applied, []);
   assert.deepEqual(res.skipped.map((s) => [s.field, s.reason]).sort(),
-    [['country', 'locked'], ['formed_year', 'locked'], ['match', 'warning'], ['member:Sha', 'locked']]);
+    [['bandcamp_url', 'warning'], ['country', 'locked'], ['formed_year', 'locked'], ['match', 'warning'], ['member:Sha', 'locked']]);
   const a = await artistRow(id);
-  assert.equal(a.musicbrainz_id, null); assert.equal(a.country, null); assert.equal(a.formed_year, null);
+  assert.equal(a.musicbrainz_id, null); assert.equal(a.country, null); assert.equal(a.formed_year, null); assert.equal(a.bandcamp_url, null);
   assert.equal((await membersOf(id)).length, 0);
   assert.equal(await reviewRow(id), undefined);
   // the curator can still approve it explicitly (no artist stores the id), which unlocks the rows
@@ -280,6 +283,68 @@ test('acceptAll twice is idempotent (second call applied = [])', async () => {
   assert.deepEqual(second.applied, []);
   assert.deepEqual(second.skipped, []);
   assert.deepEqual([await artistRow(id), await membersOf(id), await reviewRow(id)], snap);
+});
+
+test('approve, then clear the id under Links: the MusicBrainz/Wikidata rows lock again and Accept all neither re-approves nor applies them', async () => {
+  const mb = randomUUID();
+  const id = await mkArtist('ZZZENW Cleared');
+  await mkProposal(id, { mbid: mb, confidence: 'EXACT_ID', country: 'Laos', country_source: 'MusicBrainz', formed: 2003, formed_source: 'Wikidata',
+    last: 2011, last_source: 'Catalogue Albums' });
+  assert.equal((await svc.decideMatch(pool, id, 'approve')).match.state, 'approved');
+  await saveIdentity(pool, id, 'musicbrainz', null); // what the Links panel's clear does
+  const r = await svc.getReview(pool, id);
+  assert.equal(r.match.state, 'needs-approval');
+  assert.deepEqual(r.fields.map((f) => [f.field, f.locked]), [['country', true], ['formed_year', true], ['last_release_year', false]]);
+  await assert.rejects(svc.acceptField(pool, id, 'country'), (e) => e.code === 'CONFLICT' && e.message === 'Approve the match first');
+  const res = await svc.acceptAll(pool, id);
+  assert.deepEqual(res.applied, ['last_release_year']);
+  assert.deepEqual(res.skipped.map((s) => [s.field, s.reason]).sort(), [['country', 'locked'], ['formed_year', 'locked']]);
+  const a = await artistRow(id);
+  assert.equal(a.musicbrainz_id, null); assert.equal(a.country, null); assert.equal(a.formed_year, null);
+});
+
+test('EXACT_ID with a different id stored now: needs approval, and Accept all leaves the stored id alone', async () => {
+  const [stored, proposed] = [randomUUID(), randomUUID()];
+  const id = await mkArtist('ZZZENW Other Stored', { musicbrainz_id: stored });
+  await mkProposal(id, { mbid: proposed, confidence: 'EXACT_ID', country: 'Fiji', country_source: 'MusicBrainz' });
+  const r = await svc.getReview(pool, id);
+  assert.equal(r.match.state, 'needs-approval');
+  assert.equal(r.match.stored_mbid, stored); assert.equal(r.match.proposed_mbid, proposed);
+  const res = await svc.acceptAll(pool, id);
+  assert.ok(!res.applied.includes('match'));
+  assert.deepEqual(res.skipped.map((s) => [s.field, s.reason]), [['country', 'locked']]);
+  const a = await artistRow(id);
+  assert.equal(a.musicbrainz_id, stored); assert.equal(a.country, null);
+  assert.equal(await reviewRow(id), undefined);
+});
+
+test('Accept all is fill-only: empty values are filled, stored values, a stored Bandcamp url and member status changes are skipped as replace', async () => {
+  const mb = randomUUID();
+  const id = await mkArtist('ZZZENW Fill', { country: 'USA', bandcamp_url: 'https://zzzenw-mine.bandcamp.com' });
+  await pool.query(`INSERT INTO artist_members (artist_id, name, is_current, vegan, source) VALUES ($1,'Old Hand',true,true,'Added by curator')`, [id]);
+  await mkProposal(id, { mbid: mb, confidence: 'EXACT_ID', country: 'United States', country_source: 'Wikidata', formed: 1999, formed_source: 'MusicBrainz',
+    bandcamp: 'https://zzzenw-other.bandcamp.com', members: [
+      { name: 'Old Hand', is_current: false, source: 'MusicBrainz' }, { name: 'New Face', is_current: true, source: 'MusicBrainz' }] });
+  const first = await svc.acceptAll(pool, id);
+  assert.deepEqual(first.applied.sort(), ['formed_year', 'match', 'member:New Face']);
+  const replaced = [['bandcamp_url', 'replace'], ['country', 'replace'], ['member:Old Hand', 'replace']];
+  assert.deepEqual(first.skipped.map((s) => [s.field, s.reason]).sort(), replaced);
+  let a = await artistRow(id);
+  assert.equal(a.musicbrainz_id, mb); assert.equal(a.formed_year, 1999); assert.equal(a.formed_source, 'MusicBrainz');
+  assert.equal(a.country, 'USA'); assert.equal(a.country_source, 'Added by curator');
+  assert.equal(a.bandcamp_url, 'https://zzzenw-mine.bandcamp.com');
+  const m = await membersOf(id);
+  assert.deepEqual(m.map((x) => [x.name, x.is_current, x.vegan]), [['Old Hand', true, true], ['New Face', true, false]]);
+  // the second run changes nothing and reports the same replace rows
+  const snap = [await artistRow(id), await membersOf(id), await reviewRow(id)];
+  const second = await svc.acceptAll(pool, id);
+  assert.deepEqual(second.applied, []);
+  assert.deepEqual(second.skipped.map((s) => [s.field, s.reason]).sort(), replaced);
+  assert.deepEqual([await artistRow(id), await membersOf(id), await reviewRow(id)], snap);
+  // a per-row Accept still replaces
+  await svc.acceptField(pool, id, 'country');
+  a = await artistRow(id);
+  assert.equal(a.country, 'United States'); assert.equal(a.country_source, 'Wikidata');
 });
 
 test('finish sets and clears finished_at and moves the artist between enr-review and enr-done', async () => {

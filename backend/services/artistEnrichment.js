@@ -22,16 +22,21 @@ const lowerId = (id) => (id ? String(id).toLowerCase() : null);
 
 // ---- pure rules ----------------------------------------------------------------------------------------------------
 
-// The state of the proposed MusicBrainz match. A decision about a different id than the one now proposed is ignored.
+// The state of the proposed MusicBrainz match. It follows the identity stored NOW, not the decision history: only the
+// proposed id being the stored one makes it approved, so clearing or replacing the id under Links locks its rows again.
+// A decision about a different id than the one now proposed is ignored.
 function matchState(proposal, review, storedMbid) {
   const proposed = lowerId(proposal && proposal.proposed_musicbrainz_id);
   if (!proposed) return 'none';
+  const stored = lowerId(storedMbid);
+  if (stored === proposed) return 'approved';
   const decided = review && review.match_decision && lowerId(review.matched_mbid) === proposed ? review.match_decision : null;
-  if (lowerId(storedMbid) === proposed || decided === 'approved') return 'approved';
   if (decided === 'rejected') return 'rejected';
+  // An earlier approval whose id is no longer stored, a different id stored now, or an EXISTING match (the stored id the
+  // analysis started from) that is not the stored one: the curator decides again.
+  if (decided === 'approved' || stored || proposal.mbid_match_method === 'EXISTING') return 'needs-approval';
   if (proposal.mbid_confidence === 'EXACT_ID') return 'pretrusted';
-  if (proposal.mbid_confidence === 'HIGH') return 'needs-approval';
-  return 'needs-approval'; // an unknown confidence is treated as the cautious case
+  return 'needs-approval'; // HIGH, and an unknown confidence treated as the cautious case
 }
 
 // A fact from MusicBrainz or Wikidata rides on the match: it stays locked until the match is trusted.
@@ -147,10 +152,16 @@ const HAS_SOMETHING = `(
                AND NOT EXISTS (SELECT 1 FROM artist_members am WHERE am.artist_id = a.id AND lower(am.name) = lower(btrim(m->>'name'))))
 )`;
 const BASE = `(r.finished_at IS NULL AND ${HAS_SOMETHING})`;
-// An undecided HIGH match: an id is proposed, not stored, and no decision exists for that id.
-const MATCH_PENDING = `(p.mbid_confidence = 'HIGH' AND p.proposed_musicbrainz_id IS NOT NULL
+// A match waiting for the curator's Approve: matchState's 'needs-approval' in SQL (an id is proposed and not stored, it
+// was not rejected, and it is not a pre-trusted EXACT_ID: an earlier approval without the id stored, a different stored
+// id or an EXISTING method all need approval again). It does not mirror getReview's downgrade of a shared EXACT_ID id;
+// those artists are listed under Possible duplicates instead.
+const MATCH_PENDING = `(p.proposed_musicbrainz_id IS NOT NULL
   AND p.proposed_musicbrainz_id IS DISTINCT FROM a.musicbrainz_id
-  AND NOT (r.match_decision IS NOT NULL AND r.matched_mbid = p.proposed_musicbrainz_id))`;
+  AND NOT COALESCE(r.match_decision = 'rejected' AND r.matched_mbid = p.proposed_musicbrainz_id, false)
+  AND (p.mbid_confidence IS DISTINCT FROM 'EXACT_ID' OR a.musicbrainz_id IS NOT NULL
+       OR p.mbid_match_method IS NOT DISTINCT FROM 'EXISTING'
+       OR COALESCE(r.match_decision = 'approved' AND r.matched_mbid = p.proposed_musicbrainz_id, false)))`;
 // Another artist proposes or stores the same MusicBrainz id.
 const SHARED = `(p.proposed_musicbrainz_id IS NOT NULL AND (
   EXISTS (SELECT 1 FROM artist_enrichment_proposals p2 WHERE p2.proposed_musicbrainz_id = p.proposed_musicbrainz_id AND p2.artist_id <> a.id)
@@ -392,9 +403,14 @@ async function acceptAll(db, artistId) {
   }
   // A pretrusted match that was not approved in this run does not unlock its rows.
   const locked = (row) => row.locked || (approveBlocked && isLocked(row.source, 'needs-approval'));
+  // Accept all is FILL-ONLY: it never replaces a stored value (that is a per-row Accept), never changes a stored member,
+  // and fills the Bandcamp url (a name match like a title-verified id) only once the match is approved.
+  const approved = r.match.state === 'approved';
   for (const row of r.fields) {
     if (locked(row)) { skipped.push({ field: row.field, reason: 'locked' }); continue; }
     if (warned.has(row.field)) { skipped.push({ field: row.field, reason: 'warning' }); continue; }
+    if (row.current !== null && row.current !== '') { skipped.push({ field: row.field, reason: 'replace' }); continue; }
+    if (row.field === 'bandcamp_url' && !approved) { skipped.push({ field: row.field, reason: 'warning' }); continue; }
     try { await applyField(db, artistId, row); applied.push(row.field); }
     catch (e) { skipped.push({ field: row.field, reason: 'failed', message: failMessage(e) }); }
   }
@@ -402,6 +418,7 @@ async function acceptAll(db, artistId) {
     const label = memberLabel(row.name);
     if (locked(row)) { skipped.push({ field: label, reason: 'locked' }); continue; }
     if (warned.has('members')) { skipped.push({ field: label, reason: 'warning' }); continue; }
+    if (row.change !== 'new') { skipped.push({ field: label, reason: 'replace' }); continue; }
     try { await applyMember(db, artistId, row); applied.push(label); }
     catch (e) { skipped.push({ field: label, reason: 'failed', message: failMessage(e) }); }
   }

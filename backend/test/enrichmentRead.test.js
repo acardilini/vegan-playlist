@@ -110,7 +110,15 @@ test('state: EXACT_ID pretrusted, HIGH needs-approval, stored equal approved, de
   assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'EXACT_ID' }, null, null), 'pretrusted');
   assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'HIGH' }, null, null), 'needs-approval');
   assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'HIGH' }, null, x.toUpperCase()), 'approved');
-  assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'HIGH' }, { match_decision: 'approved', matched_mbid: x }, null), 'approved');
+  // the state follows the id stored NOW: an approval whose id was cleared or replaced under Links no longer counts
+  assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'HIGH' }, { match_decision: 'approved', matched_mbid: x }, null), 'needs-approval');
+  assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'EXACT_ID' }, { match_decision: 'approved', matched_mbid: x }, null), 'needs-approval');
+  assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'HIGH' }, { match_decision: 'approved', matched_mbid: x }, y), 'needs-approval');
+  // a different id stored now is never pretrusted; neither is an EXISTING match whose id is not the stored one
+  assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'EXACT_ID' }, null, y), 'needs-approval');
+  assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'EXACT_ID', mbid_match_method: 'EXISTING' }, null, null), 'needs-approval');
+  assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'EXACT_ID', mbid_match_method: 'EXISTING' }, null, x), 'approved');
+  assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'HIGH' }, { match_decision: 'rejected', matched_mbid: x }, y), 'rejected');
   assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'HIGH' }, { match_decision: 'approved', matched_mbid: y }, null), 'needs-approval');
   assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'HIGH' }, { match_decision: 'rejected', matched_mbid: x }, null), 'rejected');
   assert.equal(svc.matchState({ proposed_musicbrainz_id: x, mbid_confidence: 'EXACT_ID' }, { match_decision: 'rejected', matched_mbid: y }, null), 'pretrusted');
@@ -145,8 +153,20 @@ test('MusicBrainz and Wikidata rows are locked until approved; Bandcamp and Cata
   assert.equal(field(r, 'formed_year').link, null);
   await mkReview(id, { decision: 'approved', mbid: mb });
   r = await svc.getReview(pool, id);
+  assert.equal(r.match.state, 'needs-approval', 'an approval without the id stored does not unlock');
+  assert.equal(field(r, 'country').locked, true);
+  await pool.query(`UPDATE artists SET musicbrainz_id = $2 WHERE id = $1`, [id, mb]);
+  r = await svc.getReview(pool, id);
   assert.equal(r.match.state, 'approved');
   assert.ok(r.fields.every((f) => !f.locked)); assert.equal(r.members[0].locked, false);
+});
+
+test('an EXISTING match whose id is not stored now needs approval', async () => {
+  const id = await mkArtist('ZZZENR Existing');
+  await mkProposal(id, { mbid: randomUUID(), confidence: 'EXACT_ID', method: 'EXISTING', country: 'Iceland', country_source: 'MusicBrainz' });
+  const r = await svc.getReview(pool, id);
+  assert.equal(r.match.state, 'needs-approval');
+  assert.equal(field(r, 'country').locked, true);
 });
 
 test('shared id with another proposal and with a stored id both appear in shared_with and warn', async () => {

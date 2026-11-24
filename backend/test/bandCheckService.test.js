@@ -1,11 +1,12 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert');
+const { randomUUID } = require('node:crypto');
 const pool = require('../database/db');
 const svc = require('../services/bandCheck');
 
 // Fixture sentinel for this file: ZZZBANDSVC.
 const SP1 = 'ZZZBANDSVCaaaaaaaaaaaa', SP2 = 'ZZZBANDSVCbbbbbbbbbbbb', SP3 = 'ZZZBANDSVCdddddddddddd'; // 22 chars each
-const MB = '11111111-2222-3333-4444-555555555555';
+// MusicBrainz ids are unique per artist (migration 025): a fresh id per fixture, so a leftover from a crashed run cannot collide.
 async function mkArtist(name, { spotify_id = null } = {}) {
   return (await pool.query(`INSERT INTO artists (name, spotify_id, data_source) VALUES ($1,$2,$3) RETURNING id`,
     [name, spotify_id, spotify_id ? 'spotify' : 'manual'])).rows[0].id;
@@ -40,6 +41,7 @@ test('listBands: searches by name, counts songs and live songs, reports identity
 
 test('saveIdentity writes only the matching column, validates, clears bandcamp/musicbrainz, and sets data_source for spotify', async () => {
   const a = await mkArtist('ZZZBANDSVC Ident');
+  const MB = randomUUID();
   let id = await svc.saveIdentity(pool, a, 'musicbrainz', MB);
   assert.equal(id.musicbrainz, MB);
   id = await svc.saveIdentity(pool, a, 'musicbrainz', 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE');
@@ -73,6 +75,7 @@ test('saveIdentity refuses a Spotify id that belongs to a different artist row',
 
 test('identifyCandidates: spotify/musicbrainz delegate with the band name by default; bandcamp merges song links and the MusicBrainz link', async () => {
   const a = await mkArtist('ZZZBANDSVC Cands');
+  const MB = randomUUID();
   await pool.query(`UPDATE artists SET musicbrainz_id=$2 WHERE id=$1`, [a, MB]);
   await mkSong(a, 'ZZZBANDSVC c1', { bandcamp_url: 'https://zzzbandsvcband.bandcamp.com/track/one' });
   await mkSong(a, 'ZZZBANDSVC c2', { bandcamp_url: 'https://zzzbandsvcband.bandcamp.com/album/two' });

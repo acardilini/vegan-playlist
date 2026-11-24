@@ -6,11 +6,20 @@ import { methodLabel, confidenceLabel, fieldLabel, stateLabel, spotifyArtistLink
 
 const MEMBER_CHANGE = { new: 'new member', status: 'status change' };
 const UNDECIDED = new Set(['pretrusted', 'needs-approval']);
+const isEmpty = (v) => v === null || v === undefined || v === '';
 
-// A name for a skipped entry of Accept all: 'match', 'member:<name>' or a field key.
-function skipLabel(field) {
-  if (field === 'match') return 'Match';
-  return field.startsWith('member:') ? field.slice('member:'.length) : fieldLabel(field);
+// The workbench keys this panel on the artist's identity, so an identity change made by the panel itself (Accept all
+// approving the match or filling the Bandcamp url) remounts it. Accept all's "rows need your check" line is carried
+// across that remount here: artist id -> { labels, at }, read by the next panel for the same artist within a few seconds.
+const carried = new Map();
+const CARRY_MS = 10000;
+const takeCarried = (id) => { const c = carried.get(id); return c && Date.now() - c.at < CARRY_MS ? c.labels : []; };
+
+// A name for a skipped entry of Accept all: 'match', 'member:<name>' or a field key. A row locked because the match was
+// rejected says so (it stays locked whatever the curator does here).
+function skipLabel(s, matchState) {
+  const name = s.field === 'match' ? 'Match' : s.field.startsWith('member:') ? s.field.slice('member:'.length) : fieldLabel(s.field);
+  return s.reason === 'locked' && matchState === 'rejected' ? `${name} (locked, match rejected)` : name;
 }
 
 function Warnings({ list }) {
@@ -50,9 +59,10 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
   const [busy, setBusy] = useState(false);
   const [skipped, setSkipped] = useState(() => new Set());
   const [unsure, setUnsure] = useState(false);
-  const [needCheck, setNeedCheck] = useState([]); // labels of the rows the last Accept all left alone
+  const [needCheck, setNeedCheck] = useState(() => takeCarried(artist.id)); // labels of the rows the last Accept all left alone
+  useEffect(() => { carried.delete(artist.id); }, [artist.id]);
 
-  const mounted = useRef(true); // a response that lands after the panel is gone (curator moved on) is dropped
+  const mounted = useRef(true); // a response that lands after the panel is gone (curator moved on, or a re-key) is dropped
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const load = useCallback(() => api(base)
@@ -84,19 +94,29 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
   const finish = async (finished) => {
     if ((await act(() => finishCall(finished))) && finished && mounted.current && onDone) onDone();
   };
-  // Accept every row the server will accept. Only when nothing was left over is the artist finished and the next one opened;
-  // otherwise the curator stays here with the server's refreshed review and the list of rows to check.
+  // Accept every row the server will accept (it only fills empty values). Only when nothing was left over is the artist
+  // finished and the next one opened; otherwise the curator stays here with the refreshed review and the rows to check.
   const acceptAll = async () => {
     let clean = false;
     const ok = await act(async () => {
       const res = await api(`${base}/accept-all`, { method: 'POST', body: {} });
-      if (mounted.current && onChanged) onChanged(); // the Facts panel must show what was just saved
-      if (mounted.current && onIdentitySaved && res.applied.some((a) => a === 'match' || a === 'bandcamp_url')) await onIdentitySaved();
       if (!mounted.current) return res.review;
-      if (res.skipped.length > 0) { setNeedCheck(res.skipped.map((s) => skipLabel(s.field))); return res.review; }
-      const done = await finishCall(true);
-      clean = true;
-      return done;
+      if (onChanged) onChanged(); // the Facts panel must show what was just saved
+      const identity = res.applied.some((a) => a === 'match' || a === 'bandcamp_url');
+      if (res.skipped.length === 0) {
+        // Moving on: the next artist (or the list) loads fresh, so the identity is not re-read here; doing so would
+        // re-key and remount this panel before it could open the next artist.
+        const done = await finishCall(true);
+        clean = true;
+        return done;
+      }
+      const labels = res.skipped.map((s) => skipLabel(s, res.review.match.state));
+      setNeedCheck(labels);
+      if (identity && onIdentitySaved) {
+        carried.set(artist.id, { labels, at: Date.now() }); // the identity re-read re-keys this panel
+        await onIdentitySaved();
+      }
+      return res.review;
     });
     if (ok && clean && mounted.current && onDone) onDone();
   };
@@ -126,11 +146,14 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
   const warnFor = (field) => warnings.filter((w) => w.field === field);
   const pending = UNDECIDED.has(match.state);
   const nothing = !pending && fields.length === 0 && members.length === 0;
-  // Accept all needs something the server would take: an unlocked row with no warning of its own, or an exact match.
-  // The server takes no row list and would also apply a row hidden with Skip, so once any row is skipped it is not offered.
-  const canAcceptAll = skipped.size === 0 && (match.state === 'pretrusted'
-    || fields.some((f) => !f.locked && warnFor(f.field).length === 0)
-    || members.some((m) => !m.locked && warnFor('members').length === 0));
+  // Accept all needs something the server would take. It only fills: an unlocked row with no warning of its own whose
+  // stored value is empty (the Bandcamp url only once the match is approved, which Accept all does for an exact match),
+  // or a new member. The server takes no row list and would also apply a row hidden with Skip, so once any row is
+  // skipped it is not offered.
+  const matchTrusted = match.state === 'approved' || match.state === 'pretrusted';
+  const canAcceptAll = skipped.size === 0 && (
+    fields.some((f) => !f.locked && warnFor(f.field).length === 0 && isEmpty(f.current) && (f.field !== 'bandcamp_url' || matchTrusted))
+    || members.some((m) => !m.locked && m.change === 'new' && warnFor('members').length === 0));
 
   const cat = match.catalogue;
   const spotify = spotifyArtistLink(artist.spotify_id);
@@ -138,7 +161,9 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
   const albums = albumLine(cat.albums);
   // The shared-id line below names and links the same artists the 'match' warning lists, so that warning is not repeated.
   const matchWarnings = match.shared_with.length ? [] : warnFor('match');
-  const canUndo = match.state === 'rejected' || (match.state === 'approved' && match.stored_mbid !== match.proposed_mbid);
+  // Only a rejection can be undone here: an approval is the stored id, which is changed or cleared under Links.
+  const canUndo = match.state === 'rejected';
+  const otherStored = match.stored_mbid && match.proposed_mbid && match.stored_mbid !== match.proposed_mbid;
   const memberSource = (m) => (m.source === 'MusicBrainz' ? match.url : null);
 
   return (
@@ -159,6 +184,7 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
             {bandcamp && <>{' · '}<a href={bandcamp} target="_blank" rel="noopener noreferrer">Bandcamp</a></>}
           </div>
           {albums && <div className="band-meta enr-value">{albums}</div>}
+          {otherStored && <div className="enr-warn">Saved id {match.stored_mbid} differs from the proposed one</div>}
           {match.shared_with.length > 0 && (
             <div className="enr-warn">
               Another artist has this id:{' '}

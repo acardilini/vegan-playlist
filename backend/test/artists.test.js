@@ -1,5 +1,6 @@
 const { test, after } = require('node:test');
 const assert = require('node:assert');
+const { randomUUID } = require('node:crypto');
 const pool = require('../database/db');
 const svc = require('../services/artists');
 
@@ -30,7 +31,7 @@ const ZQ = { q: 'ZZZART', limit: 200 };
 const names = (r) => r.rows.map(x => x.name);
 
 test('each queue lists exactly the artists its predicate describes, and counts agree with the lists', async () => {
-  const MB = '11111111-2222-3333-4444-555555555555';
+  const MB = randomUUID(); // MusicBrainz ids are unique per artist: a fresh one so a crashed run's leftover cannot collide
   await mk('ZZZART bare');                                                   // identity+check+bio+notes needed
   await mk('ZZZART ident', { bandcamp_url: 'https://x.bandcamp.com' });      // has identity
   await mk('ZZZART reviewed', { musicbrainz_id: MB, reviewed: true });
