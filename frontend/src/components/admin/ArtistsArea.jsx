@@ -36,6 +36,11 @@ function ArtistsArea() {
     load('/api/admin/enrichment/queues', setEnrCounts);
   }, []);
   useEffect(() => { loadCounts(); }, [loadCounts]);
+  // The workbench panel announces a finished/reopened artist; the Enrichment counts follow it.
+  useEffect(() => {
+    window.addEventListener('enrichment-changed', loadCounts);
+    return () => window.removeEventListener('enrichment-changed', loadCounts);
+  }, [loadCounts]);
 
   const select = (key) => setParams({ queue: key });
   const setQuery = useCallback((v) => setParams((prev) => {

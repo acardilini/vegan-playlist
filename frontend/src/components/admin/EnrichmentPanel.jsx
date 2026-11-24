@@ -7,6 +7,12 @@ import { methodLabel, confidenceLabel, fieldLabel, stateLabel, spotifyArtistLink
 const MEMBER_CHANGE = { new: 'new member', status: 'status change' };
 const UNDECIDED = new Set(['pretrusted', 'needs-approval']);
 
+// A name for a skipped entry of Accept all: 'match', 'member:<name>' or a field key.
+function skipLabel(field) {
+  if (field === 'match') return 'Match';
+  return field.startsWith('member:') ? field.slice('member:'.length) : fieldLabel(field);
+}
+
 function Warnings({ list }) {
   return list.map((w, i) => <div key={i} className="enr-warn">{w.text}</div>);
 }
@@ -37,13 +43,14 @@ function RowActions({ locked, busy, onAccept, onSkip }) {
 
 // The analysis project's staged proposal for this artist: the MusicBrainz match step, then one row per proposed fact or
 // member. The server re-reads every value; the client only names a decision, a field or a member. Skip stores nothing.
-function EnrichmentPanel({ artist, onIdentitySaved, onChanged }) {
+function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
   const base = `/api/admin/artists/${artist.id}/enrichment`;
   const [review, setReview] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [skipped, setSkipped] = useState(() => new Set());
   const [unsure, setUnsure] = useState(false);
+  const [needCheck, setNeedCheck] = useState([]); // labels of the rows the last Accept all left alone
 
   const mounted = useRef(true); // a response that lands after the panel is gone (curator moved on) is dropped
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -55,18 +62,43 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged }) {
 
   // After a success the panel shows the returned review; after a failure it re-reads, keeping the error line.
   const act = async (fn, { identity = false } = {}) => {
-    setError(''); setBusy(true);
+    setError(''); setNeedCheck([]); setBusy(true);
     try {
       const r = await fn();
-      if (!mounted.current) return;
+      if (!mounted.current) return false;
       setReview(r);
       if (onChanged) onChanged();
       if (identity && onIdentitySaved) await onIdentitySaved();
+      return true;
     } catch (e) {
-      if (!mounted.current) return;
+      if (!mounted.current) return false;
       setError(e.message);
       load();
+      return false;
     } finally { if (mounted.current) setBusy(false); }
+  };
+  // Tells the Artists queue rail to refetch its counts (it is not mounted while the workbench is open; this covers it being so).
+  const announce = () => window.dispatchEvent(new Event('enrichment-changed'));
+  const finishCall = async (finished) => { const r = await api(`${base}/finish`, { method: 'PUT', body: { finished } }); announce(); return r; };
+  // Done / Reopen: finish then (on Done) move to the next artist.
+  const finish = async (finished) => {
+    if ((await act(() => finishCall(finished))) && finished && mounted.current && onDone) onDone();
+  };
+  // Accept every row the server will accept. Only when nothing was left over is the artist finished and the next one opened;
+  // otherwise the curator stays here with the server's refreshed review and the list of rows to check.
+  const acceptAll = async () => {
+    let clean = false;
+    const ok = await act(async () => {
+      const res = await api(`${base}/accept-all`, { method: 'POST', body: {} });
+      if (mounted.current && onChanged) onChanged(); // the Facts panel must show what was just saved
+      if (mounted.current && onIdentitySaved && res.applied.some((a) => a === 'match' || a === 'bandcamp_url')) await onIdentitySaved();
+      if (!mounted.current) return res.review;
+      if (res.skipped.length > 0) { setNeedCheck(res.skipped.map((s) => skipLabel(s.field))); return res.review; }
+      const done = await finishCall(true);
+      clean = true;
+      return done;
+    });
+    if (ok && clean && mounted.current && onDone) onDone();
   };
   const decide = (decision) => act(() => api(`${base}/match`, { method: 'PUT', body: { decision } }), { identity: decision === 'approve' });
   const acceptField = (f) => act(() => api(`${base}/accept`, { method: 'POST', body: { field: f.field } }), { identity: f.field === 'bandcamp_url' });
@@ -75,6 +107,18 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged }) {
 
   if (!review) return error ? <section className="wb-panel"><h2>Proposed enrichment</h2><div className="admin-message error">{error}</div></section> : null;
   if (!review.has_proposal) return null;
+  if (review.finished_at) {
+    return (
+      <section className="wb-panel">
+        <h2>Proposed enrichment</h2>
+        {error && <div className="admin-message error">{error}</div>}
+        <div className="fact-proposal">
+          <strong>Reviewed</strong>
+          <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => finish(false)}>Reopen</button>
+        </div>
+      </section>
+    );
+  }
 
   const { match, warnings } = review;
   const fields = review.fields.filter((f) => !skipped.has(`field:${f.field}`));
@@ -82,7 +126,10 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged }) {
   const warnFor = (field) => warnings.filter((w) => w.field === field);
   const pending = UNDECIDED.has(match.state);
   const nothing = !pending && fields.length === 0 && members.length === 0;
-  if (nothing && review.finished_at) return null;
+  // Accept all needs something the server would take: an unlocked row with no warning of its own, or an exact match.
+  const canAcceptAll = match.state === 'pretrusted'
+    || fields.some((f) => !f.locked && warnFor(f.field).length === 0)
+    || members.some((m) => !m.locked && warnFor('members').length === 0);
 
   const cat = match.catalogue;
   const spotify = spotifyArtistLink(artist.spotify_id);
@@ -170,6 +217,14 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged }) {
           ))}
         </div>
       )}
+
+      {needCheck.length > 0 && (
+        <div className="enr-warn">{needCheck.length === 1 ? '1 row needs' : `${needCheck.length} rows need`} your check: {needCheck.join(', ')}</div>
+      )}
+      <div className="fact-proposal">
+        {canAcceptAll && <button className="btn btn-primary btn-sm" disabled={busy} onClick={acceptAll}>Accept all shown, next artist</button>}
+        <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => finish(true)}>Done with this artist</button>
+      </div>
     </section>
   );
 }
