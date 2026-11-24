@@ -40,3 +40,14 @@ export function stateLabel(state) {
   if (state === null || state === undefined) return '';
   return STATES.get(state) || String(state);
 }
+
+// A Spotify artist page for a stored Spotify id; anything that is not a 22-character base-62 id gives no link.
+export function spotifyArtistLink(id) {
+  return typeof id === 'string' && /^[A-Za-z0-9]{22}$/.test(id) ? `https://open.spotify.com/artist/${id}` : null;
+}
+
+// "Name (1999)" per album, "Name" when the year is unknown, joined into one line.
+export function albumLine(albums) {
+  if (!Array.isArray(albums)) return '';
+  return albums.map((a) => (a && a.year != null ? `${a.name} (${a.year})` : a && a.name)).filter(Boolean).join(', ');
+}

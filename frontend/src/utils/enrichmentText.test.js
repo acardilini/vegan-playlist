@@ -1,6 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { methodLabel, confidenceLabel, fieldLabel, stateLabel } from './enrichmentText.js';
+import { methodLabel, confidenceLabel, fieldLabel, stateLabel, spotifyArtistLink, albumLine } from './enrichmentText.js';
+
+test('spotifyArtistLink only for a valid id', () => {
+  assert.equal(spotifyArtistLink('4Z8W4fKeB5YxbusRsdQVPb'), 'https://open.spotify.com/artist/4Z8W4fKeB5YxbusRsdQVPb');
+  assert.equal(spotifyArtistLink('javascript:alert(1)'), null);
+  assert.equal(spotifyArtistLink('short'), null);
+  assert.equal(spotifyArtistLink(null), null);
+});
+test('albumLine', () => {
+  assert.equal(albumLine([{ name: 'A', year: 1999 }, { name: 'B', year: null }]), 'A (1999), B');
+  assert.equal(albumLine([]), '');
+  assert.equal(albumLine(undefined), '');
+});
 
 test('methodLabel names each match method', () => {
   assert.equal(methodLabel('MB_SPOTIFY_URL'), 'Matched by your Spotify link');

@@ -297,6 +297,9 @@ a.band-chip:hover { text-decoration: underline; }
 .fact-member { margin-bottom: var(--space-1); }
 .fact-member-name { min-width: 8ch; }
 .fact-proposals { margin-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+/* Proposed enrichment panel: a long value (a Bandcamp url, an album list) wraps; a warning is one muted ember line. */
+.enr-value { min-width: 0; overflow-wrap: anywhere; }
+.enr-warn { color: var(--accent-ember-60); font-size: 0.85em; }
 .vmark { width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid var(--text-muted); background: transparent; color: var(--text-muted); font: inherit; font-size: 0.75rem; font-weight: 700; line-height: 1; cursor: pointer; padding: 0; }
 .vmark.on { border-color: var(--accent-moss-60); color: var(--accent-moss-80); }
 

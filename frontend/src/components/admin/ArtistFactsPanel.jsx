@@ -26,7 +26,7 @@ function FactSource({ source, artist }) {
 
 // Facts panel for the artist workbench: stored facts (each with its source), members with the curator-only vegan mark,
 // and "Fill from MusicBrainz" proposals the curator accepts one at a time. Proposals are never stored; only Accept writes.
-function ArtistFactsPanel({ artist, onNeedIdentity }) {
+function ArtistFactsPanel({ artist, onNeedIdentity, refreshKey }) {
   const base = `/api/admin/artists/${artist.id}/facts`;
   const [facts, setFacts] = useState(null);
   const [error, setError] = useState('');
@@ -35,7 +35,7 @@ function ArtistFactsPanel({ artist, onNeedIdentity }) {
   const [newMember, setNewMember] = useState('');
 
   const load = useCallback(() => api(base).then((d) => { setFacts(d); setError(''); }).catch((e) => setError(e.message)), [base]);
-  useEffect(() => { setFacts(null); setProposals(null); load(); }, [load]);
+  useEffect(() => { setFacts(null); setProposals(null); load(); }, [load, refreshKey]); // refreshKey: an enrichment accept changed the facts
 
   const run = async (fn) => { setError(''); try { await fn(); } catch (e) { setError(e.message); } };
   const put = (patch) => api(base, { method: 'PUT', body: patch }).then((d) => { setFacts(d); return d; });

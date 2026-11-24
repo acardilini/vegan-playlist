@@ -4,6 +4,7 @@ import { adminFetch } from '../../api/adminApi';
 import ArtistDetailsPanel from './ArtistDetailsPanel';
 import ArtistLinksPanel from './ArtistLinksPanel';
 import ArtistFactsPanel from './ArtistFactsPanel';
+import EnrichmentPanel from './EnrichmentPanel';
 import CatalogueReview from './CatalogueReview';
 import { AutoText } from './SavedField';
 
@@ -15,6 +16,7 @@ function ArtistWorkbench() {
   const [notFound, setNotFound] = useState(false);
   const [focus, setFocus] = useState({ open: null, n: 0 }); // Links panel row requested by the Catalogue panel
   const [refreshKey, setRefreshKey] = useState(0);          // bumps when identity changes -> Catalogue re-checks
+  const [factsKey, setFactsKey] = useState(0);              // bumps after an enrichment accept -> Facts reloads
   const token = useRef(0);                                   // only the latest request's response wins
   const idRef = useRef(id); idRef.current = id;                // the artist currently on screen
 
@@ -47,6 +49,7 @@ function ArtistWorkbench() {
 
   const onIdentitySaved = useCallback(async () => { await reload(); setRefreshKey((k) => k + 1); }, [reload]);
   const needIdentity = useCallback((source) => setFocus((f) => ({ open: source, n: f.n + 1 })), []);
+  const factsChanged = useCallback(() => setFactsKey((k) => k + 1), []);
 
   if (notFound) {
     return (<div><Link to="/admin/artists" className="btn btn-ghost btn-sm">&larr; Back to Artists</Link><h1>Artist not found</h1></div>);
@@ -57,6 +60,7 @@ function ArtistWorkbench() {
   const idx = navState ? navState.ids.indexOf(parseInt(id, 10)) : -1;
   const go = (t) => navigate(`/admin/artist/${navState.ids[t]}`, { state: { ...navState, index: t } });
   const back = navState && navState.from ? `/admin/artists?queue=${navState.from}` : '/admin/artists';
+  const goNext = () => (navState && idx >= 0 && idx < navState.ids.length - 1 ? go(idx + 1) : navigate(back));
 
   return (
     <div className="workbench">
@@ -83,7 +87,8 @@ function ArtistWorkbench() {
         <div className="wb-col wb-col-side">
           <ArtistDetailsPanel artist={artist} save={save} />
           <ArtistLinksPanel artist={artist} save={save} focus={focus} onIdentitySaved={onIdentitySaved} />
-          <ArtistFactsPanel key={artist.id} artist={artist} onNeedIdentity={needIdentity} />
+          <EnrichmentPanel key={artist.id} artist={artist} onIdentitySaved={onIdentitySaved} onChanged={factsChanged} onDone={goNext} />
+          <ArtistFactsPanel key={artist.id} artist={artist} onNeedIdentity={needIdentity} refreshKey={factsKey} />
           <section className="wb-panel">
             <h2>Notes</h2>
             <AutoText label="Catalogue review notes" initial={artist.discography_review_notes} multiline rows={3}
