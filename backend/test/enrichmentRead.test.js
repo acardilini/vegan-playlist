@@ -248,6 +248,27 @@ test('search is literal: a name containing % does not act as a wildcard', async 
   assert.deepEqual(r.rows.map((x) => x.id), [und]); assert.equal(r.total, 1);
 });
 
+// Global constraint: Layer 4 fields (bio, vegan stance, evidence), website urls, Wikidata ids and Wikipedia extracts are
+// neither read nor stored. Scan the service source so a later edit cannot quietly start selecting them.
+const EXCLUDED_PROPOSAL_COLS = ['proposed_bio', 'bio_source', 'proposed_vegan_notes', 'artist_vegan_stance', 'propose_no_advocacy_notes',
+  'advocacy_confidence', 'evidence_urls', 'evidence_snippets', 'proposed_wikidata_qid', 'proposed_website_url', 'wikipedia_url',
+  'wikipedia_extract', 'bandcamp_bio_raw', 'bandcamp_location_raw'];
+function proposalReadViolations(src) {
+  const bad = [];
+  if (/SELECT\s+\*/i.test(src)) bad.push('SELECT *');
+  if (/\b[a-z_][a-z0-9_]*\.\*/i.test(src)) bad.push('<alias>.*');
+  for (const c of EXCLUDED_PROPOSAL_COLS) if (new RegExp(`\\b${c}\\b`, 'i').test(src)) bad.push(c);
+  return bad;
+}
+test('the service never selects * nor names an excluded proposals column (bio, stance, evidence, website, Wikidata, Wikipedia)', () => {
+  const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '../services/artistEnrichment.js'), 'utf8');
+  assert.deepEqual(proposalReadViolations(src), []);
+  // the scan itself catches the patterns it is meant to catch
+  assert.deepEqual(proposalReadViolations('SELECT * FROM artist_enrichment_proposals'), ['SELECT *']);
+  assert.deepEqual(proposalReadViolations('SELECT p.* FROM x p'), ['<alias>.*']);
+  assert.deepEqual(proposalReadViolations('SELECT p.wikipedia_extract'), ['wikipedia_extract']);
+});
+
 test('unknown queue is BAD_INPUT', async () => {
   await assert.rejects(svc.list(pool, { queue: 'nope' }), isCode('BAD_INPUT'));
   await assert.rejects(svc.list(pool, { queue: 'constructor' }), isCode('BAD_INPUT'));

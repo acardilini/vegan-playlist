@@ -184,7 +184,7 @@ async function list(db, { queue, q = '', limit = 50, offset = 0 } = {}) {
   const where = `WHERE ${pred} AND ($1::text IS NULL OR a.name ILIKE $1)`;
   const total = (await db.query(`SELECT count(*)::int AS n ${FROM} ${where}`, [pat])).rows[0].n;
   const rows = (await db.query(`
-    SELECT * FROM (
+    SELECT id, name, method, confidence, shared, pending, songs, live_songs FROM (
       SELECT a.id, a.name, p.mbid_match_method AS method, p.mbid_confidence AS confidence,
              ${SHARED} AS shared, ${MATCH_PENDING} AS pending,
              (SELECT COUNT(DISTINCT sa.song_id)::int FROM song_artists sa WHERE sa.artist_id = a.id) AS songs,
@@ -231,10 +231,16 @@ async function sharedWith(db, artistId, mbid) {
     ORDER BY songs DESC, lower(a.name), a.id`, [artistId, mbid])).rows;
 }
 
+const PROPOSAL_COLS = `proposed_musicbrainz_id, mbid_match_method, mbid_confidence, artist_type,
+  proposed_country, country_source, country_confidence, proposed_formed_year, formed_source, formed_confidence,
+  proposed_disbanded_year, disbanded_source, disbanded_confidence, proposed_last_release_year, last_release_source,
+  last_release_confidence, proposed_bandcamp_url, proposed_members`;
+
 async function getReview(db, artistId) {
   const artist = (await db.query(`SELECT id, musicbrainz_id, bandcamp_url FROM artists WHERE id = $1`, [artistId])).rows[0];
   if (!artist) throw coded('NOT_FOUND', 'Artist not found');
-  const proposal = (await db.query(`SELECT * FROM artist_enrichment_proposals WHERE artist_id = $1`, [artistId])).rows[0];
+  // Explicit columns only: the Layer 4 / website / Wikidata / Wikipedia columns of the proposals table are never read.
+  const proposal = (await db.query(`SELECT ${PROPOSAL_COLS} FROM artist_enrichment_proposals WHERE artist_id = $1`, [artistId])).rows[0];
   if (!proposal) return { has_proposal: false };
   const review = (await db.query(`SELECT match_decision, matched_mbid, finished_at FROM artist_enrichment_review WHERE artist_id = $1`, [artistId])).rows[0] || null;
   const facts = await getFacts(db, artistId);
