@@ -1,10 +1,11 @@
-// Artist enrichment review (piece 2), read side. The analysis project stages one proposal per artist in
+// Artist enrichment review (piece 2). The analysis project stages one proposal per artist in
 // artist_enrichment_proposals; this service only ever READS that table. The curator's decisions live in the web-owned
-// artist_enrichment_review (match decision + finished flag). Nothing here writes anything.
+// artist_enrichment_review (match decision + finished flag); accepted values are written through the existing single
+// writers (see the write side at the bottom).
 // The queue predicates live in ONE table below and feed both counts() and list(), so a rail count cannot disagree with its list.
 const { coded } = require('./bandCheck/errors');
 const { normalizeBandcampOrigin } = require('./bandCheck/bandcamp');
-const { getFacts, nameKey, SOURCE_NAMES } = require('./artistFacts');
+const { getFacts, nameKey, SOURCE_NAMES, saveFacts, addMember, updateMember } = require('./artistFacts');
 
 const QUEUES = [
   { key: 'enr-review', label: 'To review' },
@@ -264,4 +265,145 @@ async function getReview(db, artistId) {
   };
 }
 
-module.exports = { QUEUES, counts, list, getReview, matchState, isLocked, buildWarnings };
+// ---- write side ----------------------------------------------------------------------------------------------------
+// Every write re-reads the proposal and the stored values through getReview; the client names only a decision, a field
+// or a member. Writes go through the existing single writers (bandCheck.saveIdentity, artistFacts.saveFacts/addMember/
+// updateMember). artist_enrichment_proposals is never written.
+
+const FIELD_KEYS = new Set([...FIELDS.map((f) => f.field), 'bandcamp_url']);
+const PREFIX = new Map(FIELDS.map((f) => [f.field, f.prefix]));
+const DECISIONS = new Set(['approve', 'reject', 'clear']);
+const OUR_CODES = new Set(['NOT_FOUND', 'BAD_INPUT', 'CONFLICT', 'BUSY', 'NO_IDENTITY']);
+const memberLabel = (name) => `member:${name}`;
+
+// Lazy: bandCheck/index pulls in staging and curation, which this read-mostly service otherwise never needs.
+const saveIdentity = (...args) => require('./bandCheck/index').saveIdentity(...args);
+
+async function reviewWithProposal(db, artistId) {
+  const r = await getReview(db, artistId); // NOT_FOUND for an unknown artist
+  if (!r.has_proposal) throw coded('NOT_FOUND', 'No proposal for this artist');
+  return r;
+}
+
+// One upsert per column group: a decision never touches finished_at, and finishing never touches the decision.
+async function upsertDecision(q, artistId, decision, mbid) {
+  await q.query(`INSERT INTO artist_enrichment_review (artist_id, match_decision, matched_mbid, updated_at)
+    VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+    ON CONFLICT (artist_id) DO UPDATE SET match_decision = EXCLUDED.match_decision, matched_mbid = EXCLUDED.matched_mbid,
+      updated_at = CURRENT_TIMESTAMP`, [artistId, decision, mbid]);
+}
+async function upsertFinished(q, artistId, finished) {
+  await q.query(`INSERT INTO artist_enrichment_review (artist_id, finished_at, updated_at)
+    VALUES ($1, CASE WHEN $2::boolean THEN CURRENT_TIMESTAMP END, CURRENT_TIMESTAMP)
+    ON CONFLICT (artist_id) DO UPDATE SET finished_at = EXCLUDED.finished_at, updated_at = CURRENT_TIMESTAMP`, [artistId, finished]);
+}
+
+// Identity and decision land together or not at all: a CONFLICT from saveIdentity rolls back and leaves no review row.
+async function approveMatch(db, artistId, review) {
+  const mbid = review.match.proposed_mbid;
+  if (!mbid) throw coded('BAD_INPUT', 'No MusicBrainz id is proposed');
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await saveIdentity(client, artistId, 'musicbrainz', mbid);
+    await upsertDecision(client, artistId, 'approved', mbid);
+    await client.query('COMMIT');
+  } catch (e) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* the original error matters */ }
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+async function decideMatch(db, artistId, decision) {
+  if (typeof decision !== 'string' || !DECISIONS.has(decision)) throw coded('BAD_INPUT', 'Unknown decision');
+  const r = await reviewWithProposal(db, artistId);
+  const { proposed_mbid: proposed, stored_mbid: stored } = r.match;
+  if (decision === 'approve') await approveMatch(db, artistId, r);
+  else if (decision === 'reject') {
+    if (!proposed) throw coded('BAD_INPUT', 'No MusicBrainz id is proposed');
+    if (stored === proposed) throw coded('BAD_INPUT', 'That id is already saved; clear it under Links first');
+    await upsertDecision(db, artistId, 'rejected', proposed);
+  } else await upsertDecision(db, artistId, null, null);
+  return getReview(db, artistId);
+}
+
+// The one row-accept path, shared by acceptField and acceptAll.
+async function applyField(db, artistId, row) {
+  if (row.locked) throw coded('CONFLICT', 'Approve the match first');
+  if (row.field === 'bandcamp_url') await saveIdentity(db, artistId, 'bandcamp', row.proposed);
+  else {
+    const prefix = PREFIX.get(row.field);
+    await saveFacts(db, artistId, { [row.field]: row.proposed, [`${prefix}_source`]: row.source });
+  }
+}
+async function applyMember(db, artistId, row) {
+  if (row.locked) throw coded('CONFLICT', 'Approve the match first');
+  if (row.change === 'new') await addMember(db, artistId, { name: row.name, is_current: row.is_current, vegan: false, source: row.source });
+  else await updateMember(db, artistId, row.existing.id, { is_current: row.is_current }); // vegan and source untouched
+}
+
+async function acceptField(db, artistId, field) {
+  if (typeof field !== 'string' || !FIELD_KEYS.has(field)) throw coded('BAD_INPUT', 'Unknown field');
+  const r = await reviewWithProposal(db, artistId);
+  const row = r.fields.find((f) => f.field === field);
+  if (!row) throw coded('NOT_FOUND', 'Nothing proposed for that field');
+  await applyField(db, artistId, row);
+  return getReview(db, artistId);
+}
+
+async function acceptMember(db, artistId, name) {
+  if (typeof name !== 'string' || !name.trim()) throw coded('BAD_INPUT', 'Name is required');
+  const r = await reviewWithProposal(db, artistId);
+  const key = nameKey(name);
+  const row = r.members.find((m) => nameKey(m.name) === key);
+  if (!row) {
+    // No pending change: fine if that member is already stored as proposed, otherwise there is nothing to accept.
+    const stored = (await getFacts(db, artistId)).members.some((m) => nameKey(m.name) === key);
+    if (!stored) throw coded('NOT_FOUND', 'Nothing proposed for that member');
+    return r;
+  }
+  await applyMember(db, artistId, row);
+  return getReview(db, artistId);
+}
+
+const failMessage = (e) => (e && OUR_CODES.has(e.code) && typeof e.message === 'string' ? e.message : 'Could not save this change');
+
+async function acceptAll(db, artistId) {
+  let r = await reviewWithProposal(db, artistId);
+  const applied = [], skipped = [];
+  let approveFailed = false;
+  if (r.match.state === 'pretrusted') {
+    try { await approveMatch(db, artistId, r); applied.push('match'); }
+    catch (e) { approveFailed = true; skipped.push({ field: 'match', reason: 'failed', message: failMessage(e) }); }
+    r = await getReview(db, artistId);
+  }
+  // A pretrusted match that could not be approved (e.g. its id is stored on another artist) does not unlock its rows.
+  const locked = (row) => row.locked || (approveFailed && isLocked(row.source, 'needs-approval'));
+  const warned = new Set(r.warnings.map((w) => w.field));
+  for (const row of r.fields) {
+    if (locked(row)) { skipped.push({ field: row.field, reason: 'locked' }); continue; }
+    if (warned.has(row.field)) { skipped.push({ field: row.field, reason: 'warning' }); continue; }
+    try { await applyField(db, artistId, row); applied.push(row.field); }
+    catch (e) { skipped.push({ field: row.field, reason: 'failed', message: failMessage(e) }); }
+  }
+  for (const row of r.members) {
+    const label = memberLabel(row.name);
+    if (locked(row)) { skipped.push({ field: label, reason: 'locked' }); continue; }
+    if (warned.has('members')) { skipped.push({ field: label, reason: 'warning' }); continue; }
+    try { await applyMember(db, artistId, row); applied.push(label); }
+    catch (e) { skipped.push({ field: label, reason: 'failed', message: failMessage(e) }); }
+  }
+  return { applied, skipped, review: await getReview(db, artistId) };
+}
+
+async function finish(db, artistId, finished) {
+  if (typeof finished !== 'boolean') throw coded('BAD_INPUT', 'finished must be true or false');
+  await reviewWithProposal(db, artistId);
+  await upsertFinished(db, artistId, finished);
+  return getReview(db, artistId);
+}
+
+module.exports = { QUEUES, counts, list, getReview, matchState, isLocked, buildWarnings,
+  decideMatch, acceptField, acceptMember, acceptAll, finish };
