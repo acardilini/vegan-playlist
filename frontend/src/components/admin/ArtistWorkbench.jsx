@@ -47,9 +47,15 @@ function ArtistWorkbench() {
     } catch { return { ok: false, error: 'Request failed' }; }
   }, [id, reload]);
 
-  const onIdentitySaved = useCallback(async () => { await reload(); setRefreshKey((k) => k + 1); }, [reload]);
+  // A callback made for one artist is dropped once the curator has moved to another (a late response must not reload
+  // the old artist over the new one).
+  const onIdentitySaved = useCallback(async () => {
+    if (idRef.current !== id) return;
+    await reload();
+    if (idRef.current === id) setRefreshKey((k) => k + 1);
+  }, [reload, id]);
   const needIdentity = useCallback((source) => setFocus((f) => ({ open: source, n: f.n + 1 })), []);
-  const factsChanged = useCallback(() => setFactsKey((k) => k + 1), []);
+  const factsChanged = useCallback(() => { if (idRef.current === id) setFactsKey((k) => k + 1); }, [id]);
 
   if (notFound) {
     return (<div><Link to="/admin/artists" className="btn btn-ghost btn-sm">&larr; Back to Artists</Link><h1>Artist not found</h1></div>);

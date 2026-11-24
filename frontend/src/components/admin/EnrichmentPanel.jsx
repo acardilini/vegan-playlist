@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from './bandCheckApi';
 import { sourceLink } from '../../utils/factSources';
@@ -45,20 +45,28 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged }) {
   const [skipped, setSkipped] = useState(() => new Set());
   const [unsure, setUnsure] = useState(false);
 
-  const load = useCallback(() => api(base).then(setReview).catch((e) => setError(e.message)), [base]);
+  const mounted = useRef(true); // a response that lands after the panel is gone (curator moved on) is dropped
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+
+  const load = useCallback(() => api(base)
+    .then((r) => { if (mounted.current) setReview(r); })
+    .catch((e) => { if (mounted.current) setError(e.message); }), [base]);
   useEffect(() => { load(); }, [load]);
 
   // After a success the panel shows the returned review; after a failure it re-reads, keeping the error line.
   const act = async (fn, { identity = false } = {}) => {
     setError(''); setBusy(true);
     try {
-      setReview(await fn());
+      const r = await fn();
+      if (!mounted.current) return;
+      setReview(r);
       if (onChanged) onChanged();
       if (identity && onIdentitySaved) await onIdentitySaved();
     } catch (e) {
+      if (!mounted.current) return;
       setError(e.message);
       load();
-    } finally { setBusy(false); }
+    } finally { if (mounted.current) setBusy(false); }
   };
   const decide = (decision) => act(() => api(`${base}/match`, { method: 'PUT', body: { decision } }), { identity: decision === 'approve' });
   const acceptField = (f) => act(() => api(`${base}/accept`, { method: 'POST', body: { field: f.field } }), { identity: f.field === 'bandcamp_url' });
@@ -109,6 +117,7 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged }) {
               {match.shared_with.map((s, i) => (
                 <span key={s.id}>{i > 0 && ', '}<Link to={`/admin/artist/${s.id}`}>{s.name}</Link> ({s.songs} songs)</span>
               ))}
+              ; merging comes in a later update
             </div>
           )}
           <Warnings list={matchWarnings} />
