@@ -223,16 +223,50 @@ test('acceptAll on a needs-approval artist applies only unlocked rows (Bandcamp,
   const a = await artistRow(id);
   assert.equal(a.musicbrainz_id, null); assert.equal(a.country, null);
   assert.equal(await reviewRow(id), undefined);
-  // a pretrusted match whose id another artist holds: the approve fails, its rows skip as locked
+  // an EXACT_ID match whose id another artist stores: the shared id warns, so the match is skipped and its rows stay locked
   const mb = randomUUID();
   await mkArtist('ZZZENW All Holder', { musicbrainz_id: mb });
   const c = await mkArtist('ZZZENW All Clash');
   await mkProposal(c, { mbid: mb, confidence: 'EXACT_ID', country: 'Norway', country_source: 'MusicBrainz' });
   const rc = await svc.acceptAll(pool, c);
-  const m = rc.skipped.find((s) => s.field === 'match');
-  assert.ok(m && m.reason === 'failed' && typeof m.message === 'string' && !/duplicate key|violates/i.test(m.message));
+  assert.deepEqual(rc.skipped.filter((s) => s.field === 'match'), [{ field: 'match', reason: 'warning' }]);
   assert.deepEqual(rc.skipped.filter((s) => s.field === 'country').map((s) => s.reason), ['locked']);
+  assert.deepEqual(rc.applied, []);
   assert.equal((await artistRow(c)).musicbrainz_id, null);
+  assert.equal(await reviewRow(c), undefined);
+  // a direct approve of that stored id is still CONFLICT with a fixed message and writes nothing
+  await assert.rejects(svc.decideMatch(pool, c, 'approve'),
+    (e) => e.code === 'CONFLICT' && e.message === 'Another artist in the catalogue already has that MusicBrainz id');
+  assert.equal((await artistRow(c)).musicbrainz_id, null);
+  assert.equal(await reviewRow(c), undefined);
+});
+
+test('pretrusted + id proposed for another artist -> needs-approval, acceptAll skips the match as warning, rows stay locked, direct acceptField is CONFLICT', async () => {
+  const mb = randomUUID();
+  const other = await mkArtist('ZZZENW Shared Other');
+  await mkProposal(other, { mbid: mb, confidence: 'EXACT_ID' });
+  const id = await mkArtist('ZZZENW Shared Mine');
+  await mkProposal(id, { mbid: mb, confidence: 'EXACT_ID', country: 'Wales', country_source: 'MusicBrainz', formed: 2001, formed_source: 'Wikidata',
+    bandcamp: 'https://zzzenw-shared.bandcamp.com', members: [{ name: 'Sha', is_current: true, source: 'MusicBrainz' }] });
+  const r = await svc.getReview(pool, id);
+  assert.equal(r.match.state, 'needs-approval');
+  assert.ok(r.warnings.some((w) => w.field === 'match'), 'the match warning stays');
+  assert.deepEqual(r.fields.map((f) => [f.field, f.locked]), [['country', true], ['formed_year', true], ['bandcamp_url', false]]);
+  assert.equal(r.members[0].locked, true);
+  await assert.rejects(svc.acceptField(pool, id, 'country'), (e) => e.code === 'CONFLICT' && e.message === 'Approve the match first');
+  const res = await svc.acceptAll(pool, id);
+  assert.deepEqual(res.applied, ['bandcamp_url']);
+  assert.deepEqual(res.skipped.map((s) => [s.field, s.reason]).sort(),
+    [['country', 'locked'], ['formed_year', 'locked'], ['match', 'warning'], ['member:Sha', 'locked']]);
+  const a = await artistRow(id);
+  assert.equal(a.musicbrainz_id, null); assert.equal(a.country, null); assert.equal(a.formed_year, null);
+  assert.equal((await membersOf(id)).length, 0);
+  assert.equal(await reviewRow(id), undefined);
+  // the curator can still approve it explicitly (no artist stores the id), which unlocks the rows
+  const ap = await svc.decideMatch(pool, id, 'approve');
+  assert.equal(ap.match.state, 'approved');
+  assert.equal((await artistRow(id)).musicbrainz_id, mb);
+  assert.ok(ap.fields.every((f) => !f.locked));
 });
 
 test('acceptAll twice is idempotent (second call applied = [])', async () => {

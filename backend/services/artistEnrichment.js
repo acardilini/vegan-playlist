@@ -246,9 +246,12 @@ async function getReview(db, artistId) {
   const review = (await db.query(`SELECT match_decision, matched_mbid, finished_at FROM artist_enrichment_review WHERE artist_id = $1`, [artistId])).rows[0] || null;
   const facts = await getFacts(db, artistId);
   const stored = { ...facts, bandcamp_url: artist.bandcamp_url };
-  const state = matchState(proposal, review, artist.musicbrainz_id);
   const proposedMbid = lowerId(proposal.proposed_musicbrainz_id);
   const [catalogue, shared] = [await catalogueOf(db, artistId), await sharedWith(db, artistId, proposedMbid)];
+  // An EXACT_ID match is only pre-trusted while no other artist proposes or stores the same id; a shared id needs the
+  // curator's approval, so its MusicBrainz/Wikidata rows stay locked (and the 'match' warning says why).
+  let state = matchState(proposal, review, artist.musicbrainz_id);
+  if (state === 'pretrusted' && shared.length) state = 'needs-approval';
   const proposedMembers = cleanMembers(proposal.proposed_members);
   return {
     has_proposal: true,
@@ -373,15 +376,22 @@ const failMessage = (e) => (e && OUR_CODES.has(e.code) && typeof e.message === '
 async function acceptAll(db, artistId) {
   let r = await reviewWithProposal(db, artistId);
   const applied = [], skipped = [];
-  let approveFailed = false;
-  if (r.match.state === 'pretrusted') {
+  // Warnings are taken from the review as first read, before anything is applied.
+  const warned = new Set(r.warnings.map((w) => w.field));
+  let approveBlocked = false;
+  const undecided = r.match.state === 'pretrusted' || r.match.state === 'needs-approval';
+  if (undecided && warned.has('match')) {
+    // Never auto-approve a warned (shared-id) match. getReview already downgrades such a match to needs-approval;
+    // this guard holds even if that ever changes.
+    approveBlocked = true;
+    skipped.push({ field: 'match', reason: 'warning' });
+  } else if (r.match.state === 'pretrusted') {
     try { await approveMatch(db, artistId, r); applied.push('match'); }
-    catch (e) { approveFailed = true; skipped.push({ field: 'match', reason: 'failed', message: failMessage(e) }); }
+    catch (e) { approveBlocked = true; skipped.push({ field: 'match', reason: 'failed', message: failMessage(e) }); }
     r = await getReview(db, artistId);
   }
-  // A pretrusted match that could not be approved (e.g. its id is stored on another artist) does not unlock its rows.
-  const locked = (row) => row.locked || (approveFailed && isLocked(row.source, 'needs-approval'));
-  const warned = new Set(r.warnings.map((w) => w.field));
+  // A pretrusted match that was not approved in this run does not unlock its rows.
+  const locked = (row) => row.locked || (approveBlocked && isLocked(row.source, 'needs-approval'));
   for (const row of r.fields) {
     if (locked(row)) { skipped.push({ field: row.field, reason: 'locked' }); continue; }
     if (warned.has(row.field)) { skipped.push({ field: row.field, reason: 'warning' }); continue; }
