@@ -1785,10 +1785,10 @@ router.post('/curation/inbox/:id/dismiss', async (req, res) => {
 
 router.get('/curation/queue', async (req, res) => {
   try {
-    const { queue, q, limit, offset, pair } = req.query;
+    const { queue, q, limit, offset, pair, sort, tier } = req.query;
     const out = await curation.listCurationQueue(pool, {
       queue, q: q || '', limit: limit ? parseInt(limit) : null, offset: offset ? parseInt(offset) : 0,
-      pair: pair || null,
+      pair: pair || null, sort: sort || null, tier: tier || null,
     });
     res.json(out);
   } catch (e) {
@@ -1954,6 +1954,7 @@ router.put('/workbench/:id/language-choice', panelSave(curation.chooseLanguage))
 router.put('/workbench/:id/cover',      panelSave(curation.setCover));
 router.put('/workbench/:id/no-video',   panelSave(curation.setNoVideo));
 router.put('/workbench/:id/audio-samples', panelSave(curation.setAudioSamples));
+router.put('/workbench/:id/draft-rejected', panelSave(curation.setDraftRejected));
 router.put('/workbench/:id/sample-source', panelSave(curation.setSampleSource));
 
 router.post('/workbench/:id/videos', async (req, res) => {
