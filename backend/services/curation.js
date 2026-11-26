@@ -415,8 +415,10 @@ async function getWorkbench(db, id) {
     rationale: r.genre_rationale, summary: r.sonic_summary,
   }));
   const videos = (await db.query(
-    `SELECT id, youtube_id, video_title, video_type, is_primary FROM youtube_videos
-     WHERE song_id=$1 ORDER BY is_primary DESC, id`, [id])).rows;
+    `SELECT yv.id, yv.youtube_id, yv.video_title, yv.video_type, yv.is_primary,
+            (yv.id = s.audio_video_id OR (s.audio_video_id IS NULL AND yv.is_primary)) AS is_audio_source
+     FROM youtube_videos yv JOIN songs s ON s.id = yv.song_id
+     WHERE yv.song_id=$1 ORDER BY yv.is_primary DESC, yv.id`, [id])).rows;
   const lyricsRow = (await db.query(
     `SELECT lyrics, source_url, translation, junk_kind FROM song_lyrics WHERE song_id=$1`, [id])).rows[0] || null;
   const processing = await getProcessing(db, id);

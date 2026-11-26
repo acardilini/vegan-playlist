@@ -109,6 +109,19 @@ function VideoPanel({ wb, id, reload }) {
       }
     } catch { setMsg('Request failed'); setStatus('error'); }
   };
+  // The video the audio analysis hears (null, or the primary, = the default: the primary).
+  const setAudioVideo = async (videoId) => {
+    setMsg('');
+    setStatus('saving');
+    try {
+      const r = await adminFetch(`/api/admin/workbench/${id}/audio-video`, { method: 'PUT', body: { video_id: videoId } });
+      if (r.ok) { setStatus('saved'); reload(); } else {
+        const d = await r.json().catch(() => ({}));
+        setMsg(d.error || 'Could not set the audio video');
+        setStatus('error');
+      }
+    } catch { setMsg('Request failed'); setStatus('error'); }
+  };
   const del = async (videoId) => {
     if (!window.confirm('Delete this video?')) return;
     setMsg('');
@@ -201,15 +214,33 @@ function VideoPanel({ wb, id, reload }) {
       )}
 
       {videos.length === 0 ? <p className="admin-stub">{wb.no_video_display ? 'Marked as having no video — it is out of the Needs video queue.' : 'No videos yet.'}</p> : (
-        <ul className="wb-videos">
+        <ul className="adm-list">
+          {videos.length > 1 && (
+            <li className="adm-head" aria-hidden="true">
+              <span className="adm-col-choice">Show</span>
+              <span className="adm-col-choice">Audio</span>
+              <span className="adm-col-name">Video</span>
+            </li>
+          )}
           {videos.map((v) => (
-            <li key={v.id}>
-              <label className="wb-check">
-                <input type="radio" name="primary-video" checked={!!v.is_primary} onChange={() => setPrimary(v.id)} /> primary
-              </label>
-              <a href={`https://www.youtube.com/watch?v=${v.youtube_id}`} target="_blank" rel="noreferrer">{v.video_title || v.youtube_id}</a>
-              <span className="wb-vtype">{v.video_type}</span>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => del(v.id)}>Delete</button>
+            <li key={v.id} className="adm-row">
+              {videos.length > 1 && (
+                <>
+                  <span className="adm-col-choice">
+                    <input type="radio" name="primary-video" aria-label={`Show ${v.video_title || v.youtube_id} on the song page`}
+                      title="Shown on the song page" checked={!!v.is_primary} onChange={() => setPrimary(v.id)} />
+                  </span>
+                  <span className="adm-col-choice">
+                    <input type="radio" name="audio-video" aria-label={`Use ${v.video_title || v.youtube_id} for the audio analysis`}
+                      title="The audio analysis hears this one" checked={!!v.is_audio_source} onChange={() => setAudioVideo(v.id)} />
+                  </span>
+                </>
+              )}
+              <a className="adm-col-name" href={`https://www.youtube.com/watch?v=${v.youtube_id}`} target="_blank" rel="noreferrer"
+                title={v.video_title || v.youtube_id}>{v.video_title || v.youtube_id}</a>
+              <span className="adm-pill">{v.video_type}</span>
+              <button type="button" className="adm-x" aria-label={`Delete ${v.video_title || v.youtube_id}`} title="Delete this video"
+                onClick={() => del(v.id)}>&#10005;</button>
             </li>
           ))}
         </ul>

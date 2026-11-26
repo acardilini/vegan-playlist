@@ -42,7 +42,8 @@ const SAMPLES_PENDING_SQL = (alias = 's') =>
 
 // Songs whose video the audio analysis could not reach: an UNAVAILABLE row, no OK row from any model, a video still on the
 // song, and none added after the failed analysis (adding a replacement link is what clears the song; the analysis project
-// owns the UNAVAILABLE row and we never write it). A song with no video left belongs to Needs video instead.
+// owns the UNAVAILABLE row and we never write it; choosing a different audio-analysis video later than the failure clears it
+// the same way). A song with no video left belongs to Needs video instead.
 const BROKEN_VIDEO_SQL = (alias = 's') =>
   `EXISTS (SELECT 1 FROM song_audio_analysis bv WHERE bv.song_id = ${alias}.id AND bv.audio_status = 'UNAVAILABLE')
    AND NOT EXISTS (SELECT 1 FROM song_audio_analysis ok WHERE ok.song_id = ${alias}.id AND ok.audio_status = 'OK')
@@ -51,7 +52,10 @@ const BROKEN_VIDEO_SQL = (alias = 's') =>
      SELECT 1 FROM youtube_videos nv
      WHERE nv.song_id = ${alias}.id
        AND nv.created_at > (SELECT max(f.analyzed_at) FROM song_audio_analysis f
-                            WHERE f.song_id = ${alias}.id AND f.audio_status = 'UNAVAILABLE'))`;
+                            WHERE f.song_id = ${alias}.id AND f.audio_status = 'UNAVAILABLE'))
+   AND NOT (${alias}.audio_video_set_at IS NOT NULL
+     AND ${alias}.audio_video_set_at > (SELECT max(f2.analyzed_at) FROM song_audio_analysis f2
+                                        WHERE f2.song_id = ${alias}.id AND f2.audio_status = 'UNAVAILABLE'))`;
 
 const asArray = (v) => (Array.isArray(v) ? v : (v ? [v] : [])).filter(Boolean);
 
