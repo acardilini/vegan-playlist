@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import AddSongPanel from './AddSongPanel';
 import SpotifySyncCard from './SpotifySyncCard';
+import PlatformLinksCard from './PlatformLinksCard';
 import { relTime } from './relTime';
 
 // Action tiles: [queueKey, label, disabled].
@@ -22,6 +23,7 @@ const TILES = [
   ['broken-video', 'Broken video', false],
   ['junk-lyrics', 'Junk lyrics', false],
   ['needs-sample-approval', 'Needs sample approval', false],
+  ['check-links', 'Check links', false],
   ['to-finalise', 'To finalise', false],
   ['featured', 'Featured', false],
   ['inbox', 'Inbox', false],
@@ -104,6 +106,11 @@ function Dashboard() {
       <section className="dash-section">
         <h2 className="dash-heading">Spotify playlist</h2>
         <SpotifySyncCard />
+      </section>
+
+      <section className="dash-section">
+        <h2 className="dash-heading">Platform links</h2>
+        <PlatformLinksCard />
       </section>
 
       <section className="dash-section">

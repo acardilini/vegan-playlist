@@ -8,6 +8,7 @@ const browse = require('../services/browseFilters');
 const codebook = require('../services/metadataCodebook');
 const acousticCodebook = require('../services/acousticCodebook');
 const audioAnalysis = require('../services/audioAnalysis');
+const platformLinks = require('../services/platformLinks');
 const router = express.Router();
 
 // Initialize Spotify API
@@ -263,7 +264,9 @@ router.get('/songs/:id', async (req, res) => {
       return res.status(404).json({ error: 'Song not found' });
     }
     
-    res.json(audioAnalysis.attachMood(result.rows)[0]);
+    const song = audioAnalysis.attachMood(result.rows)[0];
+    song.platform_links = await platformLinks.publicLinks(pool, song.id);   // confirmed links only
+    res.json(song);
   } catch (error) {
     console.error('Error fetching song:', error);
     res.status(500).json({ error: 'Failed to fetch song' });

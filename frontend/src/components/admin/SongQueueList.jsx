@@ -10,7 +10,7 @@ const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
   'needs-album': 'Needs album', 'needs-released': 'Needs released', 'needs-language': 'Needs language', 'language-suggested': 'Language suggested', 'check-transcripts': 'Check transcripts', 'needs-genre': 'Needs genre', 'genre-from-artist': 'Genre from artist',
   'genre-from-audio': 'Genre from audio', 'genre-conflicts': 'Genre conflicts',
-  'needs-video': 'Needs video', 'no-video': 'No video available', 'broken-video': 'Broken video', 'junk-lyrics': 'Junk lyrics', 'needs-sample-approval': 'Needs sample approval', 'to-transcribe': 'To transcribe', 'lyrics-on-hold': 'Lyrics on hold',
+  'needs-video': 'Needs video', 'no-video': 'No video available', 'broken-video': 'Broken video', 'junk-lyrics': 'Junk lyrics', 'needs-sample-approval': 'Needs sample approval', 'check-links': 'Check links', 'to-transcribe': 'To transcribe', 'lyrics-on-hold': 'Lyrics on hold',
   'remind-later': 'Remind me later', 'to-finalise': 'To finalise',
   'live': 'Live', 'all': 'All songs', 'featured': 'Featured',
 };
