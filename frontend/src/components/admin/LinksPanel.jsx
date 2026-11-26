@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { adminFetch } from '../../api/adminApi';
 import { AutoText, SaveTag } from './SavedField';
 import PlatformLinksSection from './PlatformLinksSection';
@@ -13,6 +13,8 @@ function OpenLink({ url }) {
 function LinksPanel({ wb, savePanel, id, reload }) {
   const artist = (wb.artists || []).map((a) => a.name).join(' ');
   const bandcampSearch = `https://bandcamp.com/search?q=${encodeURIComponent(`${wb.title || ''} ${artist}`.trim())}`;
+  const idRef = useRef(id); // the song on screen now (a save that finishes after Prev/Next must not reload the song it left)
+  idRef.current = id;
   const [status, setStatus] = useState('idle');
   const [msg, setMsg] = useState('');
   const [pushMsg, setPushMsg] = useState('');
@@ -35,11 +37,12 @@ function LinksPanel({ wb, savePanel, id, reload }) {
 
   // The band's website is an artist field (artists.website_url), saved through the artist update.
   const saveWebsite = async (artistId, v) => {
+    const forId = id;
     try {
       const r = await adminFetch(`/api/admin/artists/${artistId}`, { method: 'PUT', body: { website_url: v } });
-      if (r.ok) { reload(); return { ok: true }; }
+      if (r.ok) { if (idRef.current === forId) reload(); return { ok: true }; }
       const d = await r.json().catch(() => ({}));
-      return { ok: false, error: d.error || 'Save failed' };
+      return { ok: false, error: d.message || d.error || 'Save failed' };
     } catch { return { ok: false, error: 'Request failed' }; }
   };
 
