@@ -181,7 +181,7 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
             {bandcamp && <>{' · '}<a href={bandcamp} target="_blank" rel="noopener noreferrer">Bandcamp</a></>}
           </div>
           {albums && <div className="band-meta enr-value">{albums}</div>}
-          {otherStored && <div className="enr-warn">Saved id {match.stored_mbid} differs from the proposed one</div>}
+          {otherStored && <div className="enr-warn">Saved id {match.stored_mbid} differs from the proposed one - change or clear it under Links</div>}
           {match.shared_with.length > 0 && (
             <div className="enr-warn">
               Another artist has this id:{' '}
