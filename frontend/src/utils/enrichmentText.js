@@ -41,6 +41,16 @@ export function stateLabel(state) {
   return STATES.get(state) || String(state);
 }
 
+// What Accept all applied, as labels: 'match', 'member:<name>' or a field key (order kept).
+export function acceptedSummary(applied) {
+  if (!Array.isArray(applied)) return [];
+  return applied.map((a) => {
+    if (typeof a === 'string' && a.startsWith('member:')) return `Member: ${a.slice('member:'.length)}`;
+    if (a === 'match') return 'MusicBrainz match approved';
+    return fieldLabel(a);
+  });
+}
+
 // A Spotify artist page for a stored Spotify id; anything that is not a 22-character base-62 id gives no link.
 export function spotifyArtistLink(id) {
   return typeof id === 'string' && /^[A-Za-z0-9]{22}$/.test(id) ? `https://open.spotify.com/artist/${id}` : null;

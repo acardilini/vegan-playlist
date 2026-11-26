@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { methodLabel, confidenceLabel, fieldLabel, stateLabel, spotifyArtistLink, albumLine } from './enrichmentText.js';
+import { methodLabel, confidenceLabel, fieldLabel, stateLabel, spotifyArtistLink, albumLine, acceptedSummary } from './enrichmentText.js';
+
+test('acceptedSummary names what Accept all applied, in order', () => {
+  assert.deepEqual(
+    acceptedSummary(['match', 'country', 'member:Tab', 'bandcamp_url']),
+    ['MusicBrainz match approved', fieldLabel('country'), 'Member: Tab', fieldLabel('bandcamp_url')],
+  );
+  assert.deepEqual(acceptedSummary([]), []);
+  assert.deepEqual(acceptedSummary(undefined), []);
+});
 
 test('spotifyArtistLink only for a valid id', () => {
   assert.equal(spotifyArtistLink('4Z8W4fKeB5YxbusRsdQVPb'), 'https://open.spotify.com/artist/4Z8W4fKeB5YxbusRsdQVPb');

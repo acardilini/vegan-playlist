@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from './bandCheckApi';
 import { sourceLink } from '../../utils/factSources';
-import { methodLabel, confidenceLabel, fieldLabel, stateLabel, spotifyArtistLink, albumLine } from '../../utils/enrichmentText';
+import { methodLabel, confidenceLabel, fieldLabel, stateLabel, spotifyArtistLink, albumLine, acceptedSummary } from '../../utils/enrichmentText';
 
 const MEMBER_CHANGE = { new: 'new member', status: 'status change' };
 const UNDECIDED = new Set(['pretrusted', 'needs-approval']);
@@ -53,6 +53,7 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
   const [skipped, setSkipped] = useState(() => new Set());
   const [unsure, setUnsure] = useState(false);
   const [needCheck, setNeedCheck] = useState([]); // labels of the rows the last Accept all left alone
+  const [accepted, setAccepted] = useState([]); // labels of what the last Accept all applied
 
   const mounted = useRef(true); // a response that lands after the panel is gone (curator moved on) is dropped
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -70,7 +71,7 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
 
   // After a success the panel shows the returned review; after a failure it re-reads, keeping the error line.
   const act = async (fn, { identity = false } = {}) => {
-    setError(''); setNeedCheck([]); setBusy(true);
+    setError(''); setNeedCheck([]); setAccepted([]); setBusy(true);
     try {
       const r = await fn();
       if (!mounted.current) return false;
@@ -93,13 +94,13 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
   const finish = async (finished) => {
     if ((await act(() => finishCall(finished))) && finished && mounted.current && onDone) onDone();
   };
-  // Accept every row the server will accept (it only fills empty values). Only when nothing was left over is the artist
-  // finished and the next one opened; otherwise the curator stays here with the refreshed review and the rows to check.
+  // Accept every row the server will accept (it only fills empty values). The curator always stays on the artist and sees
+  // what was accepted; when nothing was left over the artist is also marked reviewed, and "Next artist" moves on.
   const acceptAll = async () => {
-    let clean = false;
-    const ok = await act(async () => {
+    await act(async () => {
       const res = await api(`${base}/accept-all`, { method: 'POST', body: {} });
       if (!mounted.current) return res.review;
+      setAccepted(acceptedSummary(res.applied));
       if (onChanged) onChanged(); // the Facts panel must show what was just saved
       const identity = res.applied.some((a) => a === 'match' || a === 'bandcamp_url');
       // Links and Catalogue re-read the identity now, so they are right even if finishing below fails. The panel is
@@ -107,14 +108,11 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
       if (identity && onIdentitySaved) await onIdentitySaved();
       if (!mounted.current) return res.review;
       if (res.skipped.length === 0) {
-        const done = await finishCall(true);
-        clean = true;
-        return done;
+        return finishCall(true);
       }
       setNeedCheck(res.skipped.map((s) => skipLabel(s, res.review.match.state)));
       return res.review;
     });
-    if (ok && clean && mounted.current && onDone) onDone();
   };
   const decide = (decision) => act(() => api(`${base}/match`, { method: 'PUT', body: { decision } }), { identity: decision === 'approve' });
   const acceptField = (f) => act(() => api(`${base}/accept`, { method: 'POST', body: { field: f.field } }), { identity: f.field === 'bandcamp_url' });
@@ -123,6 +121,7 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
 
   if (!review) return error ? <section className="wb-panel"><h2>Proposed enrichment</h2><div className="admin-message error">{error}</div></section> : null;
   if (!review.has_proposal) return null;
+  const acceptedLine = accepted.length > 0 && <div className="band-meta" role="status">Just accepted: {accepted.join(', ')}</div>;
   if (review.finished_at) {
     return (
       <section className="wb-panel">
@@ -132,6 +131,8 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
           <strong>Reviewed</strong>
           <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => finish(false)}>Reopen</button>
         </div>
+        {acceptedLine}
+        {onDone && <div className="fact-proposal"><button className="btn btn-primary btn-sm" disabled={busy} onClick={onDone}>Next artist →</button></div>}
       </section>
     );
   }
@@ -241,11 +242,12 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
         </div>
       )}
 
+      {acceptedLine}
       {needCheck.length > 0 && (
         <div className="enr-warn">{needCheck.length === 1 ? '1 row needs' : `${needCheck.length} rows need`} your check: {needCheck.join(', ')}</div>
       )}
       <div className="fact-proposal">
-        {canAcceptAll && <button className="btn btn-primary btn-sm" disabled={busy} onClick={acceptAll}>Accept all shown, next artist</button>}
+        {canAcceptAll && <button className="btn btn-primary btn-sm" disabled={busy} onClick={acceptAll}>Accept all shown</button>}
         <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => finish(true)}>Done with this artist</button>
       </div>
     </section>
