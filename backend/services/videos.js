@@ -32,12 +32,18 @@ async function updateVideo(db, videoId, { video_title, video_type } = {}) {
   return r.rows[0];
 }
 
+// A video that becomes the primary needs no audio override: clear a pointer to it so the analysis keeps following the
+// primary (and the stored value stays a deliberate override of a NON-primary video).
+const clearOverrideIfPrimary = (db, songId, videoId) => db.query(
+  'UPDATE songs SET audio_video_id=NULL, audio_video_set_at=CURRENT_TIMESTAMP WHERE id=$1 AND audio_video_id=$2', [songId, videoId]);
+
 async function setPrimaryVideo(db, videoId) {
   const v = (await db.query('SELECT song_id FROM youtube_videos WHERE id=$1', [videoId])).rows[0];
   if (!v) { const e = new Error('video not found'); e.code = 'NOT_FOUND'; throw e; }
   await db.query('UPDATE youtube_videos SET is_primary=false WHERE song_id=$1', [v.song_id]);
   const r = await db.query(`UPDATE youtube_videos SET is_primary=true WHERE id=$1
     RETURNING id, song_id, youtube_id, video_title, video_type, is_primary`, [videoId]);
+  await clearOverrideIfPrimary(db, v.song_id, videoId);
   return r.rows[0];
 }
 
@@ -63,7 +69,10 @@ async function deleteVideo(db, videoId) {
   await db.query('DELETE FROM youtube_videos WHERE id=$1', [videoId]);
   if (v.is_primary) {
     const next = (await db.query('SELECT id FROM youtube_videos WHERE song_id=$1 ORDER BY id LIMIT 1', [v.song_id])).rows[0];
-    if (next) await db.query('UPDATE youtube_videos SET is_primary=true WHERE id=$1', [next.id]);
+    if (next) {
+      await db.query('UPDATE youtube_videos SET is_primary=true WHERE id=$1', [next.id]);
+      await clearOverrideIfPrimary(db, v.song_id, next.id);
+    }
   }
   return { deleted: true, song_id: v.song_id };
 }

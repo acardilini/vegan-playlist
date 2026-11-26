@@ -95,3 +95,21 @@ test('changing the audio video after a failed analysis clears the song from Brok
   await videos.setAudioVideo(pool, id, album.id);
   assert.equal(await listed(), false, 'a new audio video clears it');
 });
+
+test('making the marked video the primary, or promoting it after the primary is deleted, clears the override', async () => {
+  const id = await mkSong('ZZZAVD Promote');
+  const a = await videos.addVideo(pool, id, { youtube_id: 'zzzavd00013', video_type: 'live' });   // primary
+  const b = await videos.addVideo(pool, id, { youtube_id: 'zzzavd00014' });
+  const c = await videos.addVideo(pool, id, { youtube_id: 'zzzavd00015' });
+  await videos.setAudioVideo(pool, id, b.id);
+
+  await videos.setPrimaryVideo(pool, b.id);
+  assert.equal((await row(id)).audio_video_id, null, 'B is the primary now: no override is needed');
+  await videos.setPrimaryVideo(pool, c.id);
+  assert.equal((await row(id)).audio_video_id, null, 'the analysis follows the primary, not a stale B');
+
+  await videos.setAudioVideo(pool, id, a.id);                    // override to A (C is primary)
+  assert.equal((await row(id)).audio_video_id, a.id);
+  await videos.deleteVideo(pool, c.id);                          // the primary goes; the lowest id (A) is promoted
+  assert.equal((await row(id)).audio_video_id, null, 'A was promoted to primary: the override is cleared');
+});
