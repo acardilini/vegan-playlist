@@ -109,7 +109,7 @@ const TRANSCRIPT_JOIN_SQL = `LEFT JOIN LATERAL (
        ORDER BY sat.transcribed_at DESC NULLS LAST LIMIT 1) tr ON true`;
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics','check-transcripts',
   'needs-cover','needs-album','needs-released','needs-language','language-suggested','needs-genre','genre-from-artist','genre-from-audio','genre-conflicts',
-  'needs-video','no-video','broken-video','junk-lyrics','needs-analysis','needs-sample-approval','to-finalise','live','all','featured'];
+  'needs-video','no-video','broken-video','junk-lyrics','needs-analysis','needs-sample-approval','check-links','to-finalise','live','all','featured'];
 
 function queueWhere(queue) {
   switch (queue) {
@@ -132,6 +132,9 @@ function queueWhere(queue) {
     // as the song's lyrics. A subset of Needs lyrics (and To transcribe), listed apart so the checkable ones can be worked through.
     case 'check-transcripts':
       return `s.status='included' AND NOT ${HAS_LYRICS_SQL} AND ${HAS_DRAFT_SQL}`;
+    // A platform link the run found by title + artist (Apple Music) waits here until the curator confirms or rejects it.
+    case 'check-links':
+      return `s.status='included' AND EXISTS (SELECT 1 FROM song_platform_links spl WHERE spl.song_id = s.id AND spl.status = 'proposed')`;
     case 'needs-cover':
       return `s.status='included' AND NOT ${ARTWORK_SQL}`;
     // Gap-filling lists, not publishing gates: songs stay live while they sit here. An empty

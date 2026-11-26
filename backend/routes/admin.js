@@ -20,6 +20,7 @@ const artistFacts = require('../services/artistFacts');
 const leadsSvc = require('../services/leads');
 const playlistCrosscheck = require('../services/playlistCrosscheck');
 const bandcampLyrics = require('../services/bandcampLyrics');
+const platformLinks = require('../services/platformLinks');
 const { defaultAuth: spotifyAuth } = require('../services/spotifyAuth');
 const multer = require('multer');
 const csv = require('csv-parser');
@@ -2019,6 +2020,43 @@ router.delete('/workbench/videos/:videoId', async (req, res) => {
     console.error('delete video error:', e);
     res.status(500).json({ error: 'Failed to delete video', details: e.message });
   }
+});
+
+// ---- Platform links (Deezer / Apple Music / Tidal) ----
+// The run finds links (Deezer by ISRC is saved confirmed; Apple by search is proposed); the curator confirms or rejects
+// each proposed one. Only confirmed links are public (routes/spotify.js).
+function platformLinksError(res, e, what) {
+  if (e.code === 'BUSY') return res.status(409).json({ error: 'BUSY', message: 'A run is already in progress' });
+  if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'NOT_FOUND', message: 'No such link' });
+  if (e.code === 'BAD_INPUT') return res.status(400).json({ error: 'BAD_INPUT', message: e.message });
+  console.error(`platform links: could not ${what}:`, e.code || 'error');   // never the message
+  return res.status(500).json({ error: 'Failed', message: `Could not ${what}` });
+}
+router.post('/platform-links/run', async (req, res) => {
+  try { res.json({ success: true, ...(await platformLinks.startRun(pool)) }); }
+  catch (e) { platformLinksError(res, e, 'start the run'); }
+});
+router.get('/platform-links/runs/:runId', (req, res) => {
+  const run = platformLinks.getRun(String(req.params.runId));
+  if (!run) return res.status(404).json({ error: 'NOT_FOUND', message: 'No such run' });
+  res.set('Cache-Control', 'no-store').json(run);
+});
+router.get('/platform-links/counts', async (req, res) => {
+  try { res.json(await platformLinks.counts(pool)); } catch (e) { platformLinksError(res, e, 'read the counts'); }
+});
+router.get('/platform-links/song/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'BAD_INPUT', message: 'bad song id' });
+    res.json({ links: await platformLinks.linksForSong(pool, id) });
+  } catch (e) { platformLinksError(res, e, 'read the links'); }
+});
+router.put('/platform-links/song/:id/:platform', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'BAD_INPUT', message: 'bad song id' });
+    res.json({ success: true, link: await platformLinks.reviewLink(pool, id, String(req.params.platform), req.body || {}) });
+  } catch (e) { platformLinksError(res, e, 'review the link'); }
 });
 
 module.exports = router;
