@@ -100,3 +100,34 @@ test('the queue count matches the unfiltered list (the unintelligible drafts are
   assert.equal(counts['check-transcripts'], all.rows.length);
   assert.ok(all.rows.some((r) => r.id === F));
 });
+
+// ---- the workbench draft ----
+
+test('the draft carries the confidence details of its transcript row', async () => {
+  const d = (await curation.getWorkbench(pool, A)).draft_transcript;
+  assert.equal(d.transcript, SECRET);
+  assert.deepEqual(
+    [d.status, d.tier, d.confidence, d.confidence_score, d.estimated_word_accuracy_pct, d.audio_clarity, d.inaudible_segments, d.confidence_notes],
+    ['OK', 'HIGH', 'HIGH', 95, 96, 'CLEAR', 0, NOTES]);
+});
+
+test('an UNINTELLIGIBLE transcript is a draft with its own tier', async () => {
+  const d = (await curation.getWorkbench(pool, F)).draft_transcript;
+  assert.ok(d, 'the unintelligible draft is offered');
+  assert.deepEqual([d.status, d.tier, d.confidence, d.confidence_score], ['UNINTELLIGIBLE', 'UNINTELLIGIBLE', 'LOW', 10]);
+});
+
+test('an older row with no confidence details gives nulls, not undefined', async () => {
+  const old = await mkSong('ZZZCKT old');
+  await addTranscript(old, { confidence: 'HIGH', notes: null });
+  const d = (await curation.getWorkbench(pool, old)).draft_transcript;
+  for (const k of ['confidence_score', 'estimated_word_accuracy_pct', 'audio_clarity', 'inaudible_segments', 'confidence_notes']) {
+    assert.strictEqual(d[k], null, k);
+  }
+  assert.equal(d.tier, 'HIGH');
+});
+
+test('an UNINTELLIGIBLE transcript does not feed the language suggestions', async () => {
+  const s = (await curation.getWorkbench(pool, F)).language_suggestions;
+  assert.equal(s.some((x) => x.source === 'transcript'), false);
+});

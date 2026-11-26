@@ -371,12 +371,16 @@ async function languageSuggestions(db, id, manual) {
 async function draftTranscript(db, id) {
   const r = (await db.query(
     `SELECT sat.model_used, sat.youtube_id_used, sat.transcript, sat.detected_languages, sat.word_count, sat.confidence,
-            sat.transcribed_at
+            sat.transcribed_at, sat.status, ${tierSql('sat')} AS tier, sat.confidence_score, sat.estimated_word_accuracy_pct,
+            sat.audio_clarity, sat.inaudible_segments, sat.confidence_notes
        FROM songs s JOIN song_audio_transcripts sat ON sat.song_id = s.id
-      WHERE s.id=$1 AND sat.status='OK' AND btrim(sat.transcript) <> '' AND NOT ${HAS_LYRICS_SQL}`, [id])).rows[0];
+      WHERE s.id=$1 AND sat.status IN ${DRAFT_STATUSES_SQL} AND btrim(sat.transcript) <> '' AND NOT ${HAS_LYRICS_SQL}
+      ORDER BY sat.transcribed_at DESC NULLS LAST LIMIT 1`, [id])).rows[0];
   return r ? {
     model_used: r.model_used, youtube_id: r.youtube_id_used, transcript: r.transcript, languages: r.detected_languages || [],
     word_count: r.word_count, confidence: r.confidence, transcribed_at: r.transcribed_at,
+    status: r.status, tier: r.tier, confidence_score: r.confidence_score, estimated_word_accuracy_pct: r.estimated_word_accuracy_pct,
+    audio_clarity: r.audio_clarity, inaudible_segments: r.inaudible_segments, confidence_notes: r.confidence_notes,
   } : null;
 }
 
