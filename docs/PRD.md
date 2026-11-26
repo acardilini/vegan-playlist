@@ -389,6 +389,7 @@ keep/rebuild/drop/defer decisions are recorded in
 - **Artist pages:** stats, discography tracking, advocacy notes. ✅
 - **Artist facts:** country, formed year, active status and members (with a vegan mark), curator-checked with a source per fact; MusicBrainz proposes, the curator accepts; shown on the artist page only when present. ✅
 - **Leads:** a quick-capture list of bands to look into later (name, note, song, link), with duplicate handling and Promote into an artist workbench; admin-only. ✅
+- **Artist enrichment and merge:** the analysis project's staged proposals (MusicBrainz match, country, years, members, Bandcamp link) are reviewed one artist at a time in the admin: approve or reject the match, accept or skip each fact, nothing applied without a click. Duplicate artist rows are resolved by **merging** one into the other from a preview (songs, members and leads move, the keeper's values win, a snapshot is kept); admin-only, nothing public changes except the merged artist's page. 🔨 built, awaiting curator smoke (2026-11-26).
 - **User playlists:** list/detail (browse curated playlists). ✅ — **create/add/remove
   (CRUD) moved to ⛔ deferred pending auth** (Session 3.3: the anonymous create/remove UI
   was deleted from the public site — no auth/spam story existed for it; the backend CRUD

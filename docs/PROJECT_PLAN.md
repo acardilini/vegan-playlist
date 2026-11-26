@@ -495,6 +495,8 @@ Spec `docs/superpowers/specs/2026-11-22-data-stories-design.md`, plan `docs/supe
 ## Explore > Data redesign (curator-requested, 2026-11-22)
 Spec `docs/superpowers/specs/2026-11-22-explore-data-redesign-design.md`. Each phase is built on its own branch and curator-smoked before the next. **Phase 1 ☑ (merged 2026-11-22):** dataset service + endpoint, Data sub-tab shell, shared slice bar, Over time tab; Chart.js and the five old analytics routes retired. **Phase 2 (Arguments: flow + theme pairs) ☑ merged 2026-11-22 (`45a1d0f`; spec `docs/superpowers/specs/2026-11-22-data-arguments-design.md`, plan `docs/superpowers/plans/2026-11-22-data-arguments.md`).** **Artist enrichment intake (see PROJECT_STATE Next Tasks) is noted to come before phases 3-5.** **Phases 3-5 ☐:** Sound (tempo vs loudness scatter, major/minor), Compare (+ Advanced cross-tab), Artists (depth, leaderboard, language once at least a quarter of live songs have a curated language).
 
+**Artist enrichment (2026-11-23 to 2026-11-26; spec `docs/superpowers/specs/2026-11-23-artist-enrichment-design.md`).** Piece 1 (provenance + published-work range) ☑ merged `461000c`. Piece 2 (match and facts review in the artist workbench) ◐ built on `session-enrichment-review`, curator-smoked 2026-11-24. Smoke fixes + piece 3 (artist merge, migration 026) ◐ built on the same branch, awaiting curator smoke and "Merge" (plan `docs/superpowers/plans/2026-11-25-artist-enrichment-smoke-fixes-and-merge.md`). Next: the artist admin layout redesign (own brainstorm), then the Data visuals resume (Sound, Compare + Advanced cross-tab, Artists).
+
 ## Backlog / Deferred (YAGNI)
 
 Items intentionally deferred until needed (from the PRD and the Session 0.1
