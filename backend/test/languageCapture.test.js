@@ -144,7 +144,7 @@ test('getWorkbench carries the draft transcript only while the song has no real 
 
   const failed = await mkSong('ZZZLNC draft failed');
   await addTranscript(failed, { status: 'ERROR' });
-  assert.equal((await curation.getWorkbench(pool, failed)).draft_transcript, null, 'only OK transcripts are offered');
+  assert.equal((await curation.getWorkbench(pool, failed)).draft_transcript, null, 'only OK and UNINTELLIGIBLE transcripts are offered');
 
   const empty = await mkSong('ZZZLNC draft empty');
   await addTranscript(empty, { text: '   ' });

@@ -13,7 +13,7 @@ The analysis project now scores every AI draft transcript (`song_audio_transcrip
 ## Findings that shaped it (live data, read-only)
 - 622 rows: 570 OK, 52 UNINTELLIGIBLE (all 52 have text, mostly `[inaudible]`). The rail today needs `status = 'OK'`, so those 52 are hidden; the rail has 496 songs, 548 with them.
 - Score bands per tier do not overlap (HIGH 82-99, MEDIUM 55-79, LOW 20-49; UNINTELLIGIBLE 0-25). 91 older spoken-word rows have no score (77 of them HIGH), so `score DESC NULLS LAST` alone would sink clean HIGH drafts below every scored LOW.
-- One transcript row per song today (no song has two), but the key is (`song_id`, `model_used`), so the newest usable row is chosen.
+- The table's primary key is `song_id` alone, so a song has exactly one transcript row (corrected during the build; the first draft of this design wrongly assumed one row per model). The join still takes the newest usable row, which is then simply that row.
 
 ## Approaches considered
 1. **Sort by score only** (the analysis agent's literal ask): simple, but buries unscored HIGH drafts. Rejected.

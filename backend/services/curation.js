@@ -85,8 +85,25 @@ const TRANSCRIPT_LANGS_SQL = `(SELECT sat.detected_languages FROM song_audio_tra
 const SUGGESTED_LANGS_SQL = `COALESCE(${ANALYSIS_LANGS_SQL}, ${TRANSCRIPT_LANGS_SQL})`;
 // An AI draft transcript (spoken-word / advocate-speech tracks with no lyrics). LOCAL / ADMIN ONLY, like song_lyrics:
 // only this file may reference song_audio_transcripts (backend/test/lyrics_privacy.test.js).
+// A draft is an OK or UNINTELLIGIBLE transcript with text (an UNINTELLIGIBLE one is mostly "[inaudible]" but the curator
+// decides what to do with it, so it is listed and flagged rather than hidden).
+const DRAFT_STATUSES_SQL = `('OK','UNINTELLIGIBLE')`;
 const HAS_DRAFT_SQL = `EXISTS (SELECT 1 FROM song_audio_transcripts sat
-              WHERE sat.song_id = s.id AND sat.status = 'OK' AND btrim(sat.transcript) <> '')`;
+              WHERE sat.song_id = s.id AND sat.status IN ${DRAFT_STATUSES_SQL} AND btrim(sat.transcript) <> '')`;
+// Tier of a transcript row (alias given): UNINTELLIGIBLE when its status says so, else its confidence. Rank and the
+// midpoint used to place an unscored row (the older spoken-word rows have no confidence_score) inside its own tier.
+const TRANSCRIPT_TIERS = Object.freeze(['HIGH', 'MEDIUM', 'LOW', 'UNINTELLIGIBLE']);
+const TRANSCRIPT_SORTS = Object.freeze(['best', 'worst']);
+const tierSql = (a) => `CASE WHEN ${a}.status = 'UNINTELLIGIBLE' THEN 'UNINTELLIGIBLE' ELSE ${a}.confidence END`;
+const tierRankSql = (t) => `CASE ${t} WHEN 'HIGH' THEN 3 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 1 ELSE 0 END`;
+const tierMidSql = (t) => `CASE ${t} WHEN 'HIGH' THEN 90 WHEN 'MEDIUM' THEN 67 WHEN 'LOW' THEN 35 ELSE 10 END`;
+// The newest usable transcript row of a song, joined only for the Check transcripts queue. Scalars only: never the text or notes.
+const TRANSCRIPT_JOIN_SQL = `LEFT JOIN LATERAL (
+      SELECT ${tierSql('sat')} AS tr_tier, sat.confidence AS tr_confidence, sat.confidence_score AS tr_score,
+             sat.estimated_word_accuracy_pct AS tr_accuracy, sat.audio_clarity AS tr_clarity, sat.inaudible_segments AS tr_inaudible
+        FROM song_audio_transcripts sat
+       WHERE sat.song_id = s.id AND sat.status IN ${DRAFT_STATUSES_SQL} AND btrim(sat.transcript) <> ''
+       ORDER BY sat.transcribed_at DESC NULLS LAST LIMIT 1) tr ON true`;
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics','check-transcripts',
   'needs-cover','needs-album','needs-released','needs-language','language-suggested','needs-genre','genre-from-artist','genre-from-audio','genre-conflicts',
   'needs-video','no-video','broken-video','junk-lyrics','needs-analysis','needs-sample-approval','to-finalise','live','all','featured'];
@@ -196,13 +213,27 @@ function mapQueueRow(r) {
     genre_source: r.song_genre ? (r.song_genre_source || 'song') : (r.artist_genre ? 'artist' : null),
     audio_subgenre: r.audio_subgenre || null, audio_confidence: r.audio_confidence || null,
     language_suggestion: r.language_suggestion || null,
+    // Only the Check transcripts queue joins a transcript row: its confidence scalars, never its text or notes.
+    ...(r.tr_tier !== undefined && {
+      transcript: {
+        tier: r.tr_tier, confidence: r.tr_confidence, confidence_score: r.tr_score,
+        estimated_word_accuracy_pct: r.tr_accuracy, audio_clarity: r.tr_clarity, inaudible_segments: r.tr_inaudible,
+      },
+    }),
   };
 }
 
 // pair = 'existingParent>audioParent' narrows the genre-conflicts queue to one kind of disagreement.
-async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0, pair = null } = {}) {
+// sort ('best' | 'worst') and tier narrow/order the Check transcripts queue by transcription confidence: tier first, then
+// score, an unscored row at its tier's midpoint, ties by id so paging is stable. Either on another queue is BAD_QUEUE.
+async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0, pair = null, sort = null, tier = null } = {}) {
+  const isTr = queue === 'check-transcripts';
+  if ((sort != null && (!isTr || !TRANSCRIPT_SORTS.includes(sort))) || (tier != null && (!isTr || !TRANSCRIPT_TIERS.includes(tier)))) {
+    const e = new Error('bad sort or tier'); e.code = 'BAD_QUEUE'; throw e;
+  }
   let where = queueWhere(queue);
   const params = [];
+  if (isTr && tier) { params.push(tier); where += ` AND tr.tr_tier = $${params.length}`; }
   if (pair) {
     const m = queue === 'genre-conflicts' && /^([a-z-]+)>([a-z-]+)$/.exec(String(pair));
     if (!m) { const e = new Error('bad pair'); e.code = 'BAD_QUEUE'; throw e; }
@@ -221,6 +252,7 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0, 
            ${SONG_GENRE_SQL} AS song_genre, s.genre_source AS song_genre_source, ${ARTIST_GENRE_SQL} AS artist_genre,
            ${AUDIO_SUBGENRE_SQL} AS audio_subgenre, ${AUDIO_CONFIDENCE_SQL} AS audio_confidence,
            ${SUGGESTED_LANGS_SQL} AS language_suggestion,
+           ${isTr ? 'tr.tr_tier, tr.tr_confidence, tr.tr_score, tr.tr_accuracy, tr.tr_clarity, tr.tr_inaudible,' : ''}
            s.spotify_url, s.bandcamp_url, s.soundcloud_url,
            ${ARTWORK_SQL} AS has_art,
            COALESCE(string_agg(DISTINCT a.name, ', '), '') AS artists,
@@ -242,9 +274,10 @@ async function listCurationQueue(db, { queue, q = '', limit = null, offset = 0, 
     LEFT JOIN song_processing sp ON sp.song_id=s.id
     LEFT JOIN song_artists sa ON sa.song_id=s.id
     LEFT JOIN artists a ON a.id=sa.artist_id
+    ${isTr ? TRANSCRIPT_JOIN_SQL : ''}
     WHERE (${where})${searchClause}
-    GROUP BY s.id, al.images, sp.snooze_until, sp.park_reason
-    ORDER BY s.id`;
+    GROUP BY s.id, al.images, sp.snooze_until, sp.park_reason${isTr ? ', tr.tr_tier, tr.tr_confidence, tr.tr_score, tr.tr_accuracy, tr.tr_clarity, tr.tr_inaudible' : ''}
+    ORDER BY ${isTr && sort ? `${tierRankSql('tr.tr_tier')} ${sort === 'best' ? 'DESC' : 'ASC'}, COALESCE(tr.tr_score, ${tierMidSql('tr.tr_tier')}) ${sort === 'best' ? 'DESC' : 'ASC'}, s.id` : 's.id'}`;
   if (limit) { params.push(limit); sql += ` LIMIT $${params.length}`; params.push(offset); sql += ` OFFSET $${params.length}`; }
   const rows = (await db.query(sql, params)).rows.map(mapQueueRow);
   return { queue, total: rows.length, rows };
@@ -752,7 +785,7 @@ async function quickCapture(db, { title, artist } = {}) {
   return { id: song.id };
 }
 
-module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES, HAS_LYRICS_SQL,
+module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES, HAS_LYRICS_SQL, TRANSCRIPT_TIERS,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
   saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, setAudioSamples, setSampleSource, quickCapture, setFeatured, listLanguages,
   chooseGenre, chooseLanguage, genreConflictPairs, audioSourceFor };

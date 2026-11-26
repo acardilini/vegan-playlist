@@ -1785,10 +1785,10 @@ router.post('/curation/inbox/:id/dismiss', async (req, res) => {
 
 router.get('/curation/queue', async (req, res) => {
   try {
-    const { queue, q, limit, offset, pair } = req.query;
+    const { queue, q, limit, offset, pair, sort, tier } = req.query;
     const out = await curation.listCurationQueue(pool, {
       queue, q: q || '', limit: limit ? parseInt(limit) : null, offset: offset ? parseInt(offset) : 0,
-      pair: pair || null,
+      pair: pair || null, sort: sort || null, tier: tier || null,
     });
     res.json(out);
   } catch (e) {
