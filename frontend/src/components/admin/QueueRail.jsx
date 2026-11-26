@@ -20,6 +20,7 @@ const GROUPS = [
     ['junk-lyrics', 'Junk lyrics', false],
     ['needs-analysis', 'Needs analysis', true],
     ['needs-sample-approval', 'Needs sample approval', false],
+    ['check-links', 'Check links', false],
   ]],
   ['Parked', [['to-transcribe', 'To transcribe', false], ['lyrics-on-hold', 'Lyrics on hold', false], ['remind-later', 'Remind me later', false]]],
   ['Publish', [['to-finalise', 'To finalise', false], ['live', 'Live', false], ['featured', 'Featured', false]]],

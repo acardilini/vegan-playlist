@@ -217,6 +217,8 @@
 .band-held { opacity: 0.6; }
 .band-meta { color: var(--text-secondary); font-size: 0.85em; }
 .band-muted { color: var(--text-muted); font-size: 0.85em; }
+.wb-platform-links { margin-top: var(--space-3); }
+.wb-platform-row { margin-bottom: var(--space-2); }
 .band-dot { display: inline-block; box-sizing: border-box; width: 1.4em; height: 1.4em; line-height: 1.4em; text-align: center; border-radius: 50%; border: 1px solid var(--border-hairline); margin-right: 0.2em; opacity: 0.6; }
 .band-dot.on { opacity: 1; background: var(--accent-moss-60); color: var(--text-on-accent); }
 .band-chip { display: inline-block; padding: 0 var(--space-2); margin-right: var(--space-1); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); font-size: 0.75rem; }

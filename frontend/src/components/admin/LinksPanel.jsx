@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminFetch } from '../../api/adminApi';
 import { AutoText, SaveTag } from './SavedField';
+import PlatformLinksSection from './PlatformLinksSection';
 
 function OpenLink({ url }) {
   if (!url) return null;
@@ -92,6 +93,8 @@ function LinksPanel({ wb, savePanel, id, reload }) {
       <div className="wb-linkactions">
         <OpenLink url={wb.soundcloud_url} />
       </div>
+
+      <PlatformLinksSection id={id} title={wb.title} artists={artist} />
 
       {artistSite && <p className="admin-stub">Artist website on file: {artistSite}</p>}
     </section>
