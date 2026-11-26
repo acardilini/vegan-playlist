@@ -109,6 +109,19 @@ function VideoPanel({ wb, id, reload }) {
       }
     } catch { setMsg('Request failed'); setStatus('error'); }
   };
+  // The video the audio analysis hears (null, or the primary, = the default: the primary).
+  const setAudioVideo = async (videoId) => {
+    setMsg('');
+    setStatus('saving');
+    try {
+      const r = await adminFetch(`/api/admin/workbench/${id}/audio-video`, { method: 'PUT', body: { video_id: videoId } });
+      if (r.ok) { setStatus('saved'); reload(); } else {
+        const d = await r.json().catch(() => ({}));
+        setMsg(d.error || 'Could not set the audio video');
+        setStatus('error');
+      }
+    } catch { setMsg('Request failed'); setStatus('error'); }
+  };
   const del = async (videoId) => {
     if (!window.confirm('Delete this video?')) return;
     setMsg('');
@@ -209,6 +222,13 @@ function VideoPanel({ wb, id, reload }) {
               </label>
               <a href={`https://www.youtube.com/watch?v=${v.youtube_id}`} target="_blank" rel="noreferrer">{v.video_title || v.youtube_id}</a>
               <span className="wb-vtype">{v.video_type}</span>
+              {videos.length > 1 && (v.is_audio_source
+                ? <span className="wb-vtype" title="The audio analysis uses this video">audio analysis</span>
+                : <button type="button" className="btn btn-ghost btn-sm" title="Use this video for the audio analysis instead of the primary"
+                    onClick={() => setAudioVideo(v.id)}>Use for audio</button>)}
+              {videos.length > 1 && v.is_audio_source && !v.is_primary && (
+                <button type="button" className="btn btn-ghost btn-sm" title="Go back to analysing the primary video"
+                  onClick={() => setAudioVideo(null)}>Use primary</button>)}
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => del(v.id)}>Delete</button>
             </li>
           ))}
