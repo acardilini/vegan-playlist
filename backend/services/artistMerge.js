@@ -107,4 +107,66 @@ async function preview(db, keeperId, loserId) {
   return summarise(await load(db, keeperId, loserId));
 }
 
-module.exports = { FIELDS, SOURCE_OF, IDENTITY, load, summarise, hashOf, preview };
+// Overridable only so a test can inject a failure into the identity step.
+const _deps = { saveIdentity: (...args) => require('./bandCheck').saveIdentity(...args) };
+
+// Merges `loserId` into `keeperId` in ONE transaction; `hash` is the preview the curator saw. The keeper's values win; its
+// blank fields are filled from the loser; the loser's songs, members and leads move; the loser row is snapshotted into
+// artist_merges and deleted. Identity ids go through bandCheck.saveIdentity (the single writer) after the delete, which
+// frees the loser's unique MusicBrainz / Spotify ids. Any error rolls everything back and is rethrown unchanged.
+async function merge(pool, keeperId, loserId, hash) {
+  if (typeof hash !== 'string' || !hash) throw coded('BAD_INPUT', 'Open the merge preview first');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const d = await load(client, keeperId, loserId, { lock: true });
+    const pv = summarise(d);
+    if (pv.hash !== hash) throw coded('CONFLICT', 'These artists changed since the preview; open it again');
+    const { keeper, loser } = d;
+
+    await client.query(`INSERT INTO artist_merges (loser_id, keeper_id, loser_snapshot) VALUES ($1, $2, $3)`, [loserId, keeperId, JSON.stringify({
+      artist: loser,
+      song_artists: d.loserLinks.map((l) => ({ id: l.id, song_id: l.song_id })),
+      members: d.loserMembers,
+      lead_ids: d.leadIds,
+    })]);
+
+    // UPDATE (not delete + insert) so each row keeps its id: a song's artist order is song_artists.id order.
+    const songs = await client.query(
+      `UPDATE song_artists SET artist_id = $1
+        WHERE artist_id = $2 AND song_id NOT IN (SELECT song_id FROM song_artists WHERE artist_id = $1)`, [keeperId, loserId]);
+    const members = d.movingMembers.length
+      ? await client.query(`UPDATE artist_members SET artist_id = $1 WHERE id = ANY($2)`, [keeperId, d.movingMembers.map((m) => m.id)])
+      : { rowCount: 0 };
+    const leads = await client.query(`UPDATE leads SET artist_id = $1 WHERE artist_id = $2`, [keeperId, loserId]);
+
+    // Blank keeper fields (field names come from the fixed FIELDS list) take the loser's value and its source.
+    const sets = [], params = [];
+    const set = (col, val) => { params.push(val); sets.push(`${col} = $${params.length}`); };
+    for (const f of pv.fills) {
+      set(f, loser[f]);
+      if (SOURCE_OF[f]) set(SOURCE_OF[f], loser[SOURCE_OF[f]]);
+    }
+    if (!isBlank(loser.discography_review_notes)) {
+      const line = `Merged from ${loser.name} (${new Date().toISOString().slice(0, 10)}): ${loser.discography_review_notes}`;
+      set('discography_review_notes', isBlank(keeper.discography_review_notes) ? line : `${keeper.discography_review_notes}\n\n${line}`);
+    }
+    sets.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(keeperId);
+    await client.query(`UPDATE artists SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
+
+    // Remaining song_artists (shared songs), members, proposals and review rows of the loser go with it (ON DELETE CASCADE).
+    await client.query(`DELETE FROM artists WHERE id = $1`, [loserId]);
+    for (const source of pv.identity.carried) await _deps.saveIdentity(client, keeperId, source, String(loser[IDENTITY[source]]));
+
+    await client.query('COMMIT');
+    return { merged: true, keeper: { id: keeperId }, moved: { songs: songs.rowCount, members: members.rowCount, leads: leads.rowCount } };
+  } catch (e) {
+    try { await client.query('ROLLBACK'); } catch { /* the original error is the one to report */ }
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { FIELDS, SOURCE_OF, IDENTITY, load, summarise, hashOf, preview, merge, _deps };
