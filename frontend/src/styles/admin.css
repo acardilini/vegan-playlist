@@ -135,10 +135,17 @@
 .wb-highlights li { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); background: var(--bg-surface-raised); border-radius: var(--radius-md); padding: var(--space-1) var(--space-2); font-size: 0.85rem; }
 .wb-highlights li > span { white-space: pre-line; }
 
-.wb-videos { list-style: none; padding: 0; margin: 0 0 var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
-.wb-videos li { display: flex; align-items: center; gap: var(--space-2); font-size: 0.85rem; }
-.wb-videos li a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wb-vtype { font-size: 0.7rem; color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
+/* Admin list standard (docs/ADMIN_UI.md): a header row, narrow fixed columns for choices, ONE flexible name column that
+   keeps all the leftover width, a small pill and a small x. Reuse these for any list of items in an admin panel. */
+.adm-list { list-style: none; padding: 0; margin: 0 0 var(--space-3); display: flex; flex-direction: column; font-size: 0.85rem; }
+.adm-head, .adm-row { display: flex; align-items: center; gap: var(--space-2); }
+.adm-head { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); padding-bottom: var(--space-1); }
+.adm-row { padding: var(--space-1) 0; border-top: 1px solid var(--border-hairline); }
+.adm-col-choice { flex: none; width: 2.6rem; text-align: center; }
+.adm-col-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-pill { flex: none; font-size: 0.7rem; color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
+.adm-x { flex: none; background: none; border: 0; padding: 0 var(--space-1); font-size: 0.8rem; line-height: 1; color: var(--text-muted); cursor: pointer; }
+.adm-x:hover, .adm-x:focus-visible { color: var(--text-primary); }
 .wb-novideo { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-2); }
 .wb-video-add { display: flex; gap: var(--space-2); align-items: center; }
 
