@@ -113,6 +113,18 @@ async function compare(pool, { playlistId = DEFAULT_PLAYLIST_ID, fetchTracks = d
   };
 }
 
+// Is this one song's Spotify track on the live playlist? Uses the same 60s cached read as compare (so the Dashboard card, the
+// Songs > Spotify lists and the workbench share one read). A song with no Spotify id is simply not on it, with no read.
+// A failed read is a coded UPSTREAM error with a fixed message (never the fetch error's text).
+async function isOnPlaylist(pool, songId, { playlistId = DEFAULT_PLAYLIST_ID, fetchTracks = defaultFetchTracks, now } = {}) {
+  const song = (await pool.query('SELECT spotify_id FROM songs WHERE id=$1', [songId])).rows[0];
+  if (!song || !song.spotify_id) return { onPlaylist: false };
+  let tracks;
+  try { tracks = await readTracks(fetchTracks, playlistId, { useCache: true, now }); }
+  catch { throw coded('UPSTREAM', 'could not read the Spotify playlist'); }
+  return { onPlaylist: tracks.some((t) => t.spotify_id === song.spotify_id) };
+}
+
 // POST the URIs in chunks of 100. Throws coded errors; `.addedCount` = URIs added before the failure.
 async function addUris(uris, { accessToken, playlistId = DEFAULT_PLAYLIST_ID, fetchImpl = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
   let addedCount = 0;
@@ -196,4 +208,4 @@ async function pushSongs(pool, opts) {
   try { return await pushSongsUnguarded(pool, opts); } finally { pushing = false; clearCache(); } // the playlist changed (or may have)
 }
 
-module.exports = { parseSongIds, chunk, compare, pushSongs, clearCache, _addUris: addUris };
+module.exports = { parseSongIds, chunk, compare, isOnPlaylist, pushSongs, clearCache, _addUris: addUris };
