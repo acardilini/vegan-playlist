@@ -5,6 +5,7 @@ import ArtistDetailsPanel from './ArtistDetailsPanel';
 import ArtistLinksPanel from './ArtistLinksPanel';
 import ArtistFactsPanel from './ArtistFactsPanel';
 import EnrichmentPanel from './EnrichmentPanel';
+import ArtistMergePanel from './ArtistMergePanel';
 import CatalogueReview from './CatalogueReview';
 import { AutoText } from './SavedField';
 
@@ -17,6 +18,7 @@ function ArtistWorkbench() {
   const [focus, setFocus] = useState({ open: null, n: 0 }); // Links panel row requested by the Catalogue panel
   const [refreshKey, setRefreshKey] = useState(0);          // bumps when identity changes -> Catalogue re-checks
   const [factsKey, setFactsKey] = useState(0);              // bumps after an enrichment accept -> Facts reloads
+  const [mergeKey, setMergeKey] = useState(0);              // bumps after a merge into this artist -> Enrichment re-reads (its shared-id notice is stale)
   const token = useRef(0);                                   // only the latest request's response wins
   const idRef = useRef(id); idRef.current = id;                // the artist currently on screen
 
@@ -67,6 +69,14 @@ function ArtistWorkbench() {
   const go = (t) => navigate(`/admin/artist/${navState.ids[t]}`, { state: { ...navState, index: t } });
   const back = navState && navState.from ? `/admin/artists?queue=${navState.from}` : '/admin/artists';
   const goNext = () => (navState && idx >= 0 && idx < navState.ids.length - 1 ? go(idx + 1) : navigate(back));
+  // ?mergeWith=<id> (the shared-id notice links here) opens the merge panel with that artist already chosen.
+  const mergeWith = parseInt(new URLSearchParams(location.search).get('mergeWith'), 10);
+  const initialOther = Number.isSafeInteger(mergeWith) && mergeWith > 0 && mergeWith !== artist.id ? mergeWith : null;
+  // After a merge the loser is gone: go to the keeper. When this artist is the keeper the route does not change, so re-read it.
+  const onMerged = (keeperId) => {
+    navigate(`/admin/artist/${keeperId}`, { replace: true });
+    if (keeperId === artist.id) { reload(); setRefreshKey((k) => k + 1); setFactsKey((k) => k + 1); setMergeKey((k) => k + 1); }
+  };
 
   return (
     <div className="workbench">
@@ -94,13 +104,14 @@ function ArtistWorkbench() {
           <ArtistDetailsPanel artist={artist} save={save} />
           <ArtistLinksPanel artist={artist} save={save} focus={focus} onIdentitySaved={onIdentitySaved} />
           {/* Keyed on the artist only, so a Skip survives an identity change; the panel re-reads when the stored ids change. */}
-          <EnrichmentPanel key={artist.id} artist={artist} onIdentitySaved={onIdentitySaved} onChanged={factsChanged} onDone={goNext} />
+          <EnrichmentPanel key={`${artist.id}:${mergeKey}`} artist={artist} onIdentitySaved={onIdentitySaved} onChanged={factsChanged} onDone={goNext} />
           <ArtistFactsPanel key={artist.id} artist={artist} onNeedIdentity={needIdentity} refreshKey={factsKey} />
           <section className="wb-panel">
             <h2>Notes</h2>
             <AutoText label="Catalogue review notes" initial={artist.discography_review_notes} multiline rows={3}
               onSave={(v) => save({ discography_review_notes: v })} />
           </section>
+          <ArtistMergePanel key={`${artist.id}:${initialOther}`} artist={artist} initialOther={initialOther} onMerged={onMerged} />
         </div>
       </div>
     </div>

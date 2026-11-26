@@ -186,9 +186,11 @@ function EnrichmentPanel({ artist, onIdentitySaved, onChanged, onDone }) {
             <div className="enr-warn">
               Another artist has this id:{' '}
               {match.shared_with.map((s, i) => (
-                <span key={s.id}>{i > 0 && ', '}<Link to={`/admin/artist/${s.id}`}>{s.name}</Link> ({s.songs} songs)</span>
+                <span key={s.id}>
+                  {i > 0 && ', '}<Link to={`/admin/artist/${s.id}`}>{s.name}</Link> ({s.songs} songs){' '}
+                  <Link to={`/admin/artist/${artist.id}?mergeWith=${s.id}`}>Merge...</Link>
+                </span>
               ))}
-              ; merging comes in a later update
             </div>
           )}
           <Warnings list={matchWarnings} />
