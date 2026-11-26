@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SaveTag } from './SavedField';
+import { badgeText, toneOf, pillTexts } from '../../utils/transcriptConfidence';
 
 // What songs.lyrics_source says about text that began as an AI draft and was checked by the curator (VARCHAR(50)).
 export const DRAFT_LYRICS_SOURCE = 'AI transcript, curator-checked';
@@ -24,7 +25,6 @@ function DraftTranscript({ draft, savePanel }) {
   const meta = [
     draft.word_count != null ? `${draft.word_count} words` : null,
     draft.languages.length ? draft.languages.join(', ') : null,
-    draft.confidence ? `${draft.confidence.toLowerCase()} confidence` : null,
     draft.model_used,
   ].filter(Boolean).join(' · ');
 
@@ -32,11 +32,17 @@ function DraftTranscript({ draft, savePanel }) {
     <div className="wb-draft">
       <div className="wb-genre-options-title">AI draft transcript (not lyrics yet)</div>
       <div className="wb-draft-meta">
+        {draft.tier && <span className={`tr-badge tr-${toneOf(draft.tier)}`}>{badgeText(draft)}</span>}
+        {pillTexts(draft).map(t => <span key={t} className="tr-pill">{t}</span>)}
         {meta}
         {draft.youtube_id && (
           <> · <a href={`https://www.youtube.com/watch?v=${encodeURIComponent(draft.youtube_id)}`} target="_blank" rel="noreferrer">Listen to check</a></>
         )}
       </div>
+      {draft.status === 'UNINTELLIGIBLE' && (
+        <p className="tr-warn" role="alert">The analysis could not make out most of this track. Check it against the audio before saving.</p>
+      )}
+      {draft.confidence_notes && <p className="tr-note">{draft.confidence_notes}</p>}
       <textarea className="input wb-mono" rows={12} value={text} aria-label="Draft transcript" style={{ width: '100%' }}
         onChange={(e) => { setText(e.target.value); if (status !== 'idle') setStatus('idle'); }} />
       <div className="wb-draft-actions">

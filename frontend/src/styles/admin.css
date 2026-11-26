@@ -195,6 +195,13 @@
 
 /* Spotify sync (sub-project F): origin tag on queue rows, and the Songs > Spotify list tabs */
 .origin-tag { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); color: var(--accent-moss-60); border: 1px solid var(--accent-moss-60); white-space: nowrap; }
+/* Check transcripts: confidence badge (tone from the tier) and small detail pills, in the rail rows and the draft panel. */
+.tr-tags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.tr-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 1px var(--space-2); border-radius: var(--radius-pill); border: 1px solid currentColor; white-space: nowrap; margin-right: var(--space-1); }
+.tr-badge.tr-good { color: var(--color-success); }
+.tr-badge.tr-mid { color: var(--color-warning); }
+.tr-badge.tr-low { color: var(--color-danger); }
+.tr-pill { display: inline-block; font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); color: var(--text-secondary); border: 1px solid var(--border-hairline); white-space: nowrap; margin-right: var(--space-1); }
 .spotify-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
 .song-row.spotify-static { cursor: default; }
 .song-row.spotify-static:hover { background: none; }
