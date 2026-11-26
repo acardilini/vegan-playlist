@@ -3,6 +3,8 @@ import { adminFetch } from '../../api/adminApi';
 import { api } from './bandCheckApi';
 import { defaultKeeper, previewLines } from '../../utils/mergeText';
 
+const songsText = (n) => `${n} ${n === 1 ? 'song' : 'songs'}`;
+
 // Fold a duplicate artist into the one that stays. The curator picks the other artist, sees which one is kept (Swap flips
 // it) and a preview of exactly that direction, then confirms. The server re-checks the preview's hash, so a merge never
 // runs on a screen that has gone stale. Nothing here merges without a preview of the direction shown.
@@ -99,7 +101,7 @@ function ArtistMergePanel({ artist, initialOther, onMerged }) {
           {results && results.length === 0 && <div className="band-meta">No other artist found.</div>}
           {results && results.map((r) => (
             <div key={r.id} className="band-cand">
-              <div className="band-cand-text"><strong>{r.name}</strong> <span className="band-meta">{r.songs} songs · {r.live_songs} live</span></div>
+              <div className="band-cand-text"><strong>{r.name}</strong> <span className="band-meta">{songsText(r.songs)} · {r.live_songs} live</span></div>
               <button className="btn btn-secondary btn-sm" onClick={() => choose(r)}>Choose</button>
             </div>
           ))}
@@ -108,7 +110,7 @@ function ArtistMergePanel({ artist, initialOther, onMerged }) {
       )}
       {other && (
         <>
-          <div>Keep <strong>{keeper.name}</strong> ({keeper.songs} songs{keeper.id === artist.id ? ', this artist' : ''}) and remove <strong>{loser.name}</strong> ({loser.songs} songs{loser.id === artist.id ? ', this artist' : ''}).</div>
+          <div>Keep <strong>{keeper.name}</strong> ({songsText(keeper.songs)}{keeper.id === artist.id ? ', this artist' : ''}) and remove <strong>{loser.name}</strong> ({songsText(loser.songs)}{loser.id === artist.id ? ', this artist' : ''}).</div>
           <div className="fact-proposal">
             <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => setKeepThis((v) => !v)}>Swap</button>
             <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => { setOther(null); setPreview(null); setError(''); setText(''); }}>Choose another</button>
