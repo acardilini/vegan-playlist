@@ -18,6 +18,7 @@ const bandCheck = require('../services/bandCheck');
 const artistsSvc = require('../services/artists');
 const artistFacts = require('../services/artistFacts');
 const artistEnrichment = require('../services/artistEnrichment');
+const artistMerge = require('../services/artistMerge');
 const leadsSvc = require('../services/leads');
 const playlistCrosscheck = require('../services/playlistCrosscheck');
 const bandcampLyrics = require('../services/bandcampLyrics');
@@ -1624,6 +1625,22 @@ router.put('/artists/:id/enrichment/finish', async (req, res) => {
     if (typeof finished !== 'boolean') return res.status(400).json({ error: 'BAD_INPUT', message: 'finished must be true or false' });
     res.json(await artistEnrichment.finish(pool, artistId(req), finished));
   } catch (e) { artistError(res, e, 'update the review status'); }
+});
+
+// --- Artist merge (piece 3). ':id' is the duplicate that would disappear (the loser); the keeper is named by the client.
+// Preview is read-only; merge needs the preview's hash, so it refuses if either artist changed since. ---
+const keeperParam = (v) => (typeof v === 'string' && /^\d{1,10}$/.test(v) ? Number(v) : -1);
+router.get('/artists/:id/merge-preview', async (req, res) => {
+  try { res.json(await artistMerge.preview(pool, keeperParam(req.query.keeper), artistId(req))); }
+  catch (e) { artistError(res, e, 'preview the merge'); }
+});
+router.post('/artists/:id/merge', async (req, res) => {
+  try {
+    const { keeper, hash } = req.body || {};
+    if (!Number.isSafeInteger(keeper) || keeper <= 0) return res.status(400).json({ error: 'BAD_INPUT', message: 'keeper must be an artist id' });
+    if (typeof hash !== 'string' || !hash) return res.status(400).json({ error: 'BAD_INPUT', message: 'hash must come from the merge preview' });
+    res.json(await artistMerge.merge(pool, keeper, artistId(req), hash));
+  } catch (e) { artistError(res, e, 'merge the artists'); }
 });
 
 // ==================== Leads ====================
