@@ -7,7 +7,7 @@ export function SaveTag({ status, error }) {
 }
 
 // Self-contained autosaving text field. onSave(value) → { ok, error? }.
-export function AutoText({ label, initial, onSave, multiline = false, rows = 3, placeholder, monospace = false, disabled = false, inputRef }) {
+export function AutoText({ label, initial, onSave, multiline = false, rows = 3, placeholder, monospace = false, disabled = false, inputRef, inline = false }) {
   const [val, setVal] = useState(initial ?? '');
   const [status, setStatus] = useState('idle');
   const [errMsg, setErrMsg] = useState('');
@@ -45,6 +45,16 @@ export function AutoText({ label, initial, onSave, multiline = false, rows = 3, 
     onBlur: commit,
     style: { width: '100%' },
   };
+
+  // inline: just the input (the label is the row's own column, kept for screen readers) and its save tag, for an admin table row.
+  if (inline) {
+    return (
+      <>
+        <span className="adm-col-field"><input {...common} aria-label={label} /></span>
+        <SaveTag status={status} error={errMsg} />
+      </>
+    );
+  }
 
   return (
     <label className="wb-field">

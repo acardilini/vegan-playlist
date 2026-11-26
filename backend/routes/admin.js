@@ -1377,6 +1377,17 @@ router.get('/spotify/compare', async (req, res) => {
     res.status(502).json({ error: 'Failed to read the Spotify playlist' });
   }
 });
+// Is one song on the live playlist? (workbench Links panel; shares compare's 60s cached read)
+router.get('/spotify/on-playlist/:songId', async (req, res) => {
+  const songId = parseInt(req.params.songId, 10);
+  if (!Number.isSafeInteger(songId) || songId <= 0) return res.status(400).json({ error: 'Bad song id' });
+  try {
+    res.json({ success: true, ...(await spotifyPush.isOnPlaylist(pool, songId)) });
+  } catch (e) {
+    console.error('spotify on-playlist error:', e.code || 'error'); // never e.message
+    res.status(502).json({ error: 'Failed to read the Spotify playlist' });
+  }
+});
 router.post('/spotify/push', async (req, res) => {
   try {
     const songIds = spotifyPush.parseSongIds((req.body || {}).songIds);
