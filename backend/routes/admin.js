@@ -2012,6 +2012,20 @@ router.put('/workbench/videos/:videoId/primary', async (req, res) => {
     res.status(500).json({ error: 'Failed to set primary', details: e.message });
   }
 });
+// The video the audio analysis hears: body { video_id: <id> | null }; null (or the primary) = the default, the primary.
+router.put('/workbench/:id/audio-video', async (req, res) => {
+  try {
+    const raw = (req.body || {}).video_id;
+    const videoId = raw == null ? null : Number(raw);
+    if (videoId !== null && !Number.isInteger(videoId)) return res.status(400).json({ error: 'video_id must be a number or null' });
+    res.json({ success: true, ...(await videos.setAudioVideo(pool, parseInt(req.params.id), videoId)) });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    console.error('set audio video error:', e);
+    res.status(500).json({ error: 'Failed to set the audio video' });
+  }
+});
 router.delete('/workbench/videos/:videoId', async (req, res) => {
   try {
     res.json({ success: true, ...(await videos.deleteVideo(pool, parseInt(req.params.videoId))) });

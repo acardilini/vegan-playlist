@@ -41,6 +41,22 @@ async function setPrimaryVideo(db, videoId) {
   return r.rows[0];
 }
 
+// The video the audio analysis should hear. NULL = the primary (the default); a pointer is kept only for a deliberate
+// override, so choosing the primary clears it. Stamps audio_video_set_at on every change. Only this function writes it.
+async function setAudioVideo(db, songId, videoId) {
+  if ((await db.query('SELECT 1 FROM songs WHERE id=$1', [songId])).rows.length === 0) {
+    const e = new Error('song not found'); e.code = 'NOT_FOUND'; throw e;
+  }
+  let pointer = null;
+  if (videoId != null) {
+    const v = (await db.query('SELECT id, is_primary FROM youtube_videos WHERE id=$1 AND song_id=$2', [videoId, songId])).rows[0];
+    if (!v) { const e = new Error('that video does not belong to this song'); e.code = 'BAD_INPUT'; throw e; }
+    pointer = v.is_primary ? null : v.id;
+  }
+  await db.query('UPDATE songs SET audio_video_id=$2, audio_video_set_at=CURRENT_TIMESTAMP WHERE id=$1', [songId, pointer]);
+  return { audio_video_id: pointer };
+}
+
 async function deleteVideo(db, videoId) {
   const v = (await db.query('SELECT song_id, is_primary FROM youtube_videos WHERE id=$1', [videoId])).rows[0];
   if (!v) { const e = new Error('video not found'); e.code = 'NOT_FOUND'; throw e; }
@@ -85,4 +101,4 @@ async function addVideos(pool, songId, items) {
   }
 }
 
-module.exports = { VIDEO_TYPES, addVideo, addVideos, updateVideo, setPrimaryVideo, deleteVideo };
+module.exports = { VIDEO_TYPES, addVideo, addVideos, updateVideo, setPrimaryVideo, setAudioVideo, deleteVideo };
