@@ -85,3 +85,13 @@ test('spotifyIsrc returns the ISRC, null when absent or missing, and throws UPST
     });
   }
 });
+
+test('appleSearch matches the first artist as a whole name, not a substring', async () => {
+  const want = (title, artist, row) => pl.appleSearch({ title, artist }, { fetch: apple([row]) });
+  assert.equal(await want('Home', 'Rise', hitRow('Home', 'Sunrise Avenue')), null, 'a name inside another name is not a match');
+  assert.equal(await want('Home', 'The Smiths', hitRow('Home', 'The Smithereens')), null, 'a shared prefix is not a match');
+  assert.equal(await want('Home', 'X', hitRow('Home', 'Alex Max')), null, 'a one-letter name never matches inside others');
+  assert.ok(await want('Home', 'Stinkbrute', hitRow('Home', 'Stinkbrute & Friends')), 'a collaboration credit still matches');
+  assert.ok(await want('Home', 'Stinkbrute', hitRow('Home', 'Stinkbrute feat. Someone')), 'a featuring credit still matches');
+  assert.ok(await want('Home', 'Beyoncé', hitRow('Home', 'Beyonce')), 'case and diacritics are folded');
+});

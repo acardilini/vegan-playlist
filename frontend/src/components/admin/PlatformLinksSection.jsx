@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { adminFetch } from '../../api/adminApi';
 
 const NAMES = new Map([['apple_music', 'Apple Music'], ['deezer', 'Deezer'], ['tidal', 'Tidal']]);
@@ -11,22 +11,27 @@ function PlatformLinksSection({ id, title, artists }) {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
 
-  const load = useCallback(() => (
-    adminFetch(`/api/admin/platform-links/song/${id}`)
+  const idRef = useRef(id); // the song on screen now; a slow answer for a song the curator has already left is dropped
+  idRef.current = id;
+
+  const load = useCallback(() => {
+    const asked = id;
+    const keep = (fn) => (v) => { if (idRef.current === asked) fn(v); };
+    return adminFetch(`/api/admin/platform-links/song/${asked}`)
       .then(r => (r.ok ? r.json() : Promise.reject(new Error('read failed'))))
-      .then(d => setLinks(d.links || []))
-      .catch(() => setLinks([]))
-  ), [id]);
-  useEffect(() => { setLinks(null); setError(''); load(); }, [load]);
+      .then(keep(d => setLinks(d.links || [])))
+      .catch(keep(() => setLinks([])));
+  }, [id]);
+  useEffect(() => { setLinks(null); setError(''); setBusy(''); load(); }, [load]);
 
   const review = async (platform, action) => {
     setBusy(platform); setError('');
     try {
       const r = await adminFetch(`/api/admin/platform-links/song/${id}/${platform}`, { method: 'PUT', body: { action } });
-      if (!r.ok) { const d = await r.json().catch(() => ({})); setError(d.message || 'Could not save that.'); }
+      if (!r.ok) { const d = await r.json().catch(() => ({})); if (idRef.current === id) setError(d.message || 'Could not save that.'); }
       await load();
-    } catch { setError('Request failed.'); }
-    setBusy('');
+    } catch { if (idRef.current === id) setError('Request failed.'); }
+    if (idRef.current === id) setBusy('');
   };
 
   const shown = (links || []).filter(l => l.status !== 'rejected' && NAMES.has(l.platform));

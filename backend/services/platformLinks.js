@@ -27,11 +27,18 @@ async function deezerByIsrc(isrc, { fetch: f = fetch } = {}) {
   } catch { return null; }
 }
 
+// Apple's artist field can be a collaboration ("A & B", "A feat. B"). Split it into whole names and compare each one,
+// so "Rise" is never found inside "Sunrise Avenue".
+const stripThe = (n) => n.replace(/^the /, '');
+const creditNames = (credit) => String(credit == null ? '' : credit)
+  .split(/\s*(?:&|,|;|\/|\+|\bfeat\.?(?=\s)|\bfeaturing\b|\bwith\b|\band\b|\bx\b)\s*/i)
+  .map((n) => stripThe(normName(n))).filter(Boolean);
+
 // Apple's free search cannot take an ISRC and its results carry none, so a hit is only "same base title, same first
 // artist". A different version of the song can pass, which is why the curator confirms every Apple match.
 async function appleSearch({ title, artist } = {}, { fetch: f = fetch } = {}) {
   const wantTitle = normTitle(title);
-  const wantArtist = normName(artist).slice(0, 8);
+  const wantArtist = stripThe(normName(artist));
   if (!wantTitle || !wantArtist) return null;
   try {
     const term = encodeURIComponent(`${artist} ${title}`);
@@ -39,7 +46,7 @@ async function appleSearch({ title, artist } = {}, { fetch: f = fetch } = {}) {
     if (!r.ok) return null;
     const j = await r.json();
     const hit = ((j && j.results) || []).find((x) => x && typeof x.trackViewUrl === 'string' && normTitle(x.trackName) === wantTitle
-      && normName(x.artistName).includes(wantArtist));
+      && creditNames(x.artistName).includes(wantArtist));
     if (!hit) return null;
     const u = new URL(hit.trackViewUrl); u.searchParams.delete('uo');
     return { url: u.toString(), title: hit.trackName, artist: hit.artistName };
