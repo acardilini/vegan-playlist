@@ -22,6 +22,12 @@ function DraftTranscript({ draft, savePanel }) {
     else { setStatus('error'); setError((res && res.error) || 'Could not save'); }
   };
 
+  const reject = async () => {
+    setStatus('saving'); setError('');
+    const res = await savePanel('draft-rejected', { rejected: true });   // the draft retires itself: the panel is not rendered again
+    if (!(res && res.ok)) { setStatus('error'); setError((res && res.error) || 'Could not reject'); }
+  };
+
   const meta = [
     draft.word_count != null ? `${draft.word_count} words` : null,
     draft.languages.length ? draft.languages.join(', ') : null,
@@ -40,7 +46,7 @@ function DraftTranscript({ draft, savePanel }) {
         )}
       </div>
       {draft.status === 'UNINTELLIGIBLE' && (
-        <p className="tr-warn" role="alert">The analysis could not make out most of this track. Check it against the audio before saving.</p>
+        <p className="tr-warn">The analysis could not make out most of this track. Check it against the audio before saving.</p>
       )}
       {draft.confidence_notes && <p className="tr-note">{draft.confidence_notes}</p>}
       <textarea className="input wb-mono" rows={12} value={text} aria-label="Draft transcript" style={{ width: '100%' }}
@@ -48,6 +54,9 @@ function DraftTranscript({ draft, savePanel }) {
       <div className="wb-draft-actions">
         <button type="button" className="btn btn-primary btn-sm" disabled={status === 'saving' || !text.trim()} onClick={save}>
           Save as lyrics
+        </button>
+        <button type="button" className="btn btn-secondary btn-sm" disabled={status === 'saving'} onClick={reject}>
+          Reject draft
         </button>
         <span className="section-note">Correct it against the audio first. Saving makes it this song&rsquo;s lyrics (source: {DRAFT_LYRICS_SOURCE}).</span>
         <SaveTag status={status} error={error} />

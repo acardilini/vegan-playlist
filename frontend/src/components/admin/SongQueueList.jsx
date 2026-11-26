@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
-import { badgeText, toneOf, pillTexts, TIER_OPTIONS, SORT_OPTIONS } from '../../utils/transcriptConfidence';
+import { scoreText, detailText, toneOf, TIER_OPTIONS, SORT_OPTIONS } from '../../utils/transcriptConfidence';
 
 const PAGE_SIZE = 50;
 const ORIGIN_LABELS = { spotify: 'From Spotify', submission: 'From submit form', bandcheck: 'From band check', crosscheck: 'From playlist cross-check' };
@@ -98,11 +98,11 @@ function SongQueueList({ queue, refreshKey }) {
         )}
         {queue === 'check-transcripts' && (
           <>
-            <select className="input" aria-label="Sort by confidence" value={sort}
+            <select className="input input-sm" aria-label="Sort by confidence" value={sort}
               onChange={(e) => { setPage(0); setSort(e.target.value); }}>
               {SORT_OPTIONS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
             </select>
-            <select className="input" aria-label="Confidence tier" value={tier}
+            <select className="input input-sm" aria-label="Confidence tier" value={tier}
               onChange={(e) => { setPage(0); setTier(e.target.value); }}>
               {TIER_OPTIONS.map(([v, label]) => <option key={v || 'all'} value={v}>{label}</option>)}
             </select>
@@ -127,8 +127,7 @@ function SongQueueList({ queue, refreshKey }) {
               </span>
               {queue === 'check-transcripts' && row.transcript && (
                 <span className="tr-tags">
-                  <span className={`tr-badge tr-${toneOf(row.transcript.tier)}`}>{badgeText(row.transcript)}</span>
-                  {pillTexts(row.transcript).map(t => <span key={t} className="tr-pill">{t}</span>)}
+                  {row.transcript.tier && <span className={`tr-badge tr-${toneOf(row.transcript.tier)}`} title={detailText(row.transcript)}>{scoreText(row.transcript)}</span>}
                 </span>
               )}
               <span className={`queue-status ${statusClass(row)}`}>{statusLabel(row)}</span>

@@ -88,8 +88,11 @@ const SUGGESTED_LANGS_SQL = `COALESCE(${ANALYSIS_LANGS_SQL}, ${TRANSCRIPT_LANGS_
 // A draft is an OK or UNINTELLIGIBLE transcript with text (an UNINTELLIGIBLE one is mostly "[inaudible]" but the curator
 // decides what to do with it, so it is listed and flagged rather than hidden).
 const DRAFT_STATUSES_SQL = `('OK','UNINTELLIGIBLE')`;
+// The curator can reject a draft (songs.transcript_rejected_at, migration 027; the analysis table is never written). A
+// rejected draft stays hidden until the analysis writes a NEWER transcript (transcribed_at after the rejection).
+const DRAFT_LIVE_SQL = `(s.transcript_rejected_at IS NULL OR sat.transcribed_at > s.transcript_rejected_at)`;
 const HAS_DRAFT_SQL = `EXISTS (SELECT 1 FROM song_audio_transcripts sat
-              WHERE sat.song_id = s.id AND sat.status IN ${DRAFT_STATUSES_SQL} AND btrim(sat.transcript) <> '')`;
+              WHERE sat.song_id = s.id AND sat.status IN ${DRAFT_STATUSES_SQL} AND btrim(sat.transcript) <> '' AND ${DRAFT_LIVE_SQL})`;
 // Tier of a transcript row (alias given): UNINTELLIGIBLE when its status says so, else its confidence. Rank and the
 // midpoint used to place an unscored row (the older spoken-word rows have no confidence_score) inside its own tier.
 const TRANSCRIPT_TIERS = Object.freeze(['HIGH', 'MEDIUM', 'LOW', 'UNINTELLIGIBLE']);
@@ -102,7 +105,7 @@ const TRANSCRIPT_JOIN_SQL = `LEFT JOIN LATERAL (
       SELECT ${tierSql('sat')} AS tr_tier, sat.confidence AS tr_confidence, sat.confidence_score AS tr_score,
              sat.estimated_word_accuracy_pct AS tr_accuracy, sat.audio_clarity AS tr_clarity, sat.inaudible_segments AS tr_inaudible
         FROM song_audio_transcripts sat
-       WHERE sat.song_id = s.id AND sat.status IN ${DRAFT_STATUSES_SQL} AND btrim(sat.transcript) <> ''
+       WHERE sat.song_id = s.id AND sat.status IN ${DRAFT_STATUSES_SQL} AND btrim(sat.transcript) <> '' AND ${DRAFT_LIVE_SQL}
        ORDER BY sat.transcribed_at DESC NULLS LAST LIMIT 1) tr ON true`;
 const QUEUE_NAMES = ['to-process','to-transcribe','lyrics-on-hold','remind-later','needs-lyrics','check-transcripts',
   'needs-cover','needs-album','needs-released','needs-language','language-suggested','needs-genre','genre-from-artist','genre-from-audio','genre-conflicts',
@@ -374,7 +377,7 @@ async function draftTranscript(db, id) {
             sat.transcribed_at, sat.status, ${tierSql('sat')} AS tier, sat.confidence_score, sat.estimated_word_accuracy_pct,
             sat.audio_clarity, sat.inaudible_segments, sat.confidence_notes
        FROM songs s JOIN song_audio_transcripts sat ON sat.song_id = s.id
-      WHERE s.id=$1 AND sat.status IN ${DRAFT_STATUSES_SQL} AND btrim(sat.transcript) <> '' AND NOT ${HAS_LYRICS_SQL}
+      WHERE s.id=$1 AND sat.status IN ${DRAFT_STATUSES_SQL} AND btrim(sat.transcript) <> '' AND ${DRAFT_LIVE_SQL} AND NOT ${HAS_LYRICS_SQL}
       ORDER BY sat.transcribed_at DESC NULLS LAST LIMIT 1`, [id])).rows[0];
   return r ? {
     model_used: r.model_used, youtube_id: r.youtube_id_used, transcript: r.transcript, languages: r.detected_languages || [],
@@ -555,6 +558,18 @@ async function chooseLanguage(db, id, { source } = {}) {
     e.code = 'BAD_INPUT'; throw e;
   }
   await db.query(`UPDATE songs SET language=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, [id, normLanguages(pick.languages)]);
+  return getWorkbench(db, id);
+}
+
+// Reject (true) or restore (false) the song's AI draft transcript. A missing or non-boolean value is refused: it must be said
+// out loud. Rejecting stamps the song, so the draft leaves the Check transcripts rail and the workbench; the song stays in
+// Needs lyrics. A newer transcript from the analysis project is a new draft and shows again.
+async function setDraftRejected(db, id, { rejected } = {}) {
+  await assertSong(db, id);
+  if (rejected !== true && rejected !== false) {
+    const e = new Error('rejected must be true or false'); e.code = 'BAD_INPUT'; throw e;
+  }
+  await db.query(`UPDATE songs SET transcript_rejected_at = ${rejected ? 'CURRENT_TIMESTAMP' : 'NULL'}, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, [id]);
   return getWorkbench(db, id);
 }
 
@@ -791,5 +806,5 @@ async function quickCapture(db, { title, artist } = {}) {
 
 module.exports = { PARK_REASONS, QUEUE_NAMES, LYRICS_STATUSES, HAS_LYRICS_SQL, TRANSCRIPT_TIERS,
   getProcessing, setProcessing, listCurationQueue, queueCounts, catalogueStats, recentlyEdited, getWorkbench, hasArt,
-  saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, setAudioSamples, setSampleSource, quickCapture, setFeatured, listLanguages,
+  saveDetails, saveLyrics, saveHighlights, saveLinks, saveAlbum, setCover, setNoVideo, setAudioSamples, setDraftRejected, setSampleSource, quickCapture, setFeatured, listLanguages,
   chooseGenre, chooseLanguage, genreConflictPairs, audioSourceFor };

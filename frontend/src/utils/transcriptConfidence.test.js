@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { badgeText, toneOf, clarityLabel, pillTexts, TIER_OPTIONS, SORT_OPTIONS } from './transcriptConfidence.js';
+import { badgeText, scoreText, detailText, toneOf, clarityLabel, pillTexts, TIER_OPTIONS, SORT_OPTIONS } from './transcriptConfidence.js';
 
 test('badgeText shows the tier and the score, or the tier alone when there is no score', () => {
   assert.equal(badgeText({ tier: 'HIGH', confidence_score: 95 }), 'HIGH · 95/100');
@@ -8,6 +8,21 @@ test('badgeText shows the tier and the score, or the tier alone when there is no
   assert.equal(badgeText({ tier: 'HIGH' }), 'HIGH');
   assert.equal(badgeText({ tier: 'MEDIUM', confidence_score: null }), 'MEDIUM');
   assert.equal(badgeText({ tier: 'LOW', confidence_score: 0 }), 'LOW · 0/100');
+});
+
+test('scoreText is the bare score, or the tier when there is no score', () => {
+  assert.equal(scoreText({ tier: 'UNINTELLIGIBLE', confidence_score: 5 }), '5');
+  assert.equal(scoreText({ tier: 'HIGH', confidence_score: 95 }), '95');
+  assert.equal(scoreText({ tier: 'LOW', confidence_score: 0 }), '0');
+  assert.equal(scoreText({ tier: 'HIGH', confidence_score: null }), 'HIGH');
+  assert.equal(scoreText({}), '');
+});
+
+test('detailText is the full badge and pills joined for a tooltip, never null or undefined', () => {
+  assert.equal(detailText({ tier: 'LOW', confidence_score: 40, audio_clarity: 'MUDDY_OR_BURIED', estimated_word_accuracy_pct: 55, inaudible_segments: 6 }),
+    'LOW · 40/100 · Muddy / Buried · ~55% words · 6 [inaudible]');
+  assert.equal(detailText({ tier: 'HIGH' }), 'HIGH');
+  assert.ok(!/null|undefined/.test(detailText({})));
 });
 
 test('toneOf maps HIGH good, MEDIUM mid, everything else low', () => {

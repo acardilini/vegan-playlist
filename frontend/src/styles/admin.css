@@ -25,6 +25,7 @@
 
 .queue-toolbar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
 .queue-toolbar h1, .queue-toolbar h2 { font-size: 1.05rem; margin: 0; }
+.queue-toolbar .input-sm { padding: 4px 8px; font-size: 0.8rem; border-radius: var(--radius-sm); }
 .song-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-2); border-bottom: 1px solid var(--border-hairline); width: 100%; background: none; border-left: none; border-right: none; border-top: none; text-align: left; cursor: pointer; color: var(--text-primary); }
 .song-row:hover { background: var(--bg-surface-raised); }
 .song-row .cover { width: 38px; height: 38px; border-radius: var(--radius-sm); flex-shrink: 0; background: var(--bg-surface-raised); background-size: cover; background-position: center; }

@@ -131,3 +131,56 @@ test('an UNINTELLIGIBLE transcript does not feed the language suggestions', asyn
   const s = (await curation.getWorkbench(pool, F)).language_suggestions;
   assert.equal(s.some((x) => x.source === 'transcript'), false);
 });
+
+// ---- rejecting a draft ----
+
+const inQueue = async (id) => (await curation.listCurationQueue(pool, { queue: 'check-transcripts', q: 'ZZZCKT rej' })).rows.some((r) => r.id === id);
+const inNeedsLyrics = async (id) => (await curation.listCurationQueue(pool, { queue: 'needs-lyrics', q: 'ZZZCKT rej' })).rows.some((r) => r.id === id);
+
+test('rejecting a draft hides it from the workbench and the rail but the song still needs lyrics', async () => {
+  const s = await mkSong('ZZZCKT rej one');
+  await addTranscript(s, { status: 'UNINTELLIGIBLE', confidence: 'LOW', score: 5 });
+  assert.equal(await inQueue(s), true);
+  const wb = await curation.setDraftRejected(pool, s, { rejected: true });
+  assert.equal(wb.draft_transcript, null);
+  assert.equal(await inQueue(s), false);
+  assert.equal(await inNeedsLyrics(s), true, 'the song is still waiting for real lyrics');
+  const counts = await curation.queueCounts(pool);
+  const all = await curation.listCurationQueue(pool, { queue: 'check-transcripts' });
+  assert.equal(counts['check-transcripts'], all.rows.length, 'the tile count follows the rejection');
+});
+
+test('a rejected draft comes back only when the analysis writes a newer transcript, or when restored', async () => {
+  const s = await mkSong('ZZZCKT rej two');
+  await addTranscript(s, { at: '2026-11-02 10:00:00' });
+  await curation.setDraftRejected(pool, s, { rejected: true });
+  assert.equal(await inQueue(s), false);
+  await pool.query(`UPDATE song_audio_transcripts SET transcribed_at = now() + interval '1 hour' WHERE song_id=$1`, [s]);
+  assert.equal(await inQueue(s), true, 'a newer transcript is a new draft');
+  assert.ok((await curation.getWorkbench(pool, s)).draft_transcript);
+});
+
+test('restoring a rejected draft brings it back', async () => {
+  const s = await mkSong('ZZZCKT rej two b');
+  await addTranscript(s, {});
+  await curation.setDraftRejected(pool, s, { rejected: true });
+  assert.equal(await inQueue(s), false);
+  const wb = await curation.setDraftRejected(pool, s, { rejected: false });
+  assert.equal(await inQueue(s), true);
+  assert.ok(wb.draft_transcript);
+});
+
+test('a draft with no transcribed_at is hidden by a rejection', async () => {
+  const s = await mkSong('ZZZCKT rej three');
+  await addTranscript(s, { at: null });
+  assert.equal(await inQueue(s), true);
+  await curation.setDraftRejected(pool, s, { rejected: true });
+  assert.equal(await inQueue(s), false);
+});
+
+test('setDraftRejected needs an explicit boolean and a real song', async () => {
+  const s = await mkSong('ZZZCKT rej four');
+  await assert.rejects(curation.setDraftRejected(pool, s, {}), { code: 'BAD_INPUT' });
+  await assert.rejects(curation.setDraftRejected(pool, s, { rejected: 'yes' }), { code: 'BAD_INPUT' });
+  await assert.rejects(curation.setDraftRejected(pool, 2147483000, { rejected: true }), { code: 'NOT_FOUND' });
+});

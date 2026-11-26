@@ -20,6 +20,17 @@ export function badgeText({ tier, confidence_score }) {
   return has(confidence_score) && t ? `${t} · ${confidence_score}/100` : t;
 }
 
+// The rail shows only this: the score (or the tier when the row is unscored), coloured by tone.
+export function scoreText({ tier, confidence_score }) {
+  if (has(confidence_score)) return String(confidence_score);
+  return has(tier) ? String(tier) : '';
+}
+
+// Everything else, for the rail badge's tooltip.
+export function detailText(t) {
+  return [badgeText(t), ...pillTexts(t)].filter(Boolean).join(' · ');
+}
+
 export function toneOf(tier) {
   return TONES.get(tier) || 'low';
 }

@@ -9,6 +9,7 @@ import VideoPanel from './VideoPanel';
 import LinksPanel from './LinksPanel';
 import AnalysisPanel from './AnalysisPanel';
 import NotesPanel from './NotesPanel';
+import { songsBackLink } from '../../utils/songsBackLink';
 
 function Workbench() {
   const { id } = useParams();
@@ -97,6 +98,7 @@ function Workbench() {
   const artistNames = (wb.artists || []).map((a) => a.name).join(', ') || '—';
 
   const navState = location.state && Array.isArray(location.state.ids) ? location.state : null;
+  const backTo = songsBackLink(navState);
   let nav = null;
   if (navState) {
     const idx = navState.ids.indexOf(parseInt(id));
@@ -115,7 +117,7 @@ function Workbench() {
   return (
     <div className="workbench">
       <div className="wb-topbar">
-        <Link to="/admin/songs" className="btn btn-ghost btn-sm">&larr; Back to Songs</Link>
+        <Link to={backTo} className="btn btn-ghost btn-sm">&larr; Back to Songs</Link>
         <h1 className="wb-title">{wb.title || `Song ${wb.id}`}</h1>
         <div className="wb-artist">{artistNames}</div>
         <WorkbenchTopBar wb={wb} onAction={doAction} onPark={saveProcessing} nav={nav} />
