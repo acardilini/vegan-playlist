@@ -3,9 +3,11 @@ import { adminFetch } from '../../api/adminApi';
 import { AutoText, SaveTag } from './SavedField';
 import PlatformLinksSection from './PlatformLinksSection';
 
+// The "Open" cell of a link row: always present (keeps the columns aligned), a link only when a URL is set.
 function OpenLink({ url }) {
-  if (!url) return null;
-  return <a className="btn btn-ghost btn-sm" href={url} target="_blank" rel="noreferrer">Open ↗</a>;
+  return url
+    ? <a className="adm-col-open" href={url} target="_blank" rel="noreferrer">Open &#8599;</a>
+    : <span className="adm-col-open" aria-hidden="true" />;
 }
 
 function LinksPanel({ wb, savePanel, id, reload }) {
@@ -61,40 +63,51 @@ function LinksPanel({ wb, savePanel, id, reload }) {
   return (
     <section className="wb-panel">
       <h2>Play sources &amp; links {!wb.spotify_id && <SaveTag status={status} />}</h2>
-      <AutoText label="Spotify URL" initial={wb.spotify_url} placeholder="https://open.spotify.com/track/…"
-        onSave={(v) => savePanel('links', { spotify_url: v })} />
-      <div className="wb-linkactions">
-        <OpenLink url={wb.spotify_url} />
+      <ul className="adm-list">
+        <li className="adm-head" aria-hidden="true">
+          <span className="adm-col-label">Site</span>
+          <span className="adm-col-field">Link</span>
+          <span className="adm-col-open" />
+        </li>
+        <li className="adm-row">
+          <span className="adm-col-label">Spotify</span>
+          <AutoText inline label="Spotify URL" initial={wb.spotify_url} placeholder="https://open.spotify.com/track/…"
+            onSave={(v) => savePanel('links', { spotify_url: v })} />
+          <OpenLink url={wb.spotify_url} />
+        </li>
+        <li className="adm-row">
+          <span className="adm-col-label">Bandcamp / website</span>
+          <AutoText inline label="Bandcamp / website URL" initial={wb.bandcamp_url} placeholder="https://…"
+            onSave={(v) => savePanel('links', { bandcamp_url: v })} />
+          <OpenLink url={wb.bandcamp_url} />
+        </li>
+        <li className="adm-row">
+          <span className="adm-col-label">SoundCloud</span>
+          <AutoText inline label="SoundCloud URL" initial={wb.soundcloud_url} placeholder="https://…"
+            onSave={(v) => savePanel('links', { soundcloud_url: v })} />
+          <OpenLink url={wb.soundcloud_url} />
+        </li>
+      </ul>
+
+      <div className="adm-actions">
         {!wb.spotify_id && <button type="button" className="btn btn-secondary btn-sm" onClick={attachSpotify}>Attach Spotify by search</button>}
         <button type="button" className="btn btn-secondary btn-sm" disabled={!canPush} onClick={() => pushToSpotify()}
           title={canPush ? undefined : (live ? 'This song has no Spotify link' : 'Only live songs can be added to the playlist')}>
           Add to Spotify playlist
         </button>
+        <a className="btn btn-ghost btn-sm" href={bandcampSearch} target="_blank" rel="noreferrer">Search Bandcamp &#8599;</a>
+        <label className="wb-check" title="The Spotify track was removed or no longer plays. The song page hides its Spotify link and the playlist push skips it.">
+          <input type="checkbox" checked={!!wb.spotify_dormant}
+            onChange={(e) => savePanel('links', { spotify_dormant: e.target.checked })} /> Spotify link no longer plays
+        </label>
       </div>
-      <label className="wb-check" title="The Spotify track was removed or no longer plays. The song page hides its Spotify link and the playlist push skips it.">
-        <input type="checkbox" checked={!!wb.spotify_dormant}
-          onChange={(e) => savePanel('links', { spotify_dormant: e.target.checked })} /> Spotify link no longer plays (hide it on the song page)
-      </label>
       {msg && <div className="modal-result">{msg}</div>}
       {pushMsg && <div className="modal-result">{pushMsg}</div>}
       {offerAnyway && (
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => pushToSpotify(true)}>Add anyway</button>
       )}
 
-      <AutoText label="Bandcamp / website URL" initial={wb.bandcamp_url} placeholder="https://…"
-        onSave={(v) => savePanel('links', { bandcamp_url: v })} />
-      <div className="wb-linkactions">
-        <OpenLink url={wb.bandcamp_url} />
-        <a className="btn btn-secondary btn-sm" href={bandcampSearch} target="_blank" rel="noreferrer">Search Bandcamp</a>
-      </div>
-
-      <AutoText label="SoundCloud URL" initial={wb.soundcloud_url} placeholder="https://…"
-        onSave={(v) => savePanel('links', { soundcloud_url: v })} />
-      <div className="wb-linkactions">
-        <OpenLink url={wb.soundcloud_url} />
-      </div>
-
-      <PlatformLinksSection id={id} title={wb.title} artists={artist} />
+      <PlatformLinksSection id={id} />
 
       {artistSite && <p className="admin-stub">Artist website on file: {artistSite}</p>}
     </section>

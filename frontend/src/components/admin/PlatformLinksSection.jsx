@@ -3,14 +3,14 @@ import { adminFetch } from '../../api/adminApi';
 
 const NAMES = new Map([['apple_music', 'Apple Music'], ['deezer', 'Deezer'], ['tidal', 'Tidal']]);
 
-// The song's links on other platforms, inside the workbench Links panel. A confirmed link is on the song page. A proposed
-// one (Apple Music, found by title + artist) shows what Apple called it beside our song so the curator can tell a
-// different version at a glance, then Confirm or Reject. A rejected one is hidden (the run never proposes it again).
-function PlatformLinksSection({ id, title, artists }) {
+// The song's links on other platforms, inside the workbench Links panel (an admin list: docs/ADMIN_UI.md). A confirmed link
+// is on the song page. A proposed one (Apple Music, found by title + artist) shows what the platform called the track on a
+// line beneath, so the curator can tell a different version at a glance (the song's own title is in the top bar), then
+// Confirm or Reject. A rejected one is hidden (the run never proposes it again).
+function PlatformLinksSection({ id }) {
   const [links, setLinks] = useState(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
-
   const idRef = useRef(id); // the song on screen now; a slow answer for a song the curator has already left is dropped
   idRef.current = id;
 
@@ -38,29 +38,31 @@ function PlatformLinksSection({ id, title, artists }) {
   if (!shown.length) return null;
   return (
     <div className="wb-platform-links">
-      <div className="wb-genre-options-title">Other platforms</div>
       {error && <div className="admin-message error">{error}</div>}
-      {shown.map(l => (
-        <div key={l.platform} className="wb-platform-row">
-          <strong>{NAMES.get(l.platform)}</strong>{' '}
-          {l.status === 'confirmed'
-            ? <span className="band-muted">on the song page</span>
-            : (
-              <span>
-                <span className="band-muted">found &ldquo;{l.match_title}&rdquo; by {l.match_artist}; ours is &ldquo;{title}&rdquo; by {artists}</span>
-              </span>
-            )}
-          <div className="wb-linkactions">
-            <a className="btn btn-ghost btn-sm" href={l.url} target="_blank" rel="noreferrer">Open ↗</a>
-            {l.status === 'proposed' && (
-              <>
-                <button type="button" className="btn btn-primary btn-sm" disabled={busy === l.platform} onClick={() => review(l.platform, 'confirm')}>Confirm</button>
-                <button type="button" className="btn btn-secondary btn-sm" disabled={busy === l.platform} onClick={() => review(l.platform, 'reject')}>Reject</button>
-              </>
-            )}
-          </div>
-        </div>
-      ))}
+      <ul className="adm-list">
+        <li className="adm-head" aria-hidden="true">
+          <span className="adm-col-label">Platform</span>
+          <span className="adm-col-field">Link</span>
+          <span className="adm-col-open" />
+        </li>
+        {shown.map(l => {
+          const proposed = l.status === 'proposed';
+          return (
+            <li key={l.platform} className="adm-row adm-wrap">
+              <span className="adm-col-label">{NAMES.get(l.platform)}</span>
+              <span className="adm-col-field band-muted">{proposed ? 'To check' : 'On the song page'}</span>
+              <a className="adm-col-open" href={l.url} target="_blank" rel="noreferrer">Open &#8599;</a>
+              {proposed && (
+                <>
+                  <button type="button" className="btn btn-primary btn-sm" disabled={busy === l.platform} onClick={() => review(l.platform, 'confirm')}>Confirm</button>
+                  <button type="button" className="btn btn-secondary btn-sm" disabled={busy === l.platform} onClick={() => review(l.platform, 'reject')}>Reject</button>
+                  <span className="adm-sub band-muted">Found &ldquo;{l.match_title}&rdquo; by {l.match_artist}</span>
+                </>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
