@@ -46,6 +46,7 @@ test('fieldLabel', () => {
   assert.equal(fieldLabel('country'), 'Country');
   assert.equal(fieldLabel('formed_year'), 'Formed (year)');
   assert.equal(fieldLabel('disbanded_year'), 'Disbanded (year)');
+  assert.equal(fieldLabel('first_release_year'), 'First release (year)');
   assert.equal(fieldLabel('last_release_year'), 'Last release (year)');
   assert.equal(fieldLabel('bandcamp_url'), 'Bandcamp link');
   assert.equal(fieldLabel('mystery'), 'mystery');

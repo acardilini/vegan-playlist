@@ -11,6 +11,7 @@ const FIELDS = new Map([
   ['country', 'Country'],
   ['formed_year', 'Formed (year)'],
   ['disbanded_year', 'Disbanded (year)'],
+  ['first_release_year', 'First release (year)'],
   ['last_release_year', 'Last release (year)'],
   ['bandcamp_url', 'Bandcamp link'],
 ]);

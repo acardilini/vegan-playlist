@@ -8,25 +8,28 @@ const svc = require('../services/artistEnrichment');
 async function mkArtist(name, f = {}) {
   return (await pool.query(
     `INSERT INTO artists (name, data_source, musicbrainz_id, bandcamp_url, country, country_source, formed_year, formed_source,
-                          disbanded_year, disbanded_source, last_release_year, last_release_source)
-     VALUES ($1,'manual',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+                          disbanded_year, disbanded_source, last_release_year, last_release_source, first_release_year, first_release_source)
+     VALUES ($1,'manual',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
     [name, f.musicbrainz_id || null, f.bandcamp_url || null, f.country || null, f.country ? 'Added by curator' : null,
      f.formed_year || null, f.formed_year ? 'Added by curator' : null, f.disbanded_year || null, f.disbanded_year ? 'Added by curator' : null,
-     f.last_release_year || null, f.last_release_year ? 'Added by curator' : null])).rows[0].id;
+     f.last_release_year || null, f.last_release_year ? 'Added by curator' : null,
+     f.first_release_year || null, f.first_release_year ? 'Added by curator' : null])).rows[0].id;
 }
 async function mkProposal(artistId, p = {}) {
   await pool.query(
     `INSERT INTO artist_enrichment_proposals (artist_id, proposed_musicbrainz_id, mbid_match_method, mbid_confidence, artist_type,
        proposed_country, country_source, country_confidence, proposed_formed_year, formed_source, formed_confidence,
        proposed_disbanded_year, disbanded_source, disbanded_confidence, proposed_last_release_year, last_release_source,
-       last_release_confidence, proposed_bandcamp_url, proposed_members, layers_completed, review_status, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'{}','pending',CURRENT_TIMESTAMP)`,
+       last_release_confidence, proposed_bandcamp_url, proposed_members, layers_completed, review_status, updated_at,
+       proposed_first_release_year, first_release_source, first_release_confidence)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'{}','pending',CURRENT_TIMESTAMP,$20,$21,$22)`,
     [artistId, p.mbid || null, p.method || (p.mbid ? 'MB_SPOTIFY_URL' : null), p.confidence || (p.mbid ? 'EXACT_ID' : null), p.artist_type || null,
      p.country || null, p.country_source || null, p.country_confidence || null,
      p.formed || null, p.formed_source || null, p.formed_confidence || null,
      p.disbanded || null, p.disbanded_source || null, p.disbanded_confidence || null,
      p.last || null, p.last_source || null, p.last_confidence || null,
-     p.bandcamp || null, p.members === undefined ? null : JSON.stringify(p.members)]);
+     p.bandcamp || null, p.members === undefined ? null : JSON.stringify(p.members),
+     p.first || null, p.first_source || null, p.first_confidence || null]);
 }
 async function mkReview(artistId, { decision = null, mbid = null, finished = false } = {}) {
   await pool.query(`INSERT INTO artist_enrichment_review (artist_id, match_decision, matched_mbid, finished_at) VALUES ($1,$2,$3,$4)`,
@@ -212,6 +215,47 @@ test('warnings: last release before catalogue album year, disbanded before last 
   const r2 = await svc.getReview(pool, id2);
   assert.deepEqual(r2.warnings.map((w) => w.field), ['disbanded_year']);
   assert.match(r2.warnings[0].text, /2012/);
+});
+
+test('first release year: shown with current and proposed, equal omitted, unknown source dropped', async () => {
+  const id = await mkArtist('ZZZENR First', { first_release_year: 1999 });
+  await mkProposal(id, { first: 1996, first_source: 'MusicBrainz', first_confidence: 'EXACT_ID' });
+  const r = await svc.getReview(pool, id);
+  const f = field(r, 'first_release_year');
+  assert.equal(f.label, 'First release'); assert.equal(f.current, 1999); assert.equal(f.proposed, 1996);
+  assert.equal(f.source, 'MusicBrainz'); assert.equal(f.confidence, 'EXACT_ID');
+  const same = await mkArtist('ZZZENR First Same', { first_release_year: 2001 });
+  await mkProposal(same, { first: 2001, first_source: 'MusicBrainz' });
+  assert.deepEqual((await svc.getReview(pool, same)).fields, []);
+  const odd = await mkArtist('ZZZENR First Odd');
+  await mkProposal(odd, { first: 2001, first_source: 'Some Blog' });
+  assert.deepEqual((await svc.getReview(pool, odd)).fields, []);
+});
+
+test('first release year sits between the formed row and the last release row', async () => {
+  const id = await mkArtist('ZZZENR First Order');
+  await mkProposal(id, { country: 'Peru', country_source: 'Wikidata', formed: 1990, formed_source: 'Wikidata', first: 1992, first_source: 'MusicBrainz', last: 2010, last_source: 'MusicBrainz' });
+  assert.deepEqual((await svc.getReview(pool, id)).fields.map((f) => f.field), ['country', 'formed_year', 'first_release_year', 'last_release_year']);
+});
+
+test('warning: proposed first release later than the catalogue earliest album; an earlier one is not a warning', async () => {
+  const id = await mkArtist('ZZZENR FirstWarn');
+  await mkSong(id, 'ZZZENR fw one', { year: 2005 });
+  await mkProposal(id, { first: 2012, first_source: 'MusicBrainz' });
+  const r = await svc.getReview(pool, id);
+  assert.deepEqual(r.warnings.map((w) => w.field), ['first_release_year']);
+  assert.match(r.warnings[0].text, /2012/); assert.match(r.warnings[0].text, /2005/);
+  const ok = await mkArtist('ZZZENR FirstWarn Ok');
+  await mkSong(ok, 'ZZZENR fw two', { year: 2005 });
+  await mkProposal(ok, { first: 1999, first_source: 'MusicBrainz' });
+  assert.deepEqual((await svc.getReview(pool, ok)).warnings, []);
+});
+
+test('an artist whose only difference is the first release year is in the review queue', async () => {
+  const id = await mkArtist('ZZZENR FirstQ', { first_release_year: 2000 });
+  await mkProposal(id, { first: 1998, first_source: 'MusicBrainz' });
+  const rows = (await svc.list(pool, { queue: 'enr-review', q: 'ZZZENR FirstQ', limit: 50 })).rows;
+  assert.ok(rows.some((x) => x.id === id));
 });
 
 test('counts equal list totals for every queue', async () => {

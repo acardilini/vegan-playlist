@@ -18,12 +18,13 @@ async function mkProposal(artistId, p = {}) {
   await pool.query(
     `INSERT INTO artist_enrichment_proposals (artist_id, proposed_musicbrainz_id, mbid_match_method, mbid_confidence, artist_type,
        proposed_country, country_source, proposed_formed_year, formed_source, proposed_disbanded_year, disbanded_source,
-       proposed_last_release_year, last_release_source, proposed_bandcamp_url, proposed_members, layers_completed, review_status, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'{}','pending',TIMESTAMP '2026-01-01 00:00:00')`,
+       proposed_last_release_year, last_release_source, proposed_bandcamp_url, proposed_members, layers_completed, review_status, updated_at,
+       proposed_first_release_year, first_release_source)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'{}','pending',TIMESTAMP '2026-01-01 00:00:00',$16,$17)`,
     [artistId, p.mbid || null, p.method || (p.mbid ? 'MB_SPOTIFY_URL' : null), p.confidence || (p.mbid ? 'EXACT_ID' : null), p.artist_type || null,
      p.country || null, p.country_source || null, p.formed || null, p.formed_source || null,
      p.disbanded || null, p.disbanded_source || null, p.last || null, p.last_source || null,
-     p.bandcamp || null, p.members === undefined ? null : JSON.stringify(p.members)]);
+     p.bandcamp || null, p.members === undefined ? null : JSON.stringify(p.members), p.first || null, p.first_source || null]);
 }
 async function mkSong(artistId, title, year) {
   const albumId = (await pool.query(`INSERT INTO albums (name, release_date, data_source) VALUES ($1,$2,'manual') RETURNING id`,
@@ -43,7 +44,7 @@ after(async () => { await clean(); await pool.end(); });
 const isCode = (code) => (e) => e.code === code;
 const artistRow = async (id) => (await pool.query(
   `SELECT musicbrainz_id, bandcamp_url, country, country_source, formed_year, formed_source, disbanded_year, disbanded_source,
-          last_release_year, last_release_source FROM artists WHERE id = $1`, [id])).rows[0];
+          last_release_year, last_release_source, first_release_year, first_release_source FROM artists WHERE id = $1`, [id])).rows[0];
 const reviewRow = async (id) => (await pool.query(`SELECT match_decision, matched_mbid, finished_at FROM artist_enrichment_review WHERE artist_id = $1`, [id])).rows[0];
 const membersOf = async (id) => (await pool.query(`SELECT id, name, is_current, vegan, source FROM artist_members WHERE artist_id = $1 ORDER BY id`, [id])).rows;
 const inQueue = async (queue, id) => (await svc.list(pool, { queue, q: 'ZZZENW', limit: 200 })).rows.some((r) => r.id === id);
@@ -152,6 +153,18 @@ test('acceptField saves value and source; Skip (never calling anything) stores n
   assert.equal(a.disbanded_year, 2015); assert.equal(a.disbanded_source, 'Gemini Web Search');
   // formed_year was skipped: nothing stored
   assert.equal(a.formed_year, null); assert.equal(a.formed_source, null);
+});
+
+test('acceptField on first_release_year saves the year and its source through saveFacts, leaving the other facts alone', async () => {
+  const id = await mkArtist('ZZZENW First');
+  await mkProposal(id, { mbid: randomUUID(), first: 1996, first_source: 'MusicBrainz', country: 'Peru', country_source: 'Bandcamp' });
+  assert.equal((await artistRow(id)).first_release_year, null);
+  const r = await svc.acceptField(pool, id, 'first_release_year');
+  const a = await artistRow(id);
+  assert.equal(a.first_release_year, 1996); assert.equal(a.first_release_source, 'MusicBrainz');
+  assert.equal(a.country, null, 'only the accepted row is written');
+  assert.ok(!r.fields.some((f) => f.field === 'first_release_year'), 'an accepted row disappears');
+  assert.ok(r.fields.some((f) => f.field === 'country'), 'the other rows stay proposed');
 });
 
 test('acceptField on a locked row is CONFLICT and writes nothing', async () => {

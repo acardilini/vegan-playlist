@@ -52,6 +52,10 @@ function buildWarnings({ proposal, stored, catalogue, proposedMembers, sharedWit
   if (disb != null && lastRef != null && disb < lastRef) {
     w.push({ field: 'disbanded_year', text: `Proposed disbanded year ${disb} is earlier than the ${last != null ? 'proposed' : 'stored'} last release (${lastRef})` });
   }
+  const first = proposal.proposed_first_release_year;
+  if (first != null && catalogue.first_year != null && first > catalogue.first_year) {
+    w.push({ field: 'first_release_year', text: `Proposed first release ${first} is later than the catalogue's earliest album (${catalogue.first_year})` });
+  }
   if (formed != null && catalogue.first_year != null && formed > catalogue.first_year) {
     w.push({ field: 'formed_year', text: `Proposed formed year ${formed} is later than the catalogue's earliest album (${catalogue.first_year})` });
   }
@@ -83,6 +87,7 @@ const FIELDS = [
   { field: 'country', label: 'Country', prefix: 'country' },
   { field: 'formed_year', label: 'Formed', prefix: 'formed' },
   { field: 'disbanded_year', label: 'Disbanded', prefix: 'disbanded' },
+  { field: 'first_release_year', label: 'First release', prefix: 'first_release' },
   { field: 'last_release_year', label: 'Last release', prefix: 'last_release' },
 ];
 
@@ -145,6 +150,7 @@ const HAS_SOMETHING = `(
   OR (p.proposed_country IS NOT NULL AND ${okSource('country_source')} AND p.proposed_country IS DISTINCT FROM a.country)
   OR (p.proposed_formed_year IS NOT NULL AND ${okSource('formed_source')} AND p.proposed_formed_year IS DISTINCT FROM a.formed_year)
   OR (p.proposed_disbanded_year IS NOT NULL AND ${okSource('disbanded_source')} AND p.proposed_disbanded_year IS DISTINCT FROM a.disbanded_year)
+  OR (p.proposed_first_release_year IS NOT NULL AND ${okSource('first_release_source')} AND p.proposed_first_release_year IS DISTINCT FROM a.first_release_year)
   OR (p.proposed_last_release_year IS NOT NULL AND ${okSource('last_release_source')} AND p.proposed_last_release_year IS DISTINCT FROM a.last_release_year)
   OR (${bcOrigin('p.proposed_bandcamp_url')} LIKE '%.bandcamp.com' AND ${bcOrigin('p.proposed_bandcamp_url')} IS DISTINCT FROM ${bcOrigin('a.bandcamp_url')})
   OR EXISTS (SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(p.proposed_members) = 'array' THEN p.proposed_members ELSE '[]'::jsonb END) m
@@ -245,7 +251,8 @@ async function sharedWith(db, artistId, mbid) {
 
 const PROPOSAL_COLS = `proposed_musicbrainz_id, mbid_match_method, mbid_confidence, artist_type,
   proposed_country, country_source, country_confidence, proposed_formed_year, formed_source, formed_confidence,
-  proposed_disbanded_year, disbanded_source, disbanded_confidence, proposed_last_release_year, last_release_source,
+  proposed_disbanded_year, disbanded_source, disbanded_confidence, proposed_first_release_year, first_release_source,
+  first_release_confidence, proposed_last_release_year, last_release_source,
   last_release_confidence, proposed_bandcamp_url, proposed_members`;
 
 async function getReview(db, artistId) {
