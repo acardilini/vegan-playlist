@@ -128,9 +128,12 @@ async function proposeFromMusicBrainz(db, artistId, { adapters }) {
   const byKey = new Map(stored.members.map((m) => [nameKey(m.name), m]));
   const members = [];
   for (const m of found.members) {
+    const role = typeof m.role === 'string' && m.role.trim() ? m.role.trim().slice(0, 80) : null;
     const have = byKey.get(nameKey(m.name));
-    if (!have) members.push({ name: m.name, is_current: m.is_current, change: 'new', existing: null });
-    else if (have.is_current !== m.is_current) members.push({ name: m.name, is_current: m.is_current, change: 'status', existing: { id: have.id, is_current: have.is_current, vegan: have.vegan } });
+    if (!have) members.push({ name: m.name, is_current: m.is_current, role, change: 'new', existing: null });
+    else if (have.is_current !== m.is_current) members.push({ name: m.name, is_current: m.is_current, role, change: 'status', existing: { id: have.id, is_current: have.is_current, vegan: have.vegan, role: have.role } });
+    // MusicBrainz only ever fills an empty role; a role the curator typed is never offered a replacement.
+    else if (role && !have.role) members.push({ name: m.name, is_current: m.is_current, role, change: 'role', existing: { id: have.id, is_current: have.is_current, vegan: have.vegan, role: have.role } });
   }
   return { musicbrainz: { name: found.name }, fields, members };
 }

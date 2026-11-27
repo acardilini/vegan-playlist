@@ -42,7 +42,7 @@ test('parseFacts: members current/past, live and touring skipped, other relation
     member('Eve', { direction: 'forward' }), member('Fay', { type: 'producer' }),
     member('Gus', { ended: true, end: '2010' }), member('Gus'),
   ] }, []);
-  assert.deepEqual(f.members, [{ name: 'Ann', is_current: true }, { name: 'Bob', is_current: false }, { name: 'Gus', is_current: true }]);
+  assert.deepEqual(f.members, [{ name: 'Ann', is_current: true, role: null }, { name: 'Bob', is_current: false, role: null }, { name: 'Gus', is_current: true, role: null }]);
 });
 
 function adapterWith(handler) {
@@ -85,4 +85,16 @@ test('parseFacts: a solo Person has birth/death dates, not formed/disbanded, so 
   assert.deepEqual([f.country, f.formed_year, f.disbanded_year, f.last_release_year], ['United States', null, null, 2018]);
   const g = parseFacts({ type: 'Group', 'life-span': { begin: '2001', end: '2010', ended: true } }, []);
   assert.deepEqual([g.formed_year, g.disbanded_year], [2001, 2010]);
+});
+
+test('parseFacts: member role from the relation attributes, status words dropped, null when none', () => {
+  const f = parseFacts({ relations: [
+    member('Ann', { attributes: ['guitar', 'lead vocals'] }), member('Bob', { attributes: ['original', 'Guitar'] }),
+    member('Cal', { attributes: ['founding'] }), member('Dee', { attributes: [] }),
+    member('Eve', { attributes: ['additional', 'guest', 'minor', 'past', 'present', 'former', 'current'] }),
+    member('Fay', { attributes: ['x'.repeat(100)] }),
+  ] }, []);
+  const role = (n) => f.members.find((m) => m.name === n).role;
+  assert.deepEqual([role('Ann'), role('Bob'), role('Cal'), role('Dee'), role('Eve')], ['guitar, lead vocals', 'Guitar', null, null, null]);
+  assert.equal(role('Fay').length, 80);
 });

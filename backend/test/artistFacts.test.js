@@ -138,6 +138,24 @@ test('propose members: matched by name ignoring case/diacritics, vegan mark kept
   assert.deepEqual(f.members.map((m) => [m.name, m.vegan]).sort(), [['José', true], ['Manual Only', true]]);
   assert.equal(f.members.find((m) => m.id === jose.id).is_current, true);
 });
+test('propose members: a role fills an empty role only and a new member carries its role', async () => {
+  const id = await mk('ZZZAFA RoleProp', { mb: true });
+  const ann = await svc.addMember(pool, id, { name: 'Ann' });
+  await svc.addMember(pool, id, { name: 'Bob', role: 'Bass' });
+  const cal = await svc.addMember(pool, id, { name: 'Cal', is_current: true });
+  const p = await svc.proposeFromMusicBrainz(pool, id, { adapters: stub({ members: [
+    { name: 'Ann', is_current: true, role: 'Drums' }, { name: 'Bob', is_current: true, role: 'Guitar' },
+    { name: 'Cal', is_current: false, role: 'Keys' }, { name: 'Dee', is_current: true, role: 'Vocals' }, { name: 'Eve', is_current: true }] }) });
+  const by = (n) => p.members.find((m) => m.name === n);
+  assert.deepEqual([by('Ann').change, by('Ann').role, by('Ann').existing.role], ['role', 'Drums', null]);
+  assert.equal(by('Bob'), undefined); // a stored role is never replaced and nothing else differs
+  assert.deepEqual([by('Cal').change, by('Cal').role, by('Cal').is_current], ['status', 'Keys', false]);
+  assert.deepEqual([by('Dee').change, by('Dee').role], ['new', 'Vocals']);
+  assert.deepEqual([by('Eve').change, by('Eve').role], ['new', null]);
+  const f = await svc.getFacts(pool, id); // nothing was written
+  assert.deepEqual(f.members.map((m) => [m.name, m.role]).sort(), [['Ann', null], ['Bob', 'Bass'], ['Cal', null]]);
+  assert.ok(ann.id && cal.id);
+});
 test('propose members: a stored member absent from MusicBrainz is never mentioned', async () => {
   const id = await mk('ZZZAFA Nine', { mb: true });
   await svc.addMember(pool, id, { name: 'Handmade', vegan: true });

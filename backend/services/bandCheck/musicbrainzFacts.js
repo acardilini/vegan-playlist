@@ -3,6 +3,8 @@
 const STUDIO_TYPES = new Set(['Album', 'EP', 'Single']);
 const EXCLUDED_SECONDARY = new Set(['Live', 'Compilation', 'Remix', 'Demo']);
 const NOT_A_MEMBER = new Set(['live', 'touring']);
+// Relation attributes that describe tenure, not what the member plays or sings.
+const NOT_A_ROLE = new Set(['original', 'founding', 'additional', 'guest', 'minor', 'past', 'present', 'former', 'current']);
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 function countryName(code) {
@@ -12,6 +14,12 @@ function countryName(code) {
 
 const yearOf = (date) => { const m = /^(\d{4})/.exec(String(date || '')); return m ? parseInt(m[1], 10) : null; };
 
+// The instrument or vocal attributes of a 'member of band' relation as one short text, or null when it states none.
+function roleOf(attributes) {
+  const parts = (attributes || []).map((a) => String(a).trim()).filter((a) => a && !NOT_A_ROLE.has(a.toLowerCase()));
+  return parts.length ? parts.join(', ').slice(0, 80) : null;
+}
+
 function parseMembers(relations) {
   const byName = new Map();
   for (const r of relations || []) {
@@ -19,7 +27,7 @@ function parseMembers(relations) {
     if ((r.attributes || []).some((a) => NOT_A_MEMBER.has(String(a).toLowerCase()))) continue;
     const is_current = !r.ended && !r.end;
     const prior = byName.get(r.artist.name);
-    if (!prior || (is_current && !prior.is_current)) byName.set(r.artist.name, { name: r.artist.name, is_current });
+    if (!prior || (is_current && !prior.is_current)) byName.set(r.artist.name, { name: r.artist.name, is_current, role: roleOf(r.attributes) });
   }
   return [...byName.values()];
 }
