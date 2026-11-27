@@ -363,3 +363,19 @@ a.band-chip:hover { text-decoration: underline; }
 .wb-audio-decision { margin-top: var(--space-3); }
 .wb-audio-choices { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-1) 0; }
 .wb-audio-hint { font-size: 0.78rem; color: var(--text-muted); }
+
+/* Artist workbench: merge dialog */
+.aw-backdrop { position: fixed; inset: 0; background: var(--bg-overlay); display: flex; align-items: flex-start; justify-content: center; padding: 8vh var(--space-3) var(--space-3); z-index: 60; overflow-y: auto; }
+.aw-dialog { width: 100%; max-width: 34rem; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.aw-dialog h2 { margin: 0; }
+.aw-cards { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.aw-card { flex: 1 1 12rem; min-width: 0; border: 1px solid var(--border-hairline); border-radius: var(--radius-md); padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-1); overflow-wrap: anywhere; }
+.aw-card.is-keep { border-color: var(--accent-moss-60); }
+.aw-card.is-gone { border-color: var(--color-danger); }
+.aw-card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); }
+.aw-card.is-keep .aw-card-title { color: var(--accent-moss-60); }
+.aw-card.is-gone .aw-card-title { color: var(--color-danger); }
+.aw-sum { margin: 0; padding-left: var(--space-4); font-size: 0.85rem; color: var(--text-secondary); }
+.aw-dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); flex-wrap: wrap; }
+.aw-danger { background: var(--color-danger); border: 1px solid var(--color-danger); color: var(--bg-surface); }
+.aw-danger:disabled { opacity: 0.5; cursor: not-allowed; }
