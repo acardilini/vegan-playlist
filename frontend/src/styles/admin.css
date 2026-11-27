@@ -422,3 +422,6 @@ a.band-chip:hover { text-decoration: underline; }
 .aw-hint { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
 .aw-fill { margin-top: var(--space-2); }
 .aw-fill .adm-list { margin-top: var(--space-2); }
+.aw-basics .adm-list { margin-bottom: var(--space-3); }
+.aw-fsrc { flex: none; min-width: 5rem; }
+.aw-sub-head { font-size: 0.85rem; margin: var(--space-3) 0 var(--space-1); color: var(--text-secondary); }

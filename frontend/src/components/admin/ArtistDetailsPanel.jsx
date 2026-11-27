@@ -21,8 +21,6 @@ function ArtistDetailsPanel({ artist, save }) {
         {' '}No advocacy notes needed
       </label>
       {boxError && <div className="admin-message error">{boxError}</div>}
-      <AutoText label="Genres (comma-separated)" initial={(artist.genres || []).join(', ')}
-        onSave={(v) => save({ genres: v.split(',').map((g) => g.trim()).filter(Boolean) })} />
     </section>
   );
 }
