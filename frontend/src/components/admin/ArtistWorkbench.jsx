@@ -142,7 +142,6 @@ function WorkbenchBody({ artist, save, onIdentitySaved, goNext, go, idx, navStat
               reviewed={!!artist.discography_reviewed}
               onReviewedChange={(v) => save({ discography_reviewed: v })} />
             <section className="wb-panel">
-              <h2>Catalogue review notes</h2>
               <AutoText label="Catalogue review notes" initial={artist.discography_review_notes} multiline rows={3}
                 onSave={(v) => save({ discography_review_notes: v })} />
             </section>
