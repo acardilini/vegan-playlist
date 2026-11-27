@@ -379,3 +379,15 @@ a.band-chip:hover { text-decoration: underline; }
 .aw-dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); flex-wrap: wrap; }
 .aw-danger { background: var(--color-danger); border: 1px solid var(--color-danger); color: var(--bg-surface); }
 .aw-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Artist workbench: numbered sections and the identity rows */
+.aw-section { border: 1px solid var(--border-hairline); border-radius: var(--radius-lg); background: var(--bg-surface); margin-bottom: var(--space-3); overflow: hidden; }
+.aw-section-head { display: flex; align-items: center; gap: var(--space-2); font-weight: 700; font-size: 0.9rem; background: var(--bg-surface-raised); padding: var(--space-2) var(--space-3); }
+.aw-section-body { padding: var(--space-3); }
+.adm-pill.is-ok { color: var(--accent-moss-60); border-color: var(--accent-moss-60); }
+.adm-pill.is-todo { color: var(--accent-ember-60); border-color: var(--accent-ember-60); }
+.aw-identify .adm-list { margin-bottom: var(--space-2); }
+.aw-source { list-style: none; }
+.aw-source-actions { display: flex; flex: none; gap: var(--space-1); margin-left: auto; }
+.aw-source-body { flex: 1 0 100%; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) 0 var(--space-2) 6.9rem; font-size: 0.8rem; }
+.aw-match { padding: var(--space-2) 0 var(--space-2) 6.9rem; display: flex; flex-direction: column; gap: var(--space-1); font-size: 0.85rem; }
