@@ -5,11 +5,11 @@
 
 ## Verdict
 
-The pilot's claims check out and the two findings it names are fixed. **It is not signed off**, because the live data has moved well past the pilot (see 1) and four things need fixing or answering first (3 to 6).
+The pilot's claims check out and the two findings it names are fixed. **The drain is signed off by the curator, but the results are not accepted yet**, because the live data has moved well past the pilot (see the run table in 1) and four things need fixing or answering first (3 to 6).
 
-## 1. Process: the drain ran ahead of the pilot sign-off
+## 1. Process: the drain and the cost (curator decisions, 2026-11-27)
 
-The report ends "Awaiting curator / main-project sign-off". The run table says otherwise:
+The curator has signed off the drain and says the spend over the earlier cap is fine, so neither is a finding. For the record, the run table:
 
 | Run | Stage | Rows | Cost | State |
 |---|---|---|---|---|
@@ -19,11 +19,7 @@ The report ends "Awaiting curator / main-project sign-off". The run table says o
 | `5f7fe18b` | DRAIN L4C-1 | 334 | $2.243 | done 09:02 |
 | `ca9fdc11` | DRAIN L4C-2 | 235 | running (22 done by 09:13) | open |
 
-The instruction was: do not overwrite live staging rows until we confirm the pilot. Hundreds of live rows have since been rewritten (the backfill alone reports 794 rows updated and 269 stances changed; the L4C-1 drain wrote verdicts and stances on 334 more). **There is no way back from the database**: no backup table exists, and `artist_enrichment_snapshots` holds model *responses* (`raw_response_json`), not the row as it was. Please confirm a pre-backfill export exists, and from now on write a pre-image row into the snapshot before any live update.
-
-## 2. Cost: on track to pass the approved cap
-
-The curator approved Path A at about $4.30. Spent so far: **$2.58**. L4C-2 costs about **$0.018 per row** on your own run figures (2 rows, $0.036), and 235 rows are queued, so about **$4.3 more**, a projected total near **$6.9**. The report projected $3.50 to $5.50 *remaining*, which is also over the cap once added to the pilot. Either the cap is renegotiated or L4C-2 is cut down (see 4).
+One request stands: **there is no way back from the database.** No backup table exists, and `artist_enrichment_snapshots` holds model *responses* (`raw_response_json`), not the row as it was. Please confirm a pre-backfill export exists, and from now on write a pre-image row into the snapshot before any live update.
 
 ## 3. BLOCKER: a corrected-identity row still looks exactly like a trusted match (artist 3625, Culture Shock)
 
@@ -33,7 +29,7 @@ L4C-2 resolved this row as `WRONG_MBID_IDENTITY_CORRECTED`. Its rationale says M
 - `proposed_country` is still `United Kingdom`, source `MusicBrainz`, `EXACT_ID` (taken from the wrong entity);
 - only the years were replaced (1986 to 2026, source `Gemini Web Search`).
 
-The review reader therefore shows the match as **`pretrusted`**, so "Accept all shown" would write the wrong MusicBrainz id to `artists.musicbrainz_id`. **Ask:** when L4C-2 resolves `WRONG_MBID_IDENTITY_CORRECTED`, set `mbid_confidence = 'CONFLICT'` (or null the id and the method), clear every MusicBrainz-sourced field and say so in `validation_notes`. Only this one row is affected today, but 235 more are being processed. The main project will also add a reader-side guard (a `WRONG_MBID_IDENTITY_CORRECTED` verdict can never be `pretrusted`); that is defence in depth, not a substitute.
+The review reader therefore shows the match as **`pretrusted`**, so "Accept all shown" would write the wrong MusicBrainz id to `artists.musicbrainz_id`. **Ask:** when L4C-2 resolves `WRONG_MBID_IDENTITY_CORRECTED`, set `mbid_confidence = 'CONFLICT'` (or null the id and the method), clear every MusicBrainz-sourced field and say so in `validation_notes`. Only this one row is affected today, but 235 more are being processed. **The main project has now added a reader-side guard** (`debdf30`: a `WRONG_MBID_IDENTITY_CORRECTED` verdict can never be `pretrusted`, so the row opens as 'Match needs your approval' with its MusicBrainz facts locked); that is defence in depth, not a substitute for fixing the row.
 
 ## 4. L4C-1 false demotions: the Earth Crisis class is not fixed
 
@@ -70,8 +66,8 @@ Finding #1's fix (escalate a demotion to L4C-2) worked for Earth Crisis (81: L4C
 
 ## 8. Before the drain's output is accepted
 
-1. Confirm a pre-backfill export of `artist_enrichment_proposals` exists (or take one now, before the rest of the drain lands).
+1. Confirm a pre-backfill export of `artist_enrichment_proposals` exists (or take one now).
 2. Fix the `WRONG_MBID_IDENTITY_CORRECTED` row handling (3).
 3. Route all `note_claims_vegan_without_snippet` rows to L4C-2 and show evidence for the overrides (4).
 4. Answer or fix section 5.
-5. Report final spend against the cap, and tell us when the run `ca9fdc11` has finished. The main project will re-run this review on the finished data.
+5. Report final spend, and tell us when the run `ca9fdc11` has finished. The main project will re-run this review on the finished data.
