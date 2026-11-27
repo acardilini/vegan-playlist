@@ -117,6 +117,17 @@ test('the snapshot row carries the loser\'s artist row, song links, members and 
   assert.deepEqual(j.lead_ids, [lead]);
 });
 
+test('merge keeps the role of a moving member and the snapshot records the role', async () => {
+  const k = await mk('K7'), l = await mk('L7');
+  await pool.query(`INSERT INTO artist_members (artist_id, name, role) VALUES ($1, 'Bassist', 'Bass'), ($1, 'Dupe', 'Keys')`, [l]);
+  await pool.query(`INSERT INTO artist_members (artist_id, name) VALUES ($1, 'dupe')`, [k]);
+  await doMerge(k, l);
+  const m = (await pool.query(`SELECT name, role FROM artist_members WHERE artist_id = $1 ORDER BY name`, [k])).rows;
+  assert.deepEqual(m, [{ name: 'Bassist', role: 'Bass' }, { name: 'dupe', role: null }]);
+  const snap = (await pool.query(`SELECT loser_snapshot FROM artist_merges WHERE loser_id = $1`, [l])).rows[0].loser_snapshot;
+  assert.deepEqual(snap.members.map((x) => [x.name, x.role]).sort(), [['Bassist', 'Bass'], ['Dupe', 'Keys']]);
+});
+
 test('the loser is gone and the same pair cannot be merged twice', async () => {
   const k = await mk('K7'), l = await mk('L7');
   const hash = (await svc.preview(pool, k, l)).hash;

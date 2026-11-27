@@ -42,7 +42,7 @@ async function load(db, keeperId, loserId, { lock = false } = {}) {
   const keeperLinks = await links(keeperId);
   const loserLinks = await links(loserId);
   const keeperMembers = (await db.query(`SELECT id, name FROM artist_members WHERE artist_id = $1 ORDER BY id`, [keeperId])).rows;
-  const loserMembers = (await db.query(`SELECT id, name, is_current, vegan, source FROM artist_members WHERE artist_id = $1 ORDER BY id`, [loserId])).rows;
+  const loserMembers = (await db.query(`SELECT id, name, role, is_current, vegan, source FROM artist_members WHERE artist_id = $1 ORDER BY id`, [loserId])).rows;
   const leadIds = (await db.query(`SELECT id FROM leads WHERE artist_id = $1 ORDER BY id`, [loserId])).rows.map((r) => r.id);
 
   const keeperSongs = new Set(keeperLinks.map((l) => l.song_id));

@@ -13,7 +13,7 @@ const nameKey = (name) => String(name || '').normalize('NFD').replace(/[̀-ͯ]/g
 // artists.active_override (migration 016) is no longer read or written; the column is left in place.
 const COLS = `country, country_source, formed_year, formed_source, disbanded_year, disbanded_source,
               first_release_year, first_release_source, last_release_year, last_release_source`;
-const MEMBER_COLS = 'id, name, is_current, vegan, source';
+const MEMBER_COLS = 'id, name, role, is_current, vegan, source';
 
 async function getFacts(db, artistId) {
   const a = (await db.query(`SELECT ${COLS} FROM artists WHERE id = $1`, [artistId])).rows[0];
@@ -63,16 +63,25 @@ const cleanName = (name) => {
   if (!n || n.length > 255) throw coded('BAD_INPUT', 'Name is required (255 characters at most)');
   return n;
 };
+// Free text, optional: null or whitespace clears it; at most 80 characters.
+const cleanRole = (role) => {
+  if (role === null) return null;
+  if (typeof role !== 'string') throw coded('BAD_INPUT', 'Role must be text, 80 characters at most');
+  const r = role.trim();
+  if (r.length > 80) throw coded('BAD_INPUT', 'Role must be text, 80 characters at most');
+  return r || null;
+};
 async function membersOf(db, artistId) { return (await db.query(`SELECT id, name FROM artist_members WHERE artist_id = $1`, [artistId])).rows; }
 
-async function addMember(db, artistId, { name, is_current = true, vegan = false, source = CURATOR } = {}) {
+async function addMember(db, artistId, { name, role = null, is_current = true, vegan = false, source = CURATOR } = {}) {
   const n = cleanName(name);
+  const r = cleanRole(role);
   if (!SOURCES.has(source)) throw coded('BAD_INPUT', 'Unknown source');
   if (!(await db.query(`SELECT 1 FROM artists WHERE id = $1`, [artistId])).rows.length) throw coded('NOT_FOUND', 'Artist not found');
   if ((await membersOf(db, artistId)).some((m) => nameKey(m.name) === nameKey(n))) throw coded('CONFLICT', 'That member is already listed');
   return (await db.query(
-    `INSERT INTO artist_members (artist_id, name, is_current, vegan, source) VALUES ($1,$2,$3,$4,$5) RETURNING ${MEMBER_COLS}`,
-    [artistId, n, !!is_current, !!vegan, source])).rows[0];
+    `INSERT INTO artist_members (artist_id, name, role, is_current, vegan, source) VALUES ($1,$2,$3,$4,$5,$6) RETURNING ${MEMBER_COLS}`,
+    [artistId, n, r, !!is_current, !!vegan, source])).rows[0];
 }
 
 async function updateMember(db, artistId, memberId, patch = {}) {
@@ -85,6 +94,7 @@ async function updateMember(db, artistId, memberId, patch = {}) {
     if ((await membersOf(db, artistId)).some((m) => m.id !== cur.id && nameKey(m.name) === nameKey(n))) throw coded('CONFLICT', 'That member is already listed');
     set('name', n);
   }
+  if (patch.role !== undefined) set('role', cleanRole(patch.role));
   for (const col of ['is_current', 'vegan']) {
     if (patch[col] === undefined) continue;
     if (typeof patch[col] !== 'boolean') throw coded('BAD_INPUT', `${col} must be true or false`);

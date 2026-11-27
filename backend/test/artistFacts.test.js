@@ -79,6 +79,24 @@ test('members: add, duplicate by name ignoring case and diacritics, update, remo
   assert.deepEqual(await svc.removeMember(pool, a, m.id), { removed: true });
   assert.equal((await svc.getFacts(pool, a)).members.length, 0);
 });
+test('members: role is stored trimmed, empty clears it, over 80 characters or a non-string is BAD_INPUT', async () => {
+  const a = await mk('ZZZAFA Role');
+  const m = await svc.addMember(pool, a, { name: 'Ann', role: '  Vocals ' });
+  assert.equal(m.role, 'Vocals');
+  assert.equal((await svc.addMember(pool, a, { name: 'Bob' })).role, null);
+  const cleared = await svc.updateMember(pool, a, m.id, { role: '   ' });
+  assert.equal(cleared.role, null);
+  await assert.rejects(svc.updateMember(pool, a, m.id, { role: 'x'.repeat(81) }), coded('BAD_INPUT'));
+  await assert.rejects(svc.updateMember(pool, a, m.id, { role: 5 }), coded('BAD_INPUT'));
+  await assert.rejects(svc.addMember(pool, a, { name: 'Cal', role: 'y'.repeat(81) }), coded('BAD_INPUT'));
+  assert.equal((await svc.updateMember(pool, a, m.id, { role: 'x'.repeat(80) })).role.length, 80);
+  assert.equal((await svc.getFacts(pool, a)).members.length, 2); // the rejected add left nothing behind
+});
+test('members: getFacts rows carry the role', async () => {
+  const a = await mk('ZZZAFA RoleRead');
+  await svc.addMember(pool, a, { name: 'Dee', role: 'Drums' });
+  assert.deepEqual((await svc.getFacts(pool, a)).members.map((m) => [m.name, m.role]), [['Dee', 'Drums']]);
+});
 test('nameKey folds case, diacritics and spacing', () => {
   assert.equal(svc.nameKey('  José   PÉREZ '), 'jose perez');
 });
