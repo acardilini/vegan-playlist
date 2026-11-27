@@ -414,13 +414,23 @@ test('finish sets and clears finished_at and moves the artist between enr-review
   assert.equal(r.finished_at, null);
   assert.ok(await inQueue('enr-review', id)); assert.ok(!(await inQueue('enr-done', id)));
   await assert.rejects(svc.finish(pool, id, 'yes'), isCode('BAD_INPUT'));
-  const noProp = await mkArtist('ZZZENW Finish None');
-  await assert.rejects(svc.finish(pool, noProp, true), isCode('NOT_FOUND'));
-  assert.equal(await reviewRow(noProp), undefined);
+  await assert.rejects(svc.finish(pool, -1, true), isCode('NOT_FOUND'));
   // finishing an artist with no review row creates one
   const fresh = await mkArtist('ZZZENW Finish Fresh');
   await mkProposal(fresh, { country: 'Ghana', country_source: 'Wikidata' });
   assert.ok((await svc.finish(pool, fresh, true)).finished_at);
+});
+
+test('finish works for an artist with no proposal, and reopens', async () => {
+  const id = await mkArtist('ZZZENW Finish NoProposal');
+  let r = await svc.finish(pool, id, true);
+  assert.equal(r.has_proposal, false);
+  assert.ok(r.finished_at instanceof Date);
+  assert.ok((await reviewRow(id)).finished_at);
+  r = await svc.finish(pool, id, false);
+  assert.equal(r.has_proposal, false);
+  assert.equal(r.finished_at, null);
+  await assert.rejects(svc.finish(pool, id, 'yes'), isCode('BAD_INPUT'));
 });
 
 async function exercise() {

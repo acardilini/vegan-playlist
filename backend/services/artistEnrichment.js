@@ -268,8 +268,9 @@ async function getReview(db, artistId) {
   if (!artist) throw coded('NOT_FOUND', 'Artist not found');
   // Explicit columns only: the Layer 4 / website / Wikidata / Wikipedia columns of the proposals table are never read.
   const proposal = (await db.query(`SELECT ${PROPOSAL_COLS} FROM artist_enrichment_proposals WHERE artist_id = $1`, [artistId])).rows[0];
-  if (!proposal) return { has_proposal: false };
   const review = (await db.query(`SELECT match_decision, matched_mbid, finished_at FROM artist_enrichment_review WHERE artist_id = $1`, [artistId])).rows[0] || null;
+  // An artist with no staged proposal can still be marked done, so its finished_at is returned too.
+  if (!proposal) return { has_proposal: false, finished_at: review ? review.finished_at : null };
   const facts = await getFacts(db, artistId);
   const stored = { ...facts, bandcamp_url: artist.bandcamp_url };
   const proposedMbid = lowerId(proposal.proposed_musicbrainz_id);
@@ -288,7 +289,7 @@ async function getReview(db, artistId) {
     match: {
       state, proposed_mbid: proposedMbid, stored_mbid: lowerId(artist.musicbrainz_id),
       method: proposal.mbid_match_method || null, confidence: proposal.mbid_confidence || null,
-      url: mbUrl(proposedMbid), shared_with: shared, catalogue,
+      url: mbUrl(proposedMbid), shared_with: shared, wrong_identity: wrongId, catalogue,
     },
     fields: buildFields(proposal, stored, state),
     members: buildMembers(proposedMembers, facts.members, state),
@@ -450,7 +451,7 @@ async function acceptAll(db, artistId) {
 
 async function finish(db, artistId, finished) {
   if (typeof finished !== 'boolean') throw coded('BAD_INPUT', 'finished must be true or false');
-  await reviewWithProposal(db, artistId);
+  await getReview(db, artistId); // NOT_FOUND for an unknown artist; a proposal is not required
   await upsertFinished(db, artistId, finished);
   return getReview(db, artistId);
 }

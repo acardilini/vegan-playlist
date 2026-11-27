@@ -58,8 +58,28 @@ const field = (r, f) => r.fields.find((x) => x.field === f);
 
 test('no proposal -> has_proposal false', async () => {
   const id = await mkArtist('ZZZENR None');
-  assert.deepEqual(await svc.getReview(pool, id), { has_proposal: false });
+  assert.deepEqual(await svc.getReview(pool, id), { has_proposal: false, finished_at: null });
   await assert.rejects(svc.getReview(pool, -1), isCode('NOT_FOUND'));
+});
+
+test('no proposal but a finished review row: finished_at is returned', async () => {
+  const id = await mkArtist('ZZZENR NoneFinished');
+  await mkReview(id, { finished: true });
+  const r = await svc.getReview(pool, id);
+  assert.equal(r.has_proposal, false);
+  assert.ok(r.finished_at instanceof Date);
+});
+
+test('match.wrong_identity is true only for a WRONG_MBID_IDENTITY_CORRECTED verdict', async () => {
+  const wrong = await mkArtist('ZZZENR WrongFlag');
+  await mkProposal(wrong, { mbid: randomUUID(), conflicts: { l4c2_resolution: { status: 'WRONG_MBID_IDENTITY_CORRECTED' } } });
+  const gap = await mkArtist('ZZZENR GapFlag');
+  await mkProposal(gap, { mbid: randomUUID(), conflicts: { l4c2_resolution: { status: 'GAP_FILLED' } } });
+  const none = await mkArtist('ZZZENR NoFlag');
+  await mkProposal(none, { mbid: randomUUID() });
+  assert.equal((await svc.getReview(pool, wrong)).match.wrong_identity, true);
+  assert.equal((await svc.getReview(pool, gap)).match.wrong_identity, false);
+  assert.equal((await svc.getReview(pool, none)).match.wrong_identity, false);
 });
 
 test('equal values are omitted, different shown with current and proposed', async () => {
