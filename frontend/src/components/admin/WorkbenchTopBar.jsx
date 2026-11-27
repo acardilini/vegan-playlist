@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SaveTag } from './SavedField';
+import { listenUrl } from '../../utils/videoSource';
 
 const PARK_REASONS = [
   ['awaiting_community', 'Awaiting community'],
@@ -26,8 +27,13 @@ function PublicLinks({ wb }) {
   const cls = `wb-public-link${live ? '' : ' not-live'}`;
   const title = live ? undefined : "Not live yet — the public page won't show it until it's included and published";
   const artists = wb.artists || [];
+  const listen = listenUrl(wb.videos);
   return (
     <span className="wb-public-links">
+      {listen && (
+        <a className="wb-public-link" href={listen} target="_blank" rel="noopener noreferrer"
+          title="Play the video the audio analysis uses">&#9654; Listen &#8599;</a>
+      )}
       <a className={cls} href={`/song/${wb.id}`} target="_blank" rel="noreferrer" title={title}>See song page &#8599;</a>
       {artists.map((a) => (
         <a key={a.id} className={cls} href={`/artist/${a.id}`} target="_blank" rel="noreferrer" title={title}>

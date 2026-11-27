@@ -25,6 +25,7 @@
 
 .queue-toolbar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
 .queue-toolbar h1, .queue-toolbar h2 { font-size: 1.05rem; margin: 0; }
+.queue-toolbar .input-sm { padding: 4px 8px; font-size: 0.8rem; border-radius: var(--radius-sm); }
 .song-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-2); border-bottom: 1px solid var(--border-hairline); width: 100%; background: none; border-left: none; border-right: none; border-top: none; text-align: left; cursor: pointer; color: var(--text-primary); }
 .song-row:hover { background: var(--bg-surface-raised); }
 .song-row .cover { width: 38px; height: 38px; border-radius: var(--radius-sm); flex-shrink: 0; background: var(--bg-surface-raised); background-size: cover; background-position: center; }
@@ -134,10 +135,24 @@
 .wb-highlights li { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); background: var(--bg-surface-raised); border-radius: var(--radius-md); padding: var(--space-1) var(--space-2); font-size: 0.85rem; }
 .wb-highlights li > span { white-space: pre-line; }
 
-.wb-videos { list-style: none; padding: 0; margin: 0 0 var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
-.wb-videos li { display: flex; align-items: center; gap: var(--space-2); font-size: 0.85rem; }
-.wb-videos li a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wb-vtype { font-size: 0.7rem; color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
+/* Admin list standard (docs/ADMIN_UI.md): a header row, narrow fixed columns for choices, ONE flexible name column that
+   keeps all the leftover width, a small pill and a small x. Reuse these for any list of items in an admin panel. */
+.adm-list { list-style: none; padding: 0; margin: 0 0 var(--space-3); display: flex; flex-direction: column; font-size: 0.85rem; }
+.adm-head, .adm-row { display: flex; align-items: center; gap: var(--space-2); }
+.adm-head { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); padding-bottom: var(--space-1); }
+.adm-row { padding: var(--space-1) 0; border-top: 1px solid var(--border-hairline); }
+.adm-col-choice { flex: none; width: 2.6rem; text-align: center; }
+.adm-col-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-pill { flex: none; font-size: 0.7rem; color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); padding: 0 var(--space-2); }
+.adm-x { flex: none; background: none; border: 0; padding: 0 var(--space-1); font-size: 0.8rem; line-height: 1; color: var(--text-muted); cursor: pointer; }
+.adm-x:hover, .adm-x:focus-visible { color: var(--text-primary); }
+.adm-col-label { flex: none; width: 6.4rem; font-size: 0.8rem; color: var(--text-secondary); }
+.adm-col-field { flex: 1; min-width: 0; }
+.adm-col-field .input { width: 100%; box-sizing: border-box; padding: 4px 8px; font-size: 0.8rem; border-radius: var(--radius-sm); }
+.adm-col-open { flex: none; width: 3.4rem; text-align: right; font-size: 0.8rem; }
+.adm-wrap { flex-wrap: wrap; }
+.adm-sub { flex: 1 0 100%; padding-left: 6.9rem; font-size: 0.75rem; }
+.adm-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
 .wb-novideo { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-2); }
 .wb-video-add { display: flex; gap: var(--space-2); align-items: center; }
 
@@ -195,6 +210,13 @@
 
 /* Spotify sync (sub-project F): origin tag on queue rows, and the Songs > Spotify list tabs */
 .origin-tag { font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); color: var(--accent-moss-60); border: 1px solid var(--accent-moss-60); white-space: nowrap; }
+/* Check transcripts: confidence badge (tone from the tier) and small detail pills, in the rail rows and the draft panel. */
+.tr-tags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.tr-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 1px var(--space-2); border-radius: var(--radius-pill); border: 1px solid currentColor; white-space: nowrap; margin-right: var(--space-1); }
+.tr-badge.tr-good { color: var(--color-success); }
+.tr-badge.tr-mid { color: var(--color-warning); }
+.tr-badge.tr-low { color: var(--color-danger); }
+.tr-pill { display: inline-block; font-size: 0.68rem; padding: 1px var(--space-2); border-radius: var(--radius-pill); color: var(--text-secondary); border: 1px solid var(--border-hairline); white-space: nowrap; margin-right: var(--space-1); }
 .spotify-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
 .song-row.spotify-static { cursor: default; }
 .song-row.spotify-static:hover { background: none; }
@@ -209,6 +231,7 @@
 .band-held { opacity: 0.6; }
 .band-meta { color: var(--text-secondary); font-size: 0.85em; }
 .band-muted { color: var(--text-muted); font-size: 0.85em; }
+.wb-platform-links { margin-top: var(--space-3); }
 .band-dot { display: inline-block; box-sizing: border-box; width: 1.4em; height: 1.4em; line-height: 1.4em; text-align: center; border-radius: 50%; border: 1px solid var(--border-hairline); margin-right: 0.2em; opacity: 0.6; }
 .band-dot.on { opacity: 1; background: var(--accent-moss-60); color: var(--text-on-accent); }
 .band-chip { display: inline-block; padding: 0 var(--space-2); margin-right: var(--space-1); border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); font-size: 0.75rem; }

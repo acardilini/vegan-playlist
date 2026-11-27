@@ -4,6 +4,7 @@ import { spotifyService } from '../api/spotifyService';
 import YouTubeEmbed from '../components/YouTubeEmbed';
 import LyricalAnalysis from '../components/LyricalAnalysis';
 import SimilarSongs from '../components/SimilarSongs';
+import { listenLinks } from '../utils/platformLinks';
 
 // Label for the artist's own link (stored in bandcamp_url, which holds a Bandcamp OR a website URL).
 function ownSiteLabel(url) {
@@ -118,7 +119,8 @@ function SongDetailPage() {
     .filter(Boolean)
     .map(a => (typeof a === 'object' ? { id: a.id, name: a.name } : { id: null, name: String(a) }));
   const artistNames = artistList.map(a => a.name).join(', ');
-  const showSpotify = !!song.spotify_url && !song.spotify_dormant;
+  // Spotify plus the confirmed Apple Music / Deezer / Tidal links, as one small "Listen on" row (Spotify drops out when dormant).
+  const listen = listenLinks(song);
   // The route lists the primary video first, so it is the default; the visitor can pick another.
   const youtubeVideo = youtubeVideos.find((v) => v.id === selectedVideoId) || youtubeVideos[0] || null;
   const labels = videoLabels(youtubeVideos);
@@ -192,9 +194,9 @@ function SongDetailPage() {
             )}
           </div>
 
-          {(song.bandcamp_url || song.soundcloud_url || showSpotify || song.lyrics_url) && (
+          {(song.bandcamp_url || song.soundcloud_url || listen.length > 0 || song.lyrics_url) && (
             <div className="song-hero-actions">
-              {/* The artist's own site leads; Spotify follows, and drops out when the curator marks it dormant. */}
+              {/* The artist's own site leads, then SoundCloud, then the small "Listen on" row. */}
               {song.bandcamp_url && (
                 <a
                   href={song.bandcamp_url}
@@ -215,15 +217,15 @@ function SongDetailPage() {
                   Listen on SoundCloud
                 </a>
               )}
-              {showSpotify && (
-                <a
-                  href={song.spotify_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-secondary"
-                >
-                  Open in Spotify
-                </a>
+              {listen.length > 0 && (
+                <div className="listen-row" role="group" aria-label="Listen on">
+                  <span className="listen-label">Listen on</span>
+                  {listen.map((l) => (
+                    <a key={l.key} href={l.url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
+                      {l.label}
+                    </a>
+                  ))}
+                </div>
               )}
               {song.lyrics_url && (
                 <a

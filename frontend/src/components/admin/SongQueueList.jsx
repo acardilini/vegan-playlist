@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
+import { scoreText, detailText, toneOf, TIER_OPTIONS, SORT_OPTIONS } from '../../utils/transcriptConfidence';
 
 const PAGE_SIZE = 50;
 const ORIGIN_LABELS = { spotify: 'From Spotify', submission: 'From submit form', bandcheck: 'From band check', crosscheck: 'From playlist cross-check' };
@@ -9,7 +10,7 @@ const QUEUE_LABELS = {
   'to-process': 'To be processed', 'needs-lyrics': 'Needs lyrics', 'needs-cover': 'Needs cover',
   'needs-album': 'Needs album', 'needs-released': 'Needs released', 'needs-language': 'Needs language', 'language-suggested': 'Language suggested', 'check-transcripts': 'Check transcripts', 'needs-genre': 'Needs genre', 'genre-from-artist': 'Genre from artist',
   'genre-from-audio': 'Genre from audio', 'genre-conflicts': 'Genre conflicts',
-  'needs-video': 'Needs video', 'no-video': 'No video available', 'broken-video': 'Broken video', 'junk-lyrics': 'Junk lyrics', 'needs-sample-approval': 'Needs sample approval', 'to-transcribe': 'To transcribe', 'lyrics-on-hold': 'Lyrics on hold',
+  'needs-video': 'Needs video', 'no-video': 'No video available', 'broken-video': 'Broken video', 'junk-lyrics': 'Junk lyrics', 'needs-sample-approval': 'Needs sample approval', 'check-links': 'Check links', 'to-transcribe': 'To transcribe', 'lyrics-on-hold': 'Lyrics on hold',
   'remind-later': 'Remind me later', 'to-finalise': 'To finalise',
   'live': 'Live', 'all': 'All songs', 'featured': 'Featured',
 };
@@ -36,9 +37,11 @@ function SongQueueList({ queue, refreshKey }) {
   const [loading, setLoading] = useState(false);
   const [pair, setPair] = useState('');     // genre-conflicts only: 'existingParent>audioParent', '' = all
   const [pairs, setPairs] = useState([]);
+  const [sort, setSort] = useState('best');  // check-transcripts only: best-first by default
+  const [tier, setTier] = useState('');      // check-transcripts only: '' = all tiers
 
   // Reset paging/search whenever the queue changes.
-  useEffect(() => { setPage(0); setSearch(''); setPair(''); }, [queue]);
+  useEffect(() => { setPage(0); setSearch(''); setPair(''); setSort('best'); setTier(''); }, [queue]);
 
   // The genre-conflicts queue is mostly neighbouring genres (hardcore vs metal...); a pair filter lets the
   // curator take one kind of disagreement at a time. Counts reload with the list so they track decisions.
@@ -54,12 +57,13 @@ function SongQueueList({ queue, refreshKey }) {
     setLoading(true);
     const qs = new URLSearchParams({ queue, q: search, limit: String(PAGE_SIZE), offset: String(page * PAGE_SIZE) });
     if (queue === 'genre-conflicts' && pair) qs.set('pair', pair);
+    if (queue === 'check-transcripts') { qs.set('sort', sort); if (tier) qs.set('tier', tier); }
     adminFetch(`/api/admin/curation/queue?${qs.toString()}`)
       .then(r => r.ok ? r.json() : { rows: [] })
       .then(d => setRows(d.rows || []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  }, [queue, search, page, pair]);
+  }, [queue, search, page, pair, sort, tier]);
 
   const unfeature = useCallback(async (id) => {
     try {
@@ -92,6 +96,18 @@ function SongQueueList({ queue, refreshKey }) {
             ))}
           </select>
         )}
+        {queue === 'check-transcripts' && (
+          <>
+            <select className="input input-sm" aria-label="Sort by confidence" value={sort}
+              onChange={(e) => { setPage(0); setSort(e.target.value); }}>
+              {SORT_OPTIONS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+            </select>
+            <select className="input input-sm" aria-label="Confidence tier" value={tier}
+              onChange={(e) => { setPage(0); setTier(e.target.value); }}>
+              {TIER_OPTIONS.map(([v, label]) => <option key={v || 'all'} value={v}>{label}</option>)}
+            </select>
+          </>
+        )}
       </div>
 
       {loading && rows.length === 0 ? (
@@ -109,6 +125,11 @@ function SongQueueList({ queue, refreshKey }) {
                 <span className="song-title">{row.title}</span>
                 <span className="song-artist">{row.artists || '—'}</span>
               </span>
+              {queue === 'check-transcripts' && row.transcript && (
+                <span className="tr-tags">
+                  {row.transcript.tier && <span className={`tr-badge tr-${toneOf(row.transcript.tier)}`} title={detailText(row.transcript)}>{scoreText(row.transcript)}</span>}
+                </span>
+              )}
               <span className={`queue-status ${statusClass(row)}`}>{statusLabel(row)}</span>
               {row.featured && <span className="featured-badge">Featured</span>}
               {ORIGIN_LABELS[row.origin] && <span className="origin-tag">{ORIGIN_LABELS[row.origin]}</span>}

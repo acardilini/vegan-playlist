@@ -22,6 +22,7 @@ const artistMerge = require('../services/artistMerge');
 const leadsSvc = require('../services/leads');
 const playlistCrosscheck = require('../services/playlistCrosscheck');
 const bandcampLyrics = require('../services/bandcampLyrics');
+const platformLinks = require('../services/platformLinks');
 const { defaultAuth: spotifyAuth } = require('../services/spotifyAuth');
 const multer = require('multer');
 const csv = require('csv-parser');
@@ -1378,6 +1379,17 @@ router.get('/spotify/compare', async (req, res) => {
     res.status(502).json({ error: 'Failed to read the Spotify playlist' });
   }
 });
+// Is one song on the live playlist? (workbench Links panel; shares compare's 60s cached read)
+router.get('/spotify/on-playlist/:songId', async (req, res) => {
+  const songId = parseInt(req.params.songId, 10);
+  if (!Number.isSafeInteger(songId) || songId <= 0) return res.status(400).json({ error: 'Bad song id' });
+  try {
+    res.json({ success: true, ...(await spotifyPush.isOnPlaylist(pool, songId)) });
+  } catch (e) {
+    console.error('spotify on-playlist error:', e.code || 'error'); // never e.message
+    res.status(502).json({ error: 'Failed to read the Spotify playlist' });
+  }
+});
 router.post('/spotify/push', async (req, res) => {
   try {
     const songIds = spotifyPush.parseSongIds((req.body || {}).songIds);
@@ -1847,10 +1859,10 @@ router.post('/curation/inbox/:id/dismiss', async (req, res) => {
 
 router.get('/curation/queue', async (req, res) => {
   try {
-    const { queue, q, limit, offset, pair } = req.query;
+    const { queue, q, limit, offset, pair, sort, tier } = req.query;
     const out = await curation.listCurationQueue(pool, {
       queue, q: q || '', limit: limit ? parseInt(limit) : null, offset: offset ? parseInt(offset) : 0,
-      pair: pair || null,
+      pair: pair || null, sort: sort || null, tier: tier || null,
     });
     res.json(out);
   } catch (e) {
@@ -2016,6 +2028,7 @@ router.put('/workbench/:id/language-choice', panelSave(curation.chooseLanguage))
 router.put('/workbench/:id/cover',      panelSave(curation.setCover));
 router.put('/workbench/:id/no-video',   panelSave(curation.setNoVideo));
 router.put('/workbench/:id/audio-samples', panelSave(curation.setAudioSamples));
+router.put('/workbench/:id/draft-rejected', panelSave(curation.setDraftRejected));
 router.put('/workbench/:id/sample-source', panelSave(curation.setSampleSource));
 
 router.post('/workbench/:id/videos', async (req, res) => {
@@ -2072,6 +2085,20 @@ router.put('/workbench/videos/:videoId/primary', async (req, res) => {
     res.status(500).json({ error: 'Failed to set primary', details: e.message });
   }
 });
+// The video the audio analysis hears: body { video_id: <id> | null }; null (or the primary) = the default, the primary.
+router.put('/workbench/:id/audio-video', async (req, res) => {
+  try {
+    const raw = (req.body || {}).video_id;
+    const videoId = raw == null ? null : Number(raw);
+    if (videoId !== null && !Number.isInteger(videoId)) return res.status(400).json({ error: 'video_id must be a number or null' });
+    res.json({ success: true, ...(await videos.setAudioVideo(pool, parseInt(req.params.id), videoId)) });
+  } catch (e) {
+    if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'Song not found' });
+    if (e.code === 'BAD_INPUT') return res.status(400).json({ error: e.message });
+    console.error('set audio video error:', e);
+    res.status(500).json({ error: 'Failed to set the audio video' });
+  }
+});
 router.delete('/workbench/videos/:videoId', async (req, res) => {
   try {
     res.json({ success: true, ...(await videos.deleteVideo(pool, parseInt(req.params.videoId))) });
@@ -2080,6 +2107,43 @@ router.delete('/workbench/videos/:videoId', async (req, res) => {
     console.error('delete video error:', e);
     res.status(500).json({ error: 'Failed to delete video', details: e.message });
   }
+});
+
+// ---- Platform links (Deezer / Apple Music / Tidal) ----
+// The run finds links (Deezer by ISRC is saved confirmed; Apple by search is proposed); the curator confirms or rejects
+// each proposed one. Only confirmed links are public (routes/spotify.js).
+function platformLinksError(res, e, what) {
+  if (e.code === 'BUSY') return res.status(409).json({ error: 'BUSY', message: 'A run is already in progress' });
+  if (e.code === 'NOT_FOUND') return res.status(404).json({ error: 'NOT_FOUND', message: 'No such link' });
+  if (e.code === 'BAD_INPUT') return res.status(400).json({ error: 'BAD_INPUT', message: e.message });
+  console.error(`platform links: could not ${what}:`, e.code || 'error');   // never the message
+  return res.status(500).json({ error: 'Failed', message: `Could not ${what}` });
+}
+router.post('/platform-links/run', async (req, res) => {
+  try { res.json({ success: true, ...(await platformLinks.startRun(pool)) }); }
+  catch (e) { platformLinksError(res, e, 'start the run'); }
+});
+router.get('/platform-links/runs/:runId', (req, res) => {
+  const run = platformLinks.getRun(String(req.params.runId));
+  if (!run) return res.status(404).json({ error: 'NOT_FOUND', message: 'No such run' });
+  res.set('Cache-Control', 'no-store').json(run);
+});
+router.get('/platform-links/counts', async (req, res) => {
+  try { res.json(await platformLinks.counts(pool)); } catch (e) { platformLinksError(res, e, 'read the counts'); }
+});
+router.get('/platform-links/song/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'BAD_INPUT', message: 'bad song id' });
+    res.json({ links: await platformLinks.linksForSong(pool, id) });
+  } catch (e) { platformLinksError(res, e, 'read the links'); }
+});
+router.put('/platform-links/song/:id/:platform', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ error: 'BAD_INPUT', message: 'bad song id' });
+    res.json({ success: true, link: await platformLinks.reviewLink(pool, id, String(req.params.platform), req.body || {}) });
+  } catch (e) { platformLinksError(res, e, 'review the link'); }
 });
 
 module.exports = router;

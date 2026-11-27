@@ -132,7 +132,9 @@ test('getWorkbench carries the draft transcript only while the song has no real 
   assert.deepEqual(
     { ...d, transcribed_at: undefined },
     { model_used: 'zzzlnc-hydrogen', youtube_id: 'abc123DEF45', transcript: SECRET, languages: ['English', 'Hebrew'],
-      word_count: 321, confidence: 'HIGH', transcribed_at: undefined });
+      word_count: 321, confidence: 'HIGH', transcribed_at: undefined,
+      status: 'OK', tier: 'HIGH', confidence_score: null, estimated_word_accuracy_pct: null, audio_clarity: null,
+      inaudible_segments: null, confidence_notes: null });
 
   await addLyrics(id, 'Real words\nof a real song');
   assert.equal((await curation.getWorkbench(pool, id)).draft_transcript, null, 'real lyrics retire the draft');
@@ -144,7 +146,7 @@ test('getWorkbench carries the draft transcript only while the song has no real 
 
   const failed = await mkSong('ZZZLNC draft failed');
   await addTranscript(failed, { status: 'ERROR' });
-  assert.equal((await curation.getWorkbench(pool, failed)).draft_transcript, null, 'only OK transcripts are offered');
+  assert.equal((await curation.getWorkbench(pool, failed)).draft_transcript, null, 'only OK and UNINTELLIGIBLE transcripts are offered');
 
   const empty = await mkSong('ZZZLNC draft empty');
   await addTranscript(empty, { text: '   ' });
