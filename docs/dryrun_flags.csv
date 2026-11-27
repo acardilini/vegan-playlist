@@ -1,0 +1,1359 @@
+artist_id,artist_name,field,flag,before,after,detail
+3,Maria Daines,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=centrovegetariano.org,maria-daines.com,mariadaines.bandcamp.com,youtube.com"
+3,Maria Daines,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3,Maria Daines,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+4,Antagonist A.D,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+5,Gorilla Biscuits,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+6,Vegan Reich,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+7,Propagandhi,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+8,Reprisal,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+10,xTrue Naturex,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+10,xTrue Naturex,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+11,Song a Day,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+12,Joy Askew,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+12,Joy Askew,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+13,Citizen Fish,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+14,Frenzal Rhomb,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+15,Colour Me Wednesday,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+16,Rise Against,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+17,Goldfinger,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+18,Good Clean Fun,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+19,Consolidated,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+20,Good Riddance,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+22,Tiki Taane,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2007,INTERNAL_INCONSISTENCY,bio_formed=1991 vs first_release=2007 (gap=16y)
+22,Tiki Taane,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency
+23,STIC.MAN Of Dead Prez (AKA) Stic,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+25,Ignite,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+25,Ignite,proposed_members,STRIPPED_MEMBER_VEGAN,Zoli Téglás:vegan=true,Zoli Téglás:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+26,Shelter,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,stance_member_mismatch
+27,Dead Prez,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+28,The Smiths,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+32,Melanie Safka,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+32,Melanie Safka,proposed_members,STRIPPED_MEMBER_VEGAN,Melanie Safka:vegan=true,Melanie Safka:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+34,Paul McCartney,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+34,Paul McCartney,proposed_members,STRIPPED_MEMBER_VEGAN,Paul McCartney:vegan=true,Paul McCartney:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+41,Gather,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2006,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2006 < alb_max=2021
+41,Gather,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+41,Gather,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+42,Poison Girls,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+46,Tears Of Gaia,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+48,Majority of One,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+49,Wings,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+49,Wings,proposed_members,STRIPPED_MEMBER_VEGAN,Linda McCartney:vegan=true,Linda McCartney:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+49,Wings,proposed_members,STRIPPED_MEMBER_VEGAN,Paul McCartney:vegan=true,Paul McCartney:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+49,Wings,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=beatlesstory.com,en.wikipedia.org,musicmusingsandsuch.com"
+49,Wings,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+49,Wings,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+50,Subb,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+50,Subb,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+51,AJJ,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=ajjtheband.bandcamp.com,en.wikipedia.org"
+52,Jonathan Groff,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+53,Dropdead,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+54,Jah Sun,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+54,Jah Sun,proposed_members,STRIPPED_MEMBER_VEGAN,Andrew McCommas:vegan=true,Andrew McCommas:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+55,Macka B,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+56,Chokeules,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2014,INTERNAL_INCONSISTENCY,bio_formed=2000 vs first_release=2014 (gap=14y)
+56,Chokeules,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+56,Chokeules,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency
+57,Kyle O'Sullivan,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+57,Kyle O'Sullivan,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+58,Cath Kendall,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+58,Cath Kendall,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+59,Kenny Davis,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+59,Kenny Davis,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+59,Kenny Davis,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio; unverified_with_vegan_lyric_code
+62,Jay Brave,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+62,Jay Brave,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+63,Long Birds,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=longbirds.bandcamp.com
+63,Long Birds,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+64,Pretenders,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+65,Olivia Newton-John,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+66,Unlimited Culture,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+68,Laura Nyro,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+68,Laura Nyro,proposed_members,STRIPPED_MEMBER_VEGAN,Laura Nyro:vegan=true,Laura Nyro:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+68,Laura Nyro,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2001,CATALOGUE_DISAGREES,MusicBrainz (WIKIDATA_P1902)=2001 < alb_max=2021
+68,Laura Nyro,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+68,Laura Nyro,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+71,xRepentancex,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+72,LemoLive,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+73,Caffeine Heroes,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+74,Tonya G,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+75,Chezidek,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+76,Dance Soldiah,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=dancesoldiah.com,music.apple.com"
+76,Dance Soldiah,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+77,Sole,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_lead_cue
+77,Sole,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+78,Berge,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+80,Thy Art Is Murder,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+81,Earth Crisis,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+82,One King Down,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,stance_member_mismatch
+82,One King Down,proposed_members,STRIPPED_MEMBER_VEGAN,Rob Fusco:vegan=true,Rob Fusco:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+82,One King Down,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2000,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2000 < alb_max=2017
+82,One King Down,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+82,One King Down,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+83,To The Grave,proposed_members,STRIPPED_MEMBER_VEGAN,Raymond Martin:vegan=true,Raymond Martin:UNKNOWN,Missing positive member-attached vegan quote or contradicted
+83,To The Grave,proposed_members,STRIPPED_MEMBER_VEGAN,Jack Simioni:vegan=true,Jack Simioni:UNKNOWN,Missing positive member-attached vegan quote or contradicted
+83,To The Grave,proposed_members,STRIPPED_MEMBER_VEGAN,Nic Webb:vegan=true,Nic Webb:UNKNOWN,Missing positive member-attached vegan quote or contradicted
+83,To The Grave,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=distortedsoundmag.com,loudmag.com.au,tothegraveau.bandcamp.com"
+83,To The Grave,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+83,To The Grave,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+84,CLEARxCUT,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+85,Heaven Shall Burn,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+87,ROMEU,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+87,ROMEU,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+88,Paradox,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+89,Changing Tides,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+90,Self Conviction,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+91,Refused,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+95,Bikini Kill,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+95,Bikini Kill,proposed_members,STRIPPED_MEMBER_VEGAN,Kathleen Hanna:vegan=true,Kathleen Hanna:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+95,Bikini Kill,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,1996,CATALOGUE_DISAGREES,MusicBrainz (WIKIDATA_P1902)=1996 < alb_max=2014
+95,Bikini Kill,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+95,Bikini Kill,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+97,Counterparts,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=counterpartshc.bandcamp.com
+99,Yusuf / Cat Stevens,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=en.wikipedia.org,peta.org,whyislam.org"
+100,Vystopia,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+100,Vystopia,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+102,Do No Harm,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+102,Do No Harm,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+103,Vanquish Evil,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+103,Vanquish Evil,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+104,Sweet Goose,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+104,Sweet Goose,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+107,Stephanie Braganza,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+107,Stephanie Braganza,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+108,Mike Love,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+109,YACHT,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+111,Jme,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+112,Perfect Giddimani,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=issuu.com
+112,Perfect Giddimani,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+113,Sister Carol,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+117,Flux of Pink Indians,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,1986,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=1986 < alb_max=2012
+117,Flux of Pink Indians,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+117,Flux of Pink Indians,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+118,Dirt,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+119,Subhumans,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+119,Subhumans,proposed_members,STRIPPED_MEMBER_VEGAN,Dick Lucas:vegan=true,Dick Lucas:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+119,Subhumans,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+123,ECOWAR,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+126,The World Patrol Kids,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+127,Massive Ego,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+129,Tena Stelin,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+129,Tena Stelin,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+130,King Alpha,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+133,Strange Planes,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=strangeplanes.bandcamp.com
+134,Dark Rites,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+135,Chris Bromage,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+135,Chris Bromage,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+135,Chris Bromage,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+138,Silverchair,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+139,Promoe,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+139,Promoe,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+140,CosM.I.C.,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_lead_cue
+145,In Flames,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+148,Conflict,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+149,Born Into Suffering,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+149,Born Into Suffering,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+150,That Vegan Teacher Miss Kadie,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+151,Momentum,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+152,Dropped Dots,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+152,Dropped Dots,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+152,Dropped Dots,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+153,Guilty Flesh,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+153,Guilty Flesh,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+153,Guilty Flesh,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_bio
+154,John McHugh,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+154,John McHugh,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+154,John McHugh,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_last_year; ungrounded_bio
+155,Shmurk,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+155,Shmurk,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+155,Shmurk,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+156,Drink Hunters,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+157,Xnecessityx,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+157,Xnecessityx,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+160,Hollow Humanity,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+162,The Decline,proposed_members,STRIPPED_MEMBER_VEGAN,Daniel Cribb:vegan=true,Daniel Cribb:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+162,The Decline,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+163,Icons Of Filth,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,1983,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=1983 > alb_min=1977
+163,Icons Of Filth,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+163,Icons Of Filth,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+164,Acerbic Wit,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+164,Acerbic Wit,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+164,Acerbic Wit,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_last_year; ungrounded_bio
+179,Los Fastidios,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+190,Moral Law,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+191,Change,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+192,Abattoirblues,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+192,Abattoirblues,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+193,xUntold Sufferingx,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2022,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2022 > alb_min=2020
+193,xUntold Sufferingx,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2022,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2022 < alb_max=2023
+193,xUntold Sufferingx,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,noecho.net,xuntoldsufferingx.bandcamp.com"
+193,xUntold Sufferingx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+193,xUntold Sufferingx,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first; catalogue_disagrees_last
+194,Ecostrike,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=ecostrike.bandcamp.com,triplebrecords.net"
+194,Ecostrike,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+196,Street Justice,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2022,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2022 > alb_min=2019
+196,Street Justice,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+196,Street Justice,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+197,Tørsö,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+200,Unearth,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=unearth.bandcamp.com
+201,Creepremixss,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+201,Creepremixss,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+201,Creepremixss,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+203,The Booths,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+203,The Booths,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+203,The Booths,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_first_year; ungrounded_bio
+204,Chytown,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+205,Veil Of Maya,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+205,Veil Of Maya,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+211,Arkangel,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+213,Maroon,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+215,Path Of Resistance,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+219,World of Pleasure,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+222,Arch Enemy,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+223,The Agonist,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+225,Architects,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+226,Sylosis,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+227,Cattle Decapitation,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,negated_vegan_claim
+227,Cattle Decapitation,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+229,Animals Killing People,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+231,Vegan Justice,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+235,Vanguard,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+235,Vanguard,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+237,Nina Hagen & Karl Rucker,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+237,Nina Hagen & Karl Rucker,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+238,We All Poop,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,SEARCHED_UNVERIFIED,stance_member_mismatch
+238,We All Poop,proposed_members,STRIPPED_MEMBER_VEGAN,Jakub Božek:vegan=true,Jakub Božek:UNKNOWN,Missing positive member-attached vegan quote or contradicted
+238,We All Poop,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+238,We All Poop,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,SEARCHED_UNVERIFIED,demoted_with_vegan_in_note
+240,Most Precious Blood,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+241,Culture,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+243,Michael Harren,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+246,Diego Luna,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+248,Thea Alana,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+249,Outspoken,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+249,Outspoken,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio; unverified_with_vegan_lyric_code
+251,Mobius Loop,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+251,Mobius Loop,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+253,SilencER,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+253,SilencER,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+253,SilencER,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+257,D-Nick The Microphone Misfit,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+257,D-Nick The Microphone Misfit,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_lead_cue
+257,D-Nick The Microphone Misfit,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+258,Gina Young,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+258,Gina Young,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+258,Gina Young,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+259,Disl Automatic,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2019,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2019 < alb_max=2020
+259,Disl Automatic,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+259,Disl Automatic,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+260,TK The Artist,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+260,TK The Artist,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+262,Vegan Boss,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+262,Vegan Boss,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+263,Boogie Down Productions,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=en.wikipedia.org,nursingclio.org,peta.org"
+263,Boogie Down Productions,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+263,Boogie Down Productions,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+264,Vegan Smythe,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+264,Vegan Smythe,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+265,Superior2none,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,mynewsdesk.com"
+265,Superior2none,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+266,Queen V,eligibility,ORPHAN_EXCLUDED,staged,excluded,0 non-rejected songs in catalogue
+268,James Hoot,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+268,James Hoot,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+269,Mr Traumatik,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=azlyrics.com,dnbfamily.chat,images.genius.com,mrtraumatik.bandcamp.com"
+269,Mr Traumatik,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+269,Mr Traumatik,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+271,TK the Artist,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+272,Disl Auto,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+272,Disl Auto,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+273,Yorkie,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+275,Moby,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+277,Scarlet Rescue,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+277,Scarlet Rescue,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+278,Cistem Failure,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2017,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2017 < alb_max=2018
+278,Cistem Failure,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+278,Cistem Failure,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+281,Barbara Helen,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2021,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2021 < alb_max=2025
+281,Barbara Helen,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+281,Barbara Helen,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+286,Siouxsie and the Banshees,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+286,Siouxsie and the Banshees,proposed_members,STRIPPED_MEMBER_VEGAN,Siouxsie Sioux:vegan=true,Siouxsie Sioux:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+289,Mindy Jones,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2022,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2022 > alb_min=2021
+289,Mindy Jones,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+289,Mindy Jones,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first; ungrounded_bio
+290,Deitrick Haddon,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+290,Deitrick Haddon,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+292,Cro-Mags,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+302,Existance,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+302,Existance,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+307,Carnist,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2015,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2015 < alb_max=2016
+307,Carnist,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,postmusicshow.blogspot.com,reddit.com,store.noiseappeal.com"
+307,Carnist,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+307,Carnist,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+312,Liberation Drummer,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+312,Liberation Drummer,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+313,Danny Hamilton,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+313,Danny Hamilton,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+314,Northern Indians,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+314,Northern Indians,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+314,Northern Indians,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+315,Ledouu,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+315,Ledouu,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+316,Tribunal Animal,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+316,Tribunal Animal,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+317,Lisa Papineau,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=audiomack.com,music.apple.com"
+317,Lisa Papineau,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_lead_cue
+317,Lisa Papineau,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+318,Bradney Scott,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+319,Guydence,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+319,Guydence,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+319,Guydence,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+320,FranCisco,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+320,FranCisco,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+320,FranCisco,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+321,Bert Miller And The Animal Folk,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,vegansociety.com,visitplymouth.co.uk,youtube.com"
+321,Bert Miller And The Animal Folk,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+321,Bert Miller And The Animal Folk,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+322,Pikayzo,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+322,Pikayzo,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+323,Point of Existence,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+323,Point of Existence,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+325,Cageless,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=brooklynvegan.com,metalliluola.fi,noecho.net"
+325,Cageless,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+325,Cageless,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+326,Sisters of Suffocation,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=sistersofsuffocation.bandcamp.com
+328,Carnivore Crusher,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2020,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2020 > alb_min=2017
+328,Carnivore Crusher,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+328,Carnivore Crusher,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+329,Deference,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+329,Deference,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+329,Deference,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+330,Vanity,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+330,Vanity,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+330,Vanity,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+331,Mindset,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+332,Farewell Sarathael,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+334,Destroy Babylon,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+338,Kyle RVKD,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+338,Kyle RVKD,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+339,xapothecaryx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+340,Purification,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2003,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2003 > alb_min=1998
+340,Purification,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+340,Purification,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+341,Raoul Kerr,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_lead_cue
+341,Raoul Kerr,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+342,Donna Makeda,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+344,Feldi,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+344,Feldi,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+345,xDominionIsOverx,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+345,xDominionIsOverx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+347,Coach Nym,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+347,Coach Nym,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+354,Homeboy Sandman,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+355,King Gizzard & The Lizard Wizard,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+357,Badflower,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+358,Hands Off Gretel,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+358,Hands Off Gretel,proposed_members,STRIPPED_MEMBER_VEGAN,Lauren Tate:vegan=true,Lauren Tate:ANIMAL_RIGHTS_ADVOCATE,Missing positive member-attached vegan quote or contradicted
+359,Youth Code,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=media.revolvermag.com,youthcode.bandcamp.com,youtube.com"
+359,Youth Code,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+359,Youth Code,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+360,Benjamin Zephaniah,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+361,Zasiri,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+361,Zasiri,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+361,Zasiri,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+362,Hot Tubs Time Machine,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+369,Becko,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2024,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2024 < alb_max=2025
+369,Becko,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=becko.bandcamp.com
+369,Becko,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+370,JVLIVN,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+373,108,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+431,Ritual Of Decay,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+431,Ritual Of Decay,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2020,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2020 > alb_min=2019
+431,Ritual Of Decay,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+431,Ritual Of Decay,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+435,Stinkbrute,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2023,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2023 < alb_max=2024
+435,Stinkbrute,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+435,Stinkbrute,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+449,Propitious Vegetation,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2024,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2024 < alb_max=2025
+449,Propitious Vegetation,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+449,Propitious Vegetation,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+459,Travis Ryan,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,negated_vegan_claim
+459,Travis Ryan,proposed_members,STRIPPED_MEMBER_VEGAN,Travis Ryan:vegan=true,Travis Ryan:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+459,Travis Ryan,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2021,INTERNAL_INCONSISTENCY,bio_formed=1999 vs first_release=2021 (gap=22y)
+459,Travis Ryan,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2021,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2021 > alb_min=1999
+459,Travis Ryan,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+459,Travis Ryan,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first; internal_bio_year_inconsistency
+460,Gabe Serbian,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=researchgate.net,vice.com"
+460,Gabe Serbian,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+460,Gabe Serbian,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+461,Dave Astor,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+481,Sugar Spine,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+481,Sugar Spine,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+487,Crass,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+487,Crass,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+488,Chumbawamba,proposed_country,EXTERNAL_CONFLICT_COUNTRY,United Kingdom,CONFLICT,Wikidata=United Kingdom vs Bandcamp=United States
+488,Chumbawamba,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+488,Chumbawamba,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,external_country_conflict
+497,Liberty,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+497,Liberty,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+499,Lost Cherrees,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+499,Lost Cherrees,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+517,disrupt,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+517,disrupt,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,1994,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=1994 < alb_max=2007
+517,disrupt,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+521,Kyle Abbott,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+542,Ali Roots,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+542,Ali Roots,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+557,Exit-Stance,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+571,Not Without Punishment,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+573,Iron Deficiency,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+579,Vegan Queen V,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+579,Vegan Queen V,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+584,IFEEL,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+584,IFEEL,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+586,Divine Sentence,proposed_members,STRIPPED_MEMBER_VEGAN,Noah Gross:vegan=true,Noah Gross:ANIMAL_RIGHTS_ADVOCATE,Missing positive member-attached vegan quote or contradicted
+586,Divine Sentence,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2024,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2024 > alb_min=2022
+586,Divine Sentence,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+586,Divine Sentence,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+590,Emma Ruth Rundle,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=emmaruthrundle.bandcamp.com,en.wikipedia.org"
+591,Thou,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+592,Thränenkind,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+592,Thränenkind,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+612,Howard Jones,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+634,CB,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+634,CB,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+634,CB,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+1340,Skinny Puppy,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+1340,Skinny Puppy,proposed_members,STRIPPED_MEMBER_VEGAN,cEvin Key:vegan=true,cEvin Key:ANIMAL_RIGHTS_ADVOCATE,Missing positive member-attached vegan quote or contradicted
+1340,Skinny Puppy,proposed_members,STRIPPED_MEMBER_VEGAN,Ogre:vegan=true,Ogre:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+1340,Skinny Puppy,proposed_country,EXTERNAL_CONFLICT_COUNTRY,Canada,CONFLICT,Wikidata=Canada vs Bandcamp=United States
+1340,Skinny Puppy,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,external_country_conflict
+1354,The Style Council,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=en.wikipedia.org,theguardian.com"
+1373,Yes,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+1373,Yes,proposed_members,STRIPPED_MEMBER_VEGAN,Steve Howe:vegan=true,Steve Howe:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+1373,Yes,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=en.wikipedia.org,herecomesthesong.com,ivu.org"
+1391,Kisschasy,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+1391,Kisschasy,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+1402,Western Addiction,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+1402,Western Addiction,proposed_members,STRIPPED_MEMBER_VEGAN,"Tyson ""Chicken"" Annicharico:vegan=true","Tyson ""Chicken"" Annicharico:VEGETARIAN",Missing positive member-attached vegan quote or contradicted
+1402,Western Addiction,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+1408,MDC,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,1982,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=1982 > alb_min=1980
+1408,MDC,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+1408,MDC,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+1446,Into Another,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+1475,Youth Of Today,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=diyconspiracy.net,en.wikipedia.org,xsisterhoodx.com,youthoftoday.bandcamp.com"
+1475,Youth Of Today,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+1503,Remembering Never,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+1507,Mob 47,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+1577,Extreme Noise Terror,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=allmusic.com,en.wikipedia.org,extremenoiseterror.bandcamp.com,metalunderground.com"
+1577,Extreme Noise Terror,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+1596,Fear Factory,last_release_year,FUTURE_YEAR_DROPPED,2027,NULL,> CURRENT_YEAR (2026)
+1596,Fear Factory,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,future_year
+1628,Clint Eastwood,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_lead_cue
+1664,ManLiftingBanner,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2014,INTERNAL_INCONSISTENCY,bio_formed=1990 vs first_release=2014 (gap=24y)
+1664,ManLiftingBanner,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2014,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2014 > alb_min=1995
+1664,ManLiftingBanner,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first; internal_bio_year_inconsistency
+1671,Aus Rotten,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+2779,The Heligoats,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=theheligoats.bandcamp.com
+2781,Safe And Sound,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+2781,Safe And Sound,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+2782,Diegojah,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=open.spotify.com,proletaren.se"
+2782,Diegojah,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+2784,Ruffmic & FreedomWriter,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+2784,Ruffmic & FreedomWriter,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+2784,Ruffmic & FreedomWriter,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_bio
+2785,Turbulence,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+2786,Akbar,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+2786,Akbar,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+2786,Akbar,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+2789,Rob Symeonn,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+2791,Joseph Cotton,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,1988,INTERNAL_INCONSISTENCY,bio_formed=1976 vs first_release=1988 (gap=12y)
+2791,Joseph Cotton,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency
+2792,C5,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2020,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2020 < alb_max=2024
+2792,C5,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+2792,C5,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+2793,Time,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2020,INTERNAL_INCONSISTENCY,bio_formed=2004 vs first_release=2020 (gap=16y)
+2793,Time,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=thisistime.bandcamp.com
+2793,Time,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency; unverified_with_vegan_lyric_code
+2795,PBD Grey,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+2796,Insted,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+2797,H2O,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+2798,Inner Terrestrials,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=fr.wikipedia.org,innerterrestrials.bandcamp.com"
+3541,Footsoldier,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3541,Footsoldier,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3542,Vegan Gains,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3542,Vegan Gains,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3543,Punishable Act,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3544,Gojira,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3547,MachinedGod,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3548,Kari Jay,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3548,Kari Jay,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3548,Kari Jay,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+3549,Sean Conn,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3549,Sean Conn,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3549,Sean Conn,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3550,Don Paul,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3551,Preacher Lawson,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3552,Linda McCartney,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3553,Ian Edwards,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+3553,Ian Edwards,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3554,Virgen Maria,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2022,CATALOGUE_DISAGREES,MusicBrainz (WIKIDATA_P1902)=2022 > alb_min=2020
+3554,Virgen Maria,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+3554,Virgen Maria,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first; unverified_with_vegan_lyric_code
+3555,A.K.A.,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3555,A.K.A.,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3555,A.K.A.,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio; unverified_with_vegan_lyric_code
+3556,Rebel Grrrlz,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3557,Throwed Ese,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3557,Throwed Ese,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3557,Throwed Ese,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3558,Ocean Kelly,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3558,Ocean Kelly,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3559,Kevin JZ Prodigy,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3559,Kevin JZ Prodigy,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3559,Kevin JZ Prodigy,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3560,Oi Polloi,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3560,Oi Polloi,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+3561,Romesh Ranganathan,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+3561,Romesh Ranganathan,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3562,Jerry Heil,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3564,Beniton,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2019,INTERNAL_INCONSISTENCY,bio_formed=2026 vs first_release=2019 (gap=-7y)
+3564,Beniton,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3564,Beniton,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3564,Beniton,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency; ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3566,Vermintide,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2023,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2023 < alb_max=2024
+3566,Vermintide,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3566,Vermintide,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3567,Family Animals,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=familyanimals.bandcamp.com
+3567,Family Animals,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3568,PIG,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=pigindustries.bandcamp.com
+3569,3 Day Holocaust,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3570,Abattoir,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,1986,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=1986 < alb_max=2021
+3570,Abattoir,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3570,Abattoir,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last; ungrounded_bio; unverified_with_vegan_lyric_code
+3572,A.T.R.U.T.H.,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3573,A.x.i.s.,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3573,A.x.i.s.,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3574,Mikol Frachey,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3575,ACxDC,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3576,Abolitionist,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3577,Adrestia,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3578,Agnostic Front,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3579,Agrotoxico,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3580,Albino & Callya,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3580,Albino & Callya,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3582,Anchor,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3583,Andy T,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3583,Andy T,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+3583,Andy T,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio; unverified_with_vegan_lyric_code
+3584,Angelic Upstarts,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+3585,Animal Instinct,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3586,Animal Liberation Songs,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3586,Animal Liberation Songs,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3587,Animals Revenge,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3587,Animals Revenge,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+3588,Anti Cimex,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=anti-cimex.bandcamp.com,en.wikipedia.org"
+3589,Anti-System,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3589,Anti-System,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=diyconspiracy.net,en.wikipedia.org"
+3589,Anti-System,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3590,Archotexvx,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3590,Archotexvx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3591,Askr Chamán,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3591,Askr Chamán,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3591,Askr Chamán,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+3592,Avvika,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3592,Avvika,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3593,B.G.K.,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3594,Band of Mercy,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=daniel-austin.com
+3594,Band of Mercy,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3594,Band of Mercy,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+3595,Banda Bonnot,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3595,Banda Bonnot,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3596,cleaned,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3596,cleaned,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3597,Beefeater,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3598,Behelit,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3599,Better Run,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3600,Birthright,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2014,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2014 > alb_min=2008
+3600,Birthright,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3600,Birthright,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+3601,Black Eyed Peas,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3602,Bloodmouth,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3602,Bloodmouth,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3603,Bob Pyle,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3603,Bob Pyle,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3604,Bob Vylan,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3605,Bring Our Demise,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3605,Bring Our Demise,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3606,Brothers Among Wera,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3607,Burnt Cross,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3607,Burnt Cross,proposed_members,STRIPPED_MEMBER_VEGAN,Rob Marriott:vegan=true,Rob Marriott:ANIMAL_RIGHTS_ADVOCATE,Missing positive member-attached vegan quote or contradicted
+3607,Burnt Cross,proposed_members,STRIPPED_MEMBER_VEGAN,Paul Marriott:vegan=true,Paul Marriott:ANIMAL_RIGHTS_ADVOCATE,Missing positive member-attached vegan quote or contradicted
+3607,Burnt Cross,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3608,Byproduct HC,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2016,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2016 < alb_max=2020
+3608,Byproduct HC,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=byproducthc.bandcamp.com
+3608,Byproduct HC,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3609,Caged,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2022,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2022 < alb_max=2025
+3609,Caged,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3609,Caged,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3612,Carcass,proposed_members,STRIPPED_MEMBER_VEGAN,Jeff Walker:vegan=true,Jeff Walker:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+3612,Carcass,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3613,Cathedral,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3614,Cenizas,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3614,Cenizas,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3616,Cherem,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2003,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2003 > alb_min=2001
+3616,Cherem,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2003,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2003 < alb_max=2006
+3616,Cherem,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3616,Cherem,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first; catalogue_disagrees_last
+3617,Children of Sorrow,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3618,Cho-Beat,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3618,Cho-Beat,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3619,Chokehold,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3620,Chris Quality,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+3621,CoVid 21,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3621,CoVid 21,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3622,Coffin Mulch,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3624,Crush All Tyranny,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3625,Culture Shock,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2004,INTERNAL_INCONSISTENCY,bio_formed=1986 vs first_release=2004 (gap=18y)
+3625,Culture Shock,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3625,Culture Shock,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency
+3627,Cymeon X,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3627,Cymeon X,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3629,DS-13,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3629,DS-13,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3631,Day Of Suffering,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3632,Dead Bronco,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2019,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2019 < alb_max=2021
+3632,Dead Bronco,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3632,Dead Bronco,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last; ungrounded_bio
+3633,Dead in the Dirt,proposed_country,EXTERNAL_CONFLICT_COUNTRY,United States,CONFLICT,MusicBrainz=United States vs Bandcamp=Georgia
+3633,Dead in the Dirt,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3633,Dead in the Dirt,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,external_country_conflict
+3634,Deadline,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3634,Deadline,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3635,Deadlock,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3636,Deborah Kazsimer,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3637,Declaración,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3637,Declaración,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3638,Decline,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3639,Decontrol,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3640,Deddy,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3641,Gary Yourofsky,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+3641,Gary Yourofsky,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3642,Deez Nuts,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3643,Degenerhate,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3643,Degenerhate,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3643,Degenerhate,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3645,Der W,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3645,Der W,proposed_members,STRIPPED_MEMBER_VEGAN,Stephan Weidner:vegan=true,Stephan Weidner:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+3645,Der W,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=de.wikipedia.org,laut.de"
+3646,Dirge,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3647,Disavow,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3648,Andrea Čengić,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3649,Disoviet,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,disoviet.bandcamp.com,hcdistro.com"
+3649,Disoviet,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3649,Disoviet,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3653,E.G.O.C.I.D.E.,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3654,Ecocidio,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2018,INTERNAL_INCONSISTENCY,bio_formed=2006 vs first_release=2018 (gap=12y)
+3654,Ecocidio,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3654,Ecocidio,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3654,Ecocidio,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency
+3655,Ecotage,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3656,Emergency Broadcast,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3656,Emergency Broadcast,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3657,Empty Cages,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3657,Empty Cages,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3659,Enter Shikari,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3660,Escalate,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3661,Extinction Of Mankind,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2017,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2017 < alb_max=2021
+3661,Extinction Of Mankind,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+3661,Extinction Of Mankind,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3662,Eye of Judgement,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3663,Ezetara,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3663,Ezetara,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3664,Rebecca Ragusa,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3664,Rebecca Ragusa,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3664,Rebecca Ragusa,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3665,FA!R,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3665,FA!R,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+3666,FUK,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3666,FUK,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3666,FUK,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3667,Fearless Soul,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2021,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2021 > alb_min=2017
+3667,Fearless Soul,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3667,Fearless Soul,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+3668,First Blood,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3669,For I Am King,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3669,For I Am King,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+3670,Forsaken,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=catalystrecords.org,discogs.com"
+3670,Forsaken,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3670,Forsaken,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3671,Forward To Eden,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3671,Forward To Eden,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3672,xconsumetosatisfyx,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2018,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2018 < alb_max=2020
+3672,xconsumetosatisfyx,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=xconsumetosatisfyx.bandcamp.com
+3672,xconsumetosatisfyx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3672,xconsumetosatisfyx,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3673,xUnworthy Of Lifex,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3673,xUnworthy Of Lifex,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3674,4Paws,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3674,4Paws,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3675,Fourth Crusade,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3675,Fourth Crusade,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3676,Futuro Vegan Pop,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,klandestine.cl"
+3676,Futuro Vegan Pop,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3676,Futuro Vegan Pop,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3676,Futuro Vegan Pop,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+3677,GLITTERGLUE,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3677,GLITTERGLUE,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3678,Ghosthost Vigilante,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3678,Ghosthost Vigilante,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3679,Glass Killing Floor,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3680,Good Over Evil,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3681,Haken,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3682,Jens Friebe,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3682,Jens Friebe,proposed_members,STRIPPED_MEMBER_VEGAN,Jens Friebe:vegan=true,Jens Friebe:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+3683,Kelvin Alston,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3683,Kelvin Alston,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3683,Kelvin Alston,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+3684,Liedermacherin Nette,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3684,Liedermacherin Nette,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3685,Life Force,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3686,Lifegrab,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3686,Lifegrab,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3688,Magnitude,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3689,Mass Extinction,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3689,Mass Extinction,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3690,Max Rage,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3690,Max Rage,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3691,Megadeth,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=en.wikipedia.org,megadeth.com,officialmegadeth.bandcamp.com,poddtoppen.se"
+3691,Megadeth,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3693,Mortality Rate,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,THEMATIC_OR_SINGLE_SONG,negated_vegan_claim
+3693,Mortality Rate,proposed_members,STRIPPED_MEMBER_VEGAN,Jess Nyx:vegan=true,Jess Nyx:EXPLICITLY_NOT_VEGAN,Missing positive member-attached vegan quote or contradicted
+3693,Mortality Rate,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,THEMATIC_OR_SINGLE_SONG,demoted_with_vegan_in_note
+3694,Motionless In White,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3695,Bryan Garris,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3695,Bryan Garris,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3696,Knocked Loose,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3697,Napalm Death,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3698,Nausea,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3698,Nausea,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3698,Nausea,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+3700,Nueva Etica,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3702,PUS,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3703,Passafire,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3703,Passafire,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3704,Paul Seymour,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_lead_cue
+3704,Paul Seymour,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3705,Pdweestraw,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3705,Pdweestraw,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3705,Pdweestraw,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio; unverified_with_vegan_lyric_code
+3706,Pianomike,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3706,Pianomike,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3707,Power Alone,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3708,Powermad,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3709,Prayer For Cleansing,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3709,Prayer For Cleansing,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3710,Prince,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3712,Purified In Blood,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3713,Ray LaMontagne,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+3714,René-Marc Bini,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3715,Alice Pehlivanian,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3716,Alexandre Laigner,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3717,Mélodie Ruvio,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2017,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2017 > alb_min=2012
+3717,Mélodie Ruvio,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+3718,Res Turner,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3718,Res Turner,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3719,Runtah,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3721,Sankara,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=reddit.com,youtube.com"
+3721,Sankara,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3721,Sankara,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3722,Shooting Daggers,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3723,Slaughterbox,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2011,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2011 < alb_max=2014
+3723,Slaughterbox,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3723,Slaughterbox,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last; ungrounded_bio; unverified_with_vegan_lyric_code
+3725,Stick To Your Guns,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3726,Sublime,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+3729,The Gags,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3729,The Gags,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3730,The Hope Conspiracy,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=thehopeconspiracy.bandcamp.com
+3730,The Hope Conspiracy,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3731,The Rebel Spell,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3732,Thomas D,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3734,Times of Desperation,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3735,Path Of Resurgence,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3736,Caitlyn Day,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3736,Caitlyn Day,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_lead_cue
+3736,Caitlyn Day,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3737,Connor Dickson,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3738,Siantelle Johns,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_lead_cue
+3739,Micheal Kearney,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=last.fm,youtube.com"
+3739,Micheal Kearney,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3740,Sam Crocker,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3740,Sam Crocker,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3741,Sophie Wilcher,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3741,Sophie Wilcher,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3742,Vegan Jihad,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=en.wikipedia.org,music.apple.com"
+3742,Vegan Jihad,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3742,Vegan Jihad,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3743,Vice Squad,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3744,Vicious Embrace,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3745,Vile Creature,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3747,Virus,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=maximumrocknroll.com,thehippiesnowwearblack.wordpress.com,viruspunkrock.bandcamp.com"
+3748,Vysoké Napětí,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3749,WOLF DOWN,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3750,Warand,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=music.apple.com,vk.com"
+3750,Warand,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3751,Watch Me Die,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3751,Watch Me Die,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3753,Yuppicide,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3753,Yuppicide,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3754,ZPU,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3755,Esther Ovejero,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3755,Esther Ovejero,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3756,swallowing shit,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3756,swallowing shit,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3757,xNOMADx,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2023,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2023 > alb_min=2020
+3757,xNOMADx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3757,xNOMADx,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+3759,xServitudex,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3760,Active Minds,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3760,Active Minds,proposed_members,STRIPPED_MEMBER_VEGAN,Bobs:vegan=true,Bobs:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+3761,Chucho Merchan,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3762,Climate,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3762,Climate,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3763,Fuck It... I Quit!,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2018,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2018 < alb_max=2019
+3763,Fuck It... I Quit!,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3763,Fuck It... I Quit!,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3764,Fuerza de Voluntad,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3764,Fuerza de Voluntad,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3765,GRAY STATE,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3766,Gab De La Vega,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3767,Gaia's Eye,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3767,Gaia's Eye,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3768,Going Off,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=goingoffhc.bandcamp.com
+3768,Going Off,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3770,Haggus,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3771,Hard Voor Weinig,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3771,Hard Voor Weinig,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3772,Hellbastard,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2015,CATALOGUE_DISAGREES,MusicBrainz (WIKIDATA_P1902)=2015 < alb_max=2023
+3772,Hellbastard,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3773,Hex,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3774,Holocausts,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=holocausts.bandcamp.com
+3775,Horns of Resistance,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3775,Horns of Resistance,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3776,Hour of Reprisal,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3776,Hour of Reprisal,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3777,The Instigators,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,1989,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=1989 < alb_max=2002
+3777,The Instigators,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3777,The Instigators,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3778,James Brook,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_lead_cue
+3778,James Brook,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3779,Jawless,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3779,Jawless,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2020,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2020 < alb_max=2021
+3779,Jawless,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3780,Juggling Jugulars,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3781,Kali,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3781,Kali,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3781,Kali,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_last_year; ungrounded_bio
+3782,Kampsport,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,kampsport.bandcamp.com"
+3782,Kampsport,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3782,Kampsport,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3783,Leyllah Diva Black,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2019,INTERNAL_INCONSISTENCY,bio_formed=2004 vs first_release=2019 (gap=15y)
+3783,Leyllah Diva Black,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+3783,Leyllah Diva Black,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3783,Leyllah Diva Black,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency
+3784,Living X Grave,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3784,Living X Grave,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3786,Lyrikal Master,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3786,Lyrikal Master,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3787,Lágrimas De Sangre,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=lagrimasdesangre.bandcamp.com
+3787,Lágrimas De Sangre,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3788,Maniac,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=maniachc.bandcamp.com
+3789,Silence Equals Death,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=silenceequalsdeath413.bandcamp.com
+3790,Mawiza,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=mawizakvlt.bandcamp.com
+3791,Joe Duplantier,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3792,The Animal Warfare Act,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3792,The Animal Warfare Act,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3792,The Animal Warfare Act,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3796,AIM,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3796,AIM,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3798,Anamias Ixaya,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3798,Anamias Ixaya,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=music.apple.com,portaldisc.com,sourmagazine.cl"
+3798,Anamias Ixaya,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3799,La Peluquera,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3801,Anthrax,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3801,Anthrax,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3805,Archote,eligibility,ORPHAN_EXCLUDED,staged,excluded,0 non-rejected songs in catalogue
+3811,Banish Arms,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,SEARCHED_UNVERIFIED,no_positive_vegan_in_snippets
+3811,Banish Arms,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3815,Batterix,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3815,Batterix,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3817,Bloodguilt,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3817,Bloodguilt,proposed_members,STRIPPED_MEMBER_VEGAN,Ray Harkins:vegan=true,Ray Harkins:ANIMAL_RIGHTS_ADVOCATE,Missing positive member-attached vegan quote or contradicted
+3817,Bloodguilt,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3817,Bloodguilt,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+3825,Carradine Choke,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3832,Demonic Upchucks,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3832,Demonic Upchucks,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3832,Demonic Upchucks,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+3833,Deny,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=denyhc.bandcamp.com
+3840,Earthfall,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3840,Earthfall,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3842,Extinct Exist,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3842,Extinct Exist,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3842,Extinct Exist,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3844,Fall Of Efrafa,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2009,CATALOGUE_DISAGREES,Gemini Web Search (None)=2009 < alb_max=2021
+3844,Fall Of Efrafa,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3844,Fall Of Efrafa,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3844,Fall Of Efrafa,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3846,Final Day,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3846,Final Day,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3854,Global Parasite,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3854,Global Parasite,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3854,Global Parasite,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3855,Golpe,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3855,Golpe,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3859,Gripper,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=gripperpunk.bandcamp.com
+3861,Guano Apes,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=en.wikipedia.org
+3863,Hacker,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3863,Hacker,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3863,Hacker,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3867,Hellkrusher,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3867,Hellkrusher,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3867,Hellkrusher,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3869,Herida Profunda,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3869,Herida Profunda,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3869,Herida Profunda,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3873,In The Shit,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3876,Indignacion,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3877,Indomitamorfosis,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3877,Indomitamorfosis,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3878,Instigators,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3878,Instigators,proposed_members,STRIPPED_MEMBER_VEGAN,Paul Halmshaw:vegan=true,Paul Halmshaw:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+3878,Instigators,proposed_members,STRIPPED_MEMBER_VEGAN,Andy Turner:vegan=true,Andy Turner:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+3879,Integrity,proposed_country,EXTERNAL_CONFLICT_COUNTRY,United States,CONFLICT,MusicBrainz=United States vs Bandcamp=Belgium
+3879,Integrity,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=integrity.bandcamp.com
+3879,Integrity,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,external_country_conflict
+3880,Invictum,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3880,Invictum,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3883,Kakistocracy,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3883,Kakistocracy,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3883,Kakistocracy,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3884,Karen Duve,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+3884,Karen Duve,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3887,Kold War,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3887,Kold War,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3889,Last Under The Sun,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3889,Last Under The Sun,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3889,Last Under The Sun,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3891,Liberation Lads,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3891,Liberation Lads,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3891,Liberation Lads,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3892,Limp Bizkit,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3893,Luta Armada,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3893,Luta Armada,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3893,Luta Armada,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3894,Mass Grave,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3894,Mass Grave,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3895,Masta Quba,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2020,INTERNAL_INCONSISTENCY,bio_formed=2007 vs first_release=2020 (gap=13y)
+3895,Masta Quba,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3895,Masta Quba,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency
+3896,Melanie,eligibility,ORPHAN_EXCLUDED,staged,excluded,0 non-rejected songs in catalogue
+3897,Mil Caras,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3897,Mil Caras,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3898,Millie Manders and the Shutup,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3899,Miracle,first_release_year,INTERNAL_INCONSISTENCY_BIO_YEAR,2011,INTERNAL_INCONSISTENCY,bio_formed=2023 vs first_release=2011 (gap=-12y)
+3899,Miracle,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3899,Miracle,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,internal_bio_year_inconsistency
+3901,Mistro,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=modzik.com,youtube.com"
+3901,Mistro,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3901,Mistro,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3901,Mistro,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,legacy_pilot_3.8_flash
+3902,Mobius Strip,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3905,Mr. Hip,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3905,Mr. Hip,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3907,NEOPTERYX,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3912,No One Gets Out Alive,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3913,No Restraint,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3913,No Restraint,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3915,Not in This Lifetime,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3915,Not in This Lifetime,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3915,Not in This Lifetime,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3917,Opposition Rising,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2011,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2011 < alb_max=2020
+3917,Opposition Rising,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,oppositionrising.bandcamp.com,oppositionrising.com"
+3917,Opposition Rising,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last; legacy_pilot_3.8_flash
+3920,Pale Flag,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=muzic.nz,youtube.com"
+3920,Pale Flag,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3921,Paranoid Visions,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3921,Paranoid Visions,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3921,Paranoid Visions,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3923,Peplon,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3923,Peplon,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3924,Picture Frame Seduction,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3924,Picture Frame Seduction,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3924,Picture Frame Seduction,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+3925,Freaki Jenni,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+3926,Pisschrïst,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3926,Pisschrïst,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3926,Pisschrïst,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3927,Planet On A Chain,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=planetonachain.bandcamp.com
+3928,Point Of Contact,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=pointofcontacthc.bandcamp.com
+3928,Point Of Contact,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3929,Police Bastard,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3929,Police Bastard,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3929,Police Bastard,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3931,Poundaflesh,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3932,Protein,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,idioteq.com"
+3932,Protein,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3933,Protestera,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3936,Putrefaction,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3936,Putrefaction,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3937,R.A.M.B.O.,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3938,RAZOR SHARP DEATH BLIZZARD,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=razorsharpdeathblizzard.bandcamp.com
+3938,RAZOR SHARP DEATH BLIZZARD,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3940,Racetraitor,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3942,Ramazuri,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3943,Rat Cage,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=ratcage.bandcamp.com
+3944,ReGo,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3947,Remain,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3947,Remain,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3947,Remain,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3949,Restraining Order,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3949,Restraining Order,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3949,Restraining Order,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3950,Retired Punx,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3950,Retired Punx,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3950,Retired Punx,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+3952,Ricky Hombre Libre,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+3952,Ricky Hombre Libre,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+3953,Riot/Clone,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2020,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2020 < alb_max=2024
+3953,Riot/Clone,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3953,Riot/Clone,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3954,Ripcord,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,1988,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=1988 < alb_max=2016
+3954,Ripcord,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3955,Rotten UK,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3956,Rotworld,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3956,Rotworld,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3957,Rudimentary Peni,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2021,CATALOGUE_DISAGREES,MusicBrainz (WIKIDATA_P1902)=2021 < alb_max=2022
+3957,Rudimentary Peni,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3958,Ruined It,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3961,SPINE,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3961,SPINE,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3961,SPINE,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3962,SPITN NAILZ,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3962,SPITN NAILZ,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+3963,Scared Earth,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2019,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2019 < alb_max=2020
+3963,Scared Earth,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3963,Scared Earth,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last; ungrounded_bio
+3964,Sect,proposed_members,STRIPPED_MEMBER_VEGAN,Ian Edwards:vegan=true,Ian Edwards:UNKNOWN,Missing positive member-attached vegan quote or contradicted
+3964,Sect,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3965,Sendero,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2024,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2024 > alb_min=2013
+3965,Sendero,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3965,Sendero,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+3966,Sensa Yuma,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3966,Sensa Yuma,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3966,Sensa Yuma,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3967,Sentience,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3968,Seven Generations,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3968,Seven Generations,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3969,Shan,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3969,Shan,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_lead_cue
+3973,Simbiose,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3973,Simbiose,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+3974,Sisyphus Happy,proposed_members,STRIPPED_MEMBER_VEGAN,Aaron Scott Johnson:vegan=true,Aaron Scott Johnson:ANIMAL_RIGHTS_ADVOCATE,Missing positive member-attached vegan quote or contradicted
+3974,Sisyphus Happy,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+3974,Sisyphus Happy,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3977,Slewfoot,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2025,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2025 > alb_min=2024
+3977,Slewfoot,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3977,Slewfoot,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+3978,Smash the Statues,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,2014,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=2014 < alb_max=2019
+3978,Smash the Statues,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3978,Smash the Statues,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+3979,Social Experiment,first_release_year,CATALOGUE_DISAGREES_FIRST_YEAR,2021,CATALOGUE_DISAGREES,MusicBrainz (MB_SPOTIFY_URL)=2021 > alb_min=2018
+3979,Social Experiment,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_first
+3980,Social Stigma,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+3980,Social Stigma,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3980,Social Stigma,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+3981,Sods Law,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3982,Sons of Aguirre,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,stance_member_mismatch
+3982,Sons of Aguirre,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=elsaltodiario.com,es.wikipedia.org"
+3982,Sons of Aguirre,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+3983,Soulstice,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3983,Soulstice,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3986,Steve White & The Protest Family,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3988,Stone The Crowz,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,stance_member_mismatch
+3988,Stone The Crowz,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3988,Stone The Crowz,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+3989,Stressed,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3991,Surgery Without Research,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3991,Surgery Without Research,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3991,Surgery Without Research,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3992,System of slaves,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+3992,System of slaves,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3992,System of slaves,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+3993,Séimí,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+3997,Teresa Banks,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+3998,Terra Mater,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+3999,Texas Toast Chainsaw Massacre,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=texastoastchainsawmassacre.bandcamp.com
+3999,Texas Toast Chainsaw Massacre,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,unverified_with_vegan_lyric_code
+4003,The Domestics,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4003,The Domestics,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4003,The Domestics,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4004,The Ex,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4005,The Fallout,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4007,The Flaming Tsunamis,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+4009,The Massacred,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4009,The Massacred,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4009,The Massacred,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4011,The Rebel Riot,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=therebelriot.bandcamp.com
+4012,The Restarts,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=therestarts.bandcamp.com
+4013,The Roughneck Riot,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4014,The Rule,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4014,The Rule,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4016,The Sporadics,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4016,The Sporadics,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4016,The Sporadics,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4018,The System,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4018,The System,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4018,The System,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4019,The Varukers,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4020,The Weapon,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+4022,Tino Valpa,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4024,To Kill,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=discogs.com,stillliferec.com,youtube.com"
+4024,To Kill,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4024,To Kill,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4025,To What End,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4025,To What End,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4025,To What End,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4026,Total Chaos,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4026,Total Chaos,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4026,Total Chaos,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4028,Traidor,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+4028,Traidor,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4029,Transcendence,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4029,Transcendence,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4029,Transcendence,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+4032,Triggered,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4037,Uncertainty,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4037,Uncertainty,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4038,Upraised,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4038,Upraised,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4038,Upraised,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio; unverified_with_vegan_lyric_code
+4039,VVANDEL,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4039,VVANDEL,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4040,Vacants,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=vacantshc.bandcamp.com,youtube.com"
+4040,Vacants,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4041,Vegains,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_lead_cue
+4041,Vegains,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4042,Vegan Artist Bjt,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+4042,Vegan Artist Bjt,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4044,Vital Force,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4044,Vital Force,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4045,WAR//PLAGUE,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4045,WAR//PLAGUE,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4045,WAR//PLAGUE,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4046,Wake of Humanity,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4046,Wake of Humanity,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4048,Wartorn,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4048,Wartorn,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4048,Wartorn,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4049,Warwound,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4049,Warwound,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+4050,What's Your Damage?,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4050,What's Your Damage?,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4050,What's Your Damage?,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4052,Wolfbrigade,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4052,Wolfbrigade,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4052,Wolfbrigade,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4053,Wolfpack,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4053,Wolfpack,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4053,Wolfpack,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4054,Worst Witch,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4054,Worst Witch,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4055,XCuestiondeRespetoX,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4055,XCuestiondeRespetoX,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4056,Zero Again,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=engineerrecords.com,louderthanwar.com,open.spotify.com"
+4056,Zero Again,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4056,Zero Again,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4058,boom boom kid,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4058,boom boom kid,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+4059,dragSTER,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4059,dragSTER,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+4060,fluoride,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4060,fluoride,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4062,shinessi,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+4062,shinessi,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+4062,shinessi,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+4063,xCauterizex,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4063,xCauterizex,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4064,xDELIVERANCEx,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4064,xDELIVERANCEx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4065,xDissonancex,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4065,xDissonancex,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4066,xElegyx,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4066,xElegyx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4067,xREIGNx,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4067,xREIGNx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4068,xRESISTANCEx,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+4068,xRESISTANCEx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4069,xRISALEx,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4069,xRISALEx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+4070,xVICIOUSx,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4070,xVICIOUSx,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+4228,Ras Attitude & Lutan Fyah,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+4785,ZZZWB Probe Artist,eligibility,FIXTURE_EXCLUDED,staged,excluded,Name matches ^ZZZ test fixture
+4786,ZZZWB Probe Artist2,eligibility,FIXTURE_EXCLUDED,staged,excluded,Name matches ^ZZZ test fixture
+4787,ZZZWB Test Artist,eligibility,FIXTURE_EXCLUDED,staged,excluded,Name matches ^ZZZ test fixture
+4788,ZZZWBTEST Artist,eligibility,FIXTURE_EXCLUDED,staged,excluded,Name matches ^ZZZ test fixture
+4849,ZZZWB Tester,eligibility,FIXTURE_EXCLUDED,staged,excluded,Name matches ^ZZZ test fixture
+6027,Emma,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+6027,Emma,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+6027,Emma,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_bio
+10540,AlwaysTakeTwo,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+10541,Henya Perez,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+10541,Henya Perez,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+10542,Steve Grant,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,bio_solo_cue
+10542,Steve Grant,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+10543,M.E. King,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+10543,M.E. King,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+10544,Bobby Bastard and the blackwater blues explosion,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+10544,Bobby Bastard and the blackwater blues explosion,proposed_members,STRIPPED_MEMBER_VEGAN,Bobby Bastard:vegan=true,Bobby Bastard:ANIMAL_RIGHTS_ADVOCATE,Missing positive member-attached vegan quote or contradicted
+10544,Bobby Bastard and the blackwater blues explosion,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+13508,X-ray spex,artist_vegan_stance,DEMOTED_STANCE,VEGAN_MEMBERS,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+13508,X-ray spex,proposed_members,STRIPPED_MEMBER_VEGAN,Poly Styrene:vegan=true,Poly Styrene:VEGETARIAN,Missing positive member-attached vegan quote or contradicted
+13508,X-ray spex,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+13509,The Pretenders,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+13509,The Pretenders,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+22996,4Tune,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+23162,The Wraith,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+23162,The Wraith,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+23162,The Wraith,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_bio
+23544,Jeronimo Ruíz,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+23544,Jeronimo Ruíz,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24354,Ruined,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24355,Mohawk,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_lead_cue
+24356,Constant State of Terror,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24357,Ephemeral Foetus,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24358,Regret,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24358,Regret,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24358,Regret,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+24359,Motherfucker NO!,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24359,Motherfucker NO!,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+24360,Exit 13,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24361,Wind In His Hair,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24362,Dead Pioneers,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=deadpioneers.bandcamp.com,en.wikipedia.org"
+24364,XmanifestoX,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24364,XmanifestoX,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24365,Half/Time,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=halftime.bandcamp.com
+24366,Denial,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24367,Braindead,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+24367,Braindead,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+24368,Spanner,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24369,The Blunders,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24369,The Blunders,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24369,The Blunders,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+24370,The Only Weapon,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+24371,Mike Ohio,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=open.spotify.com,youtube.com"
+24371,Mike Ohio,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+24371,Mike Ohio,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24372,Wielka Wegańska Inkwizycja,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24372,Wielka Wegańska Inkwizycja,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24373,The Great Vegan Inquisition,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,"domains=linktr.ee,youtube.com"
+24373,The Great Vegan Inquisition,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24373,The Great Vegan Inquisition,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24374,Warchrist,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24374,Warchrist,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24374,Warchrist,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+24375,Violent Reaction,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=violentreaction.bandcamp.com
+24376,Arms Race,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24376,Arms Race,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24376,Arms Race,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+24377,Chaos UK,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24377,Chaos UK,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+24378,Les Fossoyeurs Septik,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24379,AntiBastard,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24379,AntiBastard,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24379,AntiBastard,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+24380,Deviated Instinct,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24382,xfortunex,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24383,Poison Ivy,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24384,xChokex,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+24385,Burialsite,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24386,My Own Demise,artist_type,ARTIST_TYPE_UNRESOLVED,NULL,NULL,Needs L1-L3 or non-search classifier
+24386,My Own Demise,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24387,Horripilation,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24388,Bobby Bastard And The Blackwater Blue's Explosion,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+24388,Bobby Bastard And The Blackwater Blue's Explosion,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Person,self_member_match
+24389,AOA,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24390,The Damned,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+24391,Terminus,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24392,Concrete Sox,artist_vegan_stance,DEMOTED_WITH_VEGAN_IN_NOTE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+24392,Concrete Sox,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,1999,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=1999 < alb_max=2012
+24392,Concrete Sox,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,demoted_with_vegan_in_note
+24392,Concrete Sox,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+24393,Coatl,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24394,Antiligent,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24395,Rectify,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24396,Unborn,last_release_year,CATALOGUE_DISAGREES_LAST_YEAR,1997,CATALOGUE_DISAGREES,MusicBrainz (MB_TITLE_VERIFIED)=1997 < alb_max=2022
+24396,Unborn,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24396,Unborn,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,catalogue_disagrees_last
+24397,Steve White & The Protest Family,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24398,Cavalerie,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=cavalerie75.bandcamp.com
+24399,Iron,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24399,Iron,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24400,Lunatic Fringe,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24400,Lunatic Fringe,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+24401,Vindictive,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24401,Vindictive,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24401,Vindictive,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_bio
+24402,From the Cradle to the Rave,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=fromthecradletotherave.bandcamp.com
+24403,At Their Mercy,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24403,At Their Mercy,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24403,At Their Mercy,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_last_year; ungrounded_bio
+24404,Nightfeeder,grounding,NON_SEARCH_URLS_ONLY,SEARCHED_WITH_RESULTS(proxy),UNKNOWN_LEGACY,domains=nightfeeder.bandcamp.com
+24405,Proletariat Punch,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24406,Invisible Eyes,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24406,Invisible Eyes,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24406,Invisible Eyes,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_last_year; ungrounded_bio
+24407,Zero Again,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+24407,Zero Again,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24408,The Diamond Dead,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24408,The Diamond Dead,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24408,The Diamond Dead,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_country; ungrounded_first_year; ungrounded_bio
+24409,Ode to Sleep,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24410,Bratakus,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24411,Human Rights,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24412,Hated Til Proven,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24412,Hated Til Proven,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+24413,Blaggers ITA,grounding,NO_URLS_MEMORY_ONLY,MEMORY_ONLY(proxy),UNKNOWN_LEGACY,0 evidence URLs on row
+24413,Blaggers ITA,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,ungrounded_bio
+24415,xDegradationx,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,bio_group_cue
+24415,xDegradationx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24417,An Slua,artist_vegan_stance,DEMOTED_STANCE,EXPLICIT_VEGAN_BAND,VEGETARIAN_OR_ANIMAL_RIGHTS,no_positive_vegan_in_snippets
+24417,An Slua,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24419,xDELIVERANCEx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24420,xSENTRYx,stage_4c_queue,L4C_1_ENTAILMENT,EXPLICIT_VEGAN_BAND,EXPLICIT_VEGAN_BAND,surviving_EXPLICIT_VEGAN_BAND
+24421,XEROED,artist_type,INFERRED_ARTIST_TYPE_DETERMINISTIC,NULL,Group,members_count>=2
+24421,XEROED,stage_4c_queue,L4C_1_ENTAILMENT,VEGAN_MEMBERS,VEGAN_MEMBERS,surviving_VEGAN_MEMBERS
+28106,Blink 182,eligibility,ORPHAN_EXCLUDED,staged,excluded,0 non-rejected songs in catalogue
+39364,Julien Baker,last_release_year,FUTURE_YEAR_DROPPED,2027,NULL,> CURRENT_YEAR (2026)
+39364,Julien Baker,stage_4c_queue,L4C_2_CONFLICT_OR_GAP,,,future_year
+129,Tena Stelin,proposed_musicbrainz_id,COLLISION_MBID,b3d3cfd8-6930-46ec-b475-112b44b49e1f,COLLISION,"shared_with=[129, 208]"
+208,Tenastelin,proposed_musicbrainz_id,COLLISION_MBID,b3d3cfd8-6930-46ec-b475-112b44b49e1f,COLLISION,"shared_with=[129, 208]"
+3777,The Instigators,proposed_musicbrainz_id,COLLISION_MBID,c229c92b-2e42-42b8-8dd0-015952e706b0,COLLISION,"shared_with=[3777, 3878]"
+3878,Instigators,proposed_musicbrainz_id,COLLISION_MBID,c229c92b-2e42-42b8-8dd0-015952e706b0,COLLISION,"shared_with=[3777, 3878]"
+64,Pretenders,name,COLLISION_NAME,pretenders,COLLISION,"shared_with=[64, 13509]"
+13509,The Pretenders,name,COLLISION_NAME,pretenders,COLLISION,"shared_with=[64, 13509]"
+162,The Decline,name,COLLISION_NAME,decline,COLLISION,"shared_with=[162, 3638]"
+3638,Decline,name,COLLISION_NAME,decline,COLLISION,"shared_with=[162, 3638]"
+260,TK The Artist,name,COLLISION_NAME,tk the artist,COLLISION,"shared_with=[260, 271]"
+271,TK the Artist,name,COLLISION_NAME,tk the artist,COLLISION,"shared_with=[260, 271]"
+3777,The Instigators,name,COLLISION_NAME,instigators,COLLISION,"shared_with=[3777, 3878]"
+3878,Instigators,name,COLLISION_NAME,instigators,COLLISION,"shared_with=[3777, 3878]"
+3986,Steve White & The Protest Family,name,COLLISION_NAME,steve white the protest family,COLLISION,"shared_with=[3986, 24397]"
+24397,Steve White & The Protest Family,name,COLLISION_NAME,steve white the protest family,COLLISION,"shared_with=[3986, 24397]"
+4056,Zero Again,name,COLLISION_NAME,zero again,COLLISION,"shared_with=[4056, 24407]"
+24407,Zero Again,name,COLLISION_NAME,zero again,COLLISION,"shared_with=[4056, 24407]"
+4064,xDELIVERANCEx,name,COLLISION_NAME,xdeliverancex,COLLISION,"shared_with=[4064, 24419]"
+24419,xDELIVERANCEx,name,COLLISION_NAME,xdeliverancex,COLLISION,"shared_with=[4064, 24419]"
