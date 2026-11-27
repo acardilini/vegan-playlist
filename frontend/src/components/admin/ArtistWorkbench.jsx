@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { adminFetch } from '../../api/adminApi';
 import ArtistDetailsPanel from './ArtistDetailsPanel';
-import ArtistFactsPanel from './ArtistFactsPanel';
-import EnrichmentPanel from './EnrichmentPanel';
+import BasicsSection from './BasicsSection';
 import IdentitySection from './IdentitySection';
 import MergeDialog from './MergeDialog';
 import CatalogueReview from './CatalogueReview';
@@ -112,12 +111,12 @@ function WorkbenchBody({ artist, save, onIdentitySaved, goNext, go, idx, navStat
         {tab === 'details' && (
           <>
             <IdentitySection artist={artist} enr={enr} save={save} focus={focus} onIdentitySaved={identitySaved} onMerge={openMerge} />
-            <div className="aw-todo">Basics and Story are being rebuilt; the panels below stay until then.</div>
+            {/* Keyed on the artist only (the body is), so a Skip survives an identity change; the hooks re-read when the stored ids change. */}
+            <BasicsSection artist={artist} enr={enr} save={save} refreshKey={factsKey} onIdentitySaved={identitySaved}
+              onChanged={factsChanged} onNeedIdentity={needIdentity} />
+            <div className="aw-todo">Story is being rebuilt; the panel below stays until then.</div>
             <div className="aw-stack">
               <ArtistDetailsPanel artist={artist} save={save} />
-              {/* Keyed on the artist only (the body is), so a Skip survives an identity change; the hook re-reads when the stored ids change. */}
-              <EnrichmentPanel artist={artist} enr={enr} onIdentitySaved={identitySaved} onChanged={factsChanged} />
-              <ArtistFactsPanel key={artist.id} artist={artist} onNeedIdentity={needIdentity} refreshKey={factsKey} />
             </div>
             {enr.review && (
               <div className="aw-footer">
