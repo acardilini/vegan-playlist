@@ -382,3 +382,38 @@ test('unknown queue is BAD_INPUT', async () => {
   await assert.rejects(svc.list(pool, { queue: 'nope' }), isCode('BAD_INPUT'));
   await assert.rejects(svc.list(pool, { queue: 'constructor' }), isCode('BAD_INPUT'));
 });
+
+const vm = (name, o = {}) => ({ name, vegan: false, source: 'Gemini Web Search', is_current: true, vegan_evidence_url: null, vegan_confidence: null, ...o });
+test('vegan_hints: only a staged vegan member with an http(s) evidence link', async () => {
+  const id = await mkArtist('ZZZENR Hints');
+  await mkProposal(id, { members: [
+    vm('A', { vegan: true, vegan_evidence_url: 'https://x.example/a', vegan_confidence: 'HIGH' }),
+    vm('B', { vegan: true, vegan_evidence_url: 'javascript:alert(1)' }),
+    vm('C', { vegan: false, vegan_evidence_url: 'https://x.example/c' }),
+    vm('D', { vegan: true }),
+    vm('E', { vegan: true, vegan_evidence_url: 'ftp://x.example/e' }),
+    vm('F', { vegan: true, vegan_evidence_url: 'http://x.example/f', vegan_confidence: 'MAYBE' }),
+    vm('a', { vegan: true, vegan_evidence_url: 'https://x.example/dupe' }),
+  ] });
+  const r = await svc.getReview(pool, id);
+  assert.deepEqual(r.vegan_hints, [
+    { name: 'A', url: 'https://x.example/a', confidence: 'HIGH' },
+    { name: 'F', url: 'http://x.example/f', confidence: null },
+  ]);
+});
+test('vegan_hints: present for a member that is already stored with no change proposed, and never a tick', async () => {
+  const id = await mkArtist('ZZZENR HintsStored');
+  await pool.query(`INSERT INTO artist_members (artist_id, name, is_current, vegan, source) VALUES ($1,'Stored One',true,false,'Added by curator')`, [id]);
+  await mkProposal(id, { members: [vm('stored one', { vegan: true, vegan_evidence_url: 'https://x.example/s', vegan_confidence: 'MEDIUM' })] });
+  const r = await svc.getReview(pool, id);
+  assert.deepEqual(r.vegan_hints, [{ name: 'stored one', url: 'https://x.example/s', confidence: 'MEDIUM' }]);
+  assert.deepEqual(r.members, []); // no change proposed, and no member row carries a vegan key
+  assert.equal((await pool.query(`SELECT vegan FROM artist_members WHERE artist_id = $1`, [id])).rows[0].vegan, false);
+});
+test('vegan_hints: no proposal has no hints; a proposal with no members has an empty list', async () => {
+  const none = await mkArtist('ZZZENR HintsNone');
+  assert.equal('vegan_hints' in (await svc.getReview(pool, none)), false);
+  const empty = await mkArtist('ZZZENR HintsEmpty');
+  await mkProposal(empty, { members: [] });
+  assert.deepEqual((await svc.getReview(pool, empty)).vegan_hints, []);
+});

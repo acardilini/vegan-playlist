@@ -86,6 +86,28 @@ function cleanMembers(raw) {
   return out;
 }
 
+const HINT_CONFIDENCE = new Set(['HIGH', 'MEDIUM', 'LOW']);
+const httpUrl = (v) => {
+  if (typeof v !== 'string') return null;
+  try { const u = new URL(v.trim()); return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : null; } catch { return null; }
+};
+// A staged member the analysis marked vegan with an http(s) evidence link becomes a hint: the curator opens the link and
+// decides. Only the link and the confidence leave here; the staged vegan flag itself is never returned, so nothing can tick
+// artist_members.vegan for the curator.
+function cleanHints(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [], seen = new Set();
+  for (const m of raw) {
+    if (!m || typeof m !== 'object' || typeof m.name !== 'string' || !m.name.trim() || m.vegan !== true) continue;
+    const url = httpUrl(m.vegan_evidence_url);
+    const k = nameKey(m.name);
+    if (!url || seen.has(k)) continue;
+    seen.add(k);
+    out.push({ name: m.name.trim(), url, confidence: HINT_CONFIDENCE.has(m.vegan_confidence) ? m.vegan_confidence : null });
+  }
+  return out;
+}
+
 const FIELDS = [
   { field: 'country', label: 'Country', prefix: 'country' },
   { field: 'formed_year', label: 'Formed', prefix: 'formed' },
@@ -293,6 +315,7 @@ async function getReview(db, artistId) {
     },
     fields: buildFields(proposal, stored, state),
     members: buildMembers(proposedMembers, facts.members, state),
+    vegan_hints: cleanHints(proposal.proposed_members),
     warnings: buildWarnings({ proposal, stored, catalogue, proposedMembers, sharedWith: shared, wrongId }),
   };
 }
