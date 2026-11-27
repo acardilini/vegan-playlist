@@ -12,7 +12,6 @@ function ArtistDetailsPanel({ artist, save }) {
   return (
     <section className="wb-panel">
       <h2>Details</h2>
-      <AutoText label="Name" initial={artist.name} onSave={(v) => save({ name: v })} />
       <AutoText label="Biography" initial={artist.bio} multiline rows={5} onSave={(v) => save({ bio: v })} />
       <AutoText label="Vegan advocacy notes" initial={artist.vegan_advocacy_notes} multiline rows={4}
         onSave={(v) => save({ vegan_advocacy_notes: v })} />

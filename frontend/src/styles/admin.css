@@ -391,3 +391,20 @@ a.band-chip:hover { text-decoration: underline; }
 .aw-source-actions { display: flex; flex: none; gap: var(--space-1); margin-left: auto; }
 .aw-source-body { flex: 1 0 100%; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) 0 var(--space-2) 6.9rem; font-size: 0.8rem; }
 .aw-match { padding: var(--space-2) 0 var(--space-2) 6.9rem; display: flex; flex-direction: column; gap: var(--space-1); font-size: 0.85rem; }
+
+/* Artist workbench: header, banner, tabs, footer */
+.aw-header { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.aw-title { display: flex; align-items: center; gap: var(--space-2); flex: 1 1 14rem; min-width: 0; }
+.aw-title .input { font-size: 1.15rem; font-weight: 700; }
+.aw-nav { display: flex; gap: var(--space-1); }
+.aw-banner { border: 1px solid var(--accent-ember-60); border-radius: var(--radius-lg); background: color-mix(in oklch, var(--accent-ember-60) 12%, var(--bg-surface)); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.aw-banner-row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.aw-banner-tag { color: var(--accent-ember-60); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.aw-banner-text { flex: 1 1 16rem; min-width: 0; font-size: 0.9rem; }
+.aw-tabs { display: flex; gap: var(--space-1); border-bottom: 1px solid var(--border-hairline); margin-bottom: var(--space-3); }
+.aw-tab { background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: var(--space-2) var(--space-3); color: var(--text-secondary); font: inherit; font-weight: 600; cursor: pointer; }
+.aw-tab:hover { color: var(--text-primary); }
+.aw-tab.is-active { color: var(--text-primary); border-bottom-color: var(--accent-ember-60); }
+.aw-todo { color: var(--text-muted); font-size: 0.8rem; margin-bottom: var(--space-2); }
+.aw-stack { display: flex; flex-direction: column; gap: var(--space-3); max-width: 44rem; }
+.aw-footer { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border-hairline); }
