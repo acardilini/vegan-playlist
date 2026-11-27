@@ -42,7 +42,7 @@ function matchState(proposal, review, storedMbid) {
 // A fact from MusicBrainz or Wikidata rides on the match: it stays locked until the match is trusted.
 const isLocked = (source, state) => LOCKABLE.has(source) && state !== 'pretrusted' && state !== 'approved';
 
-function buildWarnings({ proposal, stored, catalogue, proposedMembers, sharedWith }) {
+function buildWarnings({ proposal, stored, catalogue, proposedMembers, sharedWith, wrongId = false }) {
   const w = [];
   const last = proposal.proposed_last_release_year, disb = proposal.proposed_disbanded_year, formed = proposal.proposed_formed_year;
   if (last != null && catalogue.last_year != null && last < catalogue.last_year) {
@@ -64,6 +64,9 @@ function buildWarnings({ proposal, stored, catalogue, proposedMembers, sharedWit
   }
   if (sharedWith.length) {
     w.push({ field: 'match', text: `This MusicBrainz id is also proposed for or stored on: ${sharedWith.map((s) => s.name).join(', ')}` });
+  }
+  if (wrongId) {
+    w.push({ field: 'match', text: 'A later check found this MusicBrainz id belongs to a different act than this artist, so the match and its MusicBrainz facts may describe someone else. Check the match before approving.' });
   }
   return w;
 }
@@ -158,6 +161,10 @@ const HAS_SOMETHING = `(
                AND NOT EXISTS (SELECT 1 FROM artist_members am WHERE am.artist_id = a.id AND lower(am.name) = lower(btrim(m->>'name'))))
 )`;
 const BASE = `(r.finished_at IS NULL AND ${HAS_SOMETHING})`;
+// The analysis project's second-pass verdict (field_conflicts.l4c2_resolution.status, status only, never its free text)
+// that the proposed MusicBrainz id belongs to a different act. Such a match is never pre-trusted, whatever its confidence.
+const WRONG_ID_STATUS = 'WRONG_MBID_IDENTITY_CORRECTED';
+const WRONG_ID_SQL = `(p.field_conflicts->'l4c2_resolution'->>'status' IS NOT DISTINCT FROM '${WRONG_ID_STATUS}')`;
 // A match waiting for the curator's Approve: matchState's 'needs-approval' in SQL (an id is proposed and not stored, it
 // was not rejected, and it is not a pre-trusted EXACT_ID: an earlier approval without the id stored, a different stored
 // id or an EXISTING method all need approval again). It does not mirror getReview's downgrade of a shared EXACT_ID id;
@@ -165,7 +172,7 @@ const BASE = `(r.finished_at IS NULL AND ${HAS_SOMETHING})`;
 const MATCH_PENDING = `(p.proposed_musicbrainz_id IS NOT NULL
   AND p.proposed_musicbrainz_id IS DISTINCT FROM a.musicbrainz_id
   AND NOT COALESCE(r.match_decision = 'rejected' AND r.matched_mbid = p.proposed_musicbrainz_id, false)
-  AND (p.mbid_confidence IS DISTINCT FROM 'EXACT_ID' OR a.musicbrainz_id IS NOT NULL
+  AND (p.mbid_confidence IS DISTINCT FROM 'EXACT_ID' OR ${WRONG_ID_SQL} OR a.musicbrainz_id IS NOT NULL
        OR p.mbid_match_method IS NOT DISTINCT FROM 'EXISTING'
        OR COALESCE(r.match_decision = 'approved' AND r.matched_mbid = p.proposed_musicbrainz_id, false)))`;
 // Another artist proposes or stores the same MusicBrainz id.
@@ -253,7 +260,8 @@ const PROPOSAL_COLS = `proposed_musicbrainz_id, mbid_match_method, mbid_confiden
   proposed_country, country_source, country_confidence, proposed_formed_year, formed_source, formed_confidence,
   proposed_disbanded_year, disbanded_source, disbanded_confidence, proposed_first_release_year, first_release_source,
   first_release_confidence, proposed_last_release_year, last_release_source,
-  last_release_confidence, proposed_bandcamp_url, proposed_members`;
+  last_release_confidence, proposed_bandcamp_url, proposed_members,
+  field_conflicts->'l4c2_resolution'->>'status' AS l4c2_status`;
 
 async function getReview(db, artistId) {
   const artist = (await db.query(`SELECT id, musicbrainz_id, bandcamp_url FROM artists WHERE id = $1`, [artistId])).rows[0];
@@ -270,6 +278,8 @@ async function getReview(db, artistId) {
   // curator's approval, so its MusicBrainz/Wikidata rows stay locked (and the 'match' warning says why).
   let state = matchState(proposal, review, artist.musicbrainz_id);
   if (state === 'pretrusted' && shared.length) state = 'needs-approval';
+  const wrongId = proposal.l4c2_status === WRONG_ID_STATUS;
+  if (state === 'pretrusted' && wrongId) state = 'needs-approval';
   const proposedMembers = cleanMembers(proposal.proposed_members);
   return {
     has_proposal: true,
@@ -282,7 +292,7 @@ async function getReview(db, artistId) {
     },
     fields: buildFields(proposal, stored, state),
     members: buildMembers(proposedMembers, facts.members, state),
-    warnings: buildWarnings({ proposal, stored, catalogue, proposedMembers, sharedWith: shared }),
+    warnings: buildWarnings({ proposal, stored, catalogue, proposedMembers, sharedWith: shared, wrongId }),
   };
 }
 

@@ -21,15 +21,16 @@ async function mkProposal(artistId, p = {}) {
        proposed_country, country_source, country_confidence, proposed_formed_year, formed_source, formed_confidence,
        proposed_disbanded_year, disbanded_source, disbanded_confidence, proposed_last_release_year, last_release_source,
        last_release_confidence, proposed_bandcamp_url, proposed_members, layers_completed, review_status, updated_at,
-       proposed_first_release_year, first_release_source, first_release_confidence)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'{}','pending',CURRENT_TIMESTAMP,$20,$21,$22)`,
+       proposed_first_release_year, first_release_source, first_release_confidence, field_conflicts)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'{}','pending',CURRENT_TIMESTAMP,$20,$21,$22,$23)`,
     [artistId, p.mbid || null, p.method || (p.mbid ? 'MB_SPOTIFY_URL' : null), p.confidence || (p.mbid ? 'EXACT_ID' : null), p.artist_type || null,
      p.country || null, p.country_source || null, p.country_confidence || null,
      p.formed || null, p.formed_source || null, p.formed_confidence || null,
      p.disbanded || null, p.disbanded_source || null, p.disbanded_confidence || null,
      p.last || null, p.last_source || null, p.last_confidence || null,
      p.bandcamp || null, p.members === undefined ? null : JSON.stringify(p.members),
-     p.first || null, p.first_source || null, p.first_confidence || null]);
+     p.first || null, p.first_source || null, p.first_confidence || null,
+     p.conflicts === undefined ? null : JSON.stringify(p.conflicts)]);
 }
 async function mkReview(artistId, { decision = null, mbid = null, finished = false } = {}) {
   await pool.query(`INSERT INTO artist_enrichment_review (artist_id, match_decision, matched_mbid, finished_at) VALUES ($1,$2,$3,$4)`,
@@ -170,6 +171,30 @@ test('an EXISTING match whose id is not stored now needs approval', async () => 
   const r = await svc.getReview(pool, id);
   assert.equal(r.match.state, 'needs-approval');
   assert.equal(field(r, 'country').locked, true);
+});
+
+test('a later check that found the MusicBrainz id belongs to someone else is never pretrusted: locked, warned, and in Match to approve', async () => {
+  const id = await mkArtist('ZZZENR WrongId');
+  await mkProposal(id, { mbid: randomUUID(), confidence: 'EXACT_ID', country: 'United Kingdom', country_source: 'MusicBrainz', country_confidence: 'EXACT_ID',
+    conflicts: { l4c2_resolution: { status: 'WRONG_MBID_IDENTITY_CORRECTED', rationale: 'ZZZENR rationale text that must never be read' } } });
+  const r = await svc.getReview(pool, id);
+  assert.equal(r.match.state, 'needs-approval');
+  assert.equal(field(r, 'country').locked, true);
+  const w = r.warnings.filter((x) => x.field === 'match');
+  assert.equal(w.length, 1);
+  assert.match(w[0].text, /different act|someone else|wrong/i);
+  assert.ok(!JSON.stringify(r).includes('rationale text'), 'the free-text rationale is never read');
+  const m = await svc.list(pool, { queue: 'enr-match', q: 'ZZZENR WrongId' });
+  assert.deepEqual(m.rows.map((x) => x.id), [id]);
+});
+
+test('other level-4 resolutions leave an exact match pretrusted', async () => {
+  const id = await mkArtist('ZZZENR GapFilled');
+  await mkProposal(id, { mbid: randomUUID(), confidence: 'EXACT_ID', country: 'Iceland', country_source: 'MusicBrainz',
+    conflicts: { l4c2_resolution: { status: 'GAP_FILLED' } } });
+  assert.equal((await svc.getReview(pool, id)).match.state, 'pretrusted');
+  const m = await svc.list(pool, { queue: 'enr-match', q: 'ZZZENR GapFilled' });
+  assert.deepEqual(m.rows.map((x) => x.id), []);
 });
 
 test('shared id with another proposal and with a stored id both appear in shared_with and warn', async () => {

@@ -19,12 +19,13 @@ async function mkProposal(artistId, p = {}) {
     `INSERT INTO artist_enrichment_proposals (artist_id, proposed_musicbrainz_id, mbid_match_method, mbid_confidence, artist_type,
        proposed_country, country_source, proposed_formed_year, formed_source, proposed_disbanded_year, disbanded_source,
        proposed_last_release_year, last_release_source, proposed_bandcamp_url, proposed_members, layers_completed, review_status, updated_at,
-       proposed_first_release_year, first_release_source)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'{}','pending',TIMESTAMP '2026-01-01 00:00:00',$16,$17)`,
+       proposed_first_release_year, first_release_source, field_conflicts)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'{}','pending',TIMESTAMP '2026-01-01 00:00:00',$16,$17,$18)`,
     [artistId, p.mbid || null, p.method || (p.mbid ? 'MB_SPOTIFY_URL' : null), p.confidence || (p.mbid ? 'EXACT_ID' : null), p.artist_type || null,
      p.country || null, p.country_source || null, p.formed || null, p.formed_source || null,
      p.disbanded || null, p.disbanded_source || null, p.last || null, p.last_source || null,
-     p.bandcamp || null, p.members === undefined ? null : JSON.stringify(p.members), p.first || null, p.first_source || null]);
+     p.bandcamp || null, p.members === undefined ? null : JSON.stringify(p.members), p.first || null, p.first_source || null,
+     p.conflicts === undefined ? null : JSON.stringify(p.conflicts)]);
 }
 async function mkSong(artistId, title, year) {
   const albumId = (await pool.query(`INSERT INTO albums (name, release_date, data_source) VALUES ($1,$2,'manual') RETURNING id`,
@@ -304,6 +305,24 @@ test('pretrusted + id proposed for another artist -> needs-approval, acceptAll s
   assert.ok(ap.fields.every((f) => !f.locked));
 });
 
+test('an exact match the later check found to be someone else: acceptAll never approves it or writes its MusicBrainz facts; the curator can still approve explicitly', async () => {
+  const mb = randomUUID();
+  const id = await mkArtist('ZZZENW WrongId');
+  await mkProposal(id, { mbid: mb, confidence: 'EXACT_ID', country: 'Wales', country_source: 'MusicBrainz', bandcamp: 'https://zzzenw-wrong.bandcamp.com',
+    conflicts: { l4c2_resolution: { status: 'WRONG_MBID_IDENTITY_CORRECTED' } } });
+  const r = await svc.getReview(pool, id);
+  assert.equal(r.match.state, 'needs-approval');
+  const res = await svc.acceptAll(pool, id);
+  assert.ok(!res.applied.includes('match'), 'the match is not approved');
+  assert.ok(!res.applied.includes('country'), 'the MusicBrainz country is not written');
+  assert.ok(res.skipped.some((s) => s.field === 'match' && s.reason === 'warning'));
+  const a = await artistRow(id);
+  assert.equal(a.musicbrainz_id, null); assert.equal(a.country, null);
+  assert.equal(await reviewRow(id), undefined);
+  const ap = await svc.decideMatch(pool, id, 'approve'); // an explicit, informed approval is still possible
+  assert.equal(ap.match.state, 'approved');
+});
+
 test('acceptAll twice is idempotent (second call applied = [])', async () => {
   const id = await mkArtist('ZZZENW All Twice');
   await mkProposal(id, { mbid: randomUUID(), confidence: 'EXACT_ID', country: 'Mali', country_source: 'Wikidata',
@@ -429,7 +448,9 @@ test('none of these touch artist_enrichment_proposals (row count and updated_at 
   const snap = async () => (await pool.query(`SELECT count(*)::int AS n, max(updated_at) AS mx,
       (SELECT updated_at FROM artist_enrichment_proposals WHERE artist_id = $1) AS mine,
       (SELECT md5(row(proposed_musicbrainz_id, proposed_country, proposed_members::text, review_status)::text) FROM artist_enrichment_proposals WHERE artist_id = $1) AS h
-    FROM artist_enrichment_proposals`, [id])).rows[0];
+    FROM artist_enrichment_proposals WHERE artist_id IN (SELECT id FROM artists WHERE name LIKE 'ZZZENW%')`, [id])).rows[0];
+  // Scoped to this file's sentinel artists: the analysis project writes the rest of the table while it runs, so a table-wide
+  // count / max(updated_at) would fail whenever one of its runs is open. Our code only ever addresses a row by artist id.
   const before = await snap();
   await runAll(id);
   assert.deepEqual(await snap(), before);
